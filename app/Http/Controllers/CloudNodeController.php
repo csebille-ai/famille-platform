@@ -1,0 +1,552 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\CloudAuditLog;
+use App\Models\CloudNode;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+
+class CloudNodeController extends Controller
+{
+    private function audit(string $action, ?CloudNode $node = null, array $meta = []): void
+    {
+        CloudAuditLog::create([
+            'action' => $action,
+            'node_id' => $node?->id,
+            'actor_id' => Auth::id(),
+            'meta' => $meta,
+        ]);
+    }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes < 1024) {
+            return $bytes . ' B';
+        }
+
+        $units = ['KB', 'MB', 'GB', 'TB'];
+        $value = $bytes / 1024;
+        $unitIndex = 0;
+
+        while ($value >= 1024 && $unitIndex < count($units) - 1) {
+            $value /= 1024;
+            $unitIndex++;
+        }
+
+        $formatted = $value >= 10 ? number_format($value, 0) : number_format($value, 1);
+        return $formatted . ' ' . $units[$unitIndex];
+    }
+
+    private function cloudQuotaBytes(): int
+    {
+        $gb = (float) config('cloud.quota_global_gb', 10);
+        if ($gb <= 0) {
+            return 0;
+        }
+
+        return (int) round($gb * 1024 * 1024 * 1024);
+    }
+
+    private function cloudUsedBytes(): int
+    {
+        $sum = CloudNode::query()
+            ->where('type', 'file')
+            ->whereNotNull('size')
+            ->sum('size');
+
+        return (int) $sum;
+    }
+
+    private function iniSizeToBytes(?string $value): int
+    {
+        if ($value === null) {
+            return 0;
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            return 0;
+        }
+
+        $lastChar = strtoupper(substr($value, -1));
+        if (ctype_digit($lastChar)) {
+            return (int) $value;
+        }
+
+        $number = (float) substr($value, 0, -1);
+        return match ($lastChar) {
+            'K' => (int) round($number * 1024),
+            'M' => (int) round($number * 1024 * 1024),
+            'G' => (int) round($number * 1024 * 1024 * 1024),
+            'T' => (int) round($number * 1024 * 1024 * 1024 * 1024),
+            default => 0,
+        };
+    }
+
+    private function maxUploadMbFromPhpIni(): int
+    {
+        $uploadBytes = $this->iniSizeToBytes(ini_get('upload_max_filesize'));
+        $postBytes = $this->iniSizeToBytes(ini_get('post_max_size'));
+
+        if ($uploadBytes <= 0 || $postBytes <= 0) {
+            return 0;
+        }
+
+        $bytes = min($uploadBytes, $postBytes);
+        return max(1, (int) floor($bytes / (1024 * 1024)));
+    }
+
+    private function phpIniMaxUploadKb(): int
+    {
+        $uploadBytes = $this->iniSizeToBytes(ini_get('upload_max_filesize'));
+        $postBytes = $this->iniSizeToBytes(ini_get('post_max_size'));
+
+        if ($uploadBytes <= 0 || $postBytes <= 0) {
+            return 0;
+        }
+
+        $bytes = min($uploadBytes, $postBytes);
+        return max(1, (int) floor($bytes / 1024));
+    }
+
+    private function rootFolder(): CloudNode
+    {
+        return CloudNode::query()->firstOrCreate(
+            ['parent_id' => null, 'type' => 'folder', 'name' => '/'],
+            ['uploaded_by' => Auth::id()]
+        );
+    }
+
+    private function breadcrumb(CloudNode $folder): array
+    {
+        $crumbs = [];
+        $seen = [];
+        $current = $folder;
+
+        while ($current !== null) {
+            if (isset($seen[$current->id])) {
+                break;
+            }
+            $seen[$current->id] = true;
+            $crumbs[] = $current;
+            $current = $current->parent;
+        }
+
+        return array_reverse($crumbs);
+    }
+
+    private function folderOptions(): array
+    {
+        $folders = CloudNode::query()
+            ->where('type', 'folder')
+            ->get(['id', 'parent_id', 'name'])
+            ->keyBy('id');
+
+        $parentMap = [];
+        foreach ($folders as $folder) {
+            $parentMap[$folder->id] = $folder->parent_id;
+        }
+
+        $nameMap = [];
+        foreach ($folders as $folder) {
+            $nameMap[$folder->id] = $folder->name;
+        }
+
+        $paths = [];
+        foreach ($folders as $folder) {
+            $parts = [];
+            $currentId = $folder->id;
+            $seen = [];
+            while ($currentId !== null) {
+                if (isset($seen[$currentId])) {
+                    break;
+                }
+                $seen[$currentId] = true;
+                $parts[] = $nameMap[$currentId] ?? ('#' . $currentId);
+                $currentId = $parentMap[$currentId] ?? null;
+            }
+            $parts = array_reverse($parts);
+            $paths[$folder->id] = implode('/', array_map(fn ($p) => trim($p, '/'), $parts));
+            if ($paths[$folder->id] === '') {
+                $paths[$folder->id] = '/';
+            }
+        }
+
+        asort($paths, SORT_NATURAL | SORT_FLAG_CASE);
+        return $paths;
+    }
+
+    public function index(Request $request)
+    {
+        $root = $this->rootFolder();
+
+        $folderId = $request->query('folder');
+        $currentFolder = $folderId ? CloudNode::query()->with('parent')->findOrFail($folderId) : $root;
+        if (!$currentFolder->isFolder()) {
+            abort(404);
+        }
+
+        $currentFolder->load('parent');
+        $breadcrumb = $this->breadcrumb($currentFolder);
+
+        $search = trim((string) $request->query('q', ''));
+
+        $nodesQuery = CloudNode::query()
+            ->with('uploader')
+            ->where('parent_id', $currentFolder->id)
+            ->orderByRaw("CASE WHEN type = 'folder' THEN 0 ELSE 1 END")
+            ->orderBy('name');
+
+        if ($search !== '') {
+            $nodesQuery->where('name', 'like', '%' . $search . '%');
+        }
+
+        $nodes = $nodesQuery->paginate(20)->withQueryString();
+
+        $configMaxKb = (int) config('cloud.max_upload_kb', 10240);
+        $iniMaxKb = $this->phpIniMaxUploadKb();
+        $effectiveMaxKb = $iniMaxKb > 0 ? min($configMaxKb, $iniMaxKb) : $configMaxKb;
+        $effectiveMaxMb = max(1, (int) floor($effectiveMaxKb / 1024));
+
+        $quotaBytes = $this->cloudQuotaBytes();
+        $usedBytes = $this->cloudUsedBytes();
+        $usagePercent = $quotaBytes > 0 ? (int) min(100, floor(($usedBytes / $quotaBytes) * 100)) : null;
+
+        return view('cloud.index', [
+            'currentFolder' => $currentFolder,
+            'breadcrumb' => $breadcrumb,
+            'nodes' => $nodes,
+            'search' => $search,
+            'folderOptions' => $this->folderOptions(),
+            'maxUploadMb' => $effectiveMaxMb,
+            'quotaBytes' => $quotaBytes,
+            'usedBytes' => $usedBytes,
+            'quotaHuman' => $quotaBytes > 0 ? $this->formatBytes($quotaBytes) : null,
+            'usedHuman' => $this->formatBytes($usedBytes),
+            'usagePercent' => $usagePercent,
+        ]);
+    }
+
+    public function storeFolder(Request $request)
+    {
+        Gate::authorize('cloud-write');
+
+        $validated = $request->validate([
+            'parent_id' => ['required', 'integer', 'exists:cloud_nodes,id'],
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $parent = CloudNode::query()->findOrFail($validated['parent_id']);
+        if (!$parent->isFolder()) {
+            abort(422);
+        }
+
+        $folder = CloudNode::create([
+            'parent_id' => $parent->id,
+            'type' => 'folder',
+            'name' => $validated['name'],
+            'uploaded_by' => Auth::id(),
+        ]);
+
+        $this->audit('create_folder', $folder, ['parent_id' => $parent->id]);
+
+        return redirect()->route('cloud.index', ['folder' => $parent->id])
+            ->with('status', __('Folder created.'));
+    }
+
+    public function storeFile(Request $request)
+    {
+        Gate::authorize('cloud-write');
+
+        $configMaxKb = (int) config('cloud.max_upload_kb', 10240);
+        $iniMaxKb = $this->phpIniMaxUploadKb();
+        $maxKb = $iniMaxKb > 0 ? min($configMaxKb, $iniMaxKb) : $configMaxKb;
+
+        $validated = $request->validate([
+            'parent_id' => ['required', 'integer', 'exists:cloud_nodes,id'],
+            'file' => ['required', 'file', 'max:' . $maxKb],
+        ], [
+            'file.max' => __('The file may not be greater than :max kilobytes.', ['max' => $maxKb]),
+        ]);
+
+        $parent = CloudNode::query()->findOrFail($validated['parent_id']);
+        if (!$parent->isFolder()) {
+            abort(422);
+        }
+
+        $file = $request->file('file');
+        if ($file === null) {
+            abort(422);
+        }
+
+        $quotaBytes = $this->cloudQuotaBytes();
+        if ($quotaBytes > 0) {
+            $usedBytes = $this->cloudUsedBytes();
+            $newBytes = (int) ($file->getSize() ?? 0);
+            if ($newBytes > 0 && ($usedBytes + $newBytes) > $quotaBytes) {
+                $quotaHuman = $this->formatBytes($quotaBytes);
+                return redirect()
+                    ->route('cloud.index', ['folder' => $parent->id])
+                    ->with('error', "Quota atteint ({$quotaHuman}). Supprime des fichiers ou contacte un admin.");
+            }
+        }
+
+        $dir = 'private/cloud/' . now()->format('Y') . '/' . now()->format('m');
+        $storedPath = $file->store($dir, 'local');
+
+        $node = CloudNode::create([
+            'parent_id' => $parent->id,
+            'type' => 'file',
+            'name' => $file->getClientOriginalName(),
+            'stored_path' => $storedPath,
+            'mime' => $file->getClientMimeType(),
+            'size' => (int) $file->getSize(),
+            'uploaded_by' => Auth::id(),
+        ]);
+
+        $this->audit('upload_file', $node, ['parent_id' => $parent->id]);
+
+        return redirect()->route('cloud.index', ['folder' => $parent->id])
+            ->with('status', __('File uploaded.'));
+    }
+
+    public function download(CloudNode $node)
+    {
+        if (!$node->isFile() || $node->stored_path === null) {
+            abort(404);
+        }
+        if (!Storage::disk('local')->exists($node->stored_path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->download($node->stored_path, $node->name);
+    }
+
+    public function preview(CloudNode $node)
+    {
+        if (!$node->isFile()) {
+            abort(404);
+        }
+
+        $mime = $node->mime ?? '';
+        $canPreview = str_starts_with($mime, 'image/') || $mime === 'application/pdf';
+
+        if (!$canPreview) {
+            return redirect()
+                ->route('cloud.index', $node->parent_id ? ['folder' => $node->parent_id] : [])
+                ->with('status', __('Preview not available, please download.'));
+        }
+
+        return view('cloud.preview', [
+            'node' => $node->load('uploader'),
+        ]);
+    }
+
+    public function view(CloudNode $node)
+    {
+        if (!$node->isFile() || $node->stored_path === null) {
+            abort(404);
+        }
+        if (!Storage::disk('local')->exists($node->stored_path)) {
+            abort(404);
+        }
+
+        $mime = $node->mime ?? 'application/octet-stream';
+        $isInline = str_starts_with($mime, 'image/') || $mime === 'application/pdf';
+
+        if (!$isInline) {
+            return Storage::disk('local')->download($node->stored_path, $node->name);
+        }
+
+        return Storage::disk('local')->response(
+            $node->stored_path,
+            $node->name,
+            [
+                'Content-Type' => $mime,
+                'Content-Disposition' => 'inline; filename="' . addslashes($node->name) . '"',
+            ]
+        );
+    }
+
+    public function rename(Request $request, CloudNode $node)
+    {
+        Gate::authorize('manage-cloud');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $oldName = $node->name;
+
+        $node->update([
+            'name' => $validated['name'],
+        ]);
+
+        $this->audit('rename', $node, ['from' => $oldName, 'to' => $validated['name']]);
+
+        $folder = $node->parent_id;
+        return redirect()->route('cloud.index', $folder ? ['folder' => $folder] : [])
+            ->with('status', __('Renamed.'));
+    }
+
+    public function move(Request $request)
+    {
+        Gate::authorize('manage-cloud');
+
+        $validated = $request->validate([
+            'node_id' => ['required', 'integer', 'exists:cloud_nodes,id'],
+            'new_parent_id' => ['required', 'integer', 'exists:cloud_nodes,id'],
+        ]);
+
+        $node = CloudNode::query()->findOrFail($validated['node_id']);
+        $newParent = CloudNode::query()->with('parent')->findOrFail($validated['new_parent_id']);
+
+        if (!$newParent->isFolder()) {
+            abort(422);
+        }
+
+        $root = CloudNode::query()->whereNull('parent_id')->where('type', 'folder')->where('name', '/')->first();
+        if ($root && $node->id === $root->id) {
+            return redirect()->route('cloud.index')->with('status', __('Cannot move root folder.'));
+        }
+
+        if ($node->isFolder()) {
+            $current = $newParent;
+            $seen = [];
+            while ($current !== null) {
+                if (isset($seen[$current->id])) {
+                    break;
+                }
+                $seen[$current->id] = true;
+                if ($current->id === $node->id) {
+                    return redirect()->route('cloud.index', ['folder' => $node->id])
+                        ->with('status', __('Cannot move a folder into itself.'));
+                }
+                $current = $current->parent;
+            }
+        }
+
+        $oldParentId = $node->parent_id;
+        $node->update(['parent_id' => $newParent->id]);
+
+        $this->audit('move', $node, ['from_parent_id' => $oldParentId, 'to_parent_id' => $newParent->id]);
+
+        return redirect()->route('cloud.index', ['folder' => $newParent->id])
+            ->with('status', __('Moved.'));
+    }
+
+    public function destroy(CloudNode $node)
+    {
+        Gate::authorize('manage-cloud');
+
+        if ($node->isFolder()) {
+            $hasChildren = CloudNode::query()->where('parent_id', $node->id)->exists();
+            if ($hasChildren) {
+                return redirect()->route('cloud.index', ['folder' => $node->id])
+                    ->with('status', __('Folder must be empty to delete.'));
+            }
+
+            $parentId = $node->parent_id;
+            $node->delete();
+            $this->audit('trash', $node, ['type' => 'folder']);
+            return redirect()->route('cloud.index', $parentId ? ['folder' => $parentId] : [])
+                ->with('status', __('Moved to trash.'));
+        }
+
+        if ($node->isFile() && $node->stored_path !== null) {
+            // Soft delete: keep stored file on disk until purged.
+        }
+
+        $parentId = $node->parent_id;
+        $node->delete();
+
+        $this->audit('trash', $node, ['type' => 'file']);
+
+        return redirect()->route('cloud.index', $parentId ? ['folder' => $parentId] : [])
+            ->with('status', __('Moved to trash.'));
+    }
+
+    public function trash(Request $request)
+    {
+        Gate::authorize('manage-cloud');
+
+        $nodes = CloudNode::onlyTrashed()
+            ->with(['uploader', 'parent'])
+            ->orderByDesc('deleted_at')
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('cloud.trash', [
+            'nodes' => $nodes,
+        ]);
+    }
+
+    public function auditIndex(Request $request)
+    {
+        Gate::authorize('manage-cloud');
+
+        $logs = CloudAuditLog::query()
+            ->with(['actor', 'node'])
+            ->orderByDesc('created_at')
+            ->paginate(50)
+            ->withQueryString();
+
+        return view('cloud.audit', [
+            'logs' => $logs,
+        ]);
+    }
+
+    public function restore(int $id)
+    {
+        Gate::authorize('manage-cloud');
+
+        $node = CloudNode::withTrashed()->findOrFail($id);
+        if ($node->deleted_at === null) {
+            return redirect()->route('cloud.trash')->with('status', __('Already active.'));
+        }
+
+        $root = $this->rootFolder();
+        if ($node->parent_id !== null) {
+            $parent = CloudNode::withTrashed()->find($node->parent_id);
+            if (!$parent || $parent->deleted_at !== null) {
+                $node->parent_id = $root->id;
+                $node->save();
+            }
+        }
+
+        $node->restore();
+        $this->audit('restore', $node);
+        return redirect()->route('cloud.trash')->with('status', __('Restored.'));
+    }
+
+    public function purge(int $id)
+    {
+        Gate::authorize('manage-cloud');
+
+        $node = CloudNode::withTrashed()->findOrFail($id);
+        if ($node->deleted_at === null) {
+            return redirect()->route('cloud.trash')->with('status', __('Not in trash.'));
+        }
+
+        if ($node->isFolder()) {
+            $hasChildren = CloudNode::withTrashed()->where('parent_id', $node->id)->exists();
+            if ($hasChildren) {
+                return redirect()->route('cloud.trash')->with('status', __('Folder must be empty to purge.'));
+            }
+        }
+
+        if ($node->isFile() && $node->stored_path !== null) {
+            if (Storage::disk('local')->exists($node->stored_path)) {
+                Storage::disk('local')->delete($node->stored_path);
+            }
+        }
+
+        $this->audit('purge', $node);
+
+        $node->forceDelete();
+        return redirect()->route('cloud.trash')->with('status', __('Purged.'));
+    }
+}

@@ -1,0 +1,44 @@
+*.log
+
+# Environment / secrets
+.env
+.env.*.local
+.env.backup
+.env.production
+/auth.json
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Vite / Laravel runtime artifacts
+/public/hot
+/public/storage
+
+# Laravel generated files
+/storage/app/private/
+/storage/framework/cache/
+/storage/framework/sessions/
+/storage/framework/views/
+/storage/logs/
+/bootstrap/cache/
+
+# Local-only keys / tools
+/storage/*.key
+/storage/pail
+
+# Tests
+.phpunit.result.cache
+/.phpunit.cache
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+/.vscode/
+/.idea/
+/.fleet/
+/.zed/
+/.nova/
+.phpactor.json
+Homestead.json
+Homestead.yaml
