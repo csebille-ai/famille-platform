@@ -45,6 +45,8 @@ git checkout main
 
 Créer le fichier `.env` sur le serveur (ne pas le committer) :
 
+Tu peux partir du template : `.env.o2switch.example`.
+
 - `APP_ENV=production`
 - `APP_DEBUG=false`
 - `APP_URL=https://famille.opanoma.fr`
@@ -73,7 +75,7 @@ chmod -R ug+rwx storage bootstrap/cache
 
 Deux stratégies :
 
-- **Stratégie A (recommandée mutualisé)** : build en local/CI et pousser `public/build` dans la branche `prod`.
+- **Stratégie A (recommandée mutualisé)** : build en local/CI et pousser `public/build` dans la branche `main`.
 - Stratégie B : build sur le serveur (nécessite Node/NPM sur le serveur).
 
 Si tu utilises la stratégie A, tu n’as rien à faire sur le serveur : `public/build` est déjà dans le repo.
