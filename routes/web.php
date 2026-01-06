@@ -63,11 +63,11 @@ Route::middleware('auth')->group(function () {
             ->with('status', 'Déplacé vers le nouveau Cloud.');
     })->name('cloud.create.legacy');
 
-    Route::get('/images', [ImageController::class, 'index'])->name('images.index');
-    Route::post('/images', [ImageController::class, 'store'])->name('images.store');
-    Route::get('/images/{node}', [ImageController::class, 'view'])->name('images.view');
-    Route::post('/images/{node}/like', [ImageController::class, 'toggleLike'])->name('images.like');
-    Route::delete('/images/{node}', [ImageController::class, 'destroy'])->name('images.destroy');
+    Route::get('/galerie', [ImageController::class, 'index'])->name('images.index');
+    Route::post('/galerie', [ImageController::class, 'store'])->name('images.store');
+    Route::get('/galerie/{node}', [ImageController::class, 'view'])->name('images.view');
+    Route::post('/galerie/{node}/like', [ImageController::class, 'toggleLike'])->name('images.like');
+    Route::delete('/galerie/{node}', [ImageController::class, 'destroy'])->name('images.destroy');
 
     Route::get('/cloud', function () {
         return redirect()->route('images.index');
