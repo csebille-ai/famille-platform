@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\CloudAuditLog;
 use App\Models\CloudNode;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -267,19 +268,53 @@ class CloudNodeController extends Controller
 
         $validated = $request->validate([
             'parent_id' => ['required', 'integer', 'exists:cloud_nodes,id'],
-            'file' => ['required', 'file', 'max:' . $maxKb],
+            'file' => [
+                'required',
+                'file',
+                'max:' . $maxKb,
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if (!$value instanceof \Illuminate\Http\UploadedFile) {
+                        return;
+                    }
+
+                    $mime = (string) $value->getClientMimeType();
+                    if (!str_starts_with($mime, 'video/')) {
+                        return;
+                    }
+
+                    $allowedVideoMimes = [
+                        'video/mp4',
+                        'video/webm',
+                        'video/quicktime',
+                    ];
+
+                    if (!in_array($mime, $allowedVideoMimes, true)) {
+                        $fail(__('Unsupported video format. Allowed: MP4, WebM, MOV.'));
+                    }
+                },
+            ],
         ], [
             'file.max' => __('The file may not be greater than :max kilobytes.', ['max' => $maxKb]),
         ]);
 
         $parent = CloudNode::query()->findOrFail($validated['parent_id']);
         if (!$parent->isFolder()) {
-            abort(422);
+            throw ValidationException::withMessages([
+                'parent_id' => __('Invalid destination folder.'),
+            ]);
+        }
+
+        if (!$request->hasFile('file')) {
+            throw ValidationException::withMessages([
+                'file' => __('No file received. If the file is large, check PHP upload limits.'),
+            ]);
         }
 
         $file = $request->file('file');
-        if ($file === null) {
-            abort(422);
+        if (!$file instanceof \Illuminate\Http\UploadedFile || !$file->isValid()) {
+            throw ValidationException::withMessages([
+                'file' => __('Upload failed. Please try again.'),
+            ]);
         }
 
         $quotaBytes = $this->cloudQuotaBytes();
@@ -288,9 +323,17 @@ class CloudNodeController extends Controller
             $newBytes = (int) ($file->getSize() ?? 0);
             if ($newBytes > 0 && ($usedBytes + $newBytes) > $quotaBytes) {
                 $quotaHuman = $this->formatBytes($quotaBytes);
+                $message = "Quota atteint ({$quotaHuman}). Supprime des fichiers ou contacte un admin.";
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => $message,
+                        'errors' => ['file' => [$message]],
+                    ], 422);
+                }
+
                 return redirect()
                     ->route('cloud.index', ['folder' => $parent->id])
-                    ->with('error', "Quota atteint ({$quotaHuman}). Supprime des fichiers ou contacte un admin.");
+                    ->with('error', $message);
             }
         }
 
@@ -308,6 +351,13 @@ class CloudNodeController extends Controller
         ]);
 
         $this->audit('upload_file', $node, ['parent_id' => $parent->id]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => __('File uploaded.'),
+                'node' => $node,
+            ], 201);
+        }
 
         return redirect()->route('cloud.index', ['folder' => $parent->id])
             ->with('status', __('File uploaded.'));

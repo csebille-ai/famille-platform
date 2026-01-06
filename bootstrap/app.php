@@ -3,16 +3,29 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (PostTooLargeException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Fichier trop volumineux pour la configuration serveur. Augmente post_max_size et upload_max_filesize.',
+                ], 413);
+            }
+
+            return back()->withErrors([
+                'video_file' => 'Fichier trop volumineux pour la configuration serveur. Réessaie après avoir augmenté les limites d’upload.',
+            ]);
+        });
     })->create();

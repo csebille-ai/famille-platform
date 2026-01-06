@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class CloudNode extends Model
 {
@@ -34,6 +35,12 @@ class CloudNode extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public function likers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'image_likes', 'cloud_node_id', 'user_id')
+            ->withTimestamps();
     }
 
     public function isFolder(): bool

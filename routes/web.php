@@ -1,18 +1,40 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\BlogPostController;
 use App\Http\Controllers\CloudNodeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\ResourceController;
+use App\Http\Controllers\ImageController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\VideoController;
+use App\Http\Controllers\PlaylistController;
+use App\Http\Controllers\PlaylistItemController;
+use App\Models\CloudNode;
+use App\Models\Video;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route(auth()->check() ? 'dashboard' : 'login');
+    return view('welcome');
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    $latestImages = CloudNode::query()
+        ->where('type', 'file')
+        ->whereNotNull('stored_path')
+        ->where('mime', 'like', 'image/%')
+        ->latest()
+        ->limit(6)
+        ->get();
+
+    $latestVideos = Video::query()
+        ->latest()
+        ->limit(6)
+        ->get();
+
+    return view('dashboard', [
+        'latestImages' => $latestImages,
+        'latestVideos' => $latestVideos,
+    ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -20,18 +42,36 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::get('resources/{resource}/download', [ResourceController::class, 'download'])->name('resources.download');
     Route::resource('resources', ResourceController::class);
 
-    Route::resource('blog', BlogPostController::class)
-        ->parameters(['blog' => 'post']);
+    Route::resource('playlists', PlaylistController::class);
+    Route::post('playlists/{playlist}/items', [PlaylistItemController::class, 'store'])->name('playlists.items.store');
+    Route::delete('playlists/{playlist}/items/{item}', [PlaylistItemController::class, 'destroy'])->name('playlists.items.destroy');
+
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
+    Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+
+    Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->name('videos.stream');
+    Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->name('videos.poster');
+    Route::resource('videos', VideoController::class);
 
     Route::get('/cloud/create', function () {
         return redirect()
-            ->route('cloud.index')
+            ->route('images.index')
             ->with('status', 'Déplacé vers le nouveau Cloud.');
     })->name('cloud.create.legacy');
 
-    Route::get('/cloud', [CloudNodeController::class, 'index'])->name('cloud.index');
+    Route::get('/images', [ImageController::class, 'index'])->name('images.index');
+    Route::post('/images', [ImageController::class, 'store'])->name('images.store');
+    Route::get('/images/{node}', [ImageController::class, 'view'])->name('images.view');
+    Route::post('/images/{node}/like', [ImageController::class, 'toggleLike'])->name('images.like');
+    Route::delete('/images/{node}', [ImageController::class, 'destroy'])->name('images.destroy');
+
+    Route::get('/cloud', function () {
+        return redirect()->route('images.index');
+    })->name('cloud.index');
     Route::post('/cloud/folders', [CloudNodeController::class, 'storeFolder'])->name('cloud.folders.store');
     Route::post('/cloud/files', [CloudNodeController::class, 'storeFile'])->name('cloud.files.store');
     Route::get('/cloud/files/{node}/download', [CloudNodeController::class, 'download'])->name('cloud.files.download');

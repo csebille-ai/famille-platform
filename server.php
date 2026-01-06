@@ -7,7 +7,9 @@ $uri = urldecode(
 $publicPath = __DIR__.'/public';
 $filePath = $publicPath.$uri;
 
-if ($uri !== '/' && file_exists($filePath)) {
+// Only serve existing *files* as static assets.
+// Directories like /images should still be handled by Laravel routes.
+if ($uri !== '/' && is_file($filePath)) {
     return false;
 }
 

@@ -25,6 +25,18 @@ class AppServiceProvider extends ServiceProvider
             return ($user->role ?? 'member') === 'admin';
         });
 
+        Gate::define('images-upload', function (User $user): bool {
+            return in_array($user->role ?? 'member', ['member', 'editor', 'admin'], true);
+        });
+
+        Gate::define('images-delete', function (User $user): bool {
+            return ($user->role ?? 'member') === 'admin';
+        });
+
+        Gate::define('videos-delete', function (User $user): bool {
+            return ($user->role ?? 'member') === 'admin';
+        });
+
         Gate::define('cloud-write', function (User $user): bool {
             return in_array($user->role ?? 'member', ['editor', 'admin'], true);
         });

@@ -1,4 +1,13 @@
 <IfModule mod_rewrite.c>
+    # Upload limits (only applies when PHP runs via mod_php).
+    # If PHP is running via PHP-FPM/CGI, these are ignored and must be set in php.ini / pool config.
+    <IfModule mod_php.c>
+        php_value upload_max_filesize 256M
+        php_value post_max_size 260M
+        php_value max_execution_time 300
+        php_value max_input_time 300
+    </IfModule>
+
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>

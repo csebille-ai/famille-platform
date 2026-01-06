@@ -20,12 +20,20 @@
                         {{ __('Ressources') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('blog.index')" :active="request()->routeIs('blog.*')">
-                        {{ __('Blog') }}
+                    <x-nav-link :href="route('playlists.index')" :active="request()->routeIs('playlists.*')">
+                        {{ __('Playlists') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('cloud.index')" :active="request()->routeIs('cloud.*')">
-                        {{ __('Cloud') }}
+                    <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')">
+                        {{ __('Chat Live') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('videos.index')" :active="request()->routeIs('videos.*')">
+                        {{ __('Vidéos') }}
+                    </x-nav-link>
+
+                    <x-nav-link :href="route('images.index')" :active="request()->routeIs('images.*')">
+                        {{ __('Images') }}
                     </x-nav-link>
 
                     @can('manage-users')
@@ -93,12 +101,20 @@
                 {{ __('Ressources') }}
             </x-responsive-nav-link>
 
-            <x-responsive-nav-link :href="route('blog.index')" :active="request()->routeIs('blog.*')">
-                {{ __('Blog') }}
+            <x-responsive-nav-link :href="route('playlists.index')" :active="request()->routeIs('playlists.*')">
+                {{ __('Playlists') }}
             </x-responsive-nav-link>
 
-            <x-responsive-nav-link :href="route('cloud.index')" :active="request()->routeIs('cloud.*')">
-                {{ __('Cloud') }}
+            <x-responsive-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')">
+                {{ __('Chat Live') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('videos.index')" :active="request()->routeIs('videos.*')">
+                {{ __('Vidéos') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('images.index')" :active="request()->routeIs('images.*')">
+                {{ __('Images') }}
             </x-responsive-nav-link>
 
             @can('manage-users')
