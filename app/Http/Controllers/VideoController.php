@@ -16,6 +16,10 @@ class VideoController extends Controller
 {
     private function generatePosterForVideo(Video $video): void
     {
+        if ($video->poster_path) {
+            return;
+        }
+
         if (!$video->video_path) {
             return;
         }
@@ -121,6 +125,7 @@ class VideoController extends Controller
                 'title' => ['required', 'string', 'max:255'],
                 'category' => ['required', 'string', 'in:films,series,docs'],
                 'video_file' => ['required', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:3145728'],
+                'poster_file' => ['nullable', 'file', 'image', 'max:10240'],
                 'description' => ['nullable', 'string'],
             ]);
         } catch (ValidationException $e) {
@@ -172,7 +177,21 @@ class VideoController extends Controller
             }
         }
 
+        if ($request->hasFile('poster_file')) {
+            try {
+                $posterPath = $request->file('poster_file')->store('videos/posters', 'public');
+                $validated['poster_path'] = $posterPath;
+            } catch (\Exception $e) {
+                logger()->warning('videos.poster.upload_failed', [
+                    'error' => $e->getMessage(),
+                ]);
+
+                return back()->withErrors(['poster_file' => 'Erreur lors du stockage du poster: ' . $e->getMessage()]);
+            }
+        }
+
         unset($validated['video_file']);
+        unset($validated['poster_file']);
         $video = Video::create($validated);
 
         $this->generatePosterForVideo($video);
@@ -331,6 +350,7 @@ class VideoController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:films,series,docs'],
             'video_file' => ['nullable', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:3145728'],
+            'poster_file' => ['nullable', 'file', 'image', 'max:10240'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -345,14 +365,26 @@ class VideoController extends Controller
 
             $path = $request->file('video_file')->store('videos', 'public');
             $validated['video_path'] = $path;
-            $validated['poster_path'] = null;
+            if (!$request->hasFile('poster_file')) {
+                $validated['poster_path'] = null;
+            }
+        }
+
+        if ($request->hasFile('poster_file')) {
+            if ($video->poster_path && Storage::disk('public')->exists($video->poster_path)) {
+                Storage::disk('public')->delete($video->poster_path);
+            }
+
+            $posterPath = $request->file('poster_file')->store('videos/posters', 'public');
+            $validated['poster_path'] = $posterPath;
         }
 
         unset($validated['video_file']);
+        unset($validated['poster_file']);
 
         $video->update($validated);
 
-        if ($request->hasFile('video_file')) {
+        if ($request->hasFile('video_file') && !$video->poster_path) {
             $this->generatePosterForVideo($video);
         }
 

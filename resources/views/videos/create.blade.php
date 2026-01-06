@@ -78,6 +78,23 @@
                         </div>
 
                         <div>
+                            <label for="poster_file" class="block font-medium text-sm text-gray-700">
+                                {{ __('Image (poster) (optionnel)') }}
+                            </label>
+                            <input
+                                id="poster_file"
+                                type="file"
+                                name="poster_file"
+                                accept="image/*"
+                                class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
+                            />
+                            @error('poster_file')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                            <p class="text-xs text-gray-500 mt-1">Si le serveur ne peut pas générer une miniature automatiquement, tu peux la fournir ici (max 10 MB).</p>
+                        </div>
+
+                        <div>
                             <label for="description" class="block font-medium text-sm text-gray-700">
                                 {{ __('Description (optionnel)') }}
                             </label>
