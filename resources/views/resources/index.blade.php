@@ -98,17 +98,27 @@
                                                         $type = 'VID';
                                                     }
                                                 @endphp
-                                                <div class="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 hover:border-gray-300 hover:shadow-sm">
+                                                <div class="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50">
                                                     <div class="flex items-start gap-3">
                                                         <div class="shrink-0 h-10 w-10 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 flex items-center justify-center">
                                                             <span class="text-[10px] font-semibold tracking-wide">{{ $type }}</span>
                                                         </div>
 
                                                         <div class="min-w-0 flex-1">
-                                                            <a href="{{ $resource->attachment_path ? (in_array($type, ['PDF','IMG'], true) ? route('resources.open', $resource) : route('resources.preview', $resource)) : route('resources.show', $resource) }}"
-                                                               class="block min-w-0 rounded-md text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
-                                                                {{ $displayName }}
+                                                            <a href="{{ route('resources.show', $resource) }}"
+                                                               class="block rounded-md text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
+                                                                {{ $resource->title }}
                                                             </a>
+
+                                                            @if ($resource->attachment_path)
+                                                                <a href="{{ route('resources.preview', $resource) }}"
+                                                                   class="mt-1 inline-flex max-w-full items-center gap-2 rounded-md text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
+                                                                    <span class="truncate">{{ $displayName }}</span>
+                                                                    <span class="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-700">{{ $type }}</span>
+                                                                </a>
+                                                            @else
+                                                                <div class="mt-1 text-sm text-gray-500">Aucun fichier</div>
+                                                            @endif
 
                                                             <div class="mt-1 text-xs text-gray-600 truncate">
                                                                 {{ $resource->section === 'pratiques' ? 'Pratiques' : ($resource->section === 'utiles' ? 'Utiles' : 'Administratives') }}
@@ -244,17 +254,27 @@
                                                 $type = 'VID';
                                             }
                                         @endphp
-                                        <div class="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 hover:border-gray-300 hover:shadow-sm">
+                                        <div class="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 hover:border-gray-300 hover:shadow-sm hover:bg-gray-50">
                                             <div class="flex items-start gap-3">
                                                 <div class="shrink-0 h-10 w-10 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 flex items-center justify-center">
                                                     <span class="text-[10px] font-semibold tracking-wide">{{ $type }}</span>
                                                 </div>
 
                                                 <div class="min-w-0 flex-1">
-                                                    <a href="{{ $r->attachment_path ? (in_array($type, ['PDF','IMG'], true) ? route('resources.open', $r) : route('resources.preview', $r)) : route('resources.show', $r) }}"
-                                                       class="block rounded-md text-base sm:text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
-                                                        {{ $displayName }}
+                                                    <a href="{{ route('resources.show', $r) }}"
+                                                       class="block rounded-md text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
+                                                        {{ $r->title }}
                                                     </a>
+
+                                                    @if ($r->attachment_path)
+                                                        <a href="{{ route('resources.preview', $r) }}"
+                                                           class="mt-1 inline-flex max-w-full items-center gap-2 rounded-md text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
+                                                            <span class="truncate">{{ $displayName }}</span>
+                                                            <span class="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-700">{{ $type }}</span>
+                                                        </a>
+                                                    @else
+                                                        <div class="mt-1 text-sm text-gray-500">Aucun fichier</div>
+                                                    @endif
 
                                                     <div class="mt-1 text-xs text-gray-600">
                                                         {{ $r->section === 'pratiques' ? 'Pratiques' : ($r->section === 'utiles' ? 'Utiles' : 'Administratives') }}
@@ -262,12 +282,6 @@
                                                         Dossier {{ $r->folder ?? 'A1' }}
                                                         <span class="text-gray-400">·</span>
                                                         {{ $u?->name ?? 'Commun' }}
-                                                    </div>
-
-                                                    <div class="mt-3 flex flex-wrap items-center gap-2">
-                                                        <span class="text-xs px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 text-gray-700">
-                                                            {{ $r->section === 'pratiques' ? 'Pratiques' : ($r->section === 'utiles' ? 'Utiles' : 'Administratives') }}
-                                                        </span>
                                                     </div>
                                                 </div>
 
