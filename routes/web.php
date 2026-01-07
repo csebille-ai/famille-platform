@@ -42,6 +42,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    Route::get('resources/{resource}/files/{file}/open', [ResourceController::class, 'openFile'])->name('resources.files.open');
+    Route::get('resources/{resource}/files/{file}/preview', [ResourceController::class, 'previewFile'])->name('resources.files.preview');
+    Route::get('resources/{resource}/files/{file}/download', [ResourceController::class, 'downloadFile'])->name('resources.files.download');
+
     Route::get('resources/{resource}/open', [ResourceController::class, 'open'])->name('resources.open');
     Route::get('resources/{resource}/preview', [ResourceController::class, 'preview'])->name('resources.preview');
     Route::get('resources/{resource}/download', [ResourceController::class, 'download'])->name('resources.download');

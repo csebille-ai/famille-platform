@@ -95,15 +95,16 @@
                         <div class="rounded-2xl border border-gray-200 p-5">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
-                                    <div class="text-sm font-semibold text-gray-900">Fichier</div>
-                                    <div class="mt-1 text-xs text-gray-500">PDF, image, document… (vidéos interdites)</div>
+                                    <div class="text-sm font-semibold text-gray-900">Fichiers</div>
+                                    <div class="mt-1 text-xs text-gray-500">PDF, images, documents… (vidéos interdites)</div>
                                 </div>
                                 <span class="text-xs px-2.5 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-gray-700">Max 20 Mo</span>
                             </div>
 
                             <div class="mt-4">
-                                <input id="file" name="file" type="file" class="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-gray-700" accept="image/*,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/rtf,application/vnd.oasis.opendocument.text" />
-                                <x-input-error class="mt-2" :messages="$errors->get('file')" />
+                                <input id="files" name="files[]" type="file" multiple class="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-gray-700" accept="image/*,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/rtf,application/vnd.oasis.opendocument.text" />
+                                <x-input-error class="mt-2" :messages="$errors->get('files')" />
+                                <x-input-error class="mt-2" :messages="$errors->get('files.*')" />
                             </div>
                         </div>
 

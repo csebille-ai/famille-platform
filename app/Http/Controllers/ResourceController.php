@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Resource;
+use App\Models\ResourceFile;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class ResourceController extends Controller
     public function index()
     {
         $resources = Resource::query()
-            ->with('concernedUser:id,name')
+            ->with(['concernedUser:id,name', 'files'])
             ->latest()
             ->get();
 
@@ -28,7 +29,7 @@ class ResourceController extends Controller
         // Only show results once the user has picked a filter.
         if ($selected !== '') {
             $resourcesForUser = Resource::query()
-                ->with('concernedUser:id,name')
+                ->with(['concernedUser:id,name', 'files'])
                 ->when($selected === 'common', fn($q) => $q->whereNull('concerned_user_id'))
                 ->when($selected === 'all', fn($q) => $q)
                 ->when(is_numeric($selected), function ($q) use ($selected) {
@@ -75,27 +76,48 @@ class ResourceController extends Controller
             'category' => ['nullable', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
             'file' => ['nullable', 'file', 'max:20480'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['file', 'max:20480'],
         ]);
 
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
+        $validated['created_by'] = Auth::id();
+
+        // Legacy attachment_* kept for backward compatibility, but new uploads are stored in resource_files.
+        unset(
+            $validated['attachment_path'],
+            $validated['attachment_name'],
+            $validated['attachment_mime'],
+            $validated['attachment_size']
+        );
+
+        $resource = Resource::create($validated);
+
+        $uploaded = [];
+        if ($request->hasFile('files')) {
+            $uploaded = array_values(array_filter((array) $request->file('files')));
+        } elseif ($request->hasFile('file')) {
+            $uploaded = [$request->file('file')];
+        }
+
+        foreach ($uploaded as $file) {
             $mime = (string) ($file->getMimeType() ?? '');
             if (str_starts_with($mime, 'video/')) {
                 return back()
-                    ->withErrors(['file' => 'Les vidéos ne sont pas autorisées pour les ressources.'])
+                    ->withErrors(['files' => 'Les vidéos ne sont pas autorisées pour les ressources.'])
                     ->withInput();
             }
 
             $path = Storage::disk('local')->putFile('private/resources', $file);
-            $validated['attachment_path'] = $path;
-            $validated['attachment_name'] = $file->getClientOriginalName();
-            $validated['attachment_mime'] = $mime;
-            $validated['attachment_size'] = (int) $file->getSize();
+
+            ResourceFile::create([
+                'resource_id' => $resource->id,
+                'path' => $path,
+                'name' => $file->getClientOriginalName(),
+                'mime' => $mime,
+                'size' => (int) $file->getSize(),
+                'created_by' => Auth::id(),
+            ]);
         }
-
-        $validated['created_by'] = Auth::id();
-
-        $resource = Resource::create($validated);
 
         return redirect()->route('resources.show', $resource);
     }
@@ -138,29 +160,38 @@ class ResourceController extends Controller
             'category' => ['nullable', 'string', 'max:255'],
             'content' => ['nullable', 'string'],
             'file' => ['nullable', 'file', 'max:20480'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['file', 'max:20480'],
         ]);
 
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
+        $resource->update($validated);
+
+        $uploaded = [];
+        if ($request->hasFile('files')) {
+            $uploaded = array_values(array_filter((array) $request->file('files')));
+        } elseif ($request->hasFile('file')) {
+            $uploaded = [$request->file('file')];
+        }
+
+        foreach ($uploaded as $file) {
             $mime = (string) ($file->getMimeType() ?? '');
             if (str_starts_with($mime, 'video/')) {
                 return back()
-                    ->withErrors(['file' => 'Les vidéos ne sont pas autorisées pour les ressources.'])
+                    ->withErrors(['files' => 'Les vidéos ne sont pas autorisées pour les ressources.'])
                     ->withInput();
             }
 
-            if ($resource->attachment_path) {
-                Storage::disk('local')->delete($resource->attachment_path);
-            }
-
             $path = Storage::disk('local')->putFile('private/resources', $file);
-            $validated['attachment_path'] = $path;
-            $validated['attachment_name'] = $file->getClientOriginalName();
-            $validated['attachment_mime'] = $mime;
-            $validated['attachment_size'] = (int) $file->getSize();
-        }
 
-        $resource->update($validated);
+            ResourceFile::create([
+                'resource_id' => $resource->id,
+                'path' => $path,
+                'name' => $file->getClientOriginalName(),
+                'mime' => $mime,
+                'size' => (int) $file->getSize(),
+                'created_by' => Auth::id(),
+            ]);
+        }
 
         return redirect()->route('resources.show', $resource);
     }
@@ -181,26 +212,28 @@ class ResourceController extends Controller
 
     public function download(Resource $resource)
     {
-        if (!$resource->attachment_path) {
+        $file = $resource->displayFiles()->first();
+        if (!$file || !$file->path) {
             abort(404);
         }
 
         return Storage::disk('local')->download(
-            $resource->attachment_path,
-            $resource->attachment_name ?: 'resource'
+            $file->path,
+            $file->name ?: 'resource'
         );
     }
 
     public function open(Resource $resource)
     {
-        if (!$resource->attachment_path) {
+        $file = $resource->displayFiles()->first();
+        if (!$file || !$file->path) {
             abort(404);
         }
 
         $headers = [];
-        $name = (string) ($resource->attachment_name ?: 'resource');
+        $name = (string) ($file->name ?: 'resource');
         $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-        $mime = (string) ($resource->attachment_mime ?: '');
+        $mime = (string) ($file->mime ?: '');
 
         if ($mime === '') {
             $mime = match ($ext) {
@@ -218,8 +251,8 @@ class ResourceController extends Controller
         }
 
         return Storage::disk('local')->response(
-            $resource->attachment_path,
-            $resource->attachment_name ?: 'resource',
+            $file->path,
+            $file->name ?: 'resource',
             $headers,
             'inline'
         );
@@ -248,6 +281,83 @@ class ResourceController extends Controller
             'resource' => $resource,
             'displayName' => $displayName,
             'previewType' => $previewType,
+        ]);
+    }
+
+    private function assertFileBelongsToResource(Resource $resource, ResourceFile $file): void
+    {
+        if ((int) $file->resource_id !== (int) $resource->id) {
+            abort(404);
+        }
+    }
+
+    public function downloadFile(Resource $resource, ResourceFile $file)
+    {
+        $this->assertFileBelongsToResource($resource, $file);
+
+        return Storage::disk('local')->download(
+            $file->path,
+            $file->name ?: 'resource'
+        );
+    }
+
+    public function openFile(Resource $resource, ResourceFile $file)
+    {
+        $this->assertFileBelongsToResource($resource, $file);
+
+        $headers = [];
+        $name = (string) ($file->name ?: 'resource');
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        $mime = (string) ($file->mime ?: '');
+
+        if ($mime === '') {
+            $mime = match ($ext) {
+                'pdf' => 'application/pdf',
+                'png' => 'image/png',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                default => '',
+            };
+        }
+
+        if ($mime !== '') {
+            $headers['Content-Type'] = $mime;
+        }
+
+        return Storage::disk('local')->response(
+            $file->path,
+            $file->name ?: 'resource',
+            $headers,
+            'inline'
+        );
+    }
+
+    public function previewFile(Resource $resource, ResourceFile $file)
+    {
+        $this->assertFileBelongsToResource($resource, $file);
+
+        $displayName = $file->name ?: $resource->title;
+        $mime = (string) ($file->mime ?: '');
+        $ext = strtolower(pathinfo((string) $displayName, PATHINFO_EXTENSION));
+
+        $previewType = 'none';
+        if ($mime === 'application/pdf' || $ext === 'pdf') {
+            $previewType = 'pdf';
+        } elseif (str_starts_with($mime, 'image/') || in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'], true)) {
+            $previewType = 'image';
+        }
+
+        if (in_array($previewType, ['pdf', 'image'], true)) {
+            return redirect()->route('resources.files.open', [$resource, $file]);
+        }
+
+        $resource->loadMissing('concernedUser:id,name');
+
+        return view('resources.file-preview', [
+            'resource' => $resource,
+            'file' => $file,
+            'displayName' => $displayName,
         ]);
     }
 }

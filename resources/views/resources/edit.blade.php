@@ -60,15 +60,12 @@
                         </div>
 
                         <div>
-                            <x-input-label for="file" :value="__('Remplacer le fichier (optionnel)')" />
-                            @if ($resource->attachment_name)
-                                <div class="mt-1 text-sm text-gray-700">
-                                    Actuel: <span class="font-medium">{{ $resource->attachment_name }}</span>
-                                </div>
-                            @endif
-                            <input id="file" name="file" type="file" class="mt-2 block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-gray-700" accept="image/*,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/rtf,application/vnd.oasis.opendocument.text" />
+                            <x-input-label for="files" :value="__('Ajouter des fichiers (optionnel)')" />
+                            <div class="mt-1 text-xs text-gray-500">Les fichiers existants sont conservés.</div>
+                            <input id="files" name="files[]" type="file" multiple class="mt-2 block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-gray-900 file:text-white hover:file:bg-gray-700" accept="image/*,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/rtf,application/vnd.oasis.opendocument.text" />
                             <div class="mt-1 text-xs text-gray-500">Vidéos non autorisées. Taille max: 20 Mo.</div>
-                            <x-input-error class="mt-2" :messages="$errors->get('file')" />
+                            <x-input-error class="mt-2" :messages="$errors->get('files')" />
+                            <x-input-error class="mt-2" :messages="$errors->get('files.*')" />
                         </div>
 
                         <div class="flex items-center justify-end gap-3">
