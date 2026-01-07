@@ -39,7 +39,7 @@
                     @elseif ($previewType === 'pdf')
                         <iframe
                             src="{{ route('resources.open', $resource) }}#view=FitH"
-                            class="w-full h-[calc(100vh-14rem)] rounded-xl border border-gray-200"
+                            class="w-full h-[calc(100svh-8rem)] sm:h-[calc(100vh-9rem)] rounded-xl border border-gray-200"
                             title="{{ $displayName }}"
                         ></iframe>
                     @elseif ($previewType === 'image')
