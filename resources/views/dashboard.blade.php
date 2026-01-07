@@ -52,6 +52,14 @@
             </div>
         </div>
 
+        <a href="{{ route('chat.index') }}" class="bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between gap-4" aria-label="Ouvrir Chat Live">
+            <div class="min-w-0">
+                <div class="text-base font-semibold text-gray-900">💬 Chat Live</div>
+                <div class="text-sm text-slate-500 truncate">Discussion en direct (comme WhatsApp)</div>
+            </div>
+            <div class="shrink-0 text-sm font-semibold text-slate-900">Ouvrir ›</div>
+        </a>
+
         <div class="flex items-end justify-between">
             <div class="text-base font-semibold text-gray-900">Prochains moments</div>
             <a href="{{ route('moments.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
