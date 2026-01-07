@@ -74,7 +74,9 @@
                             <div class="text-sm text-slate-500 mt-1">Lance la discussion !</div>
                         </div>
                     @else
-                        @php($prevDay = null)
+                        @php
+                            $prevDay = null;
+                        @endphp
                         @foreach ($messages as $i => $m)
                             @php
                                 $userId = (int) $m->user_id;
@@ -101,7 +103,9 @@
                                         {{ $dayLabel }}
                                     </div>
                                 </div>
-                                @php($prevDay = $dayKey)
+                                @php
+                                    $prevDay = $dayKey;
+                                @endphp
                             @endif
 
                             <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }}" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}">
