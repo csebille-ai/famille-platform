@@ -116,42 +116,49 @@
                         <div>
                             <div class="text-xs text-gray-500">Filtrer</div>
                             <div class="mt-1 text-lg font-semibold text-gray-900">Documents par utilisateur</div>
-                            <div class="mt-1 text-sm text-gray-600">Choisis un utilisateur pour voir les documents qui le concernent (inclut aussi “Commun”).</div>
+                            <div class="mt-1 text-sm text-gray-600">Accès rapide par personne (inclut aussi “Commun”).</div>
                         </div>
                     </div>
 
-                    <form method="GET" action="{{ route('resources.index') }}" class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
-                        <div class="w-full sm:max-w-sm">
-                            <label for="user" class="block text-sm font-medium text-gray-700">Utilisateur</label>
-                            <select id="user" name="user" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" onchange="this.form.submit()">
-                                @php $sel = $selectedUser ?? ''; @endphp
-                                <option value="" @selected($sel === '' || $sel === null)>— Choisir —</option>
-                                <option value="all" @selected($sel === 'all')>Tous</option>
-                                <option value="common" @selected($sel === 'common')>Commun (tout le monde)</option>
-                                @foreach ($users as $u)
-                                    <option value="{{ $u->id }}" @selected((string) $sel === (string) $u->id)>{{ $u->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                    @php $sel = $selectedUser ?? 'all'; @endphp
 
-                        <noscript>
-                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-900 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">Afficher</button>
-                        </noscript>
-                    </form>
+                    <div class="mt-5 flex gap-2 overflow-x-auto pb-1">
+                        <a href="{{ route('resources.index', ['user' => 'all']) }}"
+                           class="shrink-0 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full border {{ $sel === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200' }}">
+                            <span class="h-5 w-5 rounded-full bg-gray-600 text-white inline-flex items-center justify-center text-[10px] font-semibold">*</span>
+                            <span>Tous</span>
+                        </a>
+
+                        <a href="{{ route('resources.index', ['user' => 'common']) }}"
+                           class="shrink-0 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full border {{ $sel === 'common' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200' }}">
+                            <span class="h-5 w-5 rounded-full bg-gray-600 text-white inline-flex items-center justify-center text-[10px] font-semibold">C</span>
+                            <span>Commun</span>
+                        </a>
+
+                        @foreach ($users as $u)
+                            @php
+                                $isActive = (string) $sel === (string) $u->id;
+                                $soft = $u->uiColor()['soft'];
+                                $solid = $u->uiColor()['solid'];
+                            @endphp
+                            <a href="{{ route('resources.index', ['user' => $u->id]) }}"
+                               class="shrink-0 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full border {{ $isActive ? 'bg-gray-900 text-white border-gray-900' : $soft }}">
+                                <span class="h-5 w-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold {{ $isActive ? 'bg-white text-gray-900' : $solid }}">{{ $u->initials() }}</span>
+                                <span class="max-w-[10rem] truncate">{{ $u->name }}</span>
+                            </a>
+                        @endforeach
+                    </div>
 
                     <div class="mt-6">
-                        @if (($selectedUser ?? '') === '' || $selectedUser === null)
-                            <div class="rounded-2xl border border-gray-200 p-5 text-sm text-gray-600">Sélectionne un utilisateur ci-dessus.</div>
-                        @else
-                            @php
-                                $items = $resourcesForUser ?? collect();
-                            @endphp
+                        @php
+                            $items = $resourcesForUser ?? collect();
+                        @endphp
 
-                            @if ($items->count() === 0)
-                                <div class="rounded-2xl border border-gray-200 p-5 text-sm text-gray-600">Aucun document pour ce filtre.</div>
-                            @else
-                                <div class="space-y-3">
-                                    @foreach ($items as $r)
+                        @if ($items->count() === 0)
+                            <div class="rounded-2xl border border-gray-200 p-5 text-sm text-gray-600">Aucun document pour ce filtre.</div>
+                        @else
+                            <div class="space-y-3">
+                                @foreach ($items as $r)
                                         @php
                                             $u = $r->concernedUser;
                                             $pill = $u ? $u->uiColor()['soft'] : $commonPill;
@@ -187,9 +194,8 @@
                                                 <div class="text-xs text-gray-500">{{ $r->created_at->diffForHumans() }}</div>
                                             </div>
                                         </div>
-                                    @endforeach
-                                </div>
-                            @endif
+                                @endforeach
+                            </div>
                         @endif
                     </div>
                 </div>
