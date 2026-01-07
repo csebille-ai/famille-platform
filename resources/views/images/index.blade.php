@@ -228,7 +228,7 @@
                                         alt="{{ $image->name }}"
                                         class="w-full h-full object-cover"
                                         loading="lazy"
-                                        @error="broken = true"
+                                        x-on:error="broken = true"
                                     />
                                 </div>
 
