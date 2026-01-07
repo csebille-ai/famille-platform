@@ -38,7 +38,6 @@
                         <div class="p-6">
                             <div class="flex items-start justify-between gap-4">
                                 <div>
-                                    <div class="text-xs text-gray-500">Organisation</div>
                                     <div class="mt-1 text-lg font-semibold {{ $meta['accent'] }} inline-flex items-center gap-2 rounded-full border px-3 py-1">
                                         <span class="h-6 w-6 rounded-full inline-flex items-center justify-center text-xs font-semibold {{ $meta['badge'] }}">
                                             {{ str_starts_with($meta['label'], '1') ? '1' : (str_starts_with($meta['label'], '2') ? '2' : '3') }}
@@ -114,17 +113,17 @@
                 <div class="p-6">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <div class="text-xs text-gray-500">Filtrer</div>
                             <div class="mt-1 text-lg font-semibold text-gray-900">Documents par utilisateur</div>
                             <div class="mt-1 text-sm text-gray-600">Accès rapide par personne (inclut aussi “Commun”).</div>
                         </div>
                     </div>
 
-                    @php $sel = $selectedUser ?? 'all'; @endphp
+                    @php $sel = (string) ($selectedUser ?? ''); @endphp
 
                     <form method="GET" action="{{ route('resources.index') }}" class="mt-5 sm:hidden">
                         <label for="user" class="block text-sm font-medium text-gray-700">Utilisateur</label>
                         <select id="user" name="user" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" onchange="this.form.submit()">
+                            <option value="" @selected((string) $sel === '')>— Choisir —</option>
                             <option value="all" @selected((string) $sel === 'all')>Tous</option>
                             <option value="common" @selected((string) $sel === 'common')>Commun (tout le monde)</option>
                             @foreach ($users as $u)
@@ -169,7 +168,9 @@
                             $items = $resourcesForUser ?? collect();
                         @endphp
 
-                        @if ($items->count() === 0)
+                        @if ((string) $sel === '')
+                            {{-- No results shown until a filter is chosen. --}}
+                        @elseif ($items->count() === 0)
                             <div class="rounded-2xl border border-gray-200 p-5 text-sm text-gray-600">Aucun document pour ce filtre.</div>
                         @else
                             <div class="space-y-3">

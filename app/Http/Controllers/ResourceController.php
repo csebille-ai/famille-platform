@@ -22,15 +22,15 @@ class ResourceController extends Controller
 
         $users = User::query()->orderBy('name')->get(['id', 'name']);
 
-        $selected = (string) request()->query('user', 'all');
+        $selected = (string) request()->query('user', '');
+        $resourcesForUser = collect();
 
-        // Always show a list by default (better UX on mobile).
-        if ($selected === '' || $selected === 'all') {
-            $resourcesForUser = $resources;
-        } else {
+        // Only show results once the user has picked a filter.
+        if ($selected !== '') {
             $resourcesForUser = Resource::query()
                 ->with('concernedUser:id,name')
                 ->when($selected === 'common', fn($q) => $q->whereNull('concerned_user_id'))
+                ->when($selected === 'all', fn($q) => $q)
                 ->when(is_numeric($selected), function ($q) use ($selected) {
                     $userId = (int) $selected;
                     $q->where(function ($sub) use ($userId) {
