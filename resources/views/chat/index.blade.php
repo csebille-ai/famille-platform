@@ -533,6 +533,13 @@
                     });
                     if (!res.ok) return;
 
+                    const ct = (res.headers.get('content-type') || '').toLowerCase();
+                    if (!ct.includes('application/json')) {
+                        // Can happen if the session expired (HTML login), offline fallback, proxy error page, etc.
+                        console.warn('[chat] poll: non-json response', { status: res.status, contentType: ct });
+                        return;
+                    }
+
                     const data = await res.json();
                     const onlineUsers = Array.isArray(data?.online) ? data.online : [];
                     renderOnline(onlineUsers);
@@ -543,6 +550,8 @@
 
                     const newLast = Number(data?.last_id ?? lastMessageId);
                     if (!Number.isNaN(newLast)) lastMessageId = Math.max(lastMessageId, newLast);
+                } catch (e) {
+                    console.warn('[chat] poll failed', e);
                 } finally {
                     pollingInFlight = false;
                 }
@@ -561,6 +570,13 @@
                 pollOnce();
                 pollingTimer = setInterval(pollOnce, 5000);
             }
+
+            // iOS/Safari can throttle timers heavily in background.
+            // When the user comes back, do an immediate sync.
+            window.addEventListener('focus', () => pollOnce());
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) pollOnce();
+            });
 
             // Vite's module scripts load after this inline script, so Echo may appear a bit later.
             if (window.Echo) {
