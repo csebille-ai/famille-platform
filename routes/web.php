@@ -181,6 +181,7 @@ Route::middleware('auth')->group(function () {
     })->name('cloud.create.legacy');
 
     Route::get('/galerie', [ImageController::class, 'index'])->name('images.index');
+    Route::get('/galerie/importer', [ImageController::class, 'create'])->name('images.create');
     Route::post('/galerie', [ImageController::class, 'store'])->name('images.store');
     Route::get('/galerie/{node}/ouvrir', [ImageController::class, 'show'])->name('images.open');
     Route::get('/galerie/{node}', [ImageController::class, 'view'])->name('images.view');

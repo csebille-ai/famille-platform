@@ -121,6 +121,15 @@ class ImageController extends Controller
         ]);
     }
 
+    public function create(Request $request)
+    {
+        Gate::authorize('images-upload');
+
+        return view('images.create', [
+            'maxUploadMb' => max(1, (int) floor(((int) config('cloud.max_upload_kb', 10240)) / 1024)),
+        ]);
+    }
+
     public function toggleLike(CloudNode $node)
     {
         $userId = Auth::id();

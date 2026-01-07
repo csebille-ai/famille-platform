@@ -25,30 +25,8 @@
     <div
         class="max-w-6xl mx-auto px-6 py-6 space-y-6"
         x-data="{
-            uploadFileName: '',
-            uploadFileSize: '',
-            isDragOver: false,
             confirmOpen: false,
             confirmAction: '',
-            setFileFromInput(e) {
-                const f = e?.target?.files?.[0];
-                if (!f) {
-                    this.uploadFileName = '';
-                    this.uploadFileSize = '';
-                    return;
-                }
-                this.uploadFileName = f.name;
-                this.uploadFileSize = `${Math.round(f.size / 1024 / 1024 * 10) / 10} MB`;
-            },
-            setFileFromDrop(e) {
-                const f = e?.dataTransfer?.files?.[0];
-                if (!f) return;
-                if (this.$refs.uploadInput) {
-                    this.$refs.uploadInput.files = e.dataTransfer.files;
-                }
-                this.uploadFileName = f.name;
-                this.uploadFileSize = `${Math.round(f.size / 1024 / 1024 * 10) / 10} MB`;
-            },
         }"
     >
         <div class="flex items-center justify-between gap-4">
@@ -61,9 +39,9 @@
                     Voir tout
                 </a>
                 @can('images-upload')
-                    <button type="button" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold" x-on:click="$refs.uploadInput?.click()">
+                    <a href="{{ route('images.create') }}" class="hidden md:inline-flex bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold">
                         Importer
-                    </button>
+                    </a>
                 @endcan
             </div>
         </div>
@@ -84,71 +62,6 @@
                 </ul>
             </div>
         @endif
-
-        <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <div class="text-base font-semibold text-gray-900">Importer une image</div>
-                    <div class="text-sm text-slate-500 mt-1">Taille max : {{ $maxUploadMb > 0 ? $maxUploadMb : 100 }} MB</div>
-                </div>
-            </div>
-
-            @can('images-upload')
-                <form method="POST" action="{{ route('images.store') }}" enctype="multipart/form-data" class="mt-4" x-on:submit="if(!$refs.uploadInput?.files?.length){ $event.preventDefault(); $refs.uploadInput?.click(); }">
-                    @csrf
-
-                    <input
-                        x-ref="uploadInput"
-                        id="image-upload-input"
-                        name="image"
-                        type="file"
-                        accept="image/*"
-                        class="sr-only"
-                        required
-                        x-on:change="setFileFromInput($event)"
-                    />
-
-                    <div
-                        class="border-2 border-dashed border-slate-200 rounded-2xl p-6"
-                        :class="isDragOver ? 'bg-slate-50' : 'bg-white'"
-                        x-on:dragover.prevent="isDragOver = true"
-                        x-on:dragleave.prevent="isDragOver = false"
-                        x-on:drop.prevent="isDragOver = false; setFileFromDrop($event)"
-                        x-on:click="$refs.uploadInput?.click()"
-                        role="button"
-                        tabindex="0"
-                        x-on:keydown.enter.prevent="$refs.uploadInput?.click()"
-                        x-on:keydown.space.prevent="$refs.uploadInput?.click()"
-                        aria-label="Zone d'import"
-                    >
-                        <div class="text-center">
-                            <div class="text-sm font-medium text-gray-900">Glissez-déposez une image ici</div>
-                            <div class="text-sm text-slate-500 mt-1">ou</div>
-                            <div class="mt-3">
-                                <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900" x-on:click.stop="$refs.uploadInput?.click()">
-                                    Choisir un fichier
-                                </button>
-                            </div>
-
-                            <template x-if="uploadFileName">
-                                <div class="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-gray-900">
-                                    <span class="font-medium" x-text="uploadFileName"></span>
-                                    <span class="text-slate-500" x-text="uploadFileSize"></span>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 flex items-center justify-end">
-                        <button type="submit" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold">
-                            Importer
-                        </button>
-                    </div>
-                </form>
-            @else
-                <div class="mt-4 text-sm text-slate-500">Accès en lecture seule.</div>
-            @endcan
-        </div>
 
         <div class="bg-white rounded-2xl shadow-sm p-6">
             <div class="flex items-center justify-between gap-4">
@@ -212,9 +125,9 @@
                 <div class="text-sm text-slate-500 mt-1">Importe une première photo pour démarrer.</div>
                 @can('images-upload')
                     <div class="mt-4">
-                        <button type="button" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold" x-on:click="$refs.uploadInput?.click()">
+                        <a href="{{ route('images.create') }}" class="inline-flex bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold">
                             Importer une image
-                        </button>
+                        </a>
                     </div>
                 @endcan
             </div>
@@ -353,6 +266,19 @@
                     </form>
                 </div>
             </div>
+        @endcan
+
+        @can('images-upload')
+            <a
+                href="{{ route('images.create') }}"
+                class="fixed md:hidden bottom-6 right-6 z-40 bg-slate-900 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-sm"
+                aria-label="Importer une image"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" aria-hidden="true">
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
+                </svg>
+            </a>
         @endcan
     </div>
 </x-app-layout>
