@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CloudAuditLog;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class PlaylistItemController extends Controller
 {
     public function store(Request $request, Playlist $playlist)
     {
-        $this->authorizeManage($playlist);
+        $this->authorizeAdd($playlist);
 
         $validated = $request->validate([
             'spotify' => ['required', 'string', 'max:2048'],
@@ -33,29 +35,64 @@ class PlaylistItemController extends Controller
             'added_by' => Auth::id(),
         ]);
 
+        CloudAuditLog::create([
+            'action' => 'playlist_item_added',
+            'node_id' => null,
+            'actor_id' => Auth::id(),
+            'meta' => [
+                'playlist_id' => (int) $playlist->id,
+                'spotify_track_id' => (string) $trackId,
+                'label' => $validated['label'] ?? null,
+                'input' => $validated['spotify'],
+            ],
+        ]);
+
         return redirect()->route('playlists.show', $playlist)->with('status', 'Morceau ajouté.');
     }
 
     public function destroy(Playlist $playlist, PlaylistItem $item)
     {
-        $this->authorizeManage($playlist);
+        $this->authorizeRemove($playlist);
 
         if ((int) $item->playlist_id !== (int) $playlist->id) {
             abort(404);
         }
+
+        CloudAuditLog::create([
+            'action' => 'playlist_item_removed',
+            'node_id' => null,
+            'actor_id' => Auth::id(),
+            'meta' => [
+                'playlist_id' => (int) $playlist->id,
+                'playlist_item_id' => (int) $item->id,
+                'spotify_track_id' => (string) ($item->spotify_track_id ?? ''),
+                'label' => $item->label,
+                'added_by' => (int) ($item->added_by ?? 0),
+            ],
+        ]);
 
         $item->delete();
 
         return redirect()->route('playlists.show', $playlist)->with('status', 'Morceau supprimé.');
     }
 
-    private function authorizeManage(Playlist $playlist): void
+    private function authorizeAdd(Playlist $playlist): void
     {
+        if ($playlist->is_shared) {
+            return;
+        }
+
         if ((int) $playlist->created_by === (int) Auth::id()) {
             return;
         }
 
         abort(403);
+    }
+
+    private function authorizeRemove(Playlist $playlist): void
+    {
+        $this->authorizeAdd($playlist);
+        Gate::authorize('playlists-delete-items');
     }
 
     private function extractSpotifyTrackId(string $input): ?string

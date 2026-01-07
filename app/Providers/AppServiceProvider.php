@@ -44,5 +44,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-cloud', function (User $user): bool {
             return in_array($user->role ?? 'member', ['editor', 'admin'], true);
         });
+
+        Gate::define('playlists-delete-items', function (User $user): bool {
+            return ($user->role ?? 'member') === 'admin';
+        });
     }
 }

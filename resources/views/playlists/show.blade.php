@@ -2,6 +2,8 @@
     <x-slot name="header">
         @php
             $isOwner = (int) ($playlist->created_by ?? 0) === (int) auth()->id();
+            $canAddItems = (bool) ($playlist->is_shared || $isOwner);
+            $canRemoveItems = auth()->check() && Illuminate\Support\Facades\Gate::allows('playlists-delete-items');
         @endphp
 
         <div class="flex items-start justify-between gap-4">
@@ -60,7 +62,7 @@
                 </div>
             @endif
 
-            @if ($isOwner)
+            @if ($canAddItems)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
                         <div class="text-xs text-gray-500">Ajouter un morceau</div>
@@ -113,7 +115,7 @@
                                         <div class="mt-1 text-xs text-gray-500">Ajouté par {{ $item->adder?->name ?? '—' }}</div>
                                     </div>
 
-                                    @if ($isOwner)
+                                    @if ($canRemoveItems)
                                         <div class="flex items-center gap-2">
                                             <a
                                                 href="https://open.spotify.com/track/{{ $item->spotify_track_id }}"
