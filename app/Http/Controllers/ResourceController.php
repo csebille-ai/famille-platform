@@ -24,6 +24,7 @@ class ResourceController extends Controller
         $users = User::query()->orderBy('name')->get(['id', 'name']);
 
         $selected = (string) request()->query('user', '');
+        $selectedCategory = trim((string) request()->query('category', ''));
         $resourcesForUser = collect();
 
         // Only show results once the user has picked a filter.
@@ -39,6 +40,7 @@ class ResourceController extends Controller
                             ->orWhere('concerned_user_id', $userId);
                     });
                 })
+                ->when($selectedCategory !== '', fn($q) => $q->where('category', $selectedCategory))
                 ->latest()
                 ->get();
         }

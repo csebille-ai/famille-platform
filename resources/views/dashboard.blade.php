@@ -1,191 +1,53 @@
 @php
     $userName = Auth::user()->name ?? '';
     $firstName = trim(explode(' ', trim($userName))[0] ?? $userName);
-    $avatar = method_exists(Auth::user(), 'initials') ? Auth::user()->initials() : strtoupper(substr($firstName, 0, 1));
+
+    $short = function (?string $s, int $max = 80): string {
+        $s = trim((string) $s);
+        if ($s === '') return '';
+        if (mb_strlen($s) <= $max) return $s;
+        return mb_substr($s, 0, $max - 1) . '…';
+    };
 @endphp
 
 <x-app-layout pageBgClass="bg-slate-50">
-    <div class="md:hidden mx-auto max-w-[420px] px-4 pt-4 pb-24 space-y-6">
+    <div class="max-w-6xl mx-auto px-6 py-6 space-y-6">
         <div>
-            <div class="text-2xl font-bold text-gray-900">Bienvenue, {{ $firstName }}</div>
-            <div class="text-sm text-slate-500 mt-1">Accès rapide et vie de famille</div>
+            <h1 class="text-2xl font-bold text-gray-900">Bienvenue, {{ $firstName }}</h1>
+            <div class="text-sm text-slate-500 mt-1">Accès rapide aux contenus de la famille</div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-            <div class="grid grid-cols-4 gap-3">
-                <a href="{{ route('images.index') }}" class="w-full aspect-square rounded-xl bg-emerald-50 flex flex-col items-center justify-center gap-2 text-center px-1" aria-label="Importer photo">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-emerald-700" aria-hidden="true">
-                        <path d="M4 7h3l2-2h6l2 2h3v12H4z" />
-                        <circle cx="12" cy="13" r="3" />
-                    </svg>
-                    <div class="text-[11px] leading-tight font-medium text-gray-900">Importer photo</div>
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <a href="{{ route('resources.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                    Ressources
                 </a>
-
-                <a href="{{ route('videos.create') }}" class="w-full aspect-square rounded-xl bg-sky-50 flex flex-col items-center justify-center gap-2 text-center px-1" aria-label="Importer vidéo">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-sky-700" aria-hidden="true">
-                        <path d="M15 10l4.5-2.5v9L15 14" />
-                        <rect x="3" y="6" width="12" height="12" rx="2" />
-                    </svg>
-                    <div class="text-[11px] leading-tight font-medium text-gray-900">Importer vidéo</div>
+                <a href="{{ route('images.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                    Photos
                 </a>
-
-                <a href="{{ route('resources.create') }}" class="w-full aspect-square rounded-xl bg-amber-50 flex flex-col items-center justify-center gap-2 text-center px-1" aria-label="Ajouter ressource">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-amber-700" aria-hidden="true">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <path d="M14 2v6h6" />
-                        <path d="M12 12v6" />
-                        <path d="M9 15h6" />
-                    </svg>
-                    <div class="text-[11px] leading-tight font-medium text-gray-900">Ajouter ressource</div>
+                <a href="{{ route('videos.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                    Vidéos
                 </a>
-
-                <a href="{{ route('playlists.index') }}" class="w-full aspect-square rounded-xl bg-violet-50 flex flex-col items-center justify-center gap-2 text-center px-1" aria-label="Partager playlist">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-violet-700" aria-hidden="true">
-                        <circle cx="18" cy="5" r="3" />
-                        <circle cx="6" cy="12" r="3" />
-                        <circle cx="18" cy="19" r="3" />
-                        <path d="M8.6 13.5l6.8 3.9" />
-                        <path d="M15.4 6.6L8.6 10.5" />
-                    </svg>
-                    <div class="text-[11px] leading-tight font-medium text-gray-900">Partager playlist</div>
+                <a href="{{ route('playlists.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                    Playlists
+                </a>
+                <a href="{{ route('chat.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                    Chat
                 </a>
             </div>
         </div>
 
-        <a href="{{ route('chat.index') }}" class="bg-white rounded-2xl shadow-sm p-4 flex items-center justify-between gap-4" aria-label="Ouvrir Chat Live">
-            <div class="min-w-0">
-                <div class="text-base font-semibold text-gray-900">💬 Chat Live</div>
-                <div class="text-sm text-slate-500 truncate">Discussion en direct (comme WhatsApp)</div>
-            </div>
-            <div class="shrink-0 text-sm font-semibold text-slate-900">Ouvrir ›</div>
-        </a>
-
-        <div class="flex items-end justify-between">
-            <div class="text-base font-semibold text-gray-900">Prochains moments</div>
-            <a href="{{ route('moments.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+        <div>
+            <div class="text-base font-semibold text-gray-900">Aujourd’hui</div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-            <div class="divide-y divide-slate-100">
-                @foreach(($moments ?? collect())->take(3) as $m)
-                    <div class="py-3 first:pt-0 last:pb-0">
-                        <div class="flex items-start gap-3">
-                            <div class="w-14 shrink-0 text-left">
-                                <div class="text-sm font-semibold text-gray-900">{{ $m['date_day'] }}</div>
-                                <div class="text-xs text-slate-500 -mt-0.5">{{ $m['date_month'] }}</div>
-                            </div>
-                            <div class="min-w-0">
-                                <div class="text-sm font-medium text-gray-900 truncate">{{ $m['title'] }}</div>
-                                @if(!empty($m['subtitle']))
-                                    <div class="text-sm text-slate-500">{{ $m['subtitle'] }}</div>
-                                @endif
-                                <div class="mt-2 h-1 rounded-full bg-slate-100">
-                                    <div class="h-1 rounded-full bg-slate-200" style="width: 55%"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-
-        <div class="flex items-end justify-between">
-            <div class="text-base font-semibold text-gray-900">Dernières photos</div>
-            <a href="{{ route('images.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-4">
-            @if(($latestImages ?? collect())->count())
-                <div class="grid grid-cols-3 gap-3">
-                    @foreach(($latestImages ?? collect())->take(3) as $img)
-                        <a href="{{ route('images.view', $img) }}" class="block rounded-xl overflow-hidden aspect-video bg-slate-100" aria-label="Ouvrir photo">
-                            <img
-                                src="{{ route('images.view', $img) }}"
-                                alt="{{ $img->name ?? 'photo' }}"
-                                class="w-full h-full object-cover"
-                                loading="lazy"
-                            />
-                        </a>
-                    @endforeach
-                </div>
-            @else
-                <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                    Aucune photo pour l’instant.
-                </div>
-            @endif
-        </div>
-    </div>
-
-    <div class="hidden md:block max-w-7xl mx-auto px-6 py-8 space-y-6">
-        <div class="flex items-end justify-between">
-            <div>
-                <div class="text-2xl font-bold text-gray-900">Dashboard</div>
-                <div class="text-sm text-slate-500 mt-1">Accès rapide et vie de famille</div>
-            </div>
-            <a href="{{ route('profile.edit') }}" class="inline-flex items-center gap-3">
-                <div class="text-right">
-                    <div class="text-sm font-semibold text-gray-900">{{ $firstName }}</div>
-                    <div class="text-sm text-slate-500">Profil</div>
-                </div>
-                <div class="h-10 w-10 rounded-full bg-gray-900 text-white text-sm font-semibold flex items-center justify-center">
-                    {{ $avatar }}
-                </div>
-            </a>
-        </div>
-
-        <div class="grid grid-cols-12 gap-6">
-            <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl shadow-sm p-5">
-                <div class="text-base font-semibold text-gray-900">Actions rapides</div>
-                <div class="mt-4 grid grid-cols-2 gap-3">
-                    <a href="{{ route('images.index') }}" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
-                        <div class="text-sm font-semibold text-gray-900">Importer photo</div>
-                        <div class="text-sm text-slate-500 mt-1">Galerie</div>
-                    </a>
-                    <a href="{{ route('videos.create') }}" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
-                        <div class="text-sm font-semibold text-gray-900">Importer vidéo</div>
-                        <div class="text-sm text-slate-500 mt-1">Vidéos</div>
-                    </a>
-                    <a href="{{ route('resources.create') }}" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
-                        <div class="text-sm font-semibold text-gray-900">Ajouter ressource</div>
-                        <div class="text-sm text-slate-500 mt-1">Documents</div>
-                    </a>
-                    <a href="{{ route('playlists.index') }}" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
-                        <div class="text-sm font-semibold text-gray-900">Partager playlist</div>
-                        <div class="text-sm text-slate-500 mt-1">Musique</div>
-                    </a>
-                </div>
-            </div>
-
-            <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl shadow-sm p-5">
-                <div class="flex items-end justify-between">
-                    <div class="text-base font-semibold text-gray-900">Prochains moments</div>
-                    <a href="{{ route('moments.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
-                </div>
-                <div class="mt-4 divide-y divide-slate-100">
-                    @foreach(($moments ?? collect())->take(3) as $m)
-                        <div class="py-3 first:pt-0 last:pb-0">
-                            <div class="flex items-start gap-3">
-                                <div class="w-16 shrink-0">
-                                    <div class="text-sm font-semibold text-gray-900">{{ $m['date_day'] }}</div>
-                                    <div class="text-sm text-slate-500 -mt-0.5">{{ $m['date_month'] }}</div>
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="text-sm font-medium text-gray-900">{{ $m['title'] }}</div>
-                                    @if(!empty($m['subtitle']))
-                                        <div class="text-sm text-slate-500">{{ $m['subtitle'] }}</div>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl shadow-sm p-5">
-                <div class="flex items-end justify-between">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Dernières photos</div>
                     <a href="{{ route('images.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
                 </div>
+
                 <div class="mt-4">
                     @if(($latestImages ?? collect())->count())
                         <div class="grid grid-cols-3 gap-3">
@@ -201,11 +63,131 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                             Aucune photo pour l’instant.
                         </div>
                     @endif
                 </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <div class="flex items-end justify-between gap-4">
+                    <div class="text-base font-semibold text-gray-900">Dernières vidéos</div>
+                    <a href="{{ route('videos.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+                </div>
+
+                <div class="mt-4 space-y-3">
+                    @if(($latestVideos ?? collect())->count())
+                        @foreach(($latestVideos ?? collect())->take(2) as $v)
+                            <a href="{{ route('videos.show', $v) }}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 hover:bg-slate-50">
+                                <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                    @if (!empty($v->poster_path))
+                                        <img src="{{ route('videos.poster', $v) }}" alt="{{ $v->title }}" class="w-full h-full object-cover" loading="lazy" />
+                                    @else
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400" aria-hidden="true">
+                                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                                            <path d="M10 9l5 3-5 3V9z" />
+                                        </svg>
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold text-gray-900 truncate">{{ $v->title }}</div>
+                                    <div class="text-xs text-slate-500">{{ $v->created_at?->diffForHumans() }}</div>
+                                </div>
+                            </a>
+                        @endforeach
+                    @else
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                            Aucune vidéo pour l’instant.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <div class="flex items-end justify-between gap-4">
+                    <div class="text-base font-semibold text-gray-900">Derniers docs</div>
+                    <a href="{{ route('resources.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+                </div>
+
+                <div class="mt-4 space-y-3">
+                    @if(($latestDocs ?? collect())->count())
+                        @foreach(($latestDocs ?? collect())->take(3) as $r)
+                            <a href="{{ route('resources.show', $r) }}" class="block rounded-xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50">
+                                <div class="text-sm font-semibold text-gray-900 truncate">{{ $r->title }}</div>
+                                <div class="mt-1 text-xs text-slate-500 truncate">
+                                    {{ $r->category ?: 'Document' }}
+                                    <span class="text-slate-400">·</span>
+                                    {{ $r->created_at?->diffForHumans() }}
+                                </div>
+                            </a>
+                        @endforeach
+                    @else
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                            Aucun document pour l’instant.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <div class="flex items-end justify-between gap-4">
+                    <div class="text-base font-semibold text-gray-900">Chat</div>
+                    <a href="{{ route('chat.index') }}" class="text-sm text-slate-500 hover:underline">Ouvrir ›</a>
+                </div>
+
+                <div class="mt-2 text-sm text-slate-500">
+                    <span class="text-emerald-600">●</span>
+                    <span class="font-semibold text-gray-900">{{ (int) ($chatOnlineCount ?? 0) }}</span>
+                    connectés
+                </div>
+
+                <div class="mt-4">
+                    @if(!empty($lastChatMessage))
+                        <a href="{{ route('chat.index') }}" class="block rounded-xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50">
+                            <div class="text-sm font-semibold text-gray-900 truncate">{{ $lastChatMessage->user?->name ?? '—' }}</div>
+                            <div class="mt-1 text-sm text-slate-600">{{ $short($lastChatMessage->body ?? '', 90) }}</div>
+                            <div class="mt-2 text-xs text-slate-500">{{ $lastChatMessage->created_at?->diffForHumans() }}</div>
+                        </a>
+                    @else
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                            Aucun message pour l’instant.
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="text-base font-semibold text-gray-900">Commun — essentiels</div>
+            <div class="text-sm text-slate-500 mt-1">Accès rapide aux dossiers Commun</div>
+
+            <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                @foreach(($communLinks ?? []) as $link)
+                    <a href="{{ route('resources.index', ['user' => 'common', 'category' => $link['category']]) }}"
+                       class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                        {{ $link['label'] }}
+                    </a>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="text-base font-semibold text-gray-900">Activité</div>
+            <div class="text-sm text-slate-500 mt-1">Derniers ajouts</div>
+
+            <div class="mt-4 space-y-2">
+                @if(($activity ?? collect())->count())
+                    @foreach(($activity ?? collect())->take(5) as $a)
+                        <a href="{{ $a['href'] ?? '#' }}" class="block rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-gray-900 hover:bg-slate-50">
+                            {{ $a['text'] ?? '' }}
+                        </a>
+                    @endforeach
+                @else
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                        Aucune activité récente.
+                    </div>
+                @endif
             </div>
         </div>
     </div>
