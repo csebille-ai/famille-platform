@@ -200,12 +200,80 @@
                     this.isUploading = true;
                     this.progress = 0;
 
+                    const buildPosterBlob = async (file) => {
+                        try {
+                            if (!file) return null;
+                            if (!String(file.type || '').startsWith('video/')) return null;
+
+                            const url = URL.createObjectURL(file);
+                            const video = document.createElement('video');
+                            video.preload = 'metadata';
+                            video.muted = true;
+                            video.playsInline = true;
+                            video.src = url;
+
+                            const wait = (eventName, timeoutMs) => new Promise((resolve, reject) => {
+                                const t = setTimeout(() => reject(new Error('timeout:' + eventName)), timeoutMs);
+                                const on = () => {
+                                    clearTimeout(t);
+                                    video.removeEventListener(eventName, on);
+                                    resolve();
+                                };
+                                video.addEventListener(eventName, on, { once: true });
+                            });
+
+                            await wait('loadedmetadata', 4000);
+
+                            const duration = Number(video.duration || 0);
+                            const target = (Number.isFinite(duration) && duration > 2) ? 1 : 0;
+                            video.currentTime = target;
+                            await wait('seeked', 4000);
+
+                            const w = video.videoWidth || 0;
+                            const h = video.videoHeight || 0;
+                            if (!w || !h) {
+                                URL.revokeObjectURL(url);
+                                return null;
+                            }
+
+                            const maxW = 640;
+                            const scale = Math.min(1, maxW / w);
+                            const cw = Math.max(1, Math.round(w * scale));
+                            const ch = Math.max(1, Math.round(h * scale));
+
+                            const canvas = document.createElement('canvas');
+                            canvas.width = cw;
+                            canvas.height = ch;
+                            const ctx = canvas.getContext('2d');
+                            if (!ctx) {
+                                URL.revokeObjectURL(url);
+                                return null;
+                            }
+                            ctx.drawImage(video, 0, 0, cw, ch);
+
+                            const blob = await new Promise((resolve) => {
+                                canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.75);
+                            });
+
+                            URL.revokeObjectURL(url);
+                            return blob;
+                        } catch {
+                            return null;
+                        }
+                    };
+
                     const formData = new FormData();
                     formData.append('_token', document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '');
                     formData.append('video_file', this.file);
                     formData.append('title', (this.title || '').trim());
                     formData.append('category', (this.category || '').trim());
                     formData.append('description', (this.description || '').trim());
+
+                    // Auto-poster (thumbnail) without user input.
+                    const posterBlob = await buildPosterBlob(this.file);
+                    if (posterBlob) {
+                        formData.append('poster_file', posterBlob, 'poster.jpg');
+                    }
 
                     await new Promise((resolve) => {
                         const xhr = new XMLHttpRequest();

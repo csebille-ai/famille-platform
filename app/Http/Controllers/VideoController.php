@@ -140,6 +140,7 @@ class VideoController extends Controller
                 'title' => ['required', 'string', 'max:255'],
                 'category' => ['required', 'string', 'in:films,series,docs'],
                 'video_file' => ['required', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:3145728'],
+                'poster_file' => ['nullable', 'image', 'max:5120'],
                 'description' => ['nullable', 'string'],
             ]);
         } catch (ValidationException $e) {
@@ -198,9 +199,27 @@ class VideoController extends Controller
         }
 
         unset($validated['video_file']);
+        unset($validated['poster_file']);
         $video = Video::create($validated);
 
-        $this->generatePosterForVideo($video);
+        if ($request->hasFile('poster_file')) {
+            try {
+                $poster = $request->file('poster_file');
+                $ext = $poster->guessExtension() ?: 'jpg';
+                $posterRelativePath = 'videos/posters/' . $video->id . '.' . $ext;
+                Storage::disk('public')->putFileAs('videos/posters', $poster, $video->id . '.' . $ext);
+                $video->forceFill(['poster_path' => $posterRelativePath])->save();
+            } catch (\Throwable $e) {
+                logger()->warning('videos.poster.upload_failed', [
+                    'video_id' => $video->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        if (! $video->poster_path) {
+            $this->generatePosterForVideo($video);
+        }
 
         logger()->info('videos.upload.created', [
             'ms' => (int) round((microtime(true) - $t0) * 1000),
