@@ -198,8 +198,23 @@ class ResourceController extends Controller
         }
 
         $headers = [];
-        if ($resource->attachment_mime) {
-            $headers['Content-Type'] = $resource->attachment_mime;
+        $name = (string) ($resource->attachment_name ?: 'resource');
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        $mime = (string) ($resource->attachment_mime ?: '');
+
+        if ($mime === '') {
+            $mime = match ($ext) {
+                'pdf' => 'application/pdf',
+                'png' => 'image/png',
+                'jpg', 'jpeg' => 'image/jpeg',
+                'gif' => 'image/gif',
+                'webp' => 'image/webp',
+                default => '',
+            };
+        }
+
+        if ($mime !== '') {
+            $headers['Content-Type'] = $mime;
         }
 
         return Storage::disk('local')->response(
@@ -208,5 +223,27 @@ class ResourceController extends Controller
             $headers,
             'inline'
         );
+    }
+
+    public function preview(Resource $resource)
+    {
+        $resource->loadMissing('concernedUser:id,name');
+
+        $displayName = $resource->attachment_name ?: $resource->title;
+        $mime = (string) ($resource->attachment_mime ?: '');
+        $ext = strtolower(pathinfo((string) $displayName, PATHINFO_EXTENSION));
+
+        $previewType = 'none';
+        if ($mime === 'application/pdf' || $ext === 'pdf') {
+            $previewType = 'pdf';
+        } elseif (str_starts_with($mime, 'image/') || in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'], true)) {
+            $previewType = 'image';
+        }
+
+        return view('resources.preview', [
+            'resource' => $resource,
+            'displayName' => $displayName,
+            'previewType' => $previewType,
+        ]);
     }
 }
