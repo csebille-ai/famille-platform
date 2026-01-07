@@ -5,12 +5,31 @@ namespace App\Http\Controllers;
 use App\Models\CloudAuditLog;
 use App\Models\Playlist;
 use App\Models\PlaylistItem;
+use App\Services\Spotify\SpotifyClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class PlaylistItemController extends Controller
 {
+    public function search(Request $request, Playlist $playlist)
+    {
+        $this->authorizeAdd($playlist);
+
+        $q = trim((string) $request->query('q', ''));
+        if ($q === '') {
+            return response()->json(['tracks' => []]);
+        }
+
+        $client = new SpotifyClient();
+        $tracks = $client->searchTracks($q, 8);
+
+        return response()->json([
+            'tracks' => $tracks,
+            'configured' => !empty(config('services.spotify.client_id')),
+        ]);
+    }
+
     public function store(Request $request, Playlist $playlist)
     {
         $this->authorizeAdd($playlist);
@@ -98,6 +117,11 @@ class PlaylistItemController extends Controller
     private function extractSpotifyTrackId(string $input): ?string
     {
         $input = trim($input);
+
+        // Raw track id
+        if (preg_match('/^[A-Za-z0-9]{10,}$/', $input)) {
+            return $input;
+        }
 
         // spotify:track:<id>
         if (preg_match('/^spotify:track:([A-Za-z0-9]+)$/', $input, $m)) {

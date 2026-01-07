@@ -25,7 +25,7 @@
                 <div class="p-6 text-gray-900">
                     <div class="text-xs text-gray-500">Spotify</div>
                     <div class="mt-1 text-lg font-semibold text-gray-900">Mes playlists (et celles partagées)</div>
-                    <div class="mt-1 text-sm text-gray-600">Ajoute des morceaux via un lien Spotify (track) ou un URI <span class="font-mono">spotify:track:…</span>.</div>
+                    <div class="mt-1 text-sm text-gray-600">Ajoute des morceaux via la recherche Spotify dans l’intranet.</div>
 
                     <div class="mt-6 space-y-3">
                         @forelse ($playlists as $playlist)

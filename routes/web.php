@@ -161,6 +161,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('resources', ResourceController::class);
 
     Route::resource('playlists', PlaylistController::class);
+    Route::get('playlists/{playlist}/items/search', [PlaylistItemController::class, 'search'])->name('playlists.items.search');
     Route::post('playlists/{playlist}/items', [PlaylistItemController::class, 'store'])->name('playlists.items.store');
     Route::delete('playlists/{playlist}/items/{item}', [PlaylistItemController::class, 'destroy'])->name('playlists.items.destroy');
 

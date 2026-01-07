@@ -66,30 +66,86 @@
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
                         <div class="text-xs text-gray-500">Ajouter un morceau</div>
-                        <div class="mt-1 text-lg font-semibold text-gray-900">Lien Spotify</div>
-                        <div class="mt-1 text-sm text-gray-600">Exemples: <span class="font-mono">https://open.spotify.com/track/…</span> ou <span class="font-mono">spotify:track:…</span></div>
+                        <div class="mt-1 text-lg font-semibold text-gray-900">Recherche Spotify</div>
+                        <div class="mt-1 text-sm text-gray-600">Tape un titre ou un artiste, puis ajoute en un clic.</div>
 
-                        <form method="POST" action="{{ route('playlists.items.store', $playlist) }}" class="mt-5 grid gap-4 sm:grid-cols-3">
-                            @csrf
-
-                            <div class="sm:col-span-2">
-                                <x-input-label for="spotify" :value="__('Spotify (track)')" />
-                                <x-text-input id="spotify" name="spotify" type="text" class="mt-1 block w-full" :value="old('spotify')" required />
-                                <x-input-error class="mt-2" :messages="$errors->get('spotify')" />
+                        <div
+                            class="mt-5"
+                            x-data="{
+                                q: '',
+                                results: [],
+                                loading: false,
+                                error: '',
+                                configured: true,
+                                timer: null,
+                                async fetchResults() {
+                                    this.error = '';
+                                    const query = (this.q || '').trim();
+                                    if (query.length < 2) {
+                                        this.results = [];
+                                        return;
+                                    }
+                                    this.loading = true;
+                                    try {
+                                        const url = new URL('{{ route('playlists.items.search', $playlist) }}', window.location.origin);
+                                        url.searchParams.set('q', query);
+                                        const resp = await fetch(url.toString(), {
+                                            headers: { 'Accept': 'application/json' },
+                                            credentials: 'same-origin',
+                                        });
+                                        const data = await resp.json().catch(() => ({}));
+                                        this.configured = !!data.configured;
+                                        this.results = Array.isArray(data.tracks) ? data.tracks : [];
+                                    } catch (e) {
+                                        this.error = 'Recherche indisponible.';
+                                        this.results = [];
+                                    } finally {
+                                        this.loading = false;
+                                    }
+                                },
+                                onInput() {
+                                    clearTimeout(this.timer);
+                                    this.timer = setTimeout(() => this.fetchResults(), 250);
+                                }
+                            }"
+                        >
+                            <div class="grid gap-4 sm:grid-cols-3">
+                                <div class="sm:col-span-3">
+                                    <x-input-label for="spotify-search" :value="__('Recherche')" />
+                                    <x-text-input id="spotify-search" type="text" class="mt-1 block w-full" placeholder="Ex: Daft Punk, Céline Dion…" x-model="q" x-on:input="onInput" />
+                                    <div class="mt-2 text-xs text-gray-500" x-show="loading" x-cloak>Recherche…</div>
+                                    <div class="mt-2 text-xs text-red-600" x-text="error" x-show="error" x-cloak></div>
+                                    <div class="mt-2 text-xs text-amber-700" x-show="!configured" x-cloak>Spotify n’est pas configuré sur le serveur.</div>
+                                </div>
                             </div>
 
-                            <div>
-                                <x-input-label for="label" :value="__('Label (optionnel)')" />
-                                <x-text-input id="label" name="label" type="text" class="mt-1 block w-full" :value="old('label')" />
-                                <x-input-error class="mt-2" :messages="$errors->get('label')" />
-                            </div>
+                            <div class="mt-4 space-y-2" x-show="results.length" x-cloak>
+                                <template x-for="t in results" :key="t.id">
+                                    <div class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 p-3">
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <div class="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden shrink-0">
+                                                <template x-if="t.album_image">
+                                                    <img :src="t.album_image" alt="" class="w-full h-full object-cover" loading="lazy" />
+                                                </template>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <div class="text-sm font-semibold text-gray-900 truncate" x-text="t.name"></div>
+                                                <div class="text-xs text-gray-500 truncate" x-text="t.artists"></div>
+                                            </div>
+                                        </div>
 
-                            <div class="sm:col-span-3 flex justify-end">
-                                <x-primary-button>
-                                    Ajouter
-                                </x-primary-button>
+                                        <form method="POST" action="{{ route('playlists.items.store', $playlist) }}" class="shrink-0">
+                                            @csrf
+                                            <input type="hidden" name="spotify" :value="t.id" />
+                                            <input type="hidden" name="label" :value="t.name + (t.artists ? ' — ' + t.artists : '')" />
+                                            <button type="submit" class="inline-flex items-center px-3 py-2 bg-gray-900 border border-transparent rounded-md text-xs font-semibold text-white hover:bg-gray-700">
+                                                Ajouter
+                                            </button>
+                                        </form>
+                                    </div>
+                                </template>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             @endif
