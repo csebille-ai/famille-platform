@@ -33,6 +33,24 @@
             $parts = preg_split('/\s+/', $name);
             return $parts[0] ?? $name;
         };
+
+        $onlineList = collect($initialOnline ?? [])
+            ->map(function ($u) {
+                $id = data_get($u, 'id') ?? data_get($u, 'user_id') ?? data_get($u, 'user.id');
+                $name = data_get($u, 'name') ?? data_get($u, 'user.name');
+                return ['id' => $id ? (int) $id : null, 'name' => $name ?: '—'];
+            })
+            ->filter(fn ($u) => !empty($u['id']))
+            ->values();
+
+        if (auth()->check()) {
+            $onlineList = $onlineList->prepend([
+                'id' => (int) auth()->id(),
+                'name' => auth()->user()?->name ?? 'Vous',
+            ]);
+        }
+
+        $onlineList = $onlineList->unique('id')->values();
     @endphp
 
     <div class="max-w-6xl mx-auto px-6 py-6 space-y-6">
@@ -59,11 +77,22 @@
                     <div class="text-base font-semibold text-gray-900">💬 Chat familial</div>
                     <div class="text-sm text-slate-500">
                         <span class="text-emerald-600">●</span>
-                        <span id="chatOnlineCount" class="font-semibold text-gray-900">0</span>
+                        <span id="chatOnlineCount" class="font-semibold text-gray-900">{{ $onlineList->count() }}</span>
                         connectés
                     </div>
                 </div>
-                <div id="chatOnlineAvatars" class="flex items-center -space-x-2"></div>
+                <div id="chatOnlineAvatars" class="flex items-center -space-x-2">
+                    @foreach($onlineList->take(6) as $u)
+                        @php
+                            $uid = (int) ($u['id'] ?? 0);
+                            $uname = (string) ($u['name'] ?? '—');
+                            $colors = $paletteFor($uid);
+                        @endphp
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-white {{ $colors['avatar'] }}" title="{{ $uname }}">
+                            {{ $initialsFor($uname) }}
+                        </div>
+                    @endforeach
+                </div>
             </div>
 
             <div id="chatScroll" class="max-h-[70vh] md:max-h-[60vh] overflow-y-auto">
