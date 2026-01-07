@@ -105,7 +105,7 @@
                                                         </div>
 
                                                         <div class="min-w-0 flex-1">
-                                                            <a href="{{ $resource->attachment_path ? route('resources.preview', $resource) : route('resources.show', $resource) }}"
+                                                            <a href="{{ $resource->attachment_path ? (in_array($type, ['PDF','IMG'], true) ? route('resources.open', $resource) : route('resources.preview', $resource)) : route('resources.show', $resource) }}"
                                                                class="block min-w-0 rounded-md text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
                                                                 {{ $displayName }}
                                                             </a>
@@ -251,7 +251,7 @@
                                                 </div>
 
                                                 <div class="min-w-0 flex-1">
-                                                    <a href="{{ $r->attachment_path ? route('resources.preview', $r) : route('resources.show', $r) }}"
+                                                    <a href="{{ $r->attachment_path ? (in_array($type, ['PDF','IMG'], true) ? route('resources.open', $r) : route('resources.preview', $r)) : route('resources.show', $r) }}"
                                                        class="block rounded-md text-base sm:text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
                                                         {{ $displayName }}
                                                     </a>

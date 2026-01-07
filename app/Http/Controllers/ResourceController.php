@@ -240,6 +240,10 @@ class ResourceController extends Controller
             $previewType = 'image';
         }
 
+        if (in_array($previewType, ['pdf', 'image'], true)) {
+            return redirect()->route('resources.open', $resource);
+        }
+
         return view('resources.preview', [
             'resource' => $resource,
             'displayName' => $displayName,
