@@ -6,29 +6,6 @@
 
 <x-app-layout pageBgClass="bg-slate-50">
     <div class="md:hidden mx-auto max-w-[420px] px-4 pt-4 pb-24 space-y-6">
-        <div class="sticky top-0 z-50 -mx-4 px-4 bg-slate-50">
-            <div class="h-14 flex items-center">
-                <div class="w-1/3 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="inline-flex h-10 w-10 items-center justify-center rounded-xl" aria-label="Retour dashboard">
-                        <img src="{{ asset('images/logo1.png') }}" alt="Logo" class="h-6 w-6" />
-                    </a>
-                </div>
-
-                <div class="w-1/3 flex items-center justify-center">
-                    <div class="text-center">
-                        <div class="text-sm font-semibold text-gray-900">Dashboard</div>
-                        <div class="mt-1 h-0.5 w-16 bg-blue-600 rounded-full mx-auto"></div>
-                    </div>
-                </div>
-
-                <div class="w-1/3 flex items-center justify-end">
-                    <a href="{{ route('profile.edit') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-white text-xs font-semibold" aria-label="Profil">
-                        {{ $avatar }}
-                    </a>
-                </div>
-            </div>
-        </div>
-
         <div>
             <div class="text-2xl font-bold text-gray-900">Bienvenue, {{ $firstName }}</div>
             <div class="text-sm text-slate-500 mt-1">Accès rapide et vie de famille</div>
