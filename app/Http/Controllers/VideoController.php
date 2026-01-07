@@ -107,10 +107,13 @@ class VideoController extends Controller
                 ->withQueryString();
         }
 
+        $latestVideo = Video::query()->latest()->first();
+
         return view('videos.index', [
             'category' => $selectedCategory,
             'categoryPreviews' => $categoryPreviews,
             'videos' => $videos,
+            'latestVideo' => $latestVideo,
         ]);
     }
 

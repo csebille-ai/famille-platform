@@ -57,15 +57,13 @@
                             <div class="text-base font-semibold text-gray-900">{{ $meta['label'] }}</div>
                             <div class="mt-1 text-sm text-slate-500 truncate">{{ $meta['description'] }}</div>
                         </div>
-                        <a href="{{ route('videos.index', ['category' => $key]) }}" class="text-sm font-semibold text-slate-900 whitespace-nowrap">
-                            Voir ›
-                        </a>
+                        <span class="text-sm font-semibold text-slate-900 whitespace-nowrap">Voir ›</span>
                     </div>
 
                     <div class="mt-4 space-y-3">
                         @forelse ($previews as $video)
                             <div class="flex items-center gap-3">
-                                <div class="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                <div class="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
                                     @if (!empty($video->poster_path))
                                         <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
                                     @else
@@ -322,6 +320,30 @@
                     <div class="text-base font-semibold text-gray-900">Importer une vidéo</div>
                     <div class="text-sm text-slate-500 mt-1">Taille max : 3 GB</div>
                 </div>
+            </div>
+
+            <div class="mt-4">
+                <div class="text-sm font-semibold text-gray-900">Dernier upload</div>
+                @if (!empty($latestVideo))
+                    <div class="mt-2 flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                            @if (!empty($latestVideo->poster_path))
+                                <img src="{{ route('videos.poster', $latestVideo) }}" alt="{{ $latestVideo->title }}" class="w-full h-full object-cover" loading="lazy" />
+                            @else
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400" aria-hidden="true">
+                                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                                    <path d="M10 9l5 3-5 3V9z" />
+                                </svg>
+                            @endif
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-sm font-semibold text-gray-900 truncate">{{ $latestVideo->title }}</div>
+                            <div class="text-xs text-slate-500">{{ $latestVideo->created_at?->diffForHumans() }}</div>
+                        </div>
+                    </div>
+                @else
+                    <div class="mt-2 text-sm text-slate-500">Aucune vidéo pour l’instant</div>
+                @endif
             </div>
 
             <div class="mt-4">
