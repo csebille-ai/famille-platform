@@ -14,6 +14,11 @@ use Symfony\Component\Process\Process;
 
 class VideoController extends Controller
 {
+    private function maxVideoUploadKb(): int
+    {
+        return max(1, (int) config('videos.max_upload_kb', 2097152));
+    }
+
     private function generatePosterForVideo(Video $video): void
     {
         if ($video->poster_path) {
@@ -139,10 +144,11 @@ class VideoController extends Controller
         ]);
 
         try {
+            $maxKb = $this->maxVideoUploadKb();
             $validated = $request->validate([
                 'title' => ['required', 'string', 'max:255'],
                 'category' => ['required', 'string', 'in:films,series,docs'],
-                'video_file' => ['required', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:3145728'],
+                'video_file' => ['required', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:' . $maxKb],
                 'poster_file' => ['nullable', 'image', 'max:5120'],
                 'description' => ['nullable', 'string'],
             ]);
@@ -381,10 +387,11 @@ class VideoController extends Controller
      */
     public function update(Request $request, Video $video)
     {
+        $maxKb = $this->maxVideoUploadKb();
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:films,series,docs'],
-            'video_file' => ['nullable', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:3145728'],
+            'video_file' => ['nullable', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:' . $maxKb],
             'description' => ['nullable', 'string'],
         ]);
 

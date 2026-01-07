@@ -22,12 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (PostTooLargeException $e, Request $request) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'Fichier trop volumineux pour la configuration serveur. Augmente post_max_size et upload_max_filesize.',
+                    'message' => 'Fichier trop volumineux pour la configuration serveur. Augmente post_max_size et upload_max_filesize (ex: 2048M).',
                 ], 413);
             }
 
             return back()->withErrors([
-                'video_file' => 'Fichier trop volumineux pour la configuration serveur. Réessaie après avoir augmenté les limites d’upload.',
+                'upload' => 'Fichier trop volumineux pour la configuration serveur. Augmente post_max_size et upload_max_filesize (ex: 2048M) puis réessaie.',
             ]);
         });
     })->create();

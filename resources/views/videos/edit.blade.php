@@ -1,4 +1,10 @@
 <x-app-layout>
+    @php
+        $maxVideoMb = max(1, (int) floor(((int) config('videos.max_upload_kb', 2097152)) / 1024));
+        $maxVideoLabel = $maxVideoMb >= 1024
+            ? (string) ((int) floor($maxVideoMb / 1024)) . ' GB'
+            : (string) $maxVideoMb . ' MB';
+    @endphp
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Éditer la vidéo') }}
@@ -63,7 +69,7 @@
                             @error('video_file')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
-                            <p class="text-xs text-gray-500 mt-1">Laissez vide pour conserver la vidéo actuelle. Formats acceptés : mp4, webm, avi, mov, mkv (max 3 GB)</p>
+                            <p class="text-xs text-gray-500 mt-1">Laissez vide pour conserver la vidéo actuelle. Formats acceptés : mp4, webm, avi, mov, mkv (max {{ $maxVideoLabel }})</p>
                         </div>
 
                         <div>
