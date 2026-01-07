@@ -1,77 +1,133 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Dashboard') }}
-        </h2>
-    </x-slot>
+@php
+    $userName = Auth::user()->name ?? '';
+    $firstName = trim(explode(' ', trim($userName))[0] ?? $userName);
+    $avatar = method_exists(Auth::user(), 'initials') ? Auth::user()->initials() : strtoupper(substr($firstName, 0, 1));
+@endphp
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    {{ __("You're logged in!") }}
+<x-app-layout hideNavigation="true" pageBgClass="bg-slate-50">
+    <div class="mx-auto max-w-[420px] px-4 pt-4 pb-24 space-y-6">
+        <div class="sticky top-0 z-50 -mx-4 px-4 bg-slate-50">
+            <div class="h-14 flex items-center">
+                <div class="w-1/3 flex items-center">
+                    <a href="{{ route('dashboard') }}" class="inline-flex h-10 w-10 items-center justify-center rounded-xl" aria-label="Retour dashboard">
+                        <img src="{{ asset('images/logo1.png') }}" alt="Logo" class="h-6 w-6" />
+                    </a>
+                </div>
 
-                    <div class="mt-6">
-                        <h3 class="text-sm font-semibold text-gray-700">Playlists</h3>
-                        <div class="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-gray-200 p-4">
-                            <div>
-                                <div class="text-sm font-semibold text-gray-900">Playlists Spotify</div>
-                                <div class="mt-1 text-sm text-gray-600">Crée et partage des playlists en collant des liens Spotify.</div>
-                            </div>
-
-                            <a href="{{ route('playlists.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-900 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
-                                Ouvrir
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="mt-6">
-                        <h3 class="text-sm font-semibold text-gray-700">Dernières images uploadées</h3>
-
-                        @if(($latestImages ?? collect())->count())
-                            <div class="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                                @foreach($latestImages as $img)
-                                    <a href="{{ route('images.view', $img) }}" class="block">
-                                        <img
-                                          src="{{ route('images.view', $img) }}"
-                                          alt="{{ $img->name ?? 'image' }}"
-                                          class="w-full h-24 object-cover rounded"
-                                          loading="lazy"
-                                        />
-                                    </a>
-                                @endforeach
-                            </div>
-                        @else
-                            <div class="mt-3 text-sm text-gray-500">
-                                Aucune image uploadée pour l’instant.
-                            </div>
-                        @endif
-                    </div>
-
-                    <div class="mt-6">
-                        <h3 class="text-sm font-semibold text-gray-700">Dernières vidéos uploadées</h3>
-
-                        @if(($latestVideos ?? collect())->count())
-                            <div class="mt-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                                @foreach($latestVideos as $video)
-                                    <a href="{{ route('videos.show', $video) }}" class="block">
-                                        <img
-                                          src="{{ route('videos.poster', $video) }}"
-                                          alt="{{ $video->name ?? 'video' }}"
-                                          class="w-full h-24 object-cover rounded"
-                                          loading="lazy"
-                                        />
-                                    </a>
-                                @endforeach
-                            </div>
-                        @else
-                            <div class="mt-3 text-sm text-gray-500">
-                                Aucune vidéo uploadée pour l’instant.
-                            </div>
-                        @endif
+                <div class="w-1/3 flex items-center justify-center">
+                    <div class="text-center">
+                        <div class="text-sm font-semibold text-gray-900">Dashboard</div>
+                        <div class="mt-1 h-0.5 w-16 bg-blue-600 rounded-full mx-auto"></div>
                     </div>
                 </div>
+
+                <div class="w-1/3 flex items-center justify-end">
+                    <a href="{{ route('profile.edit') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gray-900 text-white text-xs font-semibold" aria-label="Profil">
+                        {{ $avatar }}
+                    </a>
+                </div>
             </div>
+        </div>
+
+        <div>
+            <div class="text-2xl font-bold text-gray-900">Bienvenue, {{ $firstName }}</div>
+            <div class="text-sm text-slate-500 mt-1">Accès rapide et vie de famille</div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-4">
+            <div class="grid grid-cols-4 gap-3">
+                <a href="{{ route('images.index') }}" class="w-full aspect-square rounded-xl bg-emerald-50 flex flex-col items-center justify-center gap-2 text-center px-1" aria-label="Importer photo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-emerald-700" aria-hidden="true">
+                        <path d="M4 7h3l2-2h6l2 2h3v12H4z" />
+                        <circle cx="12" cy="13" r="3" />
+                    </svg>
+                    <div class="text-[11px] leading-tight font-medium text-gray-900">Importer photo</div>
+                </a>
+
+                <a href="{{ route('videos.create') }}" class="w-full aspect-square rounded-xl bg-sky-50 flex flex-col items-center justify-center gap-2 text-center px-1" aria-label="Importer vidéo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-sky-700" aria-hidden="true">
+                        <path d="M15 10l4.5-2.5v9L15 14" />
+                        <rect x="3" y="6" width="12" height="12" rx="2" />
+                    </svg>
+                    <div class="text-[11px] leading-tight font-medium text-gray-900">Importer vidéo</div>
+                </a>
+
+                <a href="{{ route('resources.create') }}" class="w-full aspect-square rounded-xl bg-amber-50 flex flex-col items-center justify-center gap-2 text-center px-1" aria-label="Ajouter ressource">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-amber-700" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <path d="M14 2v6h6" />
+                        <path d="M12 12v6" />
+                        <path d="M9 15h6" />
+                    </svg>
+                    <div class="text-[11px] leading-tight font-medium text-gray-900">Ajouter ressource</div>
+                </a>
+
+                <a href="{{ route('playlists.index') }}" class="w-full aspect-square rounded-xl bg-violet-50 flex flex-col items-center justify-center gap-2 text-center px-1" aria-label="Partager playlist">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-violet-700" aria-hidden="true">
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <path d="M8.6 13.5l6.8 3.9" />
+                        <path d="M15.4 6.6L8.6 10.5" />
+                    </svg>
+                    <div class="text-[11px] leading-tight font-medium text-gray-900">Partager playlist</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="flex items-end justify-between">
+            <div class="text-base font-semibold text-gray-900">Prochains moments</div>
+            <a href="{{ route('moments.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-4">
+            <div class="divide-y divide-slate-100">
+                @foreach(($moments ?? collect())->take(3) as $m)
+                    <div class="py-3 first:pt-0 last:pb-0">
+                        <div class="flex items-start gap-3">
+                            <div class="w-14 shrink-0 text-left">
+                                <div class="text-sm font-semibold text-gray-900">{{ $m['date_day'] }}</div>
+                                <div class="text-xs text-slate-500 -mt-0.5">{{ $m['date_month'] }}</div>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-medium text-gray-900 truncate">{{ $m['title'] }}</div>
+                                @if(!empty($m['subtitle']))
+                                    <div class="text-sm text-slate-500">{{ $m['subtitle'] }}</div>
+                                @endif
+                                <div class="mt-2 h-1 rounded-full bg-slate-100">
+                                    <div class="h-1 rounded-full bg-slate-200" style="width: 55%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="flex items-end justify-between">
+            <div class="text-base font-semibold text-gray-900">Dernières photos</div>
+            <a href="{{ route('images.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-4">
+            @if(($latestImages ?? collect())->count())
+                <div class="grid grid-cols-3 gap-3">
+                    @foreach(($latestImages ?? collect())->take(3) as $img)
+                        <a href="{{ route('images.view', $img) }}" class="block rounded-xl overflow-hidden aspect-video bg-slate-100" aria-label="Ouvrir photo">
+                            <img
+                                src="{{ route('images.view', $img) }}"
+                                alt="{{ $img->name ?? 'photo' }}"
+                                class="w-full h-full object-cover"
+                                loading="lazy"
+                            />
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                    Aucune photo pour l’instant.
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

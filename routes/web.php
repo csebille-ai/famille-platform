@@ -10,8 +10,10 @@ use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Models\CloudNode;
+use App\Models\Event;
 use App\Models\Video;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 
 Route::get('/', function () {
     return view('welcome');
@@ -23,19 +25,72 @@ Route::get('/dashboard', function () {
         ->whereNotNull('stored_path')
         ->where('mime', 'like', 'image/%')
         ->latest()
-        ->limit(6)
+        ->limit(3)
         ->get();
 
-    $latestVideos = Video::query()
-        ->latest()
-        ->limit(6)
-        ->get();
+    $moments = collect();
+    try {
+        if (Schema::hasTable('events')) {
+            $moments = Event::query()
+                ->whereDate('starts_on', '>=', now()->toDateString())
+                ->orderBy('starts_on')
+                ->limit(3)
+                ->get();
+        }
+    } catch (Throwable $e) {
+        $moments = collect();
+    }
+
+    $momentsForUi = $moments->map(function (Event $e) {
+        $date = $e->starts_on;
+        return [
+            'date_day' => $date ? $date->format('j') : '',
+            'date_month' => $date ? $date->translatedFormat('M') : '',
+            'date_label' => $date ? $date->translatedFormat('j M Y') : '',
+            'title' => $e->title,
+            'subtitle' => $e->type,
+        ];
+    });
+
+    if ($momentsForUi->count() === 0) {
+        $momentsForUi = collect([
+            ['date_day' => '30', 'date_month' => 'avr', 'date_label' => '30 avr', 'title' => 'Christophe', 'subtitle' => 'Anniversaire'],
+            ['date_day' => '8', 'date_month' => 'mai', 'date_label' => '8 mai', 'title' => 'Weekend en famille', 'subtitle' => null],
+            ['date_day' => '1', 'date_month' => 'juin', 'date_label' => '1 juin', 'title' => 'Piscine avec les cousins', 'subtitle' => null],
+        ]);
+    }
 
     return view('dashboard', [
         'latestImages' => $latestImages,
-        'latestVideos' => $latestVideos,
+        'moments' => $momentsForUi,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/moments', function () {
+    $moments = collect();
+    try {
+        if (Schema::hasTable('events')) {
+            $moments = Event::query()
+                ->whereDate('starts_on', '>=', now()->toDateString())
+                ->orderBy('starts_on')
+                ->limit(50)
+                ->get();
+        }
+    } catch (Throwable $e) {
+        $moments = collect();
+    }
+
+    $momentsForUi = $moments->map(function (Event $e) {
+        $date = $e->starts_on;
+        return [
+            'date_label' => $date ? $date->translatedFormat('j M Y') : '',
+            'title' => $e->title,
+            'subtitle' => $e->type,
+        ];
+    });
+
+    return view('moments.index', ['moments' => $momentsForUi]);
+})->middleware(['auth', 'verified'])->name('moments.index');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -25,8 +25,10 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            @include('layouts.navigation')
+        <div class="min-h-screen {{ $attributes->get('pageBgClass', 'bg-gray-100') }}">
+            @unless($attributes->get('hideNavigation'))
+                @include('layouts.navigation')
+            @endunless
 
             <!-- Page Heading -->
             @isset($header)
