@@ -548,12 +548,15 @@
                 }
             }
 
-            function startPolling() {
+            function startPolling(options) {
                 if (pollingTimer) return;
                 console.log('[chat] starting polling fallback');
 
-                renderOnline(initialOnline);
-                updateGate((initialOnline || []).length);
+                const useInitial = options?.useInitial !== false;
+                if (useInitial) {
+                    renderOnline(initialOnline);
+                    updateGate((initialOnline || []).length);
+                }
 
                 pollOnce();
                 pollingTimer = setInterval(pollOnce, 5000);
@@ -562,9 +565,15 @@
             // Vite's module scripts load after this inline script, so Echo may appear a bit later.
             if (window.Echo) {
                 startRealtime();
+                // Safety net: even with Echo present, polling keeps messages in sync
+                // on hosts where websockets/broadcasting are unavailable.
+                startPolling({ useInitial: false });
             } else {
                 console.log('[chat] waiting for Echo…');
-                window.addEventListener('echo:ready', () => startRealtime(), { once: true });
+                window.addEventListener('echo:ready', () => {
+                    startRealtime();
+                    startPolling({ useInitial: false });
+                }, { once: true });
 
                 let attempts = 0;
                 const timer = setInterval(() => {
@@ -572,12 +581,13 @@
                     if (window.Echo) {
                         clearInterval(timer);
                         startRealtime();
+                        startPolling({ useInitial: false });
                         return;
                     }
                     if (attempts >= 30) {
                         clearInterval(timer);
                         console.warn('[chat] Echo still not present after waiting (no realtime)');
-                        startPolling();
+                        startPolling({ useInitial: true });
                     }
                 }, 100);
             }
