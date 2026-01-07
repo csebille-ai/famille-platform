@@ -179,6 +179,7 @@
             const formEl = document.getElementById('chatForm');
             const textareaEl = document.getElementById('body');
             const currentUserId = @json(auth()->id());
+            const currentUserName = @json(auth()->user()?->name);
             const pollUrl = @json(route('chat.poll'));
             let lastMessageId = @json($lastMessageId ?? 0);
             const initialOnline = @json($initialOnline ?? []);
@@ -224,7 +225,19 @@
             }
 
             function renderOnline(users) {
-                const list = Array.isArray(users) ? users : [];
+                let list = Array.isArray(users) ? [...users] : [];
+
+                if (currentUserId) {
+                    const hasMe = list.some(u => {
+                        const id = userId(u);
+                        return id != null && Number(id) === Number(currentUserId);
+                    });
+
+                    if (!hasMe) {
+                        list.unshift({ id: currentUserId, name: currentUserName || 'Vous' });
+                    }
+                }
+
                 const count = list.length;
 
                 if (onlineCountEl) {
