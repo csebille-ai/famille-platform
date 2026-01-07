@@ -69,7 +69,7 @@ Route::get('/dashboard', function () {
         $activity->push([
             'at' => $img->created_at,
             'text' => $actor . ' a ajouté une photo',
-            'href' => route('images.view', $img),
+            'href' => route('images.open', $img),
         ]);
     }
 
@@ -180,6 +180,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/galerie', [ImageController::class, 'index'])->name('images.index');
     Route::post('/galerie', [ImageController::class, 'store'])->name('images.store');
+    Route::get('/galerie/{node}/ouvrir', [ImageController::class, 'show'])->name('images.open');
     Route::get('/galerie/{node}', [ImageController::class, 'view'])->name('images.view');
     Route::post('/galerie/{node}/like', [ImageController::class, 'toggleLike'])->name('images.like');
     Route::delete('/galerie/{node}', [ImageController::class, 'destroy'])->name('images.destroy');

@@ -1,6 +1,7 @@
 @php
     $selectedUserId = (int) ($selectedUserId ?? 0);
     $maxUploadMb = (int) ($maxUploadMb ?? 0);
+    $returnUrl = request()->fullUrl();
 
     $formatBytes = function (?int $bytes): string {
         $bytes = (int) ($bytes ?? 0);
@@ -223,10 +224,16 @@
                     @php
                         $isLiked = in_array((int) $image->id, array_map('intval', $likedImageIds ?? []), true);
                         $likeCount = (int) ($image->likers_count ?? 0);
+
+                        $openParams = ['node' => $image];
+                        if ($selectedUserId !== 0) {
+                            $openParams['user'] = $selectedUserId;
+                        }
+                        $openParams['return'] = $returnUrl;
                     @endphp
 
                     <div class="group relative rounded-2xl overflow-hidden bg-white shadow-sm" x-data="{menuOpen:false, broken:false}">
-                        <a href="{{ route('images.view', $image) }}" class="block">
+                        <a href="{{ route('images.open', $openParams) }}" class="block">
                             <div class="relative">
                                 <div class="w-full aspect-[4/3] bg-slate-100" x-show="!broken">
                                     <img
@@ -299,7 +306,7 @@
                             x-show="menuOpen"
                             x-cloak
                         >
-                            <a href="{{ route('images.view', $image) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-slate-50">Ouvrir</a>
+                            <a href="{{ route('images.open', $openParams) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-slate-50">Ouvrir</a>
                             <a href="{{ route('cloud.files.download', $image) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-slate-50">Télécharger</a>
                             @can('images-delete')
                                 <button

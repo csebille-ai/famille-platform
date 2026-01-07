@@ -13,6 +13,47 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ImageController extends Controller
 {
+    private function normalizeInternalReturnUrl(Request $request, ?string $returnUrl): ?string
+    {
+        $returnUrl = trim((string) $returnUrl);
+        if ($returnUrl === '') {
+            return null;
+        }
+
+        $parsed = parse_url($returnUrl);
+        if ($parsed === false) {
+            return null;
+        }
+
+        $returnHost = (string) ($parsed['host'] ?? '');
+        if ($returnHost !== '' && $returnHost !== $request->getHost()) {
+            return null;
+        }
+
+        $scheme = (string) ($parsed['scheme'] ?? '');
+        if ($scheme !== '' && !in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+
+        $path = (string) ($parsed['path'] ?? '');
+        if ($path === '' || !str_starts_with($path, '/')) {
+            return null;
+        }
+
+        $query = (string) ($parsed['query'] ?? '');
+        $fragment = (string) ($parsed['fragment'] ?? '');
+
+        $normalized = $path;
+        if ($query !== '') {
+            $normalized .= '?' . $query;
+        }
+        if ($fragment !== '') {
+            $normalized .= '#' . $fragment;
+        }
+
+        return $normalized;
+    }
+
     private function rootFolder(): CloudNode
     {
         return CloudNode::query()->firstOrCreate(
@@ -175,6 +216,75 @@ class ImageController extends Controller
                 'Content-Disposition' => 'inline; filename="' . addslashes($node->name) . '"',
             ]
         );
+    }
+
+    public function show(Request $request, CloudNode $node)
+    {
+        if (!$node->isFile() || $node->stored_path === null) {
+            abort(404);
+        }
+
+        $mime = (string) ($node->mime ?? '');
+        if (!str_starts_with($mime, 'image/')) {
+            abort(404);
+        }
+
+        if (!Storage::disk('local')->exists($node->stored_path)) {
+            abort(404);
+        }
+
+        $selectedUserId = (int) $request->query('user', 0);
+        $returnUrl = $this->normalizeInternalReturnUrl($request, $request->query('return'));
+
+        $node->loadMissing('uploader');
+
+        $prevNode = null;
+        $nextNode = null;
+
+        if ($node->created_at !== null) {
+            $baseQuery = CloudNode::query()
+                ->where('type', 'file')
+                ->whereNotNull('stored_path')
+                ->where('mime', 'like', 'image/%')
+                ->when($selectedUserId === -1, function ($query) {
+                    $query->whereNull('uploaded_by');
+                })
+                ->when($selectedUserId > 0, function ($query) use ($selectedUserId) {
+                    $query->where('uploaded_by', $selectedUserId);
+                });
+
+            $prevNode = (clone $baseQuery)
+                ->where(function ($q) use ($node) {
+                    $q->where('created_at', '>', $node->created_at)
+                        ->orWhere(function ($q2) use ($node) {
+                            $q2->where('created_at', '=', $node->created_at)
+                                ->where('id', '>', $node->id);
+                        });
+                })
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->first();
+
+            $nextNode = (clone $baseQuery)
+                ->where(function ($q) use ($node) {
+                    $q->where('created_at', '<', $node->created_at)
+                        ->orWhere(function ($q2) use ($node) {
+                            $q2->where('created_at', '=', $node->created_at)
+                                ->where('id', '<', $node->id);
+                        });
+                })
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        return view('images.show', [
+            'node' => $node,
+            'prevNode' => $prevNode,
+            'nextNode' => $nextNode,
+            'selectedUserId' => $selectedUserId,
+            'returnUrl' => $returnUrl,
+        ]);
     }
 
     public function destroy(CloudNode $node)

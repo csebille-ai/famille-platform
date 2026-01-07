@@ -52,7 +52,7 @@
                     @if(($latestImages ?? collect())->count())
                         <div class="grid grid-cols-3 gap-3">
                             @foreach(($latestImages ?? collect())->take(3) as $img)
-                                <a href="{{ route('images.view', $img) }}" class="block rounded-xl overflow-hidden aspect-video bg-slate-100" aria-label="Ouvrir photo">
+                                <a href="{{ route('images.open', $img) }}" class="block rounded-xl overflow-hidden aspect-video bg-slate-100" aria-label="Ouvrir photo">
                                     <img
                                         src="{{ route('images.view', $img) }}"
                                         alt="{{ $img->name ?? 'photo' }}"
