@@ -34,8 +34,17 @@
 
                     <div>
                         <div class="text-xs text-gray-500">Concerne</div>
-                        <div class="text-gray-900">
-                            {{ $resource->concernedUser?->name ?? 'Commun (tout le monde)' }}
+                        @php
+                            $u = $resource->concernedUser;
+                            $pill = $u ? $u->uiColor()['soft'] : 'bg-gray-50 text-gray-700 border-gray-200';
+                        @endphp
+                        <div class="mt-1">
+                            <span class="inline-flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-full border {{ $pill }}">
+                                <span class="h-5 w-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold {{ $u ? $u->uiColor()['solid'] : 'bg-gray-600 text-white' }}">
+                                    {{ $u ? $u->initials() : 'C' }}
+                                </span>
+                                <span>{{ $u?->name ?? 'Commun (tout le monde)' }}</span>
+                            </span>
                         </div>
                     </div>
 

@@ -27,6 +27,8 @@
             $grouped = $all
                 ->groupBy(fn($r) => $r->section ?: 'administratives')
                 ->map(fn($bySection) => $bySection->groupBy(fn($r) => $r->folder ?: 'A1'));
+
+            $commonPill = 'bg-gray-50 text-gray-700 border-gray-200';
         @endphp
 
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -45,43 +47,63 @@
                                     </div>
                                 </div>
 
-                                <a href="{{ route('resources.create') }}" class="inline-flex items-center px-3 py-2 border border-gray-200 rounded-md text-xs font-semibold text-gray-700 hover:bg-gray-50">
-                                    {{ __('Create') }}
-                                </a>
                             </div>
 
                             <div class="mt-5 space-y-3">
-                                @foreach ($folders as $folder)
+                                @php
+                                    $sectionFolders = $grouped->get($sectionKey) ?? collect();
+                                    $visibleFolders = collect($folders)
+                                        ->filter(fn($f) => ($sectionFolders->get($f) ?? collect())->count() > 0)
+                                        ->values();
+                                @endphp
+
+                                @if ($visibleFolders->count() === 0)
+                                    <div class="rounded-2xl border border-gray-200 p-4 text-sm text-gray-500">Aucune ressource.</div>
+                                @else
+                                    @foreach ($visibleFolders as $folder)
                                     @php
                                         $items = $grouped->get($sectionKey)?->get($folder) ?? collect();
                                     @endphp
 
-                                    <div class="rounded-2xl border border-gray-200 p-4">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <div class="inline-flex items-center gap-2">
-                                                <span class="h-7 w-7 rounded-lg bg-gray-900 text-white inline-flex items-center justify-center text-xs font-semibold">{{ $folder }}</span>
-                                                <div class="text-sm font-semibold text-gray-900">Dossier {{ $folder }}</div>
-                                            </div>
+                                    <details class="rounded-2xl border border-gray-200 p-4">
+                                        <summary class="cursor-pointer list-none">
+                                            <div class="flex items-center justify-between gap-3">
+                                                <div class="inline-flex items-center gap-2">
+                                                    <span class="h-7 w-7 rounded-lg bg-gray-900 text-white inline-flex items-center justify-center text-xs font-semibold">{{ $folder }}</span>
+                                                    <div class="text-sm font-semibold text-gray-900">Dossier {{ $folder }}</div>
+                                                </div>
 
-                                            <div class="text-xs text-gray-500">{{ $items->count() }} élément(s)</div>
-                                        </div>
+                                                <div class="text-xs text-gray-500">{{ $items->count() }} élément(s)</div>
+                                            </div>
+                                        </summary>
 
                                         <div class="mt-3 space-y-2">
-                                            @if ($items->count() === 0)
-                                                <div class="text-sm text-gray-500">Aucune ressource.</div>
-                                            @else
-                                                @foreach ($items->sortByDesc('created_at')->take(8) as $resource)
-                                                    <div class="flex items-start justify-between gap-3">
+                                            @foreach ($items->sortByDesc('created_at')->take(8) as $resource)
+                                                @php
+                                                    $u = $resource->concernedUser;
+                                                    $pill = $u ? $u->uiColor()['soft'] : $commonPill;
+                                                @endphp
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div class="min-w-0">
                                                         <a href="{{ route('resources.show', $resource) }}" class="text-sm font-medium text-gray-900 hover:underline">
                                                             {{ $resource->title }}
                                                         </a>
-                                                        <div class="text-xs text-gray-500">{{ $resource->created_at->diffForHumans() }}</div>
+                                                        <div class="mt-1 flex flex-wrap items-center gap-2">
+                                                            <span class="inline-flex items-center gap-2 text-xs px-2.5 py-1 rounded-full border {{ $pill }}">
+                                                                <span class="h-5 w-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold {{ $u ? $u->uiColor()['solid'] : 'bg-gray-600 text-white' }}">
+                                                                    {{ $u ? $u->initials() : 'C' }}
+                                                                </span>
+                                                                <span class="truncate">{{ $u?->name ?? 'Commun' }}</span>
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                @endforeach
-                                            @endif
+                                                    <div class="text-xs text-gray-500 shrink-0">{{ $resource->created_at->diffForHumans() }}</div>
+                                                </div>
+                                            @endforeach
                                         </div>
-                                    </div>
-                                @endforeach
+                                    </details>
+                                    @endforeach
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -130,6 +152,10 @@
                             @else
                                 <div class="space-y-3">
                                     @foreach ($items as $r)
+                                        @php
+                                            $u = $r->concernedUser;
+                                            $pill = $u ? $u->uiColor()['soft'] : $commonPill;
+                                        @endphp
                                         <div class="rounded-2xl border border-gray-200 p-4">
                                             <div class="flex items-start justify-between gap-4">
                                                 <div>
@@ -144,8 +170,11 @@
                                                         <span class="text-xs px-2.5 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700">
                                                             Dossier {{ $r->folder ?? 'A1' }}
                                                         </span>
-                                                        <span class="text-xs px-2.5 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700">
-                                                            {{ $r->concernedUser?->name ?? 'Commun' }}
+                                                        <span class="inline-flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-full border {{ $pill }}">
+                                                            <span class="h-5 w-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold {{ $u ? $u->uiColor()['solid'] : 'bg-gray-600 text-white' }}">
+                                                                {{ $u ? $u->initials() : 'C' }}
+                                                            </span>
+                                                            <span>{{ $u?->name ?? 'Commun' }}</span>
                                                         </span>
                                                         @if ($r->attachment_name)
                                                             <span class="text-xs px-2.5 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700">
