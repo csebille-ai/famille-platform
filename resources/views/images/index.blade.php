@@ -38,11 +38,6 @@
                 <a href="{{ route('images.index') }}" class="hidden md:inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
                     Voir tout
                 </a>
-                @can('images-upload')
-                    <a href="{{ route('images.create') }}" class="hidden md:inline-flex bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold">
-                        Importer
-                    </a>
-                @endcan
             </div>
         </div>
 
@@ -260,7 +255,7 @@
         @can('images-upload')
             <a
                 href="{{ route('images.create') }}"
-                class="fixed md:hidden bottom-6 right-6 z-40 bg-slate-900 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-sm"
+                class="fixed bottom-6 right-6 z-40 bg-slate-900 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-sm"
                 aria-label="Importer une image"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6" aria-hidden="true">
