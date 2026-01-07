@@ -42,6 +42,9 @@ class ImageController extends Controller
             ->where('type', 'file')
             ->whereNotNull('stored_path')
             ->where('mime', 'like', 'image/%')
+            ->when($selectedUserId === -1, function ($query) {
+                $query->whereNull('uploaded_by');
+            })
             ->when($selectedUserId > 0, function ($query) use ($selectedUserId) {
                 $query->where('uploaded_by', $selectedUserId);
             })
