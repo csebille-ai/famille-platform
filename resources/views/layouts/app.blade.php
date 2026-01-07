@@ -5,11 +5,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        <meta name="theme-color" content="#ffffff">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="apple-mobile-web-app-title" content="{{ config('app.name', 'Famille') }}">
+        <meta name="mobile-web-app-capable" content="yes">
+
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        
-        
-        <link rel="icon" type="image/png" href="{{ asset('images/logo1.png') }}"><link rel="icon" type="image/png" href="{{ asset('images/logo1.png') }}"><!-- Fonts -->
+        <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+        <link rel="icon" type="image/png" href="{{ asset('images/logo1.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('images/logo1.png') }}">
+
+        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
