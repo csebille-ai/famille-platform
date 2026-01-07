@@ -240,13 +240,27 @@
                 return ini.toUpperCase();
             }
 
-            function scrollToBottom() {
-                const el = scrollEl || messagesEl;
-                if (!el) return;
-                el.scrollTop = el.scrollHeight;
+            function focusLastMessage() {
+                const lastRow = messagesEl?.querySelector('[data-message-row]:last-child');
+                if (!lastRow) return;
+
+                // iOS Safari can be finicky with programmatic scrolling; do both.
+                const run = () => {
+                    try {
+                        lastRow.scrollIntoView({ block: 'end' });
+                    } catch {
+                        // ignore
+                    }
+                    if (scrollEl) {
+                        scrollEl.scrollTop = scrollEl.scrollHeight;
+                    }
+                };
+
+                requestAnimationFrame(run);
+                setTimeout(run, 80);
             }
 
-            scrollToBottom();
+            focusLastMessage();
 
             function hideEmptyState() {
                 if (!emptyEl) return;
@@ -375,7 +389,7 @@
                 if (!messagesEl) return;
                 const id = payload?.id ?? null;
                 if (id != null && messagesEl.querySelector(`[data-message-id="${id}"]`)) {
-                    return;
+                    return false;
                 }
                 const uid = payload?.user?.id ?? payload?.user_id ?? null;
                 const name = payload?.user?.name ?? '—';
@@ -453,7 +467,8 @@
                 width.appendChild(row);
                 outer.appendChild(width);
                 messagesEl.appendChild(outer);
-                scrollToBottom();
+                focusLastMessage();
+                return true;
             }
 
             const online = new Map();
@@ -511,7 +526,7 @@
                     })
                     .listen('.message.sent', (e) => {
                         console.log('[chat] message.sent', e);
-                        appendMessage(e);
+                        const appended = appendMessage(e);
                         if (e?.id) lastMessageId = Math.max(lastMessageId, Number(e.id));
                     });
             }
@@ -546,7 +561,14 @@
                     updateGate(onlineUsers.length);
 
                     const msgs = Array.isArray(data?.messages) ? data.messages : [];
-                    msgs.forEach(m => appendMessage(m));
+                    let appendedAny = false;
+                    msgs.forEach(m => {
+                        const ok = appendMessage(m);
+                        if (ok) appendedAny = true;
+                    });
+                    if (appendedAny) {
+                        focusLastMessage();
+                    }
 
                     const newLast = Number(data?.last_id ?? lastMessageId);
                     if (!Number.isNaN(newLast)) lastMessageId = Math.max(lastMessageId, newLast);
