@@ -5,8 +5,8 @@
                 {{ __('Ressources') }}
             </h2>
 
-            <a href="{{ route('resources.create') }}" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
-                {{ __('Create') }}
+            <a href="{{ route('resources.create') }}" class="inline-flex items-center px-4 py-2 bg-gray-900 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                Ajouter
             </a>
         </div>
     </x-slot>
@@ -137,6 +137,12 @@
                     </form>
 
                     <div class="mt-5 hidden sm:flex gap-2 overflow-x-auto pb-1">
+                        <a href="{{ route('resources.index') }}"
+                           class="shrink-0 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full border {{ $sel === '' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200' }}">
+                            <span class="h-5 w-5 rounded-full bg-gray-600 text-white inline-flex items-center justify-center text-[10px] font-semibold">×</span>
+                            <span>Effacer</span>
+                        </a>
+
                         <a href="{{ route('resources.index', ['user' => 'all']) }}"
                            class="shrink-0 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full border {{ $sel === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200' }}">
                             <span class="h-5 w-5 rounded-full bg-gray-600 text-white inline-flex items-center justify-center text-[10px] font-semibold">*</span>
