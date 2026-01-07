@@ -94,7 +94,7 @@ class VideoController extends Controller
             $categoryPreviews[$cat] = Video::query()
                 ->where('category', $cat)
                 ->latest()
-                ->take(2)
+                ->take(1)
                 ->get();
         }
 

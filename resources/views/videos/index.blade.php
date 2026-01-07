@@ -26,15 +26,8 @@
 
 <x-app-layout pageBgClass="bg-slate-50">
     <div class="max-w-6xl mx-auto px-6 py-6 space-y-6">
-        <div class="flex items-center justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Vidéos</h1>
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="#import" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold">
-                    Importer une vidéo
-                </a>
-            </div>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Vidéos</h1>
         </div>
 
         @if (session('status'))
@@ -58,11 +51,11 @@
             @foreach ($categories as $key => $meta)
                 @php($previews = ($categoryPreviews ?? [])[$key] ?? collect())
 
-                <div class="bg-white rounded-2xl shadow-sm p-4">
+                <a href="{{ route('videos.index', ['category' => $key]) }}" class="bg-white rounded-2xl shadow-sm p-4 block">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <div class="text-base font-semibold text-gray-900">{{ $meta['label'] }}</div>
-                            <div class="mt-1 text-sm text-slate-500">{{ $meta['description'] }}</div>
+                            <div class="mt-1 text-sm text-slate-500 truncate">{{ $meta['description'] }}</div>
                         </div>
                         <a href="{{ route('videos.index', ['category' => $key]) }}" class="text-sm font-semibold text-slate-900 whitespace-nowrap">
                             Voir ›
@@ -71,30 +64,27 @@
 
                     <div class="mt-4 space-y-3">
                         @forelse ($previews as $video)
-                            <a href="{{ route('videos.show', $video) }}" class="flex items-center gap-3">
-                                <div class="w-24 aspect-video rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
                                     @if (!empty($video->poster_path))
                                         <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
                                     @else
-                                        <div class="text-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400 mx-auto" aria-hidden="true">
-                                                <rect x="3" y="5" width="18" height="14" rx="2" />
-                                                <path d="M10 9l5 3-5 3V9z" />
-                                            </svg>
-                                            <div class="mt-1 text-[11px] text-slate-500">Vidéo</div>
-                                        </div>
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400" aria-hidden="true">
+                                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                                            <path d="M10 9l5 3-5 3V9z" />
+                                        </svg>
                                     @endif
                                 </div>
                                 <div class="min-w-0">
                                     <div class="text-sm font-semibold text-gray-900 truncate">{{ $video->title }}</div>
                                     <div class="text-xs text-slate-500">{{ $video->created_at?->diffForHumans() }}</div>
                                 </div>
-                            </a>
+                            </div>
                         @empty
                             <div class="text-sm text-slate-500">Aucune vidéo.</div>
                         @endforelse
                     </div>
-                </div>
+                </a>
             @endforeach
         </div>
 
@@ -103,32 +93,29 @@
                 <div class="flex items-center justify-between gap-4">
                     <div>
                         <div class="text-base font-semibold text-gray-900">{{ $categories[$selectedCategory]['label'] ?? 'Vidéos' }}</div>
-                        <div class="text-sm text-slate-500 mt-1">Liste</div>
+                        <div class="text-sm text-slate-500 mt-1">Voir catégorie</div>
                     </div>
                     <a href="{{ route('videos.index') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
                         Retour
                     </a>
                 </div>
 
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
                     @foreach ($videos as $video)
-                        <a href="{{ route('videos.show', $video) }}" class="flex items-center gap-3 rounded-2xl border border-slate-200 p-3">
-                            <div class="w-28 aspect-video rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                        <a href="{{ route('videos.show', $video) }}" class="block rounded-2xl border border-slate-200 overflow-hidden bg-white">
+                            <div class="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center">
                                 @if (!empty($video->poster_path))
                                     <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
                                 @else
-                                    <div class="text-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400 mx-auto" aria-hidden="true">
-                                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                                            <path d="M10 9l5 3-5 3V9z" />
-                                        </svg>
-                                        <div class="mt-1 text-[11px] text-slate-500">Vidéo</div>
-                                    </div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-slate-400" aria-hidden="true">
+                                        <rect x="3" y="5" width="18" height="14" rx="2" />
+                                        <path d="M10 9l5 3-5 3V9z" />
+                                    </svg>
                                 @endif
                             </div>
-                            <div class="min-w-0">
+                            <div class="p-3">
                                 <div class="text-sm font-semibold text-gray-900 truncate">{{ $video->title }}</div>
-                                <div class="text-xs text-slate-500">{{ $video->created_at?->diffForHumans() }}</div>
+                                <div class="text-xs text-slate-500 mt-0.5">{{ $video->created_at?->diffForHumans() }}</div>
                             </div>
                         </a>
                     @endforeach
