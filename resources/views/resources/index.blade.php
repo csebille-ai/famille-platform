@@ -81,22 +81,55 @@
                                                 @php
                                                     $u = $resource->concernedUser;
                                                     $pill = $u ? $u->uiColor()['soft'] : $commonPill;
+
+                                                    $displayName = $resource->attachment_name ?: $resource->title;
+                                                    $mime = (string) ($resource->attachment_mime ?: '');
+                                                    $ext = strtolower(pathinfo($displayName ?? '', PATHINFO_EXTENSION));
+                                                    $type = 'DOC';
+                                                    if ($mime === 'application/pdf' || $ext === 'pdf') {
+                                                        $type = 'PDF';
+                                                    } elseif (in_array($ext, ['doc', 'docx'], true)) {
+                                                        $type = strtoupper($ext);
+                                                    } elseif (in_array($ext, ['xls', 'xlsx'], true)) {
+                                                        $type = strtoupper($ext);
+                                                    } elseif (str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'], true)) {
+                                                        $type = 'IMG';
+                                                    } elseif (str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'mov', 'm4v', 'webm'], true)) {
+                                                        $type = 'VID';
+                                                    }
                                                 @endphp
-                                                <div class="flex items-start justify-between gap-3">
-                                                    <div class="min-w-0">
-                                                        <a href="{{ route('resources.show', $resource) }}" class="text-sm font-medium text-gray-900 hover:underline">
-                                                            {{ $resource->title }}
-                                                        </a>
-                                                        <div class="mt-1 flex flex-wrap items-center gap-2">
-                                                            <span class="inline-flex items-center gap-2 text-xs px-2.5 py-1 rounded-full border {{ $pill }}">
-                                                                <span class="h-5 w-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold {{ $u ? $u->uiColor()['solid'] : 'bg-gray-600 text-white' }}">
-                                                                    {{ $u ? $u->initials() : 'C' }}
-                                                                </span>
-                                                                <span class="truncate">{{ $u?->name ?? 'Commun' }}</span>
-                                                            </span>
+                                                <div class="rounded-2xl border border-gray-200 bg-white p-3 sm:p-4 hover:border-gray-300 hover:shadow-sm">
+                                                    <div class="flex items-start gap-3">
+                                                        <div class="shrink-0 h-10 w-10 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 flex items-center justify-center">
+                                                            <span class="text-[10px] font-semibold tracking-wide">{{ $type }}</span>
+                                                        </div>
+
+                                                        <div class="min-w-0 flex-1">
+                                                            <a href="{{ route('resources.show', $resource) }}"
+                                                               class="block min-w-0 rounded-md text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
+                                                                {{ $displayName }}
+                                                            </a>
+
+                                                            <div class="mt-1 text-xs text-gray-600 truncate">
+                                                                {{ $resource->section === 'pratiques' ? 'Pratiques' : ($resource->section === 'utiles' ? 'Utiles' : 'Administratives') }}
+                                                                <span class="text-gray-400">›</span>
+                                                                Dossier {{ $resource->folder ?? 'A1' }}
+                                                                <span class="text-gray-400">·</span>
+                                                                {{ $u?->name ?? 'Commun' }}
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="shrink-0 flex flex-col items-end gap-2">
+                                                            <div class="text-xs text-gray-500">{{ $resource->created_at->diffForHumans() }}</div>
+
+                                                            <a href="{{ $resource->attachment_path ? route('resources.download', $resource) : route('resources.show', $resource) }}"
+                                                               class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                                                               title="{{ $resource->attachment_path ? 'Télécharger' : 'Ouvrir' }}">
+                                                                <span aria-hidden="true" class="text-lg leading-none">…</span>
+                                                                <span class="sr-only">{{ $resource->attachment_path ? 'Télécharger' : 'Ouvrir' }}</span>
+                                                            </a>
                                                         </div>
                                                     </div>
-                                                    <div class="text-xs text-gray-500 shrink-0">{{ $resource->created_at->diffForHumans() }}</div>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -184,36 +217,60 @@
                                         @php
                                             $u = $r->concernedUser;
                                             $pill = $u ? $u->uiColor()['soft'] : $commonPill;
+
+                                            $displayName = $r->attachment_name ?: $r->title;
+                                            $mime = (string) ($r->attachment_mime ?: '');
+                                            $ext = strtolower(pathinfo($displayName ?? '', PATHINFO_EXTENSION));
+                                            $type = 'DOC';
+                                            if ($mime === 'application/pdf' || $ext === 'pdf') {
+                                                $type = 'PDF';
+                                            } elseif (in_array($ext, ['doc', 'docx'], true)) {
+                                                $type = strtoupper($ext);
+                                            } elseif (in_array($ext, ['xls', 'xlsx'], true)) {
+                                                $type = strtoupper($ext);
+                                            } elseif (str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'], true)) {
+                                                $type = 'IMG';
+                                            } elseif (str_starts_with($mime, 'video/') || in_array($ext, ['mp4', 'mov', 'm4v', 'webm'], true)) {
+                                                $type = 'VID';
+                                            }
                                         @endphp
-                                        <div class="rounded-2xl border border-gray-200 p-4">
-                                            <div class="flex items-start justify-between gap-4">
-                                                <div>
-                                                    <a href="{{ route('resources.show', $r) }}" class="text-sm font-semibold text-gray-900 hover:underline">
-                                                        {{ $r->title }}
+                                        <div class="rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 hover:border-gray-300 hover:shadow-sm">
+                                            <div class="flex items-start gap-3">
+                                                <div class="shrink-0 h-10 w-10 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 flex items-center justify-center">
+                                                    <span class="text-[10px] font-semibold tracking-wide">{{ $type }}</span>
+                                                </div>
+
+                                                <div class="min-w-0 flex-1">
+                                                    <a href="{{ route('resources.show', $r) }}"
+                                                       class="block rounded-md text-base sm:text-sm font-semibold text-gray-900 truncate hover:underline focus:outline-none focus:ring-2 focus:ring-gray-900/20">
+                                                        {{ $displayName }}
                                                     </a>
 
-                                                    <div class="mt-2 flex flex-wrap items-center gap-2">
-                                                        <span class="text-xs px-2.5 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-gray-700">
-                                                            {{ $r->section === 'pratiques' ? '2 — Pratiques' : ($r->section === 'utiles' ? '3 — Utiles' : '1 — Administratives') }}
+                                                    <div class="mt-1 text-xs text-gray-600">
+                                                        {{ $r->section === 'pratiques' ? 'Pratiques' : ($r->section === 'utiles' ? 'Utiles' : 'Administratives') }}
+                                                        <span class="text-gray-400">›</span>
+                                                        Dossier {{ $r->folder ?? 'A1' }}
+                                                        <span class="text-gray-400">·</span>
+                                                        {{ $u?->name ?? 'Commun' }}
+                                                    </div>
+
+                                                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                                                        <span class="text-xs px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 text-gray-700">
+                                                            {{ $r->section === 'pratiques' ? 'Pratiques' : ($r->section === 'utiles' ? 'Utiles' : 'Administratives') }}
                                                         </span>
-                                                        <span class="text-xs px-2.5 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700">
-                                                            Dossier {{ $r->folder ?? 'A1' }}
-                                                        </span>
-                                                        <span class="inline-flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-full border {{ $pill }}">
-                                                            <span class="h-5 w-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold {{ $u ? $u->uiColor()['solid'] : 'bg-gray-600 text-white' }}">
-                                                                {{ $u ? $u->initials() : 'C' }}
-                                                            </span>
-                                                            <span>{{ $u?->name ?? 'Commun' }}</span>
-                                                        </span>
-                                                        @if ($r->attachment_name)
-                                                            <span class="text-xs px-2.5 py-1.5 rounded-full border border-gray-200 bg-white text-gray-700">
-                                                                Fichier: {{ $r->attachment_name }}
-                                                            </span>
-                                                        @endif
                                                     </div>
                                                 </div>
 
-                                                <div class="text-xs text-gray-500">{{ $r->created_at->diffForHumans() }}</div>
+                                                <div class="shrink-0 flex flex-col items-end gap-2">
+                                                    <div class="text-xs text-gray-500">{{ $r->created_at->diffForHumans() }}</div>
+
+                                                    <a href="{{ $r->attachment_path ? route('resources.download', $r) : route('resources.show', $r) }}"
+                                                       class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                                                       title="{{ $r->attachment_path ? 'Télécharger' : 'Ouvrir' }}">
+                                                        <span aria-hidden="true" class="text-lg leading-none">…</span>
+                                                        <span class="sr-only">{{ $r->attachment_path ? 'Télécharger' : 'Ouvrir' }}</span>
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
                                 @endforeach
