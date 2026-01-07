@@ -4,7 +4,7 @@
     $avatar = method_exists(Auth::user(), 'initials') ? Auth::user()->initials() : strtoupper(substr($firstName, 0, 1));
 @endphp
 
-<x-app-layout navigationClass="hidden md:block" pageBgClass="bg-slate-50">
+<x-app-layout pageBgClass="bg-slate-50">
     <div class="md:hidden mx-auto max-w-[420px] px-4 pt-4 pb-24 space-y-6">
         <div class="sticky top-0 z-50 -mx-4 px-4 bg-slate-50">
             <div class="h-14 flex items-center">
