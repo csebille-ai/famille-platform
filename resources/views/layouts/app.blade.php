@@ -32,6 +32,8 @@
                 </div>
             @endunless
 
+            @include('partials.ios-a2hs-banner')
+
             <!-- Page Heading -->
             @isset($header)
                 <header class="bg-white shadow">
