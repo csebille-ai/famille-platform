@@ -122,7 +122,22 @@
 
                     @php $sel = $selectedUser ?? 'all'; @endphp
 
-                    <div class="mt-5 flex gap-2 overflow-x-auto pb-1">
+                    <form method="GET" action="{{ route('resources.index') }}" class="mt-5 sm:hidden">
+                        <label for="user" class="block text-sm font-medium text-gray-700">Utilisateur</label>
+                        <select id="user" name="user" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" onchange="this.form.submit()">
+                            <option value="all" @selected((string) $sel === 'all')>Tous</option>
+                            <option value="common" @selected((string) $sel === 'common')>Commun (tout le monde)</option>
+                            @foreach ($users as $u)
+                                <option value="{{ $u->id }}" @selected((string) $sel === (string) $u->id)>{{ $u->name }}</option>
+                            @endforeach
+                        </select>
+
+                        <noscript>
+                            <button type="submit" class="mt-3 inline-flex items-center px-4 py-2 bg-gray-900 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">Afficher</button>
+                        </noscript>
+                    </form>
+
+                    <div class="mt-5 hidden sm:flex gap-2 overflow-x-auto pb-1">
                         <a href="{{ route('resources.index', ['user' => 'all']) }}"
                            class="shrink-0 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full border {{ $sel === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200' }}">
                             <span class="h-5 w-5 rounded-full bg-gray-600 text-white inline-flex items-center justify-center text-[10px] font-semibold">*</span>
