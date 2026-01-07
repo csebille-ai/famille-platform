@@ -27,7 +27,9 @@
     <body class="font-sans antialiased">
         <div class="min-h-screen {{ $attributes->get('pageBgClass', 'bg-gray-100') }}">
             @unless($attributes->get('hideNavigation'))
-                @include('layouts.navigation')
+                <div class="{{ $attributes->get('navigationClass', '') }}">
+                    @include('layouts.navigation')
+                </div>
             @endunless
 
             <!-- Page Heading -->

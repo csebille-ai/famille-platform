@@ -4,8 +4,8 @@
     $avatar = method_exists(Auth::user(), 'initials') ? Auth::user()->initials() : strtoupper(substr($firstName, 0, 1));
 @endphp
 
-<x-app-layout hideNavigation="true" pageBgClass="bg-slate-50">
-    <div class="mx-auto max-w-[420px] px-4 pt-4 pb-24 space-y-6">
+<x-app-layout navigationClass="hidden md:block" pageBgClass="bg-slate-50">
+    <div class="md:hidden mx-auto max-w-[420px] px-4 pt-4 pb-24 space-y-6">
         <div class="sticky top-0 z-50 -mx-4 px-4 bg-slate-50">
             <div class="h-14 flex items-center">
                 <div class="w-1/3 flex items-center">
@@ -128,6 +128,100 @@
                     Aucune photo pour l’instant.
                 </div>
             @endif
+        </div>
+    </div>
+
+    <div class="hidden md:block max-w-7xl mx-auto px-6 py-8 space-y-6">
+        <div class="flex items-end justify-between">
+            <div>
+                <div class="text-2xl font-bold text-gray-900">Dashboard</div>
+                <div class="text-sm text-slate-500 mt-1">Accès rapide et vie de famille</div>
+            </div>
+            <a href="{{ route('profile.edit') }}" class="inline-flex items-center gap-3">
+                <div class="text-right">
+                    <div class="text-sm font-semibold text-gray-900">{{ $firstName }}</div>
+                    <div class="text-sm text-slate-500">Profil</div>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-gray-900 text-white text-sm font-semibold flex items-center justify-center">
+                    {{ $avatar }}
+                </div>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6">
+            <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl shadow-sm p-5">
+                <div class="text-base font-semibold text-gray-900">Actions rapides</div>
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <a href="{{ route('images.index') }}" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
+                        <div class="text-sm font-semibold text-gray-900">Importer photo</div>
+                        <div class="text-sm text-slate-500 mt-1">Galerie</div>
+                    </a>
+                    <a href="{{ route('videos.create') }}" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
+                        <div class="text-sm font-semibold text-gray-900">Importer vidéo</div>
+                        <div class="text-sm text-slate-500 mt-1">Vidéos</div>
+                    </a>
+                    <a href="{{ route('resources.create') }}" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
+                        <div class="text-sm font-semibold text-gray-900">Ajouter ressource</div>
+                        <div class="text-sm text-slate-500 mt-1">Documents</div>
+                    </a>
+                    <a href="{{ route('playlists.index') }}" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4">
+                        <div class="text-sm font-semibold text-gray-900">Partager playlist</div>
+                        <div class="text-sm text-slate-500 mt-1">Musique</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl shadow-sm p-5">
+                <div class="flex items-end justify-between">
+                    <div class="text-base font-semibold text-gray-900">Prochains moments</div>
+                    <a href="{{ route('moments.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+                </div>
+                <div class="mt-4 divide-y divide-slate-100">
+                    @foreach(($moments ?? collect())->take(3) as $m)
+                        <div class="py-3 first:pt-0 last:pb-0">
+                            <div class="flex items-start gap-3">
+                                <div class="w-16 shrink-0">
+                                    <div class="text-sm font-semibold text-gray-900">{{ $m['date_day'] }}</div>
+                                    <div class="text-sm text-slate-500 -mt-0.5">{{ $m['date_month'] }}</div>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-medium text-gray-900">{{ $m['title'] }}</div>
+                                    @if(!empty($m['subtitle']))
+                                        <div class="text-sm text-slate-500">{{ $m['subtitle'] }}</div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl shadow-sm p-5">
+                <div class="flex items-end justify-between">
+                    <div class="text-base font-semibold text-gray-900">Dernières photos</div>
+                    <a href="{{ route('images.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+                </div>
+                <div class="mt-4">
+                    @if(($latestImages ?? collect())->count())
+                        <div class="grid grid-cols-3 gap-3">
+                            @foreach(($latestImages ?? collect())->take(3) as $img)
+                                <a href="{{ route('images.view', $img) }}" class="block rounded-xl overflow-hidden aspect-video bg-slate-100" aria-label="Ouvrir photo">
+                                    <img
+                                        src="{{ route('images.view', $img) }}"
+                                        alt="{{ $img->name ?? 'photo' }}"
+                                        class="w-full h-full object-cover"
+                                        loading="lazy"
+                                    />
+                                </a>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                            Aucune photo pour l’instant.
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>
