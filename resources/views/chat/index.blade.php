@@ -1,10 +1,4 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Chat Live') }}
-        </h2>
-    </x-slot>
-
+<x-app-layout pageBgClass="bg-slate-50">
     @php
         $palette = [
             ['chip' => 'bg-indigo-50 text-indigo-700 border-indigo-200', 'avatar' => 'bg-indigo-600 text-white'],
@@ -32,94 +26,139 @@
             }
             return mb_strtoupper($initials);
         };
+
+        $firstNameFor = function (?string $name) {
+            $name = trim((string) $name);
+            if ($name === '') return '—';
+            $parts = preg_split('/\s+/', $name);
+            return $parts[0] ?? $name;
+        };
     @endphp
 
-    <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @if (session('status'))
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        {{ session('status') }}
+    <div class="max-w-6xl mx-auto px-6 py-6 space-y-6">
+        @if (session('status'))
+            <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-gray-900">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="bg-white rounded-2xl shadow-sm p-4">
+                <div class="text-sm font-semibold text-red-600">Erreur</div>
+                <ul class="mt-2 space-y-1 text-sm text-red-600">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
+                <div>
+                    <div class="text-base font-semibold text-gray-900">💬 Chat familial</div>
+                    <div class="text-sm text-slate-500">
+                        <span class="text-emerald-600">●</span>
+                        <span id="chatOnlineCount" class="font-semibold text-gray-900">0</span>
+                        connectés
                     </div>
                 </div>
-            @endif
+                <div id="chatOnlineAvatars" class="flex items-center -space-x-2"></div>
+            </div>
 
-            @if ($errors->any())
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-red-600">
-                        <ul class="list-disc list-inside">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                </div>
-            @endif
-
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <div class="mb-4">
-                        <div class="text-xs text-gray-500">Connectés</div>
-                        <div id="chatOnline" class="mt-1 flex flex-wrap gap-2">
-                            <span class="text-xs text-gray-400">—</span>
+            <div id="chatScroll" class="max-h-[70vh] md:max-h-[60vh] overflow-y-auto">
+                <div id="chatMessages" class="flex flex-col gap-3 p-4">
+                    @if(($messages ?? collect())->count() === 0)
+                        <div id="chatEmptyState" class="py-12 text-center">
+                            <div class="text-base font-semibold text-gray-900">👋 Aucun message pour l’instant</div>
+                            <div class="text-sm text-slate-500 mt-1">Lance la discussion !</div>
                         </div>
-                    </div>
-
-                    <div id="chatMessages" class="space-y-3">
-                        @forelse ($messages as $m)
+                    @else
+                        @php($prevDay = null)
+                        @foreach ($messages as $i => $m)
                             @php
-                                $userId = $m->user_id;
+                                $userId = (int) $m->user_id;
                                 $name = $m->user?->name ?? '—';
                                 $isMe = auth()->check() && (int) auth()->id() === (int) $userId;
-                                $colors = $paletteFor((int) $userId);
+                                $colors = $paletteFor($userId);
                                 $initials = $initialsFor($name);
+                                $firstName = $firstNameFor($name);
+
+                                $prev = $messages[$i - 1] ?? null;
+                                $next = $messages[$i + 1] ?? null;
+                                $prevUserId = $prev ? (int) $prev->user_id : null;
+                                $nextUserId = $next ? (int) $next->user_id : null;
+                                $isGroupStart = $prevUserId !== $userId;
+                                $isGroupEnd = $nextUserId !== $userId;
+
+                                $dayKey = $m->created_at?->format('Y-m-d') ?? null;
+                                $dayLabel = $m->created_at?->format('d/m/Y') ?? '';
                             @endphp
 
-                            <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }}">
+                            @if($dayKey && $dayKey !== $prevDay)
+                                <div class="py-2 flex justify-center">
+                                    <div class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1">
+                                        {{ $dayLabel }}
+                                    </div>
+                                </div>
+                                @php($prevDay = $dayKey)
+                            @endif
+
+                            <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }}" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}">
                                 <div class="max-w-[85%] sm:max-w-[75%]">
-                                    <div class="flex items-start gap-3 {{ $isMe ? 'flex-row-reverse' : '' }}">
-                                        <div class="shrink-0">
-                                            <div class="h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold {{ $colors['avatar'] }}">
+                                    @if($isGroupStart)
+                                        <div class="mb-1 text-xs text-slate-500 {{ $isMe ? 'text-right' : '' }}">
+                                            {{ $firstName }} · {{ $m->created_at?->format('d/m') }}
+                                        </div>
+                                    @endif
+
+                                    <div class="flex items-end gap-2 {{ $isMe ? 'flex-row-reverse' : '' }}">
+                                        <div class="shrink-0 {{ $isGroupEnd ? '' : 'invisible' }}" data-avatar>
+                                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-semibold {{ $colors['avatar'] }}">
                                                 {{ $initials }}
                                             </div>
                                         </div>
 
-                                        <div class="rounded-2xl border px-4 py-3 {{ $isMe ? 'bg-gray-900 text-white border-gray-900' : ($colors['chip'].' bg-white') }}" data-message-id="{{ $m->id }}">
-                                            <div class="flex items-baseline justify-between gap-3">
-                                                <div class="text-sm font-semibold {{ $isMe ? 'text-white/90' : 'text-gray-900' }}">
-                                                    {{ $name }}
-                                                </div>
-                                                <div class="text-xs {{ $isMe ? 'text-white/60' : 'text-gray-500' }}">
-                                                    {{ $m->created_at?->format('d/m/Y H:i') }}
-                                                </div>
-                                            </div>
-                                            <div class="mt-2 text-sm whitespace-pre-wrap {{ $isMe ? 'text-white' : 'text-gray-800' }}">{{ $m->body }}</div>
+                                        <div class="px-4 py-3 border {{ $isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md' }}" data-bubble>
+                                            <div class="text-sm whitespace-pre-wrap">{{ $m->body }}</div>
+                                            <div class="mt-1 text-right text-xs opacity-60">{{ $m->created_at?->format('H:i') }}</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        @empty
-                            <div class="text-sm text-gray-500">Aucun message.</div>
-                        @endforelse
-                    </div>
+                        @endforeach
+                    @endif
                 </div>
             </div>
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <form id="chatForm" method="POST" action="{{ route('chat.store') }}" class="space-y-3">
+            <div class="border-t border-slate-100 bg-white sticky bottom-0">
+                <div class="px-4 py-3">
+                    <form id="chatForm" method="POST" action="{{ route('chat.store') }}">
                         @csrf
-                        <div>
-                            <x-input-label for="body" :value="__('Message')" />
-                            <textarea id="body" name="body" rows="3" class="mt-1 block w-full" required>{{ old('body') }}</textarea>
-                            <x-input-error class="mt-2" :messages="$errors->get('body')" />
+                        <div id="chatGate" class="hidden mb-2 text-sm text-slate-600"></div>
+
+                        <div class="flex items-end gap-2">
+                            <div class="flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                                <textarea
+                                    id="body"
+                                    name="body"
+                                    rows="1"
+                                    class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm"
+                                    placeholder="Écris ton message…"
+                                    required
+                                >{{ old('body') }}</textarea>
+                            </div>
+
+                            <button
+                                type="submit"
+                                class="bg-slate-900 text-white rounded-2xl px-4 py-3 text-sm font-semibold"
+                                aria-label="Envoyer"
+                            >
+                                ➤
+                            </button>
                         </div>
 
-                        <div class="flex items-center justify-end">
-                            <x-primary-button>
-                                {{ __('Envoyer') }}
-                            </x-primary-button>
-                        </div>
+                        <x-input-error class="mt-2" :messages="$errors->get('body')" />
                     </form>
                 </div>
             </div>
@@ -128,8 +167,11 @@
 
     <script>
         (function () {
+            const scrollEl = document.getElementById('chatScroll');
             const messagesEl = document.getElementById('chatMessages');
-            const onlineEl = document.getElementById('chatOnline');
+            const emptyEl = document.getElementById('chatEmptyState');
+            const onlineCountEl = document.getElementById('chatOnlineCount');
+            const onlineAvatarsEl = document.getElementById('chatOnlineAvatars');
             const formEl = document.getElementById('chatForm');
             const textareaEl = document.getElementById('body');
             const currentUserId = @json(auth()->id());
@@ -137,12 +179,7 @@
             let lastMessageId = @json($lastMessageId ?? 0);
             const initialOnline = @json($initialOnline ?? []);
 
-            const gateEl = document.createElement('div');
-            gateEl.className = 'text-sm text-gray-600';
-            gateEl.id = 'chatGate';
-            if (formEl) {
-                formEl.prepend(gateEl);
-            }
+            const gateEl = document.getElementById('chatGate');
 
             const palette = [
                 { chip: 'bg-indigo-50 text-indigo-700 border-indigo-200', avatar: 'bg-indigo-600 text-white' },
@@ -169,40 +206,43 @@
                 return ini.toUpperCase();
             }
 
-            if (messagesEl) {
-                messagesEl.scrollTop = messagesEl.scrollHeight;
+            function scrollToBottom() {
+                const el = scrollEl || messagesEl;
+                if (!el) return;
+                el.scrollTop = el.scrollHeight;
+            }
+
+            scrollToBottom();
+
+            function hideEmptyState() {
+                if (!emptyEl) return;
+                emptyEl.classList.add('hidden');
             }
 
             function renderOnline(users) {
-                if (!onlineEl) return;
-                onlineEl.innerHTML = '';
-                if (!users || users.length === 0) {
-                    const empty = document.createElement('span');
-                    empty.className = 'text-xs text-gray-400';
-                    empty.textContent = '—';
-                    onlineEl.appendChild(empty);
+                const list = Array.isArray(users) ? users : [];
+                const count = list.length;
+
+                if (onlineCountEl) {
+                    onlineCountEl.textContent = String(count);
+                }
+
+                if (!onlineAvatarsEl) return;
+                onlineAvatarsEl.innerHTML = '';
+                if (count === 0) {
                     return;
                 }
 
-                users.forEach(u => {
+                list.slice(0, 6).forEach(u => {
                     const id = userId(u);
                     const name = userName(u);
                     const colors = paletteFor(id);
 
-                    const chip = document.createElement('span');
-                    chip.className = `inline-flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-full border ${colors.chip}`;
-
-                    const dot = document.createElement('span');
-                    dot.className = `h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-semibold ${colors.avatar}`;
+                    const dot = document.createElement('div');
+                    dot.className = `w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-white ${colors.avatar}`;
+                    dot.title = name;
                     dot.textContent = initialsFor(name);
-
-                    const label = document.createElement('span');
-                    label.className = 'font-medium';
-                    label.textContent = (currentUserId && id && Number(id) === Number(currentUserId)) ? `${name} (vous)` : name;
-
-                    chip.appendChild(dot);
-                    chip.appendChild(label);
-                    onlineEl.appendChild(chip);
+                    onlineAvatarsEl.appendChild(dot);
                 });
             }
 
@@ -225,11 +265,64 @@
                 }
 
                 if (gateEl) {
-                    gateEl.textContent = ok
-                        ? ''
-                        : 'Chat désactivé : il faut au moins 2 connectés.';
-                    gateEl.className = ok ? 'hidden' : 'mb-3 text-sm text-gray-600';
+                    gateEl.textContent = ok ? '' : 'Chat désactivé : il faut au moins 2 connectés.';
+                    gateEl.className = ok ? 'hidden mb-2 text-sm text-slate-600' : 'mb-2 text-sm text-slate-600';
                 }
+            }
+
+            function dayKeyFromISO(iso) {
+                if (!iso) return '';
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return '';
+                return d.toISOString().slice(0, 10);
+            }
+
+            function dayLabelFromISO(iso) {
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return '';
+                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+
+            function timeLabelFromISO(iso) {
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return '';
+                return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            function firstName(name) {
+                const n = String(name ?? '').trim();
+                if (!n) return '—';
+                return n.split(/\s+/)[0] || n;
+            }
+
+            function shortDay(iso) {
+                const d = new Date(iso);
+                if (Number.isNaN(d.getTime())) return '';
+                return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+            }
+
+            let lastDayKey = (function initLastDayFromDom() {
+                if (!messagesEl) return '';
+                const rows = messagesEl.querySelectorAll('[data-message-row]');
+                const last = rows[rows.length - 1];
+                return last?.dataset?.dayKey || '';
+            })();
+
+            function appendDaySeparator(dayKey, label) {
+                if (!messagesEl || !dayKey || dayKey === lastDayKey) return;
+
+                const sep = document.createElement('div');
+                sep.className = 'py-2 flex justify-center';
+                sep.dataset.daySeparator = '1';
+                sep.dataset.dayKey = dayKey;
+
+                const pill = document.createElement('div');
+                pill.className = 'text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1';
+                pill.textContent = label;
+
+                sep.appendChild(pill);
+                messagesEl.appendChild(sep);
+                lastDayKey = dayKey;
             }
 
             function appendMessage(payload) {
@@ -241,60 +334,80 @@
                 const uid = payload?.user?.id ?? payload?.user_id ?? null;
                 const name = payload?.user?.name ?? '—';
                 const body = payload?.body ?? '';
-                const createdAt = payload?.created_at ? new Date(payload.created_at) : null;
-                const when = createdAt ? createdAt.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                const createdISO = payload?.created_at ?? null;
+                const whenTime = createdISO ? timeLabelFromISO(createdISO) : '';
+
+                const dk = createdISO ? dayKeyFromISO(createdISO) : '';
+                const dl = createdISO ? dayLabelFromISO(createdISO) : '';
+                appendDaySeparator(dk, dl);
 
                 const isMe = currentUserId && uid && Number(uid) === Number(currentUserId);
                 const colors = paletteFor(uid);
                 const initials = initialsFor(name);
 
+                hideEmptyState();
+
+                // Grouping: same author as previous message => hide meta + move avatar to new last message.
+                const rows = messagesEl.querySelectorAll('[data-message-row]');
+                const lastRow = rows[rows.length - 1] || null;
+                const lastUserId = lastRow ? Number(lastRow.dataset.userId || 0) : null;
+                const sameAuthorAsPrev = lastRow && uid != null && Number(uid) === Number(lastUserId);
+
+                if (sameAuthorAsPrev) {
+                    const lastAvatar = lastRow.querySelector('[data-avatar]');
+                    if (lastAvatar) {
+                        lastAvatar.classList.add('invisible');
+                    }
+                }
+
                 const outer = document.createElement('div');
                 outer.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
+                outer.dataset.messageRow = '1';
+                outer.dataset.userId = uid != null ? String(uid) : '';
+                outer.dataset.dayKey = dk;
+                if (id != null) outer.dataset.messageId = String(id);
 
                 const width = document.createElement('div');
                 width.className = 'max-w-[85%] sm:max-w-[75%]';
 
+                if (!sameAuthorAsPrev) {
+                    const meta = document.createElement('div');
+                    meta.className = `mb-1 text-xs text-slate-500 ${isMe ? 'text-right' : ''}`;
+                    meta.textContent = `${firstName(name)} · ${createdISO ? shortDay(createdISO) : ''}`;
+                    width.appendChild(meta);
+                }
+
                 const row = document.createElement('div');
-                row.className = `flex items-start gap-3 ${isMe ? 'flex-row-reverse' : ''}`;
+                row.className = `flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''}`;
 
                 const avatarWrap = document.createElement('div');
                 avatarWrap.className = 'shrink-0';
+                avatarWrap.dataset.avatar = '1';
                 const avatar = document.createElement('div');
-                avatar.className = `h-9 w-9 rounded-full flex items-center justify-center text-xs font-semibold ${colors.avatar}`;
+                avatar.className = `w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-semibold ${colors.avatar}`;
                 avatar.textContent = initials;
                 avatarWrap.appendChild(avatar);
 
                 const wrapper = document.createElement('div');
-                wrapper.className = `rounded-2xl border px-4 py-3 ${isMe ? 'bg-gray-900 text-white border-gray-900' : (colors.chip + ' bg-white')}`;
-                if (id != null) {
-                    wrapper.dataset.messageId = String(id);
-                }
-                wrapper.innerHTML = `
-                    <div class="flex items-baseline justify-between gap-3">
-                        <div class="text-sm font-semibold"></div>
-                        <div class="text-xs"></div>
-                    </div>
-                    <div class="mt-2 text-sm whitespace-pre-wrap"></div>
-                `;
+                wrapper.className = `px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
 
-                const nameEl = wrapper.querySelector('.font-semibold');
-                const whenEl = wrapper.querySelector('.text-xs');
-                const bodyEl = wrapper.querySelector('.whitespace-pre-wrap');
-
-                nameEl.textContent = name;
-                whenEl.textContent = when;
+                const bodyEl = document.createElement('div');
+                bodyEl.className = 'text-sm whitespace-pre-wrap';
                 bodyEl.textContent = body;
 
-                nameEl.className = `text-sm font-semibold ${isMe ? 'text-white/90' : 'text-gray-900'}`;
-                whenEl.className = `text-xs ${isMe ? 'text-white/60' : 'text-gray-500'}`;
-                bodyEl.className = `mt-2 text-sm whitespace-pre-wrap ${isMe ? 'text-white' : 'text-gray-800'}`;
+                const timeEl = document.createElement('div');
+                timeEl.className = 'mt-1 text-right text-xs opacity-60';
+                timeEl.textContent = whenTime;
+
+                wrapper.appendChild(bodyEl);
+                wrapper.appendChild(timeEl);
 
                 row.appendChild(avatarWrap);
                 row.appendChild(wrapper);
                 width.appendChild(row);
                 outer.appendChild(width);
                 messagesEl.appendChild(outer);
-                messagesEl.scrollTop = messagesEl.scrollHeight;
+                scrollToBottom();
             }
 
             const online = new Map();
@@ -424,11 +537,30 @@
             }
 
             if (formEl && textareaEl) {
+                let isSending = false;
+
+                function autoGrow() {
+                    textareaEl.style.height = 'auto';
+                    const styles = window.getComputedStyle(textareaEl);
+                    const lineHeight = parseFloat(styles.lineHeight || '20') || 20;
+                    const max = Math.round(lineHeight * 3);
+                    textareaEl.style.height = Math.min(textareaEl.scrollHeight, max) + 'px';
+                }
+
+                autoGrow();
+                textareaEl.addEventListener('input', autoGrow);
+
+                textareaEl.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter' && !ev.shiftKey) {
+                        ev.preventDefault();
+                        formEl.requestSubmit?.();
+                    }
+                });
+
                 formEl.addEventListener('submit', async (ev) => {
                     // Progressive enhancement: if Echo isn't loaded, let the normal POST+redirect happen.
                     if (!window.Echo) {
                         // When polling mode is active, prevent submit if chat is gated.
-                        const onlineCount = (onlineEl?.querySelectorAll('span')?.length ?? 0);
                         if (textareaEl?.disabled) {
                             ev.preventDefault();
                         }
@@ -437,8 +569,14 @@
 
                     ev.preventDefault();
 
+                    if (isSending) return;
+
                     const body = textareaEl.value.trim();
                     if (!body) return;
+
+                    isSending = true;
+                    const btn = formEl.querySelector('button[type="submit"]');
+                    if (btn) btn.disabled = true;
 
                     const token = formEl.querySelector('input[name="_token"]')?.value;
                     const socketId = typeof window.Echo.socketId === 'function' ? window.Echo.socketId() : null;
@@ -455,13 +593,19 @@
                         body: JSON.stringify({ body }),
                     });
 
-                    if (!res.ok) return;
+                    try {
+                        if (!res.ok) return;
 
-                    const json = await res.json();
-                    appendMessage(json);
-                    if (json?.id) lastMessageId = Math.max(lastMessageId, Number(json.id));
-                    textareaEl.value = '';
-                    textareaEl.focus();
+                        const json = await res.json();
+                        appendMessage(json);
+                        if (json?.id) lastMessageId = Math.max(lastMessageId, Number(json.id));
+                        textareaEl.value = '';
+                        autoGrow();
+                        textareaEl.focus();
+                    } finally {
+                        isSending = false;
+                        if (btn) btn.disabled = textareaEl.disabled;
+                    }
                 });
             }
         })();
