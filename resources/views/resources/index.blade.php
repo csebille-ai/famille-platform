@@ -119,13 +119,23 @@
                                                             </div>
                                                         </div>
 
-                                                        <div class="shrink-0 flex flex-col items-end gap-2">
-                                                            <div class="text-xs text-gray-500">{{ $resource->created_at->diffForHumans() }}</div>
-
+                                                        <div class="shrink-0">
                                                             <a href="{{ $resource->attachment_path ? route('resources.download', $resource) : route('resources.show', $resource) }}"
                                                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                                                                title="{{ $resource->attachment_path ? 'Télécharger' : 'Ouvrir' }}">
-                                                                <span aria-hidden="true" class="text-lg leading-none">…</span>
+                                                                @if ($resource->attachment_path)
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                                                        <path d="M12 3v10" />
+                                                                        <path d="M7 11l5 5 5-5" />
+                                                                        <path d="M5 21h14" />
+                                                                    </svg>
+                                                                @else
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                                                        <path d="M15 3h6v6" />
+                                                                        <path d="M10 14L21 3" />
+                                                                        <path d="M21 14v7H3V3h7" />
+                                                                    </svg>
+                                                                @endif
                                                                 <span class="sr-only">{{ $resource->attachment_path ? 'Télécharger' : 'Ouvrir' }}</span>
                                                             </a>
                                                         </div>
@@ -261,13 +271,23 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="shrink-0 flex flex-col items-end gap-2">
-                                                    <div class="text-xs text-gray-500">{{ $r->created_at->diffForHumans() }}</div>
-
+                                                <div class="shrink-0">
                                                     <a href="{{ $r->attachment_path ? route('resources.download', $r) : route('resources.show', $r) }}"
                                                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                                                        title="{{ $r->attachment_path ? 'Télécharger' : 'Ouvrir' }}">
-                                                        <span aria-hidden="true" class="text-lg leading-none">…</span>
+                                                        @if ($r->attachment_path)
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                                                <path d="M12 3v10" />
+                                                                <path d="M7 11l5 5 5-5" />
+                                                                <path d="M5 21h14" />
+                                                            </svg>
+                                                        @else
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                                                <path d="M15 3h6v6" />
+                                                                <path d="M10 14L21 3" />
+                                                                <path d="M21 14v7H3V3h7" />
+                                                            </svg>
+                                                        @endif
                                                         <span class="sr-only">{{ $r->attachment_path ? 'Télécharger' : 'Ouvrir' }}</span>
                                                     </a>
                                                 </div>
