@@ -38,8 +38,8 @@
                         </div>
                     @elseif ($previewType === 'pdf')
                         <iframe
-                            src="{{ route('resources.open', $resource) }}"
-                            class="w-full h-[70vh] rounded-xl border border-gray-200"
+                            src="{{ route('resources.open', $resource) }}#zoom=page-width"
+                            class="w-full h-[80vh] rounded-xl border border-gray-200"
                             title="{{ $displayName }}"
                         ></iframe>
                     @elseif ($previewType === 'image')
