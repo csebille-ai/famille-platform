@@ -35,7 +35,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('images.index') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
+                <a href="{{ route('images.index') }}" class="hidden md:inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
                     Voir tout
                 </a>
                 @can('images-upload')
@@ -63,24 +63,11 @@
             </div>
         @endif
 
-        <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="flex items-center justify-between gap-4">
-                <div>
-                    <div class="text-base font-semibold text-gray-900">Filtrer</div>
-                    <div class="text-sm text-slate-500 mt-1">Choisir un utilisateur</div>
-                </div>
-
-                @if($selectedUserId !== 0)
-                    <a href="{{ route('images.index') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
-                        Effacer
-                    </a>
-                @endif
-            </div>
-
-            <div class="mt-4 md:hidden">
-                <form method="GET" action="{{ route('images.index') }}">
-                    <label for="user" class="block text-sm font-semibold text-gray-900">Utilisateur</label>
-                    <select id="user" name="user" class="mt-2 block w-full rounded-xl border-slate-200" onchange="this.form.submit()">
+        <div class="bg-white rounded-2xl shadow-sm p-3 md:p-6 md:static sticky top-16 z-30">
+            <div class="flex items-center justify-between gap-3">
+                <form method="GET" action="{{ route('images.index') }}" class="flex items-center gap-3 min-w-0">
+                    <div class="text-sm font-semibold text-gray-900 shrink-0">Personne</div>
+                    <select id="user" name="user" class="block w-full md:w-auto rounded-xl border-slate-200" onchange="this.form.submit()">
                         <option value="0" {{ $selectedUserId === 0 ? 'selected' : '' }}>Tous</option>
                         <option value="-1" {{ $selectedUserId === -1 ? 'selected' : '' }}>Commun</option>
                         @foreach (($users ?? collect()) as $u)
@@ -93,6 +80,12 @@
                         @endforeach
                     </select>
                 </form>
+
+                @if($selectedUserId !== 0)
+                    <a href="{{ route('images.index') }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900">
+                        Effacer
+                    </a>
+                @endif
             </div>
 
             <div class="hidden md:block">
@@ -124,11 +117,7 @@
                 <div class="text-base font-semibold text-gray-900">Aucune image pour l’instant</div>
                 <div class="text-sm text-slate-500 mt-1">Importe une première photo pour démarrer.</div>
                 @can('images-upload')
-                    <div class="mt-4">
-                        <a href="{{ route('images.create') }}" class="inline-flex bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold">
-                            Importer une image
-                        </a>
-                    </div>
+                    <div class="text-sm text-slate-500 mt-1">Utilise le bouton + en bas à droite.</div>
                 @endcan
             </div>
         @else
