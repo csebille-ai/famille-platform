@@ -82,20 +82,35 @@ class VideoController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Video::query()->latest();
-
-        $category = (string) $request->query('category', '');
+        $selectedCategory = (string) $request->query('category', '');
         $categories = ['films', 'series', 'docs'];
 
-        if (in_array($category, $categories, true)) {
-            $query->where('category', $category);
+        if (! in_array($selectedCategory, $categories, true)) {
+            $selectedCategory = '';
         }
 
-        $videos = $query->paginate(12)->withQueryString();
+        $categoryPreviews = [];
+        foreach ($categories as $cat) {
+            $categoryPreviews[$cat] = Video::query()
+                ->where('category', $cat)
+                ->latest()
+                ->take(2)
+                ->get();
+        }
+
+        $videos = null;
+        if ($selectedCategory !== '') {
+            $videos = Video::query()
+                ->where('category', $selectedCategory)
+                ->latest()
+                ->paginate(12)
+                ->withQueryString();
+        }
 
         return view('videos.index', [
+            'category' => $selectedCategory,
+            'categoryPreviews' => $categoryPreviews,
             'videos' => $videos,
-            'category' => $category,
         ]);
     }
 
@@ -125,7 +140,6 @@ class VideoController extends Controller
                 'title' => ['required', 'string', 'max:255'],
                 'category' => ['required', 'string', 'in:films,series,docs'],
                 'video_file' => ['required', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:3145728'],
-                'poster_file' => ['nullable', 'file', 'image', 'max:10240'],
                 'description' => ['nullable', 'string'],
             ]);
         } catch (ValidationException $e) {
@@ -173,25 +187,17 @@ class VideoController extends Controller
                     'ms' => (int) round((microtime(true) - $t0) * 1000),
                     'error' => $e->getMessage(),
                 ]);
-                return back()->withErrors(['video_file' => 'Erreur lors du stockage du fichier: ' . $e->getMessage()]);
-            }
-        }
 
-        if ($request->hasFile('poster_file')) {
-            try {
-                $posterPath = $request->file('poster_file')->store('videos/posters', 'public');
-                $validated['poster_path'] = $posterPath;
-            } catch (\Exception $e) {
-                logger()->warning('videos.poster.upload_failed', [
-                    'error' => $e->getMessage(),
-                ]);
+                $message = 'Erreur lors du stockage du fichier: ' . $e->getMessage();
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => $message], 500);
+                }
 
-                return back()->withErrors(['poster_file' => 'Erreur lors du stockage du poster: ' . $e->getMessage()]);
+                return back()->withErrors(['video_file' => $message]);
             }
         }
 
         unset($validated['video_file']);
-        unset($validated['poster_file']);
         $video = Video::create($validated);
 
         $this->generatePosterForVideo($video);
@@ -201,8 +207,15 @@ class VideoController extends Controller
             'video_id' => $video->id,
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Vidéo importée',
+                'video_id' => $video->id,
+            ]);
+        }
+
         return redirect()->route('videos.index')
-            ->with('status', 'Vidéo ajoutée avec succès.');
+            ->with('status', 'Vidéo importée');
     }
 
     /**
@@ -350,7 +363,6 @@ class VideoController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'in:films,series,docs'],
             'video_file' => ['nullable', 'file', 'mimes:mp4,webm,avi,mov,mkv', 'max:3145728'],
-            'poster_file' => ['nullable', 'file', 'image', 'max:10240'],
             'description' => ['nullable', 'string'],
         ]);
 
@@ -365,26 +377,14 @@ class VideoController extends Controller
 
             $path = $request->file('video_file')->store('videos', 'public');
             $validated['video_path'] = $path;
-            if (!$request->hasFile('poster_file')) {
-                $validated['poster_path'] = null;
-            }
-        }
-
-        if ($request->hasFile('poster_file')) {
-            if ($video->poster_path && Storage::disk('public')->exists($video->poster_path)) {
-                Storage::disk('public')->delete($video->poster_path);
-            }
-
-            $posterPath = $request->file('poster_file')->store('videos/posters', 'public');
-            $validated['poster_path'] = $posterPath;
+            $validated['poster_path'] = null;
         }
 
         unset($validated['video_file']);
-        unset($validated['poster_file']);
 
         $video->update($validated);
 
-        if ($request->hasFile('video_file') && !$video->poster_path) {
+        if ($request->hasFile('video_file') && ! $video->poster_path) {
             $this->generatePosterForVideo($video);
         }
 

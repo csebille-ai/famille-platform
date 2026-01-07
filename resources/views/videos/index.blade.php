@@ -1,217 +1,367 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Vidéos') }}
-            </h2>
+@php
+    $selectedCategory = (string) ($category ?? '');
+    $categories = [
+        'films' => ['label' => 'Films', 'description' => 'Films et longs-métrages'],
+        'series' => ['label' => 'Séries', 'description' => 'Séries TV et épisodes'],
+        'docs' => ['label' => 'Documentaires', 'description' => 'Documentaires et contenus éducatifs'],
+    ];
+
+    $formatBytes = function (?int $bytes): string {
+        $bytes = (int) ($bytes ?? 0);
+        if ($bytes <= 0) {
+            return '0 B';
+        }
+
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $i = 0;
+        $value = (float) $bytes;
+        while ($value >= 1024 && $i < count($units) - 1) {
+            $value /= 1024;
+            $i++;
+        }
+
+        return rtrim(rtrim(number_format($value, $i === 0 ? 0 : 1, '.', ''), '0'), '.') . ' ' . $units[$i];
+    };
+@endphp
+
+<x-app-layout pageBgClass="bg-slate-50">
+    <div class="max-w-6xl mx-auto px-6 py-6 space-y-6">
+        <div class="flex items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Vidéos</h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="#import" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold">
+                    Importer une vidéo
+                </a>
+            </div>
         </div>
-    </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            @if (session('status'))
-                <div class="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-                    {{ session('status') }}
-                </div>
-            @endif
+        @if (session('status'))
+            <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-gray-900">
+                {{ session('status') }}
+            </div>
+        @endif
 
-            @if ($errors->any())
-                <div class="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                    <ul>
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+        @if ($errors->any())
+            <div class="bg-white rounded-2xl shadow-sm p-4">
+                <div class="text-sm font-semibold text-red-600">Erreur</div>
+                <ul class="mt-2 space-y-1 text-sm text-red-600">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-            @php
-                $videosByCategory = $videos->getCollection()->groupBy('category');
-                $categories = [
-                    'films' => ['label' => 'Films', 'description' => 'Films et longs-métrages'],
-                    'series' => ['label' => 'Séries', 'description' => 'Séries TV et épisodes'],
-                    'docs' => ['label' => 'Documentaires', 'description' => 'Documentaires et contenus éducatifs'],
-                ];
-            @endphp
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            @foreach ($categories as $key => $meta)
+                @php($previews = ($categoryPreviews ?? [])[$key] ?? collect())
 
-            <div class="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                @foreach ($categories as $key => $meta)
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 {{ $category === $key ? 'border-2 border-indigo-500' : '' }}">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <div class="text-lg font-semibold text-gray-900">{{ $meta['label'] }}</div>
-                                <div class="mt-1 text-sm text-gray-600">{{ $meta['description'] }}</div>
-                            </div>
-                            <a href="{{ route('videos.index', ['category' => $key]) }}" class="text-sm text-indigo-600 hover:text-indigo-900 hover:underline whitespace-nowrap">
-                                Voir
-                            </a>
+                <div class="bg-white rounded-2xl shadow-sm p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="text-base font-semibold text-gray-900">{{ $meta['label'] }}</div>
+                            <div class="mt-1 text-sm text-slate-500">{{ $meta['description'] }}</div>
                         </div>
-
-                        @php
-                            $catVideos = $videosByCategory->get($key, collect());
-                        @endphp
-
-                        <div class="mt-4 space-y-2">
-                            @forelse ($catVideos as $video)
-                                <a href="{{ route('videos.show', $video) }}" class="flex items-center gap-3 group">
-                                    <div class="w-20 aspect-video bg-gray-100 rounded overflow-hidden flex items-center justify-center shrink-0">
-                                        @if ($video->poster_path)
-                                            <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
-                                        @else
-                                            <span class="text-gray-400 text-xs">No poster</span>
-                                        @endif
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="text-sm text-gray-900 group-hover:underline truncate">▶ {{ $video->title }}</div>
-                                        <div class="text-xs text-gray-500">{{ $video->created_at->diffForHumans() }}</div>
-                                    </div>
-                                </a>
-                            @empty
-                                <p class="text-sm text-gray-500">Aucune vidéo.</p>
-                            @endforelse
-                        </div>
+                        <a href="{{ route('videos.index', ['category' => $key]) }}" class="text-sm font-semibold text-slate-900 whitespace-nowrap">
+                            Voir ›
+                        </a>
                     </div>
-                @endforeach
+
+                    <div class="mt-4 space-y-3">
+                        @forelse ($previews as $video)
+                            <a href="{{ route('videos.show', $video) }}" class="flex items-center gap-3">
+                                <div class="w-24 aspect-video rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                    @if (!empty($video->poster_path))
+                                        <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
+                                    @else
+                                        <div class="text-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400 mx-auto" aria-hidden="true">
+                                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                                <path d="M10 9l5 3-5 3V9z" />
+                                            </svg>
+                                            <div class="mt-1 text-[11px] text-slate-500">Vidéo</div>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold text-gray-900 truncate">{{ $video->title }}</div>
+                                    <div class="text-xs text-slate-500">{{ $video->created_at?->diffForHumans() }}</div>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="text-sm text-slate-500">Aucune vidéo.</div>
+                        @endforelse
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        @if (!empty($selectedCategory) && $videos)
+            <div class="bg-white rounded-2xl shadow-sm p-6">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <div class="text-base font-semibold text-gray-900">{{ $categories[$selectedCategory]['label'] ?? 'Vidéos' }}</div>
+                        <div class="text-sm text-slate-500 mt-1">Liste</div>
+                    </div>
+                    <a href="{{ route('videos.index') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
+                        Retour
+                    </a>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    @foreach ($videos as $video)
+                        <a href="{{ route('videos.show', $video) }}" class="flex items-center gap-3 rounded-2xl border border-slate-200 p-3">
+                            <div class="w-28 aspect-video rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                @if (!empty($video->poster_path))
+                                    <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
+                                @else
+                                    <div class="text-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400 mx-auto" aria-hidden="true">
+                                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                                            <path d="M10 9l5 3-5 3V9z" />
+                                        </svg>
+                                        <div class="mt-1 text-[11px] text-slate-500">Vidéo</div>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold text-gray-900 truncate">{{ $video->title }}</div>
+                                <div class="text-xs text-slate-500">{{ $video->created_at?->diffForHumans() }}</div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+
+                @if ($videos->hasPages())
+                    <div class="mt-6">
+                        {{ $videos->links() }}
+                    </div>
+                @endif
+            </div>
+        @endif
+
+        <div id="import" class="bg-white rounded-2xl shadow-sm p-6"
+            x-data="{
+                file: null,
+                fileName: '',
+                fileSize: '',
+                title: '',
+                category: '',
+                description: '',
+                isDragOver: false,
+                isUploading: false,
+                progress: 0,
+                successMessage: '',
+                errorMessage: '',
+                setFile(f) {
+                    if (!f) {
+                        this.file = null;
+                        this.fileName = '';
+                        this.fileSize = 0;
+                        this.progress = 0;
+                        return;
+                    }
+                    this.file = f;
+                    this.fileName = f.name;
+                    this.fileSize = (typeof f.size === 'number') ? f.size : 0;
+                },
+                setFileFromInput(e) {
+                    const f = e?.target?.files?.[0];
+                    this.setFile(f);
+                },
+                setFileFromDrop(e) {
+                    const f = e?.dataTransfer?.files?.[0];
+                    if (!f) return;
+                    if (this.$refs.videoInput) {
+                        this.$refs.videoInput.files = e.dataTransfer.files;
+                    }
+                    this.setFile(f);
+                },
+                formatBytes(bytes) {
+                    bytes = Number(bytes || 0);
+                    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+                    const units = ['B','KB','MB','GB'];
+                    let i = 0;
+                    let v = bytes;
+                    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+                    const decimals = i === 0 ? 0 : 1;
+                    const str = v.toFixed(decimals).replace(/\.0$/, '');
+                    return `${str} ${units[i]}`;
+                },
+                canSubmit() {
+                    return !!this.file && (this.title || '').trim().length > 0 && (this.category || '').trim().length > 0 && !this.isUploading;
+                },
+                async importVideo() {
+                    this.successMessage = '';
+                    this.errorMessage = '';
+                    if (!this.canSubmit()) return;
+                    this.isUploading = true;
+                    this.progress = 0;
+
+                    const formData = new FormData();
+                    formData.append('_token', document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '');
+                    formData.append('video_file', this.file);
+                    formData.append('title', (this.title || '').trim());
+                    formData.append('category', (this.category || '').trim());
+                    formData.append('description', (this.description || '').trim());
+
+                    await new Promise((resolve) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', '{{ route('videos.store') }}', true);
+                        xhr.setRequestHeader('Accept', 'application/json');
+
+                        xhr.upload.onprogress = (evt) => {
+                            if (!evt.lengthComputable) return;
+                            this.progress = Math.round((evt.loaded / evt.total) * 100);
+                        };
+
+                        xhr.onload = () => {
+                            try {
+                                const data = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+                                if (xhr.status >= 200 && xhr.status < 300) {
+                                    this.successMessage = data?.message || 'Vidéo importée';
+                                    this.errorMessage = '';
+                                    this.progress = 100;
+
+                                    // Reset minimal fields, keep UX simple.
+                                    this.title = '';
+                                    this.category = '';
+                                    this.description = '';
+                                    this.file = null;
+                                    this.fileName = '';
+                                    this.fileSize = '';
+                                    if (this.$refs.videoInput) {
+                                        this.$refs.videoInput.value = '';
+                                    }
+                                } else if (xhr.status === 422) {
+                                    const errors = data?.errors || {};
+                                    const firstKey = Object.keys(errors)[0];
+                                    const first = firstKey && Array.isArray(errors[firstKey]) ? errors[firstKey][0] : null;
+                                    this.errorMessage = first || data?.message || 'Erreur de validation. Vérifie les champs.';
+                                } else {
+                                    this.errorMessage = data?.message || 'Erreur lors de l\'envoi. Réessayer.';
+                                }
+                            } catch {
+                                this.errorMessage = 'Erreur lors de l\'envoi. Réessayer.';
+                            } finally {
+                                this.isUploading = false;
+                                resolve();
+                            }
+                        };
+
+                        xhr.onerror = () => {
+                            this.isUploading = false;
+                            this.errorMessage = 'Erreur réseau. Réessayer.';
+                            resolve();
+                        };
+
+                        xhr.send(formData);
+                    });
+                },
+            }"
+        >
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <div class="text-base font-semibold text-gray-900">Importer une vidéo</div>
+                    <div class="text-sm text-slate-500 mt-1">Taille max : 3 GB</div>
+                </div>
             </div>
 
-            @if ($videos->hasPages())
-                <div class="mb-6">
-                    {{ $videos->links() }}
+            <div class="mt-4">
+                <input x-ref="videoInput" type="file" accept="video/*" class="sr-only" x-on:change="setFileFromInput($event)" />
+
+                <div
+                    class="border-2 border-dashed border-slate-200 rounded-2xl p-6"
+                    :class="isDragOver ? 'bg-slate-50' : 'bg-white'"
+                    x-on:dragover.prevent="isDragOver = true"
+                    x-on:dragleave.prevent="isDragOver = false"
+                    x-on:drop.prevent="isDragOver = false; setFileFromDrop($event)"
+                    x-on:click="$refs.videoInput?.click()"
+                    role="button"
+                    tabindex="0"
+                    x-on:keydown.enter.prevent="$refs.videoInput?.click()"
+                    x-on:keydown.space.prevent="$refs.videoInput?.click()"
+                >
+                    <div class="text-center">
+                        <div class="text-sm font-medium text-gray-900">Glissez-déposez une vidéo ici</div>
+                        <div class="text-sm text-slate-500 mt-1">ou</div>
+                        <div class="mt-3">
+                            <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900" x-on:click.stop="$refs.videoInput?.click()">
+                                Choisir un fichier
+                            </button>
+                        </div>
+
+                        <template x-if="fileName">
+                            <div class="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-gray-900">
+                                <span class="font-medium" x-text="fileName"></span>
+                                <span class="text-slate-500" x-text="formatBytes(fileSize)"></span>
+                                <button type="button" class="ml-2 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-semibold" x-on:click.stop="$refs.videoInput?.click()">
+                                    Changer
+                                </button>
+                            </div>
+                        </template>
+                    </div>
                 </div>
-            @endif
+            </div>
 
-            <!-- Formulaire d'upload -->
-            <div id="upload" class="mb-6 bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Ajouter une vidéo</h3>
-                <form method="POST" action="{{ route('videos.store') }}" enctype="multipart/form-data" class="space-y-4">
-                    @csrf
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="title" class="block font-medium text-sm text-gray-700 mb-1">Titre *</label>
-                            <input type="text" id="title" name="title" required value="{{ old('title') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                            @error('title') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label for="category" class="block font-medium text-sm text-gray-700 mb-1">Catégorie *</label>
-                            <select id="category" name="category" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">-- Choisir --</option>
-                                <option value="films" {{ old('category') === 'films' ? 'selected' : '' }}>Films</option>
-                                <option value="series" {{ old('category') === 'series' ? 'selected' : '' }}>Séries</option>
-                                <option value="docs" {{ old('category') === 'docs' ? 'selected' : '' }}>Documentaires</option>
-                            </select>
-                            @error('category') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                        </div>
-
-                        <div>
-                            <label for="video_file" class="block font-medium text-sm text-gray-700 mb-1">Fichier vidéo *</label>
-                            <input type="file" id="video_file" name="video_file" accept="video/*" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                            @error('video_file') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                            <p class="text-xs text-gray-500 mt-1">Max 3 GB</p>
-                        </div>
-
-                        <div>
-                            <label for="poster_file" class="block font-medium text-sm text-gray-700 mb-1">Image (poster) (optionnel)</label>
-                            <input type="file" id="poster_file" name="poster_file" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                            @error('poster_file') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                            <p class="text-xs text-gray-500 mt-1">PNG/JPG, conseillé: petite image (≤ 10 MB)</p>
-                        </div>
+            <template x-if="file">
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-1">
+                        <label class="block text-sm font-semibold text-gray-900">Titre *</label>
+                        <input type="text" class="mt-2 block w-full rounded-xl border-slate-200" x-model="title" placeholder="Titre" />
                     </div>
 
-                    <div>
-                        <label for="description" class="block font-medium text-sm text-gray-700 mb-1">Description</label>
-                        <textarea id="description" name="description" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">{{ old('description') }}</textarea>
-                        @error('description') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+                    <div class="md:col-span-1">
+                        <label class="block text-sm font-semibold text-gray-900">Catégorie *</label>
+                        <select class="mt-2 block w-full rounded-xl border-slate-200" x-model="category">
+                            <option value="">-- Choisir --</option>
+                            <option value="films">Films</option>
+                            <option value="series">Séries</option>
+                            <option value="docs">Documentaires</option>
+                        </select>
                     </div>
 
-                    <div class="flex justify-end pt-4">
-                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
-                            Envoyer
-                        </button>
+                    <div class="md:col-span-1">
+                        <label class="block text-sm font-semibold text-gray-900">Description</label>
+                        <textarea rows="1" class="mt-2 block w-full rounded-xl border-slate-200" x-model="description" placeholder="Optionnel"></textarea>
                     </div>
-                </form>
+                </div>
+            </template>
+
+            <template x-if="isUploading">
+                <div class="mt-4">
+                    <div class="text-sm text-slate-500">Envoi en cours…</div>
+                    <div class="mt-2 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full bg-slate-900" :style="`width:${progress}%`"></div>
+                    </div>
+                </div>
+            </template>
+
+            <template x-if="successMessage">
+                <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" x-text="successMessage"></div>
+            </template>
+
+            <template x-if="errorMessage">
+                <div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    <div x-text="errorMessage"></div>
+                    <button type="button" class="mt-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-700" x-on:click="importVideo()">
+                        Réessayer
+                    </button>
+                </div>
+            </template>
+
+            <div class="mt-6 flex items-center justify-end">
+                <button
+                    type="button"
+                    class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                    x-bind:disabled="!canSubmit()"
+                    x-on:click="importVideo()"
+                >
+                    Importer la vidéo
+                </button>
             </div>
         </div>
     </div>
-
-    <script>
-        (function () {
-            const videoInput = document.getElementById('video_file');
-            const posterInput = document.getElementById('poster_file');
-            if (!videoInput || !posterInput) return;
-
-            async function generatePosterFile(file) {
-                const url = URL.createObjectURL(file);
-                const video = document.createElement('video');
-                video.preload = 'metadata';
-                video.muted = true;
-                video.playsInline = true;
-
-                try {
-                    await new Promise((resolve, reject) => {
-                        video.onloadedmetadata = () => resolve();
-                        video.onerror = () => reject(new Error('video load failed'));
-                        video.src = url;
-                    });
-
-                    const duration = Number.isFinite(video.duration) ? video.duration : 0;
-                    const targetTime = Math.min(Math.max(1, duration > 0 ? 1 : 0), Math.max(0, duration - 0.1));
-                    if (targetTime > 0) {
-                        await new Promise((resolve) => {
-                            video.onseeked = () => resolve();
-                            try { video.currentTime = targetTime; } catch { resolve(); }
-                        });
-                    }
-
-                    const width = video.videoWidth || 0;
-                    const height = video.videoHeight || 0;
-                    if (!width || !height) return null;
-
-                    const maxWidth = 640;
-                    const scale = Math.min(1, maxWidth / width);
-                    const outW = Math.max(1, Math.floor(width * scale));
-                    const outH = Math.max(1, Math.floor(height * scale));
-
-                    const canvas = document.createElement('canvas');
-                    canvas.width = outW;
-                    canvas.height = outH;
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return null;
-                    ctx.drawImage(video, 0, 0, outW, outH);
-
-                    const blob = await new Promise((resolve) => {
-                        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.75);
-                    });
-                    if (!blob) return null;
-
-                    const safeBase = (file.name || 'video').replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/gi, '-').slice(0, 50);
-                    const posterName = (safeBase || 'poster') + '.jpg';
-                    return new File([blob], posterName, { type: 'image/jpeg' });
-                } finally {
-                    URL.revokeObjectURL(url);
-                }
-            }
-
-            async function maybeAutoSetPoster() {
-                const file = videoInput.files && videoInput.files[0];
-                if (!file) return;
-                if (posterInput.files && posterInput.files.length > 0) return;
-
-                try {
-                    const posterFile = await generatePosterFile(file);
-                    if (!posterFile) return;
-                    const dt = new DataTransfer();
-                    dt.items.add(posterFile);
-                    posterInput.files = dt.files;
-                } catch {
-                    // Ignore; manual poster remains available.
-                }
-            }
-
-            videoInput.addEventListener('change', () => {
-                void maybeAutoSetPoster();
-            });
-        })();
-    </script>
 </x-app-layout>
