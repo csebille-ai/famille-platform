@@ -60,7 +60,7 @@
                     Voir tout
                 </a>
                 @can('images-upload')
-                    <button type="button" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold" @click="$refs.uploadInput?.click()">
+                    <button type="button" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold" x-on:click="$refs.uploadInput?.click()">
                         Importer
                     </button>
                 @endcan
@@ -93,7 +93,7 @@
             </div>
 
             @can('images-upload')
-                <form method="POST" action="{{ route('images.store') }}" enctype="multipart/form-data" class="mt-4" @submit="if(!$refs.uploadInput?.files?.length){ $event.preventDefault(); $refs.uploadInput?.click(); }">
+                <form method="POST" action="{{ route('images.store') }}" enctype="multipart/form-data" class="mt-4" x-on:submit="if(!$refs.uploadInput?.files?.length){ $event.preventDefault(); $refs.uploadInput?.click(); }">
                     @csrf
 
                     <input
@@ -104,27 +104,27 @@
                         accept="image/*"
                         class="sr-only"
                         required
-                        @change="setFileFromInput($event)"
+                        x-on:change="setFileFromInput($event)"
                     />
 
                     <div
                         class="border-2 border-dashed border-slate-200 rounded-2xl p-6"
                         :class="isDragOver ? 'bg-slate-50' : 'bg-white'"
-                        @dragover.prevent="isDragOver = true"
-                        @dragleave.prevent="isDragOver = false"
-                        @drop.prevent="isDragOver = false; setFileFromDrop($event)"
-                        @click="$refs.uploadInput?.click()"
+                        x-on:dragover.prevent="isDragOver = true"
+                        x-on:dragleave.prevent="isDragOver = false"
+                        x-on:drop.prevent="isDragOver = false; setFileFromDrop($event)"
+                        x-on:click="$refs.uploadInput?.click()"
                         role="button"
                         tabindex="0"
-                        @keydown.enter.prevent="$refs.uploadInput?.click()"
-                        @keydown.space.prevent="$refs.uploadInput?.click()"
+                        x-on:keydown.enter.prevent="$refs.uploadInput?.click()"
+                        x-on:keydown.space.prevent="$refs.uploadInput?.click()"
                         aria-label="Zone d'import"
                     >
                         <div class="text-center">
                             <div class="text-sm font-medium text-gray-900">Glissez-déposez une image ici</div>
                             <div class="text-sm text-slate-500 mt-1">ou</div>
                             <div class="mt-3">
-                                <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900" @click.stop="$refs.uploadInput?.click()">
+                                <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900" x-on:click.stop="$refs.uploadInput?.click()">
                                     Choisir un fichier
                                 </button>
                             </div>
@@ -170,7 +170,9 @@
                         <option value="0" {{ $selectedUserId === 0 ? 'selected' : '' }}>Tous</option>
                         <option value="-1" {{ $selectedUserId === -1 ? 'selected' : '' }}>Commun</option>
                         @foreach (($users ?? collect()) as $u)
-                            @php($count = (int) (($userImageCounts ?? [])[$u->id] ?? 0))
+                            @php
+                                $count = (int) (($userImageCounts ?? [])[$u->id] ?? 0);
+                            @endphp
                             <option value="{{ $u->id }}" {{ $selectedUserId === (int)$u->id ? 'selected' : '' }}>
                                 {{ $u->name }} ({{ $count }})
                             </option>
@@ -181,7 +183,9 @@
 
             <div class="hidden md:block">
                 <div class="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-                    @php($baseUrl = route('images.index'))
+                    @php
+                        $baseUrl = route('images.index');
+                    @endphp
                     <a href="{{ $baseUrl }}" class="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold border {{ $selectedUserId === 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-gray-900 border-slate-200' }}">
                         Tous
                     </a>
@@ -189,7 +193,9 @@
                         Commun
                     </a>
                     @foreach (($users ?? collect()) as $u)
-                        @php($count = (int) (($userImageCounts ?? [])[$u->id] ?? 0))
+                        @php
+                            $count = (int) (($userImageCounts ?? [])[$u->id] ?? 0);
+                        @endphp
                         <a href="{{ route('images.index', ['user' => $u->id]) }}" class="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold border {{ $selectedUserId === (int)$u->id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-gray-900 border-slate-200' }}">
                             {{ $u->name }}
                             <span class="ml-1 text-xs {{ $selectedUserId === (int)$u->id ? 'text-white/80' : 'text-slate-500' }}">{{ $count }}</span>
@@ -205,7 +211,7 @@
                 <div class="text-sm text-slate-500 mt-1">Importe une première photo pour démarrer.</div>
                 @can('images-upload')
                     <div class="mt-4">
-                        <button type="button" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold" @click="$refs.uploadInput?.click()">
+                        <button type="button" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold" x-on:click="$refs.uploadInput?.click()">
                             Importer une image
                         </button>
                     </div>
@@ -277,8 +283,8 @@
                         <button
                             type="button"
                             class="absolute top-2 right-2 bg-slate-900/80 text-white rounded-lg px-2 py-2 md:opacity-0 md:group-hover:opacity-100 transition"
-                            @click="menuOpen = !menuOpen"
-                            @click.outside="menuOpen = false"
+                            x-on:click="menuOpen = !menuOpen"
+                            x-on:click.outside="menuOpen = false"
                             aria-label="Actions"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4" aria-hidden="true">
@@ -299,7 +305,7 @@
                                 <button
                                     type="button"
                                     class="w-full text-left rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-slate-50"
-                                    @click="menuOpen = false; confirmAction = '{{ route('images.destroy', $image) }}'; confirmOpen = true;"
+                                    x-on:click="menuOpen = false; confirmAction = '{{ route('images.destroy', $image) }}'; confirmOpen = true;"
                                 >
                                     Supprimer
                                 </button>
@@ -322,7 +328,7 @@
                 role="dialog"
                 aria-modal="true"
             >
-                <div class="absolute inset-0 bg-black/40" @click="confirmOpen = false"></div>
+                <div class="absolute inset-0 bg-black/40" x-on:click="confirmOpen = false"></div>
                 <div class="relative w-full max-w-md bg-white rounded-2xl shadow-sm p-6">
                     <div class="text-base font-semibold text-gray-900">Supprimer l’image ?</div>
                     <div class="text-sm text-slate-500 mt-2">Cette action est irréversible.</div>
@@ -331,7 +337,7 @@
                         @csrf
                         @method('DELETE')
 
-                        <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900" @click="confirmOpen = false">
+                        <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900" x-on:click="confirmOpen = false">
                             Annuler
                         </button>
                         <button type="submit" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold">
