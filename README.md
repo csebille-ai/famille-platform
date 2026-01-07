@@ -57,3 +57,29 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## Web Push (notifications)
+
+This project can send a push notification to all subscribed devices when a photo is uploaded.
+
+### Requirements
+
+- HTTPS in production
+- A service worker (`public/service-worker.js`) registered in the browser
+- iOS: push requires an installed Home Screen app (iOS 16.4+)
+
+### Configuration
+
+Add these to `.env`:
+
+```dotenv
+WEBPUSH_SUBJECT=${APP_URL}
+WEBPUSH_PUBLIC_KEY=...
+WEBPUSH_PRIVATE_KEY=...
+```
+
+Generate VAPID keys (example):
+
+```bash
+php -r "require 'vendor/autoload.php'; \$k=Minishlink\\WebPush\\VAPID::createVapidKeys(); echo 'WEBPUSH_PUBLIC_KEY=' . \$k['publicKey'] . PHP_EOL; echo 'WEBPUSH_PRIVATE_KEY=' . \$k['privateKey'] . PHP_EOL;"
+```

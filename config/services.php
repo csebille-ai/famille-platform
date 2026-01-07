@@ -40,4 +40,10 @@ return [
         'client_secret' => env('SPOTIFY_CLIENT_SECRET'),
     ],
 
+    'webpush' => [
+        'subject' => env('WEBPUSH_SUBJECT', env('APP_URL')),
+        'public_key' => env('WEBPUSH_PUBLIC_KEY'),
+        'private_key' => env('WEBPUSH_PRIVATE_KEY'),
+    ],
+
 ];

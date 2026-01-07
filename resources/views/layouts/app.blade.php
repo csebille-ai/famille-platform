@@ -4,6 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        @if(!empty(config('services.webpush.public_key')))
+            <meta name="vapid-public-key" content="{{ config('services.webpush.public_key') }}">
+        @endif
 
         <meta name="theme-color" content="#ffffff">
         <meta name="apple-mobile-web-app-capable" content="yes">

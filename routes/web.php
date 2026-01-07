@@ -9,6 +9,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Resource;
@@ -185,6 +186,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/galerie/{node}', [ImageController::class, 'view'])->name('images.view');
     Route::post('/galerie/{node}/like', [ImageController::class, 'toggleLike'])->name('images.like');
     Route::delete('/galerie/{node}', [ImageController::class, 'destroy'])->name('images.destroy');
+
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 
     Route::get('/cloud', function () {
         return redirect()->route('images.index');

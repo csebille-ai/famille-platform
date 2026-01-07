@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Services\WebPush\WebPushNotifier;
 use Symfony\Component\HttpFoundation\Response;
 
 class ImageController extends Controller
@@ -180,7 +181,7 @@ class ImageController extends Controller
 
         $root = $this->rootFolder();
 
-        CloudNode::create([
+        $node = CloudNode::create([
             'parent_id' => $root->id,
             'type' => 'file',
             'name' => $file->getClientOriginalName(),
@@ -189,6 +190,17 @@ class ImageController extends Controller
             'size' => (int) $file->getSize(),
             'uploaded_by' => Auth::id(),
         ]);
+
+        try {
+            $actorName = Auth::user()?->name ?: 'Quelqu’un';
+            app(WebPushNotifier::class)->notifyAll([
+                'title' => 'Nouvelle photo',
+                'body' => $actorName . ' a ajouté une photo',
+                'url' => route('images.open', $node),
+            ]);
+        } catch (\Throwable $e) {
+            // Never block uploads on push issues.
+        }
 
         return redirect()->route('images.index')->with('status', __('Image uploaded.'));
     }
