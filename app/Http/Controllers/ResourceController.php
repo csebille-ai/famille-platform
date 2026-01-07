@@ -190,4 +190,23 @@ class ResourceController extends Controller
             $resource->attachment_name ?: 'resource'
         );
     }
+
+    public function open(Resource $resource)
+    {
+        if (!$resource->attachment_path) {
+            abort(404);
+        }
+
+        $headers = [];
+        if ($resource->attachment_mime) {
+            $headers['Content-Type'] = $resource->attachment_mime;
+        }
+
+        return Storage::disk('local')->response(
+            $resource->attachment_path,
+            $resource->attachment_name ?: 'resource',
+            $headers,
+            'inline'
+        );
+    }
 }
