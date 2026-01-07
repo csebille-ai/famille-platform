@@ -29,7 +29,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-none mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-4 sm:p-6">
                     @if (!$resource->attachment_path)
@@ -38,8 +38,8 @@
                         </div>
                     @elseif ($previewType === 'pdf')
                         <iframe
-                            src="{{ route('resources.open', $resource) }}#zoom=page-width"
-                            class="w-full h-[80vh] rounded-xl border border-gray-200"
+                            src="{{ route('resources.open', $resource) }}#view=FitH"
+                            class="w-full h-[calc(100vh-14rem)] rounded-xl border border-gray-200"
                             title="{{ $displayName }}"
                         ></iframe>
                     @elseif ($previewType === 'image')
