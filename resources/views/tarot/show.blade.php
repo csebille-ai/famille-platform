@@ -26,13 +26,15 @@
                 @foreach ((array) ($reading->cards ?? []) as $c)
                     <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
                         @if (!empty($c['file']))
-                            <img
-                                src="{{ 'https://opanoma.fr/tarot/' . $c['file'] }}"
-                                alt="{{ $c['name'] ?? '' }}"
-                                class="w-full rounded-lg border border-slate-200 bg-white"
-                                style="transform: {{ !empty($c['reversed']) ? 'rotate(180deg)' : 'none' }};"
-                                loading="lazy"
-                            />
+                            <div class="flex justify-center">
+                                <img
+                                    src="{{ 'https://opanoma.fr/tarot/' . $c['file'] }}"
+                                    alt="{{ $c['name'] ?? '' }}"
+                                    class="h-56 w-auto max-w-full rounded-lg border border-slate-200 bg-white object-contain"
+                                    style="transform: {{ !empty($c['reversed']) ? 'rotate(180deg)' : 'none' }};"
+                                    loading="lazy"
+                                />
+                            </div>
                         @endif
                         <div class="text-sm font-semibold text-gray-900">{{ $c['name'] ?? '' }}</div>
                         <div class="mt-1 text-xs text-slate-500">{{ $c['keywords'] ?? '' }}</div>

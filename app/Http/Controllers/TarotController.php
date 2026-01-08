@@ -13,7 +13,14 @@ class TarotController extends Controller
 {
     public function index(Request $request): View
     {
-        $draft = $request->session()->get('tarot.draft');
+        $justDrew = (bool) $request->session()->get('tarot.just_drew', false);
+
+        if (!$justDrew) {
+            $request->session()->forget('tarot.draft');
+            $draft = null;
+        } else {
+            $draft = $request->session()->get('tarot.draft');
+        }
 
         return view('tarot.index', [
             'draft' => is_array($draft) ? $draft : null,
@@ -62,6 +69,7 @@ class TarotController extends Controller
         ];
 
         $request->session()->put('tarot.draft', $draft);
+        $request->session()->flash('tarot.just_drew', true);
 
         return redirect()->route('tarot.index');
     }
