@@ -198,6 +198,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
     Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 
+    Route::get('/actu', function () {
+        return view('actu.index');
+    })->name('actu.index');
+
     Route::get('/tarot', [TarotController::class, 'index'])->name('tarot.index');
     Route::post('/tarot/draw', [TarotController::class, 'draw'])->middleware('throttle:tarot-draw')->name('tarot.draw');
     Route::post('/tarot/reset', [TarotController::class, 'reset'])->name('tarot.reset');
