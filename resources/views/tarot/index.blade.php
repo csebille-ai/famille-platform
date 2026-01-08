@@ -137,13 +137,20 @@
                     $maybeJson = trim($interpretationText);
                     if ($maybeJson !== '' && str_starts_with($maybeJson, '{')) {
                         $decoded = json_decode($maybeJson, true);
+                        if (!is_array($decoded) && preg_match('/\{(?:[^{}]|(?R))*\}/s', $maybeJson, $m) === 1) {
+                            $decoded = json_decode($m[0], true);
+                        }
                         if (is_array($decoded) && isset($decoded['interpretation'])) {
                             $interpretationText = (string) $decoded['interpretation'];
                         }
                     }
+
+                    $interpretationText = str_replace("\r\n", "\n", $interpretationText);
+                    $interpretationText = preg_replace('/^\s*✅\s+/mu', '- ', $interpretationText) ?? $interpretationText;
+                    $interpretationText = preg_replace('/^(Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:/mu', '**$1 :**', $interpretationText) ?? $interpretationText;
                 @endphp
 
-                <div class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 leading-relaxed">
+                <div class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:my-3 [&_ul]:pl-5 [&_ul]:list-disc [&_ol]:my-3 [&_ol]:pl-5 [&_ol]:list-decimal [&_li]:mb-1 [&_strong]:font-semibold">
                     {!! \Illuminate\Support\Str::markdown($interpretationText, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                 </div>
 

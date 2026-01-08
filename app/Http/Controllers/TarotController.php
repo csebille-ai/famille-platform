@@ -63,6 +63,19 @@ class TarotController extends Controller
         $interpretation = (string) ($bundle['interpretation'] ?? '');
         $spokenText = (string) ($bundle['spoken_text'] ?? '');
 
+        $maybeJson = trim($interpretation);
+        if ($maybeJson !== '' && str_starts_with($maybeJson, '{')) {
+            $decoded = json_decode($maybeJson, true);
+            if (is_array($decoded)) {
+                if (isset($decoded['interpretation']) && is_string($decoded['interpretation'])) {
+                    $interpretation = $decoded['interpretation'];
+                }
+                if ((trim($spokenText) === '') && isset($decoded['spoken_text']) && is_string($decoded['spoken_text'])) {
+                    $spokenText = $decoded['spoken_text'];
+                }
+            }
+        }
+
         $draft = [
             'question' => $validated['question'],
             'spread' => $validated['spread'],
