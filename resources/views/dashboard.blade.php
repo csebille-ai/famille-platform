@@ -45,7 +45,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Dernières photos</div>
-                    <a href="{{ route('images.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+                    <a href="{{ route('images.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
                 </div>
 
                 <div class="mt-4">
@@ -73,7 +73,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Dernières vidéos</div>
-                    <a href="{{ route('videos.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+                    <a href="{{ route('videos.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
                 </div>
 
                 <div class="mt-4">
@@ -106,7 +106,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Derniers docs</div>
-                    <a href="{{ route('resources.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
+                    <a href="{{ route('resources.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
                 </div>
 
                 <div class="mt-4 space-y-3">
@@ -132,7 +132,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Chat</div>
-                    <a href="{{ route('chat.index') }}" class="text-sm text-slate-500 hover:underline">Ouvrir ›</a>
+                    <a href="{{ route('chat.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Ouvrir ›</a>
                 </div>
 
                 <div class="mt-2 text-sm text-slate-500">
