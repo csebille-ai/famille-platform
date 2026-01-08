@@ -27,6 +27,7 @@ class TarotOpenAiTts
         $model = (string) config('services.openai.tts_model', 'tts-1');
         $voice = (string) config('services.openai.tts_voice', 'alloy');
         $format = (string) config('services.openai.tts_format', 'mp3');
+        $speedRaw = config('services.openai.tts_speed');
 
         $hash = hash('sha256', $model . '|' . $voice . '|' . $format . '|' . $text);
         $ext = $format === '' ? 'mp3' : $format;
@@ -43,6 +44,13 @@ class TarotOpenAiTts
             'input' => $text,
             'format' => $format,
         ];
+
+        if ($speedRaw !== null && $speedRaw !== '') {
+            $speed = (float) $speedRaw;
+            if ($speed > 0) {
+                $payload['speed'] = $speed;
+            }
+        }
 
         try {
             $resp = Http::timeout(40)

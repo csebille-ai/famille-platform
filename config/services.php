@@ -54,6 +54,7 @@ return [
         'tts_model' => env('OPENAI_TTS_MODEL', 'tts-1'),
         'tts_voice' => env('OPENAI_TTS_VOICE', 'alloy'),
         'tts_format' => env('OPENAI_TTS_FORMAT', 'mp3'),
+        'tts_speed' => env('OPENAI_TTS_SPEED'),
     ],
 
 ];
