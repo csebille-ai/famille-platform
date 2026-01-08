@@ -30,6 +30,13 @@ class TarotController extends Controller
         $count = $validated['spread'] === 'three' ? 3 : 1;
         $cards = $deck->draw($count);
 
+        $cards = array_map(function (array $card): array {
+            $reversed = (random_int(0, 1) === 1);
+            $card['reversed'] = $reversed;
+            $card['orientation'] = $reversed ? 'reversed' : 'upright';
+            return $card;
+        }, $cards);
+
         if (count($cards) !== $count) {
             return back()->withErrors(['question' => 'Deck tarot indisponible.'])->withInput();
         }
