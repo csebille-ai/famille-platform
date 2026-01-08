@@ -6,7 +6,7 @@
         return mb_substr($s, 0, $max - 1) . '…';
     };
 
-    $spreadLabel = fn (string $s) => $s === 'three' ? '3 cartes' : '1 carte';
+    $spreadLabel = fn (string $s) => $s === 'five' ? '5 cartes' : '3 cartes';
 @endphp
 
 <x-app-layout pageBgClass="bg-slate-50">

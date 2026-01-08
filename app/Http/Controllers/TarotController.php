@@ -31,10 +31,10 @@ class TarotController extends Controller
     {
         $validated = $request->validate([
             'question' => ['required', 'string', 'max:500'],
-            'spread' => ['required', 'in:one,three'],
+            'spread' => ['required', 'in:three,five'],
         ]);
 
-        $count = $validated['spread'] === 'three' ? 3 : 1;
+        $count = $validated['spread'] === 'five' ? 5 : 3;
         $cards = $deck->draw($count);
 
         $cards = array_map(function (array $card): array {
