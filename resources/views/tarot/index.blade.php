@@ -125,7 +125,13 @@
                     </div>
                 @endif
 
-                <div class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 whitespace-pre-wrap">
+                <div class="flex items-center gap-3">
+                    <x-secondary-button type="button" id="tarot-tts-read">Lire</x-secondary-button>
+                    <x-secondary-button type="button" id="tarot-tts-stop">Stop</x-secondary-button>
+                    <div id="tarot-tts-status" class="text-xs text-slate-500"></div>
+                </div>
+
+                <div id="tarot-tts-text" class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 whitespace-pre-wrap">
                     {{ (string) ($draft['interpretation'] ?? '') }}
                 </div>
 
@@ -138,3 +144,92 @@
         @endif
     </div>
 </x-app-layout>
+
+<script>
+(() => {
+    const readBtn = document.getElementById('tarot-tts-read');
+    const stopBtn = document.getElementById('tarot-tts-stop');
+    const statusEl = document.getElementById('tarot-tts-status');
+    const textEl = document.getElementById('tarot-tts-text');
+
+    if (!readBtn || !stopBtn || !textEl) return;
+
+    const hasTts = typeof window !== 'undefined'
+        && 'speechSynthesis' in window
+        && typeof window.SpeechSynthesisUtterance !== 'undefined';
+
+    const setStatus = (msg) => {
+        if (!statusEl) return;
+        statusEl.textContent = msg || '';
+    };
+
+    if (!hasTts) {
+        readBtn.disabled = true;
+        stopBtn.disabled = true;
+        setStatus('Lecture audio non supportée sur ce navigateur.');
+        return;
+    }
+
+    const preferredLang = 'fr-CA';
+    const fallbackLang = 'fr-FR';
+
+    const getVoices = () => window.speechSynthesis.getVoices?.() ?? [];
+
+    const pickVoice = () => {
+        const voices = getVoices();
+        if (!voices.length) return null;
+        const byLang = (lang) => voices.find(v => (v.lang || '').toLowerCase() === lang.toLowerCase())
+            || voices.find(v => (v.lang || '').toLowerCase().startsWith(lang.toLowerCase()));
+
+        return byLang(preferredLang)
+            || byLang(fallbackLang)
+            || byLang('fr')
+            || voices[0]
+            || null;
+    };
+
+    const stop = () => {
+        window.speechSynthesis.cancel();
+        setStatus('');
+    };
+
+    const speak = () => {
+        stop();
+
+        const text = (textEl.textContent || '').trim();
+        if (!text) {
+            setStatus('Rien à lire.');
+            return;
+        }
+
+        const u = new SpeechSynthesisUtterance(text);
+        const voice = pickVoice();
+
+        if (voice) {
+            u.voice = voice;
+            u.lang = voice.lang || preferredLang;
+            setStatus(`Voix: ${voice.name}${voice.lang ? ' (' + voice.lang + ')' : ''}`);
+        } else {
+            u.lang = preferredLang;
+            setStatus('');
+        }
+
+        u.rate = 1;
+        u.pitch = 1;
+        u.onend = () => setStatus('');
+        u.onerror = () => setStatus('Lecture audio interrompue.');
+
+        window.speechSynthesis.speak(u);
+    };
+
+    readBtn.addEventListener('click', speak);
+    stopBtn.addEventListener('click', stop);
+
+    if (typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
+        window.speechSynthesis.onvoiceschanged = () => {
+            // Warm-up: makes pickVoice more reliable on some browsers.
+            pickVoice();
+        };
+    }
+})();
+</script>
