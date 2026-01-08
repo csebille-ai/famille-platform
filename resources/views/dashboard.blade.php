@@ -76,26 +76,25 @@
                     <a href="{{ route('videos.index') }}" class="text-sm text-slate-500 hover:underline">Voir tout ›</a>
                 </div>
 
-                <div class="mt-4 space-y-3">
+                <div class="mt-4">
                     @if(($latestVideos ?? collect())->count())
-                        @foreach(($latestVideos ?? collect())->take(2) as $v)
-                            <a href="{{ route('videos.show', $v) }}" class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 hover:bg-slate-50">
-                                <div class="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-                                    @if (!empty($v->poster_path))
-                                        <img src="{{ route('videos.poster', $v) }}" alt="{{ $v->title }}" class="w-full h-full object-cover" loading="lazy" />
-                                    @else
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400" aria-hidden="true">
-                                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                                            <path d="M10 9l5 3-5 3V9z" />
-                                        </svg>
-                                    @endif
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="text-sm font-semibold text-gray-900 truncate">{{ $v->title }}</div>
-                                    <div class="text-xs text-slate-500">{{ $v->created_at?->diffForHumans() }}</div>
-                                </div>
-                            </a>
-                        @endforeach
+                        <div class="grid grid-cols-3 gap-3">
+                            @foreach(($latestVideos ?? collect())->take(3) as $v)
+                                <a href="{{ route('videos.show', $v) }}" class="block" aria-label="Ouvrir vidéo">
+                                    <div class="rounded-xl overflow-hidden aspect-video bg-slate-100 flex items-center justify-center">
+                                        @if (!empty($v->poster_path))
+                                            <img src="{{ route('videos.poster', $v) }}" alt="{{ $v->title }}" class="w-full h-full object-cover" loading="lazy" />
+                                        @else
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-slate-400" aria-hidden="true">
+                                                <rect x="3" y="5" width="18" height="14" rx="2" />
+                                                <path d="M10 9l5 3-5 3V9z" />
+                                            </svg>
+                                        @endif
+                                    </div>
+                                    <div class="mt-2 text-sm font-semibold text-gray-900 truncate">{{ $v->title }}</div>
+                                </a>
+                            @endforeach
+                        </div>
                     @else
                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                             Aucune vidéo pour l’instant.
