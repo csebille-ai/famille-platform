@@ -4,7 +4,7 @@
  * - Navigation requests are network-first with offline fallback.
  */
 
-const CACHE_NAME = 'famille-assets-v2';
+const CACHE_NAME = 'famille-assets-v3';
 const OFFLINE_URL = '/offline.html';
 
 self.addEventListener('install', (event) => {
@@ -45,8 +45,13 @@ self.addEventListener('fetch', (event) => {
 
   // Never intercept non-GET except navigation fallback below.
 
-  // Navigation: do NOT cache HTML; network-first, fallback to offline.
+  // Navigation: do NOT cache HTML.
+  // IMPORTANT: Never return offline.html for non-GET navigations (e.g. POST form submits),
+  // otherwise a successful submit can look like "no connection" on flaky mobile networks.
   if (request.mode === 'navigate') {
+    if (request.method !== 'GET') {
+      return;
+    }
     event.respondWith(
       (async () => {
         try {
