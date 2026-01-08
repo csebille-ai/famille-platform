@@ -9,8 +9,8 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
-                    <div class="aspect-video bg-gray-200 rounded-lg mb-6 flex items-center justify-center">
-                        <video controls class="w-full h-full rounded-lg">
+                    <div class="aspect-video bg-gray-200 rounded-lg overflow-hidden mb-6 flex items-center justify-center">
+                        <video controls class="w-full h-full object-cover">
                             <source src="{{ route('videos.stream', $video) }}">
                             Votre navigateur ne supporte pas la balise vidéo.
                         </video>
