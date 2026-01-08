@@ -122,6 +122,11 @@
                         $isLiked = in_array((int) $image->id, array_map('intval', $likedImageIds ?? []), true);
                         $likeCount = (int) ($image->likers_count ?? 0);
 
+                        $uploaderFirstName = '';
+                        if (!empty($image->uploader?->name)) {
+                            $uploaderFirstName = trim(explode(' ', trim($image->uploader->name))[0] ?? '');
+                        }
+
                         $openParams = ['node' => $image];
                         if ($selectedUserId !== 0) {
                             $openParams['user'] = $selectedUserId;
@@ -166,10 +171,10 @@
                                     </div>
                                 @endif
 
-                                <div class="text-xs bg-slate-900/80 text-white rounded-lg px-2 py-1 min-w-0 truncate">
-                                    {{ $image->created_at?->format('d/m/Y') }}
-                                    @if (!empty($image->uploader?->name))
-                                        <span class="ml-2">{{ $image->uploader->name }}</span>
+                                <div class="text-[11px] bg-slate-900/80 text-white rounded-lg px-2 py-1 min-w-0 truncate">
+                                    {{ $image->created_at?->format('j.n.y') }}
+                                    @if ($uploaderFirstName !== '')
+                                        <span class="ml-1.5">{{ $uploaderFirstName }}</span>
                                     @endif
                                 </div>
                             </div>
