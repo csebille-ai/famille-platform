@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Models\User;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,6 +23,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('tarot-draw', function ($request) {
+            $userId = (string) optional($request->user())->id;
+            $key = $userId !== '' ? 'u:' . $userId : (string) $request->ip();
+
+            return Limit::perMinute(10)->by($key);
+        });
+
         Gate::define('manage-users', function (User $user): bool {
             return ($user->role ?? 'member') === 'admin';
         });
