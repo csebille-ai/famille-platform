@@ -77,6 +77,7 @@
             <div class="flex items-center gap-3">
                 <x-secondary-button type="button" id="tarot-tts-read">Lire</x-secondary-button>
                 <x-secondary-button type="button" id="tarot-tts-stop">Stop</x-secondary-button>
+                <x-secondary-button type="button" id="tarot-tts-openai">Audio (OpenAI)</x-secondary-button>
                 <div id="tarot-tts-status" class="text-xs text-slate-500"></div>
             </div>
 
@@ -97,6 +98,7 @@
 (() => {
     const readBtn = document.getElementById('tarot-tts-read');
     const stopBtn = document.getElementById('tarot-tts-stop');
+    const openAiBtn = document.getElementById('tarot-tts-openai');
     const statusEl = document.getElementById('tarot-tts-status');
     const textEl = document.getElementById('tarot-tts-text');
 
@@ -136,8 +138,14 @@
             || null;
     };
 
+    let openAiAudio = null;
+
     const stop = () => {
         window.speechSynthesis.cancel();
+        if (openAiAudio) {
+            try { openAiAudio.pause(); } catch (e) {}
+            openAiAudio = null;
+        }
         setStatus('');
     };
 
@@ -172,6 +180,57 @@
 
     readBtn.addEventListener('click', speak);
     stopBtn.addEventListener('click', stop);
+
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+    const speakWithOpenAi = async () => {
+        stop();
+
+        const text = (textEl.textContent || '').trim();
+        if (!text) {
+            setStatus('Rien à lire.');
+            return;
+        }
+
+        if (!openAiBtn) return;
+
+        openAiBtn.disabled = true;
+        setStatus('Génération audio…');
+
+        try {
+            const resp = await fetch('{{ route('tarot.tts') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ text }),
+            });
+
+            if (!resp.ok) {
+                throw new Error(`HTTP ${resp.status}`);
+            }
+
+            const data = await resp.json();
+            if (!data?.ok || !data?.url) {
+                throw new Error('Réponse invalide');
+            }
+
+            openAiAudio = new Audio(data.url);
+            openAiAudio.onended = () => setStatus('');
+            await openAiAudio.play();
+            setStatus('Lecture OpenAI…');
+        } catch (e) {
+            setStatus('OpenAI TTS indisponible.');
+        } finally {
+            openAiBtn.disabled = false;
+        }
+    };
+
+    if (openAiBtn) {
+        openAiBtn.addEventListener('click', speakWithOpenAi);
+    }
 
     if (typeof window.speechSynthesis.onvoiceschanged !== 'undefined') {
         window.speechSynthesis.onvoiceschanged = () => {

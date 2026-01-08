@@ -12,6 +12,7 @@ use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
 use App\Http\Controllers\Api\TarotDrawController;
+use App\Http\Controllers\Api\TarotTtsController;
 use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Resource;
@@ -203,6 +204,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/tarot/save', [TarotController::class, 'save'])->name('tarot.save');
     Route::get('/tarot/historique', [TarotController::class, 'history'])->name('tarot.history');
     Route::get('/tarot/historique/{reading}', [TarotController::class, 'show'])->name('tarot.history.show');
+
+    Route::post('/api/tarot/tts', TarotTtsController::class)
+        ->middleware('throttle:tarot-draw')
+        ->name('tarot.tts');
 
     Route::get('/cloud', function () {
         return redirect()->route('images.index');
