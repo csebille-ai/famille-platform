@@ -29,6 +29,12 @@
                     <label for="question" class="block text-sm font-semibold text-gray-900">Ta question</label>
                     <textarea id="question" name="question" rows="3" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
                     <div class="mt-1 text-xs text-slate-500">Max 500 caractères.</div>
+
+                    <div class="mt-2 flex items-center gap-3">
+                        <x-secondary-button type="button" id="tarot-stt-start">Dicter</x-secondary-button>
+                        <x-secondary-button type="button" id="tarot-stt-stop">Stop</x-secondary-button>
+                        <div id="tarot-stt-status" class="text-xs text-slate-500"></div>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-3">
@@ -166,6 +172,94 @@
 
 <script>
 (() => {
+    // Speech-to-text (mobile dictation)
+    const sttStartBtn = document.getElementById('tarot-stt-start');
+    const sttStopBtn = document.getElementById('tarot-stt-stop');
+    const sttStatusEl = document.getElementById('tarot-stt-status');
+    const questionEl = document.getElementById('question');
+
+    const setSttStatus = (msg) => {
+        if (!sttStatusEl) return;
+        sttStatusEl.textContent = msg || '';
+    };
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognizer = null;
+    let sttActive = false;
+
+    if (sttStartBtn && sttStopBtn && questionEl && SpeechRecognition) {
+        recognizer = new SpeechRecognition();
+        recognizer.lang = 'fr-FR';
+        recognizer.interimResults = true;
+        recognizer.continuous = false;
+
+        let baseText = '';
+
+        recognizer.onstart = () => {
+            sttActive = true;
+            sttStartBtn.disabled = true;
+            sttStopBtn.disabled = false;
+            baseText = (questionEl.value || '').trim();
+            setSttStatus('J’écoute…');
+        };
+
+        recognizer.onend = () => {
+            sttActive = false;
+            sttStartBtn.disabled = false;
+            sttStopBtn.disabled = true;
+            setSttStatus('');
+        };
+
+        recognizer.onerror = () => {
+            // Usually: not-allowed / no-speech / network
+            sttActive = false;
+            sttStartBtn.disabled = false;
+            sttStopBtn.disabled = true;
+            setSttStatus('Dictée indisponible.');
+        };
+
+        recognizer.onresult = (event) => {
+            let interim = '';
+            let finalText = '';
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const res = event.results[i];
+                const chunk = (res[0]?.transcript || '').trim();
+                if (!chunk) continue;
+                if (res.isFinal) {
+                    finalText += (finalText ? ' ' : '') + chunk;
+                } else {
+                    interim += (interim ? ' ' : '') + chunk;
+                }
+            }
+
+            const combined = [baseText, finalText || interim].filter(Boolean).join(baseText ? ' ' : '');
+            questionEl.value = combined;
+        };
+
+        sttStopBtn.disabled = true;
+
+        sttStartBtn.addEventListener('click', () => {
+            if (sttActive) return;
+            try {
+                // iOS/Safari may not support; Android Chrome does.
+                recognizer.start();
+            } catch (e) {
+                setSttStatus('Dictée indisponible.');
+            }
+        });
+
+        sttStopBtn.addEventListener('click', () => {
+            try {
+                recognizer.stop();
+            } catch (e) {}
+        });
+    } else {
+        if (sttStartBtn) sttStartBtn.disabled = true;
+        if (sttStopBtn) sttStopBtn.disabled = true;
+        if (sttStatusEl) setSttStatus('Dictée non supportée sur ce navigateur.');
+    }
+
     const openAiBtn = document.getElementById('tarot-tts-openai');
     const statusEl = document.getElementById('tarot-tts-status');
     const textEl = document.getElementById('tarot-tts-text');
