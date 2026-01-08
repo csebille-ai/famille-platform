@@ -11,12 +11,17 @@ use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
+use App\Http\Controllers\Api\TarotDrawController;
 use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Resource;
 use App\Models\Video;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+
+Route::post('/api/tarot/draw', TarotDrawController::class)
+    ->middleware('throttle:tarot-draw')
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
