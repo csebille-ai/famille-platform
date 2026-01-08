@@ -75,14 +75,12 @@
                                         src="{{ 'https://opanoma.fr/tarot/' . $c['file'] }}"
                                         alt="{{ $c['name'] ?? '' }}"
                                         class="h-56 w-auto max-w-full rounded-lg border border-slate-200 bg-white object-contain"
+                                        style="transform: {{ !empty($c['reversed']) ? 'rotate(180deg)' : 'none' }};"
                                         loading="lazy"
                                     />
                                 </div>
                             @endif
                             <div class="mt-3 text-sm font-semibold text-gray-900">{{ $c['name'] ?? '' }}</div>
-                            @if (!empty($c['reversed']))
-                                <div class="mt-1 text-xs text-slate-500">Renversée</div>
-                            @endif
                             <div class="mt-1 text-xs text-slate-500">{{ $c['keywords'] ?? '' }}</div>
                         </div>
                     @endforeach
