@@ -49,7 +49,7 @@ class TarotController extends Controller
         }
 
         try {
-            $interpretation = $interpreter->interpret(
+            $bundle = $interpreter->interpretBundle(
                 question: $validated['question'],
                 spread: $validated['spread'],
                 cards: $cards,
@@ -60,11 +60,15 @@ class TarotController extends Controller
                 ->withInput();
         }
 
+        $interpretation = (string) ($bundle['interpretation'] ?? '');
+        $spokenText = (string) ($bundle['spoken_text'] ?? '');
+
         $draft = [
             'question' => $validated['question'],
             'spread' => $validated['spread'],
             'cards' => $cards,
             'interpretation' => $interpretation,
+            'spoken_text' => $spokenText,
             'generated_at' => now()->toIso8601String(),
         ];
 
@@ -91,14 +95,21 @@ class TarotController extends Controller
         /** @var int $userId */
         $userId = (int) $request->user()->id;
 
-        $reading = TarotReading::create([
+        $data = [
             'user_id' => $userId,
             'question' => (string) ($draft['question'] ?? ''),
             'spread' => (string) ($draft['spread'] ?? 'one'),
             'cards' => (array) ($draft['cards'] ?? []),
             'interpretation' => (string) ($draft['interpretation'] ?? ''),
             'is_shared' => false,
-        ]);
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('tarot_readings', 'spoken_text')) {
+            $spokenText = trim((string) ($draft['spoken_text'] ?? ''));
+            $data['spoken_text'] = $spokenText !== '' ? $spokenText : null;
+        }
+
+        $reading = TarotReading::create($data);
 
         $request->session()->forget('tarot.draft');
 

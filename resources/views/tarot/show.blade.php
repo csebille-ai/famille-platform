@@ -80,7 +80,9 @@
                 <div id="tarot-tts-status" class="text-xs text-slate-500"></div>
             </div>
 
-            <div id="tarot-tts-text" class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 whitespace-pre-wrap">
+            <div class="sr-only" id="tarot-tts-text">{{ trim((string) ($reading->spoken_text ?? '')) !== '' ? (string) ($reading->spoken_text ?? '') : (string) $reading->interpretation }}</div>
+
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 whitespace-pre-wrap">
                 {{ $reading->interpretation }}
             </div>
 

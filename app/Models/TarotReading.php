@@ -13,6 +13,7 @@ class TarotReading extends Model
         'spread',
         'cards',
         'interpretation',
+        'spoken_text',
         'is_shared',
     ];
 

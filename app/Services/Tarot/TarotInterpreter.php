@@ -12,6 +12,16 @@ class TarotInterpreter
      */
     public function interpret(string $question, string $spread, array $cards): string
     {
+        $bundle = $this->interpretBundle(question: $question, spread: $spread, cards: $cards);
+        return $bundle['interpretation'];
+    }
+
+    /**
+     * @param array<int, array{name:string, keywords:string, reversed?:bool, orientation?:string}> $cards
+     * @return array{interpretation:string, spoken_text:string}
+     */
+    public function interpretBundle(string $question, string $spread, array $cards): array
+    {
         $apiKey = (string) config('services.openai.key');
         if (trim($apiKey) === '') {
             throw new \RuntimeException('OPENAI_API_KEY manquante');
@@ -53,11 +63,21 @@ class TarotInterpreter
     3) **Le conseil qui pique mais qui aide** (2 actions concrètes, format ✅)
     4) **Le twist final** (1 punchline surprise)
 
+    EN PLUS: SPOKEN_TEXT (pour lecture audio)
+    - Génère aussi un champ spoken_text adapté à l’oral: 25–45 secondes.
+    - Phrases courtes. Respiration. Rythme.
+    - Zéro markdown. Pas de listes. Pas d’emojis.
+    - Tu peux faire "Ok." / "Passé:" / "Présent:" etc, mais en phrases simples.
+
     LONGUEUR
     - Réponse courte (max ~{$maxChars} caractères, idéalement ≤ 260 mots).
 
     NE JAMAIS
     - Mentionner le modèle, "OpenAI", "prompt", ou les règles internes.
+
+    IMPORTANT
+    - Réponds UNIQUEMENT en JSON valide, sans texte autour.
+    - Clés attendues: interpretation, spoken_text.
     SYS;
 
         $user = <<<TXT
@@ -72,6 +92,22 @@ TXT;
             'messages' => [
                 ['role' => 'system', 'content' => $system],
                 ['role' => 'user', 'content' => $user],
+            ],
+            'response_format' => [
+                'type' => 'json_schema',
+                'json_schema' => [
+                    'name' => 'tarot_interpretation_bundle',
+                    'strict' => true,
+                    'schema' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'properties' => [
+                            'interpretation' => ['type' => 'string'],
+                            'spoken_text' => ['type' => 'string'],
+                        ],
+                        'required' => ['interpretation', 'spoken_text'],
+                    ],
+                ],
             ],
             'temperature' => 0.7,
             'max_tokens' => 450,
@@ -89,13 +125,28 @@ TXT;
             throw new \RuntimeException('Erreur OpenAI: ' . (string) $msg, previous: $e);
         }
 
-        $text = (string) ($resp->json('choices.0.message.content') ?? '');
-        $text = trim($text);
+        $raw = (string) ($resp->json('choices.0.message.content') ?? '');
+        $raw = trim($raw);
 
-        if ($maxChars > 0 && mb_strlen($text) > $maxChars) {
-            $text = rtrim(mb_substr($text, 0, $maxChars - 1)) . '…';
+        $decoded = json_decode($raw, true);
+        if (!is_array($decoded)) {
+            throw new \RuntimeException('Réponse OpenAI invalide (JSON attendu).');
         }
 
-        return $text;
+        $interpretation = trim((string) ($decoded['interpretation'] ?? ''));
+        $spokenText = trim((string) ($decoded['spoken_text'] ?? ''));
+
+        if ($interpretation === '' || $spokenText === '') {
+            throw new \RuntimeException('Réponse OpenAI incomplète (interpretation/spoken_text).');
+        }
+
+        if ($maxChars > 0 && mb_strlen($interpretation) > $maxChars) {
+            $interpretation = rtrim(mb_substr($interpretation, 0, $maxChars - 1)) . '…';
+        }
+
+        return [
+            'interpretation' => $interpretation,
+            'spoken_text' => $spokenText,
+        ];
     }
 }
