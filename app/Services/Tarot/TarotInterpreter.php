@@ -94,20 +94,8 @@ TXT;
                 ['role' => 'user', 'content' => $user],
             ],
             'response_format' => [
-                'type' => 'json_schema',
-                'json_schema' => [
-                    'name' => 'tarot_interpretation_bundle',
-                    'strict' => true,
-                    'schema' => [
-                        'type' => 'object',
-                        'additionalProperties' => false,
-                        'properties' => [
-                            'interpretation' => ['type' => 'string'],
-                            'spoken_text' => ['type' => 'string'],
-                        ],
-                        'required' => ['interpretation', 'spoken_text'],
-                    ],
-                ],
+                // More compatible with chat/completions than json_schema.
+                'type' => 'json_object',
             ],
             'temperature' => 0.7,
             'max_tokens' => 450,
@@ -128,16 +116,21 @@ TXT;
         $raw = (string) ($resp->json('choices.0.message.content') ?? '');
         $raw = trim($raw);
 
-        $decoded = json_decode($raw, true);
-        if (!is_array($decoded)) {
-            throw new \RuntimeException('Réponse OpenAI invalide (JSON attendu).');
+        $decoded = $this->decodeJsonObjectFromContent($raw);
+
+        $interpretation = '';
+        $spokenText = '';
+        if (is_array($decoded)) {
+            $interpretation = trim((string) ($decoded['interpretation'] ?? ''));
+            $spokenText = trim((string) ($decoded['spoken_text'] ?? ''));
         }
 
-        $interpretation = trim((string) ($decoded['interpretation'] ?? ''));
-        $spokenText = trim((string) ($decoded['spoken_text'] ?? ''));
-
-        if ($interpretation === '' || $spokenText === '') {
-            throw new \RuntimeException('Réponse OpenAI incomplète (interpretation/spoken_text).');
+        // Fallback: don't block the draw if the model didn't respect JSON.
+        if ($interpretation === '') {
+            $interpretation = $raw;
+        }
+        if ($spokenText === '') {
+            $spokenText = $this->deriveSpokenText($interpretation);
         }
 
         if ($maxChars > 0 && mb_strlen($interpretation) > $maxChars) {
@@ -148,5 +141,71 @@ TXT;
             'interpretation' => $interpretation,
             'spoken_text' => $spokenText,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function decodeJsonObjectFromContent(string $content): ?array
+    {
+        $content = trim($content);
+        if ($content === '') {
+            return null;
+        }
+
+        // Common: fenced JSON
+        $content = preg_replace('/^```(?:json)?\s*/i', '', $content) ?? $content;
+        $content = preg_replace('/\s*```$/', '', $content) ?? $content;
+        $content = trim($content);
+
+        $decoded = json_decode($content, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+
+        // If the model included text around the JSON, extract the first {...} block.
+        if (preg_match('/\{(?:[^{}]|(?R))*\}/s', $content, $m) === 1) {
+            $decoded = json_decode($m[0], true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return null;
+    }
+
+    private function deriveSpokenText(string $interpretation): string
+    {
+        $t = trim($interpretation);
+        if ($t === '') {
+            return '';
+        }
+
+        // Remove common markdown & list formatting.
+        $t = preg_replace('/\*\*(.*?)\*\*/s', '$1', $t) ?? $t;
+        $t = preg_replace('/^\s*#{1,6}\s+/m', '', $t) ?? $t;
+        $t = preg_replace('/^\s*[-*•]\s+/m', '', $t) ?? $t;
+        $t = str_replace(["✅", "`"], ['', ''], $t);
+
+        // Remove emojis/pictographs (best effort).
+        $t = preg_replace('/\p{Extended_Pictographic}+/u', '', $t) ?? $t;
+
+        // Collapse whitespace.
+        $t = preg_replace('/\s+/u', ' ', $t) ?? $t;
+        $t = trim($t);
+
+        // Keep it reasonably short for ~25–45s (heuristic).
+        $max = 850;
+        if (mb_strlen($t) > $max) {
+            $cut = mb_substr($t, 0, $max);
+            $last = max(mb_strrpos($cut, '.') ?: 0, mb_strrpos($cut, '!') ?: 0, mb_strrpos($cut, '?') ?: 0);
+            if ($last > 200) {
+                $t = trim(mb_substr($cut, 0, $last + 1));
+            } else {
+                $t = trim($cut) . '…';
+            }
+        }
+
+        return $t;
     }
 }
