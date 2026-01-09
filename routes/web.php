@@ -96,126 +96,194 @@ Route::get('/dashboard', function () {
     ];
 
     $buildFamilyMoments = function (): array {
-        $cards = [];
-
-        // Always include at least one visual (photo) to make the end of the dashboard a "reward".
         $today = now();
 
-        $memoryPhoto = null;
-        try {
-            $memoryPhoto = CloudNode::query()
-                ->with('uploader:id,name')
-                ->where('type', 'file')
-                ->whereNotNull('stored_path')
-                ->where('mime', 'like', 'image/%')
-                ->whereMonth('created_at', $today->month)
-                ->whereDay('created_at', $today->day)
-                ->whereYear('created_at', '!=', $today->year)
-                ->inRandomOrder()
-                ->first();
-        } catch (Throwable $e) {
-            $memoryPhoto = null;
-        }
+        $pickMemoryPhoto = function () use ($today) {
+            try {
+                return CloudNode::query()
+                    ->with('uploader:id,name')
+                    ->where('type', 'file')
+                    ->whereNotNull('stored_path')
+                    ->where('mime', 'like', 'image/%')
+                    ->whereMonth('created_at', $today->month)
+                    ->whereDay('created_at', $today->day)
+                    ->whereYear('created_at', '!=', $today->year)
+                    ->inRandomOrder()
+                    ->first();
+            } catch (Throwable $e) {
+                return null;
+            }
+        };
 
-        $surprisePhoto = null;
-        try {
-            $surprisePhoto = CloudNode::query()
-                ->with('uploader:id,name')
-                ->where('type', 'file')
-                ->whereNotNull('stored_path')
-                ->where('mime', 'like', 'image/%')
-                ->inRandomOrder()
-                ->first();
-        } catch (Throwable $e) {
-            $surprisePhoto = null;
-        }
+        $pickSurprisePhoto = function () {
+            try {
+                return CloudNode::query()
+                    ->with('uploader:id,name')
+                    ->where('type', 'file')
+                    ->whereNotNull('stored_path')
+                    ->where('mime', 'like', 'image/%')
+                    ->inRandomOrder()
+                    ->first();
+            } catch (Throwable $e) {
+                return null;
+            }
+        };
 
-        $photo = $memoryPhoto ?: $surprisePhoto;
-        if ($photo) {
-            $isMemory = (bool) $memoryPhoto;
-            $years = $photo->created_at ? max(0, (int) $photo->created_at->diffInYears($today)) : 0;
-
-            $title = $isMemory ? 'Souvenir du jour' : 'Photo surprise';
-            $subtitle = $isMemory
-                ? (($years > 0 ? 'Il y a ' . $years . ' an' . ($years > 1 ? 's' : '') . ' aujourd’hui' : 'Un souvenir du jour') . ' · ' . ($photo->uploader?->name ?: 'Famille'))
-                : 'Un petit clin d’œil au hasard.';
-
-            $cards[] = [
-                'kind' => $isMemory ? 'memory' : 'surprise',
-                'title' => $title,
-                'text' => $subtitle,
-                'image_url' => route('images.view', $photo),
-                'href' => route('images.open', $photo),
-                'cta' => $isMemory ? 'Voir le souvenir' : 'Voir la photo',
-            ];
-        }
-
-        // Upcoming family event (if enabled).
+        // 1) Upcoming family event (if close).
         try {
             if (Schema::hasTable('events')) {
                 $next = Event::query()
                     ->whereDate('starts_on', '>=', $today->toDateString())
+                    ->whereDate('starts_on', '<=', $today->copy()->addDays(7)->toDateString())
                     ->orderBy('starts_on')
                     ->first();
 
                 if ($next) {
-                    $days = (int) $today->startOfDay()->diffInDays($next->starts_on, false);
+                    $days = (int) $today->copy()->startOfDay()->diffInDays($next->starts_on, false);
                     $when = $days === 0 ? 'aujourd’hui' : ('dans ' . $days . ' jour' . ($days > 1 ? 's' : ''));
                     $label = $next->type ?: 'Événement';
 
-                    $cards[] = [
+                    return [[
                         'kind' => 'event',
                         'title' => $next->title,
                         'text' => $label . ' ' . $when,
                         'image_url' => null,
                         'href' => route('moments.index'),
                         'cta' => 'Voir',
-                    ];
+                    ]];
                 }
             }
         } catch (Throwable $e) {
             // ignore
         }
 
-        // Light daily tarot card (fun message, non mystique).
-        $deck = (array) config('tarot.cards', []);
-        if (!empty($deck) && count($cards) < 3) {
-            $seed = crc32('tarot:' . $today->toDateString());
-            $card = $deck[$seed % count($deck)] ?? null;
+        // 2) Context of the day (only when it's a special feel).
+        $dow = (int) $today->dayOfWeekIso; // 1..7
+        $isWeekend = $dow >= 6;
+        $isMonthStart = (int) $today->day === 1;
+        $month = (int) $today->month;
+        $season = match (true) {
+            in_array($month, [12, 1, 2], true) => 'hiver',
+            in_array($month, [3, 4, 5], true) => 'printemps',
+            in_array($month, [6, 7, 8], true) => 'été',
+            default => 'automne',
+        };
 
-            if (is_array($card) && !empty($card['name'])) {
-                $messages = [
-                    'Aujourd’hui, on y va tranquillement et on avance quand même.',
-                    'Version du jour: simple, efficace, sans se prendre la tête.',
-                    'Petit rappel: on fait mieux avec une pause qu’avec un sprint.',
-                    'On garde le cap: une petite action vaut mieux qu’un grand plan.',
+        if ($isWeekend || $isMonthStart) {
+            $seed = crc32('context:' . $today->toDateString());
+            $messages = $isWeekend
+                ? [
+                    'Petit moment tranquille: on se fait simple et doux aujourd’hui.',
+                    'Week-end mood: une pause, un sourire, et on profite.',
+                    'Aujourd’hui on respire: pas besoin d’en faire trop.',
+                ]
+                : [
+                    'Nouveau mois: une petite chose à faire, et c’est déjà bien.',
+                    'Début de mois: on se garde un petit cap simple.',
+                    'Un mois qui commence: on avance à notre rythme.',
                 ];
-                $msg = $messages[$seed % count($messages)];
 
+            $msg = $messages[$seed % count($messages)];
+            $photo = $pickSurprisePhoto();
+
+            return [[
+                'kind' => 'context',
+                'title' => 'Petit moment du ' . $today->translatedFormat('EEEE'),
+                'text' => $msg . ' (' . $season . ')',
+                'image_url' => $photo ? route('images.view', $photo) : null,
+                'href' => $photo ? route('images.open', $photo) : route('chat.index'),
+                'cta' => $photo ? 'Voir' : 'Écrire un mot',
+            ]];
+        }
+
+        // 3) Simple weather signal via local news (tag meteo).
+        try {
+            $weather = NewsItem::query()
+                ->where('tag', 'meteo')
+                ->orderByDesc('published_at')
+                ->orderByDesc('fetched_at')
+                ->first();
+
+            if ($weather) {
+                return [[
+                    'kind' => 'weather',
+                    'title' => 'Météo du coin',
+                    'text' => (string) ($weather->title ?: 'Un petit point météo'),
+                    'image_url' => (string) ($weather->image_url ?: ''),
+                    'href' => (string) ($weather->url ?: route('actu.index')),
+                    'cta' => 'Voir',
+                ]];
+            }
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        // 4) Memory.
+        $memoryPhoto = $pickMemoryPhoto();
+        if ($memoryPhoto) {
+            $years = $memoryPhoto->created_at ? max(0, (int) $memoryPhoto->created_at->diffInYears($today)) : 0;
+            $subtitle = ($years > 0 ? 'Il y a ' . $years . ' an' . ($years > 1 ? 's' : '') . ' aujourd’hui' : 'Un souvenir du jour')
+                . ' · ' . ($memoryPhoto->uploader?->name ?: 'Famille');
+
+            return [[
+                'kind' => 'memory',
+                'title' => 'Souvenir du jour',
+                'text' => $subtitle,
+                'image_url' => route('images.view', $memoryPhoto),
+                'href' => route('images.open', $memoryPhoto),
+                'cta' => 'Voir le souvenir',
+            ]];
+        }
+
+        // 5) Surprise (tarot preferred if it has a visual).
+        $deck = (array) config('tarot.cards', []);
+        $seed = crc32('surprise:' . $today->format('Y-m-d-H')); // changes hourly
+        if (!empty($deck)) {
+            $card = $deck[$seed % count($deck)] ?? null;
+            if (is_array($card) && !empty($card['name'])) {
                 $tarotImageUrl = null;
                 if (!empty($card['file'])) {
                     $tarotImageUrl = 'https://opanoma.fr/tarot/' . ltrim((string) $card['file'], '/');
                 }
 
-                $cards[] = [
+                $messages = [
+                    'Petit clin d’œil du jour: on avance tranquille.',
+                    'Une idée simple pour aujourd’hui: faire une chose, pas dix.',
+                    'Rappel doux: une pause, et on repart.',
+                ];
+
+                return [[
                     'kind' => 'tarot',
-                    'title' => 'Carte du jour: ' . (string) $card['name'],
-                    'text' => $msg,
+                    'title' => 'Carte du moment: ' . (string) $card['name'],
+                    'text' => $messages[$seed % count($messages)],
                     'image_url' => $tarotImageUrl,
                     'href' => route('tarot.index'),
                     'cta' => 'Voir',
-                ];
+                ]];
             }
         }
 
-        return array_slice($cards, 0, 3);
+        $photo = $pickSurprisePhoto();
+        if ($photo) {
+            return [[
+                'kind' => 'surprise',
+                'title' => 'Photo surprise',
+                'text' => 'Un petit clin d’œil au hasard.',
+                'image_url' => route('images.view', $photo),
+                'href' => route('images.open', $photo),
+                'cta' => 'Voir',
+            ]];
+        }
+
+        return [];
     };
 
     $familyMoments = [];
     try {
+        $bucket = now()->format('Y-m-d-H');
         $familyMoments = Cache::remember(
-            'dashboard.family_moments.' . now()->toDateString(),
-            now()->addDay(),
+            'dashboard.family_moments.' . $bucket,
+            now()->addMinutes(65),
             fn () => $buildFamilyMoments()
         );
     } catch (Throwable $e) {

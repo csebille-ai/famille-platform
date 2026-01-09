@@ -10,117 +10,51 @@
     };
 @endphp
 
-<x-app-layout pageBgClass="bg-slate-50">
-    <div class="max-w-6xl mx-auto px-6 py-6 space-y-6">
-        <div>
+                $c1 = $cards[0] ?? null;
             <h1 class="text-2xl font-bold text-gray-900">Bienvenue, {{ $firstName }}</h1>
             <div class="text-sm text-slate-500 mt-1">Accès rapide aux contenus de la famille</div>
-        </div>
+            <div class="mt-4">
+                @if(!empty($c1))
+                    @php
+                        $kind = (string) ($c1['kind'] ?? '');
+                        $href = (string) ($c1['href'] ?? '#');
+                        $cta = (string) ($c1['cta'] ?? 'Voir');
+                        $img = (string) ($c1['image_url'] ?? '');
+                        $title = (string) ($c1['title'] ?? '');
+                        $text = (string) ($c1['text'] ?? '');
+                        $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
+                    @endphp
 
-        <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <a href="{{ route('resources.create') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Ajouter un doc
-                </a>
-                <a href="{{ route('images.create') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Ajouter une photo
-                </a>
-                <a href="{{ route('videos.create') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Ajouter une vidéo
-                </a>
-                <a href="{{ route('actu.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Lire l’actu
-                </a>
-                <a href="{{ route('chat.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Écrire sur le chat
-                </a>
-            </div>
-        </div>
-
-        <div>
-            <div class="text-base font-semibold text-gray-900">Aujourd’hui</div>
-        </div>
-
-        <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="flex items-end justify-between gap-4">
-                <div class="text-base font-semibold text-gray-900">Aujourd’hui dans la famille</div>
-                <a href="{{ route('dashboard') }}" class="text-sm text-slate-500">Résumé</a>
-            </div>
-
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div class="text-xs font-semibold text-slate-500">ACTU LOCALE</div>
-                    @if(!empty($todayNewsItem))
-                        <a href="{{ $todayNewsItem->url }}" target="_blank" rel="noopener noreferrer" class="block mt-2 text-sm font-semibold text-gray-900 hover:underline">
-                            {{ $short($todayNewsItem->title ?? '', 90) }}
-                        </a>
-                        @if(!empty($todayNewsItem->excerpt))
-                            <div class="mt-1 text-sm text-slate-600">{{ $short($todayNewsItem->excerpt ?? '', 90) }}</div>
+                    <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                        @if($img !== '')
+                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
+                                <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
+                            </div>
+                        @else
+                            <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
+                                <div class="h-10 w-10 rounded-2xl bg-slate-100 border border-slate-200"></div>
+                            </div>
                         @endif
-                        <div class="mt-2 text-xs text-slate-500">
-                            {{ $todayNewsItem->source ?? 'Source' }}
-                            @if(!empty($todayNewsItem->published_at))
-                                <span class="text-slate-400">·</span>
-                                {{ $todayNewsItem->published_at?->diffForHumans() }}
+
+                        <div class="p-4">
+                            <div class="text-sm font-semibold text-gray-900 leading-snug">{{ $title }}</div>
+                            @if($text !== '')
+                                <div class="mt-1 text-sm text-slate-600">{{ $text }}</div>
+                            @endif
+
+                            @if($cta !== '')
+                                <div class="mt-3 inline-flex items-center text-sm font-semibold text-indigo-600">
+                                    {{ $cta }} ›
+                                </div>
                             @endif
                         </div>
-                    @else
-                        <div class="mt-2 text-sm text-slate-600">Aucune actu pour l’instant.</div>
-                        <a href="{{ route('actu.index') }}" class="mt-2 inline-flex text-sm font-semibold text-indigo-600 hover:underline">Voir l’actu ›</a>
-                    @endif
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div class="text-xs font-semibold text-slate-500">CHAT</div>
-                    @if(!empty($lastChatMessage))
-                        <a href="{{ route('chat.index') }}" class="block mt-2">
-                            <div class="text-sm font-semibold text-gray-900 truncate">{{ $lastChatMessage->user?->name ?? '—' }}</div>
-                            <div class="mt-1 text-sm text-slate-600">{{ $short($lastChatMessage->body ?? '', 90) }}</div>
-                            <div class="mt-2 text-xs text-slate-500">{{ $lastChatMessage->created_at?->diffForHumans() }}</div>
-                        </a>
-                    @else
-                        <div class="mt-2 text-sm text-slate-600">Aucun message pour l’instant.</div>
-                        <a href="{{ route('chat.index') }}" class="mt-2 inline-flex text-sm font-semibold text-indigo-600 hover:underline">Ouvrir le chat ›</a>
-                    @endif
-                </div>
-
-                <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div class="text-xs font-semibold text-slate-500">MÉDIA</div>
-                    @if(!empty($todayMedia) && !empty($todayMedia['type']) && !empty($todayMedia['model']))
-                        @php
-                            $t = (string) $todayMedia['type'];
-                            $m = $todayMedia['model'];
-                        @endphp
-
-                        @if($t === 'image')
-                            <a href="{{ route('images.open', $m) }}" class="block mt-2">
-                                <div class="rounded-xl overflow-hidden aspect-video bg-slate-100">
-                                    <img src="{{ route('images.view', $m) }}" alt="" class="w-full h-full object-cover" loading="lazy" />
-                                </div>
-                                <div class="mt-2 text-sm font-semibold text-gray-900 truncate">Photo</div>
-                                <div class="mt-1 text-xs text-slate-500 truncate">
-                                    {{ $m->uploader?->name ?? 'Quelqu’un' }}
-                                    <span class="text-slate-400">·</span>
-                                    {{ $m->created_at?->diffForHumans() }}
-                                </div>
-                            </a>
-                        @elseif($t === 'video')
-                            <a href="{{ route('videos.show', $m) }}" class="block mt-2">
-                                <div class="rounded-xl overflow-hidden aspect-video bg-slate-100 flex items-center justify-center">
-                                    @if (!empty($m->poster_path))
-                                        <img src="{{ route('videos.poster', $m) }}" alt="" class="w-full h-full object-cover" loading="lazy" />
-                                    @else
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-slate-400" aria-hidden="true">
-                                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                                            <path d="M10 9l5 3-5 3V9z" />
-                                        </svg>
-                                    @endif
-                                </div>
-                                <div class="mt-2 text-sm font-semibold text-gray-900 truncate">{{ $m->title }}</div>
-                                <div class="mt-1 text-xs text-slate-500 truncate">
-                                    {{ $m->creator?->name ?? 'Quelqu’un' }}
-                                    <span class="text-slate-400">·</span>
-                                    {{ $m->created_at?->diffForHumans() }}
+                    </a>
+                @else
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                        Rien à signaler aujourd’hui — juste nous.
+                    </div>
+                @endif
+            </div>
                                 </div>
                             </a>
                         @else
