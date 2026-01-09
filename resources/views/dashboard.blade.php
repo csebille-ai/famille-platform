@@ -290,7 +290,8 @@
             @php($cards = (array) ($familyMoments ?? []))
 
             <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                @forelse($cards as $c)
+                @if(!empty($cards))
+                    @foreach($cards as $c)
                     @php
                         $href = (string) ($c['href'] ?? '#');
                         $cta = (string) ($c['cta'] ?? 'Voir');
@@ -321,11 +322,12 @@
                             </div>
                         </div>
                     </a>
-                @empty
+                    @endforeach
+                @else
                     <div class="md:col-span-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                         Rien pour aujourd’hui. On se retrouve demain.
                     </div>
-                @endforelse
+                @endif
             </div>
         </div>
     </div>
