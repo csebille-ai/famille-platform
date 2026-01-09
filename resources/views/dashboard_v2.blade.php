@@ -10,7 +10,9 @@
     };
 @endphp
 
-                $c1 = $cards[0] ?? null;
+<x-app-layout pageBgClass="bg-slate-50">
+    <div class="py-6">
+        <div class="max-w-6xl mx-auto px-6 space-y-6">
             <h1 class="text-2xl font-bold text-gray-900">Bienvenue, {{ $firstName }}</h1>
             <div class="text-sm text-slate-500 mt-1">Accès rapide aux contenus de la famille</div>
             <div class="mt-4">
@@ -55,25 +57,7 @@
                     </div>
                 @endif
             </div>
-                                </div>
-                            </a>
-                        @else
-                            <a href="{{ route('resources.show', $m) }}" class="block mt-2">
-                                <div class="text-sm font-semibold text-gray-900 truncate">{{ $m->title }}</div>
-                                <div class="mt-1 text-sm text-slate-600">Document</div>
-                                <div class="mt-2 text-xs text-slate-500 truncate">
-                                    {{ $m->creator?->name ?? 'Quelqu’un' }}
-                                    <span class="text-slate-400">·</span>
-                                    {{ $m->created_at?->diffForHumans() }}
-                                </div>
-                            </a>
-                        @endif
-                    @else
-                        <div class="mt-2 text-sm text-slate-600">Aucun média récent.</div>
-                    @endif
-                </div>
-            </div>
-        </div>
+
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div class="bg-white rounded-2xl shadow-sm p-6">
