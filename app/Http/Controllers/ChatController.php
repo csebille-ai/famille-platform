@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Events\ChatMessageSent;
 use App\Models\ChatPresence;
 use App\Models\ChatMessage;
+use App\Services\WebPush\WebPushNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ChatController extends Controller
 {
@@ -46,11 +49,30 @@ class ChatController extends Controller
             'body' => $validated['body'],
         ]);
 
+        $message->loadMissing('user:id,name');
+
         broadcast(new ChatMessageSent($message))->toOthers();
 
-        if ($request->expectsJson()) {
-            $message->loadMissing('user:id,name');
+        try {
+            $senderId = (int) (Auth::id() ?? 0);
+            $senderName = (string) ($message->user?->name ?? 'Quelqu\'un');
 
+            $payload = [
+                'title' => $senderName . ' – Nouveau message',
+                'body' => (string) Str::limit((string) $message->body, 140, '…'),
+                'url' => route('chat.index'),
+            ];
+
+            if ($senderId > 0) {
+                app(WebPushNotifier::class)->notifyAllExceptUser($senderId, $payload, [
+                    'TTL' => 600,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[chat] webpush notify failed: ' . $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
             return response()->json([
                 'id' => $message->id,
                 'body' => $message->body,

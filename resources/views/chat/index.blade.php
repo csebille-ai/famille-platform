@@ -80,8 +80,18 @@
                         <span id="chatOnlineCount" class="font-semibold text-gray-900">{{ $onlineList->count() }}</span>
                         connectés
                     </div>
+                    <div id="chatPushStatus" class="mt-1 text-xs text-slate-500"></div>
                 </div>
-                <div id="chatOnlineAvatars" class="flex items-center -space-x-2">
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        id="chatPushToggle"
+                        class="border border-slate-200 bg-white text-slate-700 rounded-2xl px-3 py-2 text-xs font-semibold"
+                    >
+                        🔔 Notifications
+                    </button>
+
+                    <div id="chatOnlineAvatars" class="flex items-center -space-x-2">
                     @foreach($onlineList->take(6) as $u)
                         @php
                             $uid = (int) ($u['id'] ?? 0);
@@ -92,6 +102,7 @@
                             {{ $initialsFor($uname) }}
                         </div>
                     @endforeach
+                    </div>
                 </div>
             </div>
 
