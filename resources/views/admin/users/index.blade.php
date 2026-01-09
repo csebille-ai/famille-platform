@@ -9,6 +9,10 @@
                     {{ __('Manage user roles') }}
                 </div>
             </div>
+
+            <a href="{{ route('admin.users.create') }}" class="inline-flex items-center h-10 px-4 rounded-md bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+                {{ __('Add user') }}
+            </a>
         </div>
     </x-slot>
 
