@@ -438,8 +438,11 @@ Route::get('/dashboard', fn () => redirect()->route('dashboard'))
 Route::get('/media', function () {
     $tab = (string) request()->query('tab', '');
     $tab = strtolower(trim($tab));
-    if (!in_array($tab, ['images', 'videos'], true)) {
-        $tab = 'images';
+    if ($tab === 'images') {
+        $tab = 'photos';
+    }
+    if (!in_array($tab, ['photos', 'videos'], true)) {
+        $tab = 'photos';
     }
 
     $encodeCursor = function ($createdAt, int $id): string {
@@ -472,7 +475,7 @@ Route::get('/media', function () {
                 'at' => $img->created_at?->toIso8601String(),
                 'at_human' => $img->created_at?->diffForHumans(),
                 'thumb_url' => route('images.view', $img),
-                'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'images'])]),
+                'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'photos'])]),
             ])->values()->all();
 
             if ($rows->count() === 24) {
@@ -604,7 +607,7 @@ Route::get('/api/media', function () {
             'at' => $img->created_at?->toIso8601String(),
             'at_human' => $img->created_at?->diffForHumans(),
             'thumb_url' => route('images.view', $img),
-            'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'images'])]),
+            'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'photos'])]),
         ])->values();
 
         $next = null;

@@ -40,59 +40,27 @@
 
         <div class="rounded-2xl bg-white p-4 shadow-sm">
             <div class="flex items-center justify-between gap-3">
-                <div class="text-sm font-medium text-slate-900">Derniers ajouts</div>
-                <div class="w-full max-w-xs">
-                    <div class="grid grid-cols-3 rounded-xl border border-slate-200 bg-white p-1">
-                        <a
-                            href="{{ route('dashboard', ['feed' => 'all']) }}"
-                            class="rounded-lg px-2 py-2 text-center text-[0.72rem] font-semibold transition {{ ($feed ?? 'all') === 'all' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50' }}"
-                        >
-                            Tous
+                <div class="text-sm font-medium text-slate-900">Photos récentes</div>
+                <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="text-sm font-semibold text-slate-700 hover:text-slate-900">Voir tout</a>
+            </div>
+
+            @php
+                $photos = ($latestImages ?? collect())->take(6);
+            @endphp
+
+            @if($photos->count())
+                <div class="mt-3 grid grid-cols-3 gap-2">
+                    @foreach($photos as $img)
+                        <a href="{{ route('images.open', $img) }}" class="block overflow-hidden rounded-xl bg-slate-100" aria-label="Ouvrir photo">
+                            <div class="aspect-square">
+                                <img src="{{ route('images.view', $img) }}" alt="" class="h-full w-full object-cover" loading="lazy" />
+                            </div>
                         </a>
-                        <a
-                            href="{{ route('dashboard', ['feed' => 'photos']) }}"
-                            class="rounded-lg px-2 py-2 text-center text-[0.72rem] font-semibold transition {{ ($feed ?? 'all') === 'photos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50' }}"
-                        >
-                            Photos
-                        </a>
-                        <a
-                            href="{{ route('dashboard', ['feed' => 'videos']) }}"
-                            class="rounded-lg px-2 py-2 text-center text-[0.72rem] font-semibold transition {{ ($feed ?? 'all') === 'videos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50' }}"
-                        >
-                            Vidéos
-                        </a>
-                    </div>
+                    @endforeach
                 </div>
-            </div>
-
-            <div class="mt-3 divide-y divide-slate-100">
-                @forelse(($latestAdds ?? collect())->take(15) as $item)
-                    <a href="{{ $item['href'] }}" class="flex items-center gap-3 py-3 hover:bg-slate-50">
-                        @if(($item['type'] ?? '') === 'image' && !empty($item['thumb_url'] ?? null))
-                            <div class="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                                <img src="{{ $item['thumb_url'] }}" alt="" class="h-full w-full object-cover" loading="lazy" />
-                            </div>
-                        @elseif(($item['type'] ?? '') === 'video' && !empty($item['poster_url'] ?? null))
-                            <div class="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                                <img src="{{ $item['poster_url'] }}" alt="" class="h-full w-full object-cover" loading="lazy" />
-                            </div>
-                        @else
-                            <div class="h-11 w-11 shrink-0 rounded-xl bg-slate-50"></div>
-                        @endif
-
-                        <div class="min-w-0 flex-1">
-                            <div class="truncate text-sm font-medium text-slate-900">{{ $item['title'] }}</div>
-                            <div class="mt-0.5 truncate text-xs text-slate-500">
-                                Ajouté par {{ $item['by'] }}
-                                <span class="text-slate-400">·</span>
-                                {{ optional($item['at'])->diffForHumans() }}
-                            </div>
-                        </div>
-                    </a>
-                @empty
-                    <div class="py-6 text-sm text-slate-500">Aucun ajout pour le moment.</div>
-                @endforelse
-            </div>
+            @else
+                <div class="mt-3 text-sm text-slate-500">Aucune photo pour l’instant.</div>
+            @endif
         </div>
     </div>
 </x-app-layout>

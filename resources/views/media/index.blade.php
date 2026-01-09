@@ -1,7 +1,10 @@
 @php
-    $initialTab = strtolower((string) ($tab ?? 'images'));
-    if (!in_array($initialTab, ['images', 'videos'], true)) {
-        $initialTab = 'images';
+    $initialTab = strtolower((string) ($tab ?? 'photos'));
+    if ($initialTab === 'images') {
+        $initialTab = 'photos';
+    }
+    if (!in_array($initialTab, ['photos', 'videos'], true)) {
+        $initialTab = 'photos';
     }
 @endphp
 
@@ -15,15 +18,19 @@
     <div
         class="max-w-6xl mx-auto px-6 py-6 space-y-4"
         x-data="{
-            tab: 'images',
+            tab: 'photos',
             pageSize: {{ (int) ($pageSize ?? 24) }},
-            images: [],
+            photos: [],
             videos: [],
-            nextImagesCursor: null,
+            nextPhotosCursor: null,
             nextVideosCursor: null,
-            loadingImages: false,
+            loadingPhotos: false,
             loadingVideos: false,
-            skeletonCount: 8,
+            skeletonCount: 12,
+            viewerOpen: false,
+            viewerIndex: 0,
+            touchStartX: null,
+            touchStartY: null,
             readJson(id) {
                 try {
                     const el = document.getElementById(id);
@@ -47,7 +54,8 @@
             },
             normalize(v) {
                 v = String(v || '').toLowerCase().trim();
-                return (v === 'videos') ? 'videos' : 'images';
+                if (v === 'images') v = 'photos';
+                return (v === 'videos') ? 'videos' : 'photos';
             },
             readFromUrl() {
                 const url = new URL(window.location.href);
@@ -69,15 +77,49 @@
                 this.tab = this.normalize(next);
                 this.writeToUrl(true);
             },
-            canLoadMore(type) {
-                if (type === 'images') return !!this.nextImagesCursor && !this.loadingImages;
-                return !!this.nextVideosCursor && !this.loadingVideos;
+            openViewer(index) {
+                const i = Number(index);
+                if (!Number.isFinite(i)) return;
+                if (!Array.isArray(this.photos) || this.photos.length === 0) return;
+                this.viewerIndex = Math.max(0, Math.min(this.photos.length - 1, i));
+                this.viewerOpen = true;
+                try { document.body.style.overflow = 'hidden'; } catch (e) {}
+            },
+            closeViewer() {
+                this.viewerOpen = false;
+                try { document.body.style.overflow = ''; } catch (e) {}
+            },
+            nextPhoto() {
+                if (!Array.isArray(this.photos) || this.photos.length === 0) return;
+                this.viewerIndex = (this.viewerIndex + 1) % this.photos.length;
+            },
+            prevPhoto() {
+                if (!Array.isArray(this.photos) || this.photos.length === 0) return;
+                this.viewerIndex = (this.viewerIndex - 1 + this.photos.length) % this.photos.length;
+            },
+            onTouchStart(e) {
+                const t = e?.touches?.[0];
+                if (!t) return;
+                this.touchStartX = t.clientX;
+                this.touchStartY = t.clientY;
+            },
+            onTouchEnd(e) {
+                const t = e?.changedTouches?.[0];
+                if (!t || this.touchStartX === null || this.touchStartY === null) return;
+                const dx = t.clientX - this.touchStartX;
+                const dy = t.clientY - this.touchStartY;
+                this.touchStartX = null;
+                this.touchStartY = null;
+                if (Math.abs(dx) < 50) return;
+                if (Math.abs(dx) <= Math.abs(dy)) return;
+                if (dx < 0) this.nextPhoto();
+                else this.prevPhoto();
             },
             async loadMore(type) {
-                const isImages = (type === 'images');
-                if (isImages) {
-                    if (!this.nextImagesCursor || this.loadingImages) return;
-                    this.loadingImages = true;
+                const isPhotos = (type === 'photos');
+                if (isPhotos) {
+                    if (!this.nextPhotosCursor || this.loadingPhotos) return;
+                    this.loadingPhotos = true;
                 } else {
                     if (!this.nextVideosCursor || this.loadingVideos) return;
                     this.loadingVideos = true;
@@ -85,9 +127,9 @@
 
                 try {
                     const url = new URL(window.location.origin + '/api/media');
-                    url.searchParams.set('type', isImages ? 'image' : 'video');
+                    url.searchParams.set('type', isPhotos ? 'image' : 'video');
                     url.searchParams.set('limit', String(this.pageSize || 24));
-                    url.searchParams.set('cursor', isImages ? this.nextImagesCursor : this.nextVideosCursor);
+                    url.searchParams.set('cursor', isPhotos ? this.nextPhotosCursor : this.nextVideosCursor);
 
                     // Preserve any future filters/search from the current page URL.
                     const pageUrl = new URL(window.location.href);
@@ -107,9 +149,9 @@
                     const items = Array.isArray(data?.items) ? data.items : [];
                     const next = data?.next_cursor || null;
 
-                    if (isImages) {
-                        this.images = (this.images || []).concat(items);
-                        this.nextImagesCursor = next;
+                    if (isPhotos) {
+                        this.photos = (this.photos || []).concat(items);
+                        this.nextPhotosCursor = next;
                     } else {
                         this.videos = (this.videos || []).concat(items);
                         this.nextVideosCursor = next;
@@ -117,16 +159,16 @@
                 } catch (e) {
                     // Keep it silent for now; button will re-enable.
                 } finally {
-                    if (isImages) this.loadingImages = false;
+                    if (isPhotos) this.loadingPhotos = false;
                     else this.loadingVideos = false;
                 }
             },
             init() {
-                const initialTab = this.normalize(this.readJson('media-initial-tab') || 'images');
+                const initialTab = this.normalize(this.readJson('media-initial-tab') || 'photos');
                 this.tab = initialTab;
-                this.images = this.readJson('media-images-items') || [];
+                this.photos = this.readJson('media-images-items') || [];
                 this.videos = this.readJson('media-videos-items') || [];
-                this.nextImagesCursor = this.readJson('media-images-next-cursor');
+                this.nextPhotosCursor = this.readJson('media-images-next-cursor');
                 this.nextVideosCursor = this.readJson('media-videos-next-cursor');
 
                 this.tab = this.normalize(this.readFromUrl() || initialTab);
@@ -137,6 +179,13 @@
                 });
                 window.addEventListener('hashchange', () => {
                     this.tab = this.readFromUrl();
+                });
+
+                window.addEventListener('keydown', (e) => {
+                    if (!this.viewerOpen) return;
+                    if (e.key === 'Escape') this.closeViewer();
+                    if (e.key === 'ArrowRight') this.nextPhoto();
+                    if (e.key === 'ArrowLeft') this.prevPhoto();
                 });
             }
         }"
@@ -150,13 +199,13 @@
                 <button
                     type="button"
                     class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold"
-                    :class="tab === 'images' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300'"
-                    @click="setTab('images')"
-                    aria-controls="media-images"
-                    :aria-selected="tab === 'images'"
+                    :class="tab === 'photos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300'"
+                    @click="setTab('photos')"
+                    aria-controls="media-photos"
+                    :aria-selected="tab === 'photos'"
                     role="tab"
                 >
-                    Images
+                    Photos
                 </button>
 
                 <button
@@ -173,30 +222,28 @@
             </div>
         </div>
 
-        <div id="media-images" x-show="tab === 'images'" x-cloak>
-            <template x-if="(images || []).length === 0">
+        <div id="media-photos" x-show="tab === 'photos'" x-cloak>
+            <template x-if="(photos || []).length === 0">
                 <div class="bg-white rounded-2xl shadow-sm p-6">
-                    <div class="text-base font-semibold text-gray-900">Aucune image pour l’instant</div>
+                    <div class="text-base font-semibold text-gray-900">Aucune photo pour l’instant</div>
                     <div class="text-sm text-slate-500 mt-1">Ajoutez une première photo avec “+ Ajouter”.</div>
                 </div>
             </template>
 
-            <template x-if="(images || []).length > 0">
+            <template x-if="(photos || []).length > 0">
                 <div>
-                    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                        <template x-for="img in (images || [])" :key="'img_' + img.id">
-                            <a :href="img.open_url" class="block rounded-2xl overflow-hidden bg-white shadow-sm">
-                                <div class="aspect-[4/3] bg-slate-100">
-                                    <img :src="img.thumb_url" :alt="img.name || 'Photo'" class="w-full h-full object-cover" loading="lazy" />
+                    <div class="grid grid-cols-3 gap-2">
+                        <template x-for="(img, idx) in (photos || [])" :key="'photo_' + img.id">
+                            <button
+                                type="button"
+                                class="block overflow-hidden rounded-xl bg-slate-100"
+                                @click="openViewer(idx)"
+                                :aria-label="'Ouvrir photo ' + (idx + 1)"
+                            >
+                                <div class="aspect-square">
+                                    <img :src="img.thumb_url" alt="" class="h-full w-full object-cover" loading="lazy" />
                                 </div>
-                                <div class="p-3">
-                                    <div class="text-xs text-slate-500 truncate">
-                                        <span x-text="img.by || 'Quelqu\u2019un'"></span>
-                                        <span class="text-slate-400">·</span>
-                                        <span x-text="img.at_human || ''"></span>
-                                    </div>
-                                </div>
-                            </a>
+                            </button>
                         </template>
                     </div>
 
@@ -204,13 +251,13 @@
                         <button
                             type="button"
                             class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
-                            @click="loadMore('images')"
-                            :disabled="!nextImagesCursor || loadingImages"
-                            x-show="!!nextImagesCursor"
+                            @click="loadMore('photos')"
+                            :disabled="!nextPhotosCursor || loadingPhotos"
+                            x-show="!!nextPhotosCursor"
                         >
                             <span class="inline-flex items-center gap-2">
-                                <span x-show="!loadingImages">Charger plus</span>
-                                <span x-show="loadingImages" class="inline-flex items-center gap-2">
+                                <span x-show="!loadingPhotos">Charger plus</span>
+                                <span x-show="loadingPhotos" class="inline-flex items-center gap-2">
                                     <svg class="h-4 w-4 animate-spin text-slate-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
@@ -221,14 +268,11 @@
                         </button>
                     </div>
 
-                    <template x-if="loadingImages">
-                        <div class="mt-4 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    <template x-if="loadingPhotos">
+                        <div class="mt-4 grid grid-cols-3 gap-2">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'img_skel_' + i">
-                                <div class="rounded-2xl overflow-hidden bg-white shadow-sm">
-                                    <div class="aspect-[4/3] bg-slate-100 animate-pulse"></div>
-                                    <div class="p-3">
-                                        <div class="h-3 w-3/4 bg-slate-100 animate-pulse rounded"></div>
-                                    </div>
+                                <div class="overflow-hidden rounded-xl bg-slate-100">
+                                    <div class="aspect-square bg-slate-200/60 animate-pulse"></div>
                                 </div>
                             </template>
                         </div>
@@ -319,6 +363,59 @@
                     </template>
                 </div>
             </template>
+        </div>
+
+        <!-- Fullscreen photo viewer -->
+        <div x-show="viewerOpen" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
+            <button type="button" class="absolute inset-0 bg-black" @click="closeViewer()" aria-label="Fermer"></button>
+
+            <div
+                class="absolute inset-0 flex items-center justify-center"
+                @touchstart.passive="onTouchStart($event)"
+                @touchend.passive="onTouchEnd($event)"
+            >
+                <template x-if="(photos || []).length">
+                    <img
+                        :src="(photos[viewerIndex] || {}).thumb_url"
+                        alt=""
+                        class="max-h-full max-w-full object-contain"
+                        @click.stop
+                    />
+                </template>
+
+                <button
+                    type="button"
+                    class="absolute top-4 right-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white"
+                    @click.stop="closeViewer()"
+                    aria-label="Fermer"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
+                        <path d="M18 6L6 18" />
+                        <path d="M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <button
+                    type="button"
+                    class="absolute left-2 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white"
+                    @click.stop="prevPhoto()"
+                    aria-label="Précédent"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </button>
+                <button
+                    type="button"
+                    class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white"
+                    @click.stop="nextPhoto()"
+                    aria-label="Suivant"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
+                        <path d="M9 18l6-6-6-6" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 </x-app-layout>
