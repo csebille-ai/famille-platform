@@ -86,31 +86,39 @@
                 </div>
 
                 <!-- Bottom navigation (mobile) -->
-                <nav class="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200" style="padding-bottom: env(safe-area-inset-bottom)">
-                    <div class="max-w-7xl mx-auto px-2">
-                        <div class="grid grid-cols-4 h-16">
-                            <a href="{{ route('dashboard') }}"
-                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('dashboard') ? 'text-gray-900' : 'text-gray-500' }}">
-                                <span class="leading-none">Accueil</span>
-                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('dashboard') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                <nav class="sm:hidden fixed bottom-0 inset-x-0 z-40 border-t border-gray-200 bg-white" style="padding-bottom: env(safe-area-inset-bottom)">
+                    <div class="max-w-7xl mx-auto px-3">
+                        <div class="grid grid-cols-4 gap-2 py-2">
+                            <a
+                                href="{{ route('dashboard') }}"
+                                class="flex items-center justify-center rounded-xl px-2 py-3 text-xs font-semibold transition {{ request()->routeIs('dashboard') ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50' }}"
+                                aria-current="{{ request()->routeIs('dashboard') ? 'page' : 'false' }}"
+                            >
+                                Accueil
                             </a>
 
-                            <a href="{{ route('resources.index') }}"
-                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('resources.*') ? 'text-gray-900' : 'text-gray-500' }}">
-                                <span class="leading-none">Ressources</span>
-                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('resources.*') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                            <a
+                                href="{{ route('media.index') }}"
+                                class="flex items-center justify-center rounded-xl px-2 py-3 text-xs font-semibold transition {{ request()->routeIs('media.*') || request()->routeIs('images.*') || request()->routeIs('videos.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50' }}"
+                                aria-current="{{ (request()->routeIs('media.*') || request()->routeIs('images.*') || request()->routeIs('videos.*')) ? 'page' : 'false' }}"
+                            >
+                                Médias
                             </a>
 
-                            <a href="{{ route('media.index') }}"
-                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('media.*') || request()->routeIs('images.*') || request()->routeIs('videos.*') ? 'text-gray-900' : 'text-gray-500' }}">
-                                <span class="leading-none">Médias</span>
-                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('media.*') || request()->routeIs('images.*') || request()->routeIs('videos.*') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                            <a
+                                href="{{ route('resources.index') }}"
+                                class="flex items-center justify-center rounded-xl px-2 py-3 text-xs font-semibold transition {{ request()->routeIs('resources.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50' }}"
+                                aria-current="{{ request()->routeIs('resources.*') ? 'page' : 'false' }}"
+                            >
+                                Ressources
                             </a>
 
-                            <a href="{{ route('chat.index') }}"
-                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('chat.*') ? 'text-gray-900' : 'text-gray-500' }}">
-                                <span class="leading-none">Chat</span>
-                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('chat.*') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                            <a
+                                href="{{ route('chat.index') }}"
+                                class="flex items-center justify-center rounded-xl px-2 py-3 text-xs font-semibold transition {{ request()->routeIs('chat.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50' }}"
+                                aria-current="{{ request()->routeIs('chat.*') ? 'page' : 'false' }}"
+                            >
+                                Chat
                             </a>
                         </div>
                     </div>

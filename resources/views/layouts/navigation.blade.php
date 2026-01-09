@@ -31,16 +31,16 @@
                         Accueil
                     </x-nav-link>
 
+                    <x-nav-link :href="route('media.index')" :active="request()->routeIs('media.*')">
+                        Médias
+                    </x-nav-link>
+
                     <x-nav-link :href="route('resources.index')" :active="request()->routeIs('resources.*')">
                         {{ __('Ressources') }}
                     </x-nav-link>
 
                     <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')">
                         Chat
-                    </x-nav-link>
-
-                    <x-nav-link :href="route('media.index')" :active="request()->routeIs('media.*')">
-                        Médias
                     </x-nav-link>
                 </div>
             </div>
