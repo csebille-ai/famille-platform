@@ -218,7 +218,7 @@ Route::get('/dashboard', function () {
         $familyMoments = $buildFamilyMoments();
     }
 
-    return view('dashboard', [
+    return view('dashboard_v2', [
         'latestImages' => $latestImages,
         'latestVideos' => $latestVideos,
         'latestDocs' => $latestDocs,
