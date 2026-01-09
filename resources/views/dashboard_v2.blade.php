@@ -288,16 +288,18 @@
             <div class="text-sm text-slate-500 mt-1">Un mini clin d’œil du jour, rien de plus.</div>
 
             @php($cards = (array) ($familyMoments ?? []))
+            @php($c1 = $cards[0] ?? null)
+            @php($c2 = $cards[1] ?? null)
+            @php($c3 = $cards[2] ?? null)
 
             <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                @if(!empty($cards))
-                    @foreach($cards as $c)
+                @if(!empty($c1))
                     @php
-                        $href = (string) ($c['href'] ?? '#');
-                        $cta = (string) ($c['cta'] ?? 'Voir');
-                        $img = (string) ($c['image_url'] ?? '');
-                        $title = (string) ($c['title'] ?? '');
-                        $text = (string) ($c['text'] ?? '');
+                        $href = (string) ($c1['href'] ?? '#');
+                        $cta = (string) ($c1['cta'] ?? 'Voir');
+                        $img = (string) ($c1['image_url'] ?? '');
+                        $title = (string) ($c1['title'] ?? '');
+                        $text = (string) ($c1['text'] ?? '');
                     @endphp
 
                     <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
@@ -322,8 +324,75 @@
                             </div>
                         </div>
                     </a>
-                    @endforeach
-                @else
+                @endif
+
+                @if(!empty($c2))
+                    @php
+                        $href = (string) ($c2['href'] ?? '#');
+                        $cta = (string) ($c2['cta'] ?? 'Voir');
+                        $img = (string) ($c2['image_url'] ?? '');
+                        $title = (string) ($c2['title'] ?? '');
+                        $text = (string) ($c2['text'] ?? '');
+                    @endphp
+
+                    <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                        @if($img !== '')
+                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
+                                <img src="{{ $img }}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                            </div>
+                        @else
+                            <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
+                                <div class="h-10 w-10 rounded-2xl bg-slate-100 border border-slate-200"></div>
+                            </div>
+                        @endif
+
+                        <div class="p-4">
+                            <div class="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{{ $title }}</div>
+                            @if($text !== '')
+                                <div class="mt-1 text-sm text-slate-600 line-clamp-2">{{ $text }}</div>
+                            @endif
+
+                            <div class="mt-3 inline-flex items-center text-sm font-semibold text-indigo-600">
+                                {{ $cta }} ›
+                            </div>
+                        </div>
+                    </a>
+                @endif
+
+                @if(!empty($c3))
+                    @php
+                        $href = (string) ($c3['href'] ?? '#');
+                        $cta = (string) ($c3['cta'] ?? 'Voir');
+                        $img = (string) ($c3['image_url'] ?? '');
+                        $title = (string) ($c3['title'] ?? '');
+                        $text = (string) ($c3['text'] ?? '');
+                    @endphp
+
+                    <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                        @if($img !== '')
+                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
+                                <img src="{{ $img }}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                            </div>
+                        @else
+                            <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
+                                <div class="h-10 w-10 rounded-2xl bg-slate-100 border border-slate-200"></div>
+                            </div>
+                        @endif
+
+                        <div class="p-4">
+                            <div class="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{{ $title }}</div>
+                            @if($text !== '')
+                                <div class="mt-1 text-sm text-slate-600 line-clamp-2">{{ $text }}</div>
+                            @endif
+
+                            <div class="mt-3 inline-flex items-center text-sm font-semibold text-indigo-600">
+                                {{ $cta }} ›
+                            </div>
+                        </div>
+                    </a>
+                @endif
+
+                @if(empty($c1) && empty($c2) && empty($c3))
                     <div class="md:col-span-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                         Rien pour aujourd’hui. On se retrouve demain.
                     </div>
