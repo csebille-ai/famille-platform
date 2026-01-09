@@ -3,6 +3,15 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $projectRoot
 
+# When running PHP directly on Windows (not inside Sail), the Docker service name
+# "mysql" is not resolvable. Override to the published host/port.
+if ($IsWindows) {
+    if (-not $env:DB_HOST) { $env:DB_HOST = '127.0.0.1' }
+    if (-not $env:DB_PORT) {
+        if ($env:FORWARD_DB_PORT) { $env:DB_PORT = $env:FORWARD_DB_PORT } else { $env:DB_PORT = '3306' }
+    }
+}
+
 $port = 8000
 $hostAddress = '127.0.0.1'
 $pidFile = Join-Path $projectRoot 'storage\logs\php-server.pid'
