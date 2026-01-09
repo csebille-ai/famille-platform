@@ -253,6 +253,8 @@ class VideoController extends Controller
      */
     public function show(Video $video)
     {
+        $video->loadMissing('creator:id,name');
+
         return view('videos.show', [
             'video' => $video,
         ]);

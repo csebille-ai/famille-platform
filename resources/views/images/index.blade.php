@@ -127,6 +127,8 @@
                             $uploaderFirstName = trim(explode(' ', trim($image->uploader->name))[0] ?? '');
                         }
 
+                        $uploaderLabel = $uploaderFirstName !== '' ? $uploaderFirstName : 'Quelqu\'un';
+
                         $openParams = ['node' => $image];
                         if ($selectedUserId !== 0) {
                             $openParams['user'] = $selectedUserId;
@@ -172,10 +174,9 @@
                                 @endif
 
                                 <div class="text-[11px] bg-slate-900/80 text-white rounded-lg px-2 py-1 min-w-0 truncate">
-                                    {{ $image->created_at?->format('j.n.y') }}
-                                    @if ($uploaderFirstName !== '')
-                                        <span class="ml-1.5">{{ $uploaderFirstName }}</span>
-                                    @endif
+                                    {{ $uploaderLabel }}
+                                    <span class="text-white/60">·</span>
+                                    {{ $image->created_at?->diffForHumans() }}
                                 </div>
                             </div>
 

@@ -38,7 +38,11 @@
 
             <div class="min-w-0 text-right">
                 <div class="text-xs text-white/80 truncate">{{ $node->name }}</div>
-                <div class="text-[11px] text-white/60">{{ $node->created_at?->format('d/m/Y H:i') }}</div>
+                <div class="text-[11px] text-white/60">
+                    {{ $node->uploader?->name ?? 'Quelqu\’un' }}
+                    <span class="text-white/40">·</span>
+                    {{ $node->created_at?->diffForHumans() }}
+                </div>
             </div>
         </div>
 

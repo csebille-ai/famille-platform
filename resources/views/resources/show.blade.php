@@ -77,7 +77,9 @@
                     @endif
 
                     <div class="text-xs text-gray-500">
-                        {{ __('Created') }}: {{ $resource->created_at->toDayDateTimeString() }}
+                        Ajouté par {{ $resource->creator?->name ?? 'Quelqu\’un' }}
+                        <span class="text-gray-400">·</span>
+                        {{ $resource->created_at?->diffForHumans() }}
                     </div>
                 </div>
             </div>

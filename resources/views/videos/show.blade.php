@@ -19,7 +19,11 @@
                     <h1 class="text-3xl font-bold mb-2">{{ $video->title }}</h1>
                     <div class="text-sm text-gray-600 mb-4">
                         <span class="inline-block bg-gray-100 px-3 py-1 rounded">{{ ucfirst($video->category) }}</span>
-                        <span class="ms-4">{{ $video->created_at->diffForHumans() }}</span>
+                        <span class="ms-4">
+                            {{ $video->creator?->name ?? 'Quelqu\’un' }}
+                            <span class="text-gray-400">·</span>
+                            {{ $video->created_at?->diffForHumans() }}
+                        </span>
                     </div>
 
                     @if ($video->description)

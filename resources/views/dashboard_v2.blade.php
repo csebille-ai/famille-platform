@@ -271,17 +271,63 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="text-base font-semibold text-gray-900">Commun — essentiels</div>
-            <div class="text-sm text-slate-500 mt-1">Accès rapide aux dossiers Commun</div>
+        <div class="rounded-2xl border border-slate-200 bg-white px-3 py-2">
+            <div class="overflow-x-auto">
+                <div class="flex items-center gap-2 md:gap-3 min-w-max">
+                    @foreach(($communLinks ?? []) as $link)
+                        @php
+                            $label = (string) ($link['label'] ?? '');
+                            $category = (string) ($link['category'] ?? '');
+                        @endphp
 
-            <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-                @foreach(($communLinks ?? []) as $link)
-                    <a href="{{ route('resources.index', ['user' => 'common', 'category' => $link['category']]) }}"
-                       class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                        {{ $link['label'] }}
-                    </a>
-                @endforeach
+                        <a
+                            href="{{ route('resources.index', ['user' => 'common', 'category' => $category]) }}"
+                            class="h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 inline-flex items-center gap-2 whitespace-nowrap"
+                        >
+                            @if($label === 'Urgences')
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-500" aria-hidden="true">
+                                    <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" />
+                                </svg>
+                            @elseif($label === 'Maison')
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-500" aria-hidden="true">
+                                    <path d="M3 10.5L12 3l9 7.5" />
+                                    <path d="M5 10v10h14V10" />
+                                </svg>
+                            @elseif($label === 'Voyages')
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-500" aria-hidden="true">
+                                    <path d="M2 16l20-8-8 20-2-8-8-2z" />
+                                </svg>
+                            @elseif($label === 'École' || $label === 'Ecole')
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-500" aria-hidden="true">
+                                    <path d="M3 7l9-4 9 4-9 4-9-4z" />
+                                    <path d="M21 10v6" />
+                                    <path d="M5 9v6c0 2 4 4 7 4s7-2 7-4V9" />
+                                </svg>
+                            @elseif($label === 'Administratif')
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-500" aria-hidden="true">
+                                    <rect x="6" y="4" width="12" height="16" rx="2" />
+                                    <path d="M9 8h6" />
+                                    <path d="M9 12h6" />
+                                    <path d="M9 16h4" />
+                                </svg>
+                            @elseif($label === 'Recettes')
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-500" aria-hidden="true">
+                                    <path d="M7 3v6a5 5 0 005 5h0a5 5 0 005-5V3" />
+                                    <path d="M12 14v7" />
+                                    <path d="M8 21h8" />
+                                </svg>
+                            @else
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-slate-500" aria-hidden="true">
+                                    <path d="M4 6h16" />
+                                    <path d="M4 12h16" />
+                                    <path d="M4 18h16" />
+                                </svg>
+                            @endif
+
+                            <span>{{ $label }}</span>
+                        </a>
+                    @endforeach
+                </div>
             </div>
         </div>
 

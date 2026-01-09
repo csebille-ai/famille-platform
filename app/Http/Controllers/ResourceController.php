@@ -129,7 +129,7 @@ class ResourceController extends Controller
      */
     public function show(Resource $resource)
     {
-        $resource->loadMissing('concernedUser:id,name');
+        $resource->loadMissing('concernedUser:id,name', 'creator:id,name');
 
         return view('resources.show', [
             'resource' => $resource,
@@ -262,7 +262,7 @@ class ResourceController extends Controller
 
     public function preview(Resource $resource)
     {
-        $resource->loadMissing('concernedUser:id,name');
+        $resource->loadMissing('concernedUser:id,name', 'creator:id,name');
 
         $displayName = $resource->attachment_name ?: $resource->title;
         $mime = (string) ($resource->attachment_mime ?: '');
@@ -354,7 +354,7 @@ class ResourceController extends Controller
             return redirect()->route('resources.files.open', [$resource, $file]);
         }
 
-        $resource->loadMissing('concernedUser:id,name');
+        $resource->loadMissing('concernedUser:id,name', 'creator:id,name');
 
         return view('resources.file-preview', [
             'resource' => $resource,

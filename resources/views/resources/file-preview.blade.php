@@ -11,6 +11,10 @@
                     Dossier {{ $resource->folder ?? 'A1' }}
                     <span class="text-gray-400">·</span>
                     {{ $resource->concernedUser?->name ?? 'Commun' }}
+                    <span class="text-gray-400">·</span>
+                    {{ $resource->creator?->name ?? 'Quelqu\’un' }}
+                    <span class="text-gray-400">·</span>
+                    {{ $resource->created_at?->diffForHumans() }}
                 </div>
             </div>
 
