@@ -27,7 +27,11 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased" x-data="{ addOpen: false }">
+    <body
+        class="font-sans antialiased"
+        x-data="{ addOpen: false }"
+        @open-add.window="addOpen = true"
+    >
         <div class="min-h-screen {{ $attributes->get('pageBgClass', 'bg-gray-100') }}">
             @unless($attributes->get('hideNavigation'))
                 <div class="{{ $attributes->get('navigationClass', '') }}">
@@ -52,21 +56,23 @@
             </main>
 
             @unless($attributes->get('hideNavigation'))
-                <!-- Global Add FAB (mobile) -->
-                <div class="sm:hidden fixed bottom-20 right-4 z-50">
-                    <button
-                        type="button"
-                        @click="addOpen = true"
-                        class="inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-900 shadow-sm"
-                        aria-haspopup="dialog"
-                        aria-label="Ajouter"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
-                            <path d="M12 5v14" />
-                            <path d="M5 12h14" />
-                        </svg>
-                    </button>
-                </div>
+                @unless(request()->routeIs('media.*'))
+                    <!-- Global Add FAB (mobile) -->
+                    <div class="sm:hidden fixed bottom-20 right-4 z-50">
+                        <button
+                            type="button"
+                            @click="addOpen = true"
+                            class="inline-flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-900 shadow-sm"
+                            aria-haspopup="dialog"
+                            aria-label="Ajouter"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
+                                <path d="M12 5v14" />
+                                <path d="M5 12h14" />
+                            </svg>
+                        </button>
+                    </div>
+                @endunless
 
                 <!-- Add sheet (mobile) -->
                 <div class="sm:hidden">

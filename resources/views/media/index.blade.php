@@ -195,29 +195,46 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm p-3 md:p-4">
-            <div class="-mx-1 flex items-center gap-2 overflow-x-auto whitespace-nowrap px-1">
-                <button
-                    type="button"
-                    class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold"
-                    :class="tab === 'photos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300'"
-                    @click="setTab('photos')"
-                    aria-controls="media-photos"
-                    :aria-selected="tab === 'photos'"
-                    role="tab"
-                >
-                    Photos
-                </button>
+            <div class="flex items-center gap-3">
+                <div class="flex-1">
+                    <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1">
+                        <button
+                            type="button"
+                            class="rounded-lg px-3 py-2 text-center text-[0.72rem] font-semibold transition"
+                            :class="tab === 'photos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
+                            @click="setTab('photos')"
+                            aria-controls="media-photos"
+                            :aria-selected="tab === 'photos'"
+                            role="tab"
+                        >
+                            Photos
+                        </button>
+
+                        <button
+                            type="button"
+                            class="rounded-lg px-3 py-2 text-center text-[0.72rem] font-semibold transition"
+                            :class="tab === 'videos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
+                            @click="setTab('videos')"
+                            aria-controls="media-videos"
+                            :aria-selected="tab === 'videos'"
+                            role="tab"
+                        >
+                            Vidéos
+                        </button>
+                    </div>
+                </div>
 
                 <button
                     type="button"
-                    class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold"
-                    :class="tab === 'videos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300'"
-                    @click="setTab('videos')"
-                    aria-controls="media-videos"
-                    :aria-selected="tab === 'videos'"
-                    role="tab"
+                    class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
+                    @click="$dispatch('open-add')"
+                    aria-haspopup="dialog"
+                    aria-label="Ajouter"
                 >
-                    Vidéos
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
+                        <path d="M12 5v14" />
+                        <path d="M5 12h14" />
+                    </svg>
                 </button>
             </div>
         </div>
@@ -305,15 +322,19 @@
                                         </svg>
                                     </template>
 
-                                    <div class="absolute top-2 left-2 rounded-full bg-white/90 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-900">
-                                        <span>VIDÉO</span>
-                                        <template x-if="!!formatDuration(v.duration_seconds)">
-                                            <span>
-                                                <span class="text-slate-500">·</span>
-                                                <span class="text-slate-700" x-text="formatDuration(v.duration_seconds)"></span>
-                                            </span>
-                                        </template>
+                                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <div class="h-12 w-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6 text-white" aria-hidden="true">
+                                                <path d="M8 5v14l11-7z" />
+                                            </svg>
+                                        </div>
                                     </div>
+
+                                    <template x-if="!!formatDuration(v.duration_seconds)">
+                                        <div class="absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-0.5 text-[0.7rem] font-semibold text-white">
+                                            <span x-text="formatDuration(v.duration_seconds)"></span>
+                                        </div>
+                                    </template>
                                 </div>
                                 <div class="p-3">
                                     <div class="text-sm font-semibold text-gray-900 truncate" x-text="v.title || 'Vidéo'"></div>
