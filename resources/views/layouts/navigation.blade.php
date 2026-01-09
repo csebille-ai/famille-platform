@@ -88,10 +88,10 @@
             <!-- Mobile avatar menu (bottom bar handles navigation) -->
             <div class="-me-2 flex items-center sm:hidden">
                 @if(request()->routeIs('dashboard'))
-                    <div class="flex items-center gap-2 me-2">
+                    <div class="flex items-center gap-2 me-2 flex-nowrap shrink-0">
                         <a
                             href="{{ route('actu.index') }}"
-                            class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            class="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-slate-700 hover:bg-gray-50"
                             aria-label="Actu"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
@@ -107,7 +107,7 @@
 
                         <a
                             href="{{ route('tarot.index') }}"
-                            class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            class="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-slate-700 hover:bg-gray-50"
                             aria-label="Tarot"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
@@ -122,7 +122,7 @@
 
                         <a
                             href="{{ route('chat.index') }}"
-                            class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            class="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-slate-700 hover:bg-gray-50"
                             aria-label="Chat"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
@@ -131,6 +131,7 @@
                             @php
                                 $n = (int) ($chatOnlineCount ?? 0);
                             @endphp
+                            <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full {{ $n > 0 ? 'bg-emerald-500' : 'bg-rose-500' }} ring-2 ring-white"></span>
                             @if($n > 0)
                                 <span class="absolute -top-1 -right-1 min-w-[1.25rem] rounded-full bg-slate-900 px-1.5 py-0.5 text-[0.65rem] font-semibold leading-none text-white ring-2 ring-white">
                                     {{ $n > 99 ? '99+' : $n }}
