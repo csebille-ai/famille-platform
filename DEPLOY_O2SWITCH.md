@@ -123,6 +123,22 @@ Si tu ne peux pas faire tourner Reverb en prod o2switch, mets par exemple :
 
 (Le chat reste utilisable mais sans temps réel.)
 
+## 6) Cron (scheduler)
+
+Pour alimenter l'actu locale via RSS, configure un cron (o2switch) qui exécute le scheduler Laravel toutes les minutes :
+
+```bash
+cd ~/apps/famille-platform
+php artisan schedule:run >> /dev/null 2>&1
+```
+
+Et dans ton `.env`, configure tes flux :
+
+- Option simple (CSV) : `NEWS_FEEDS=https://exemple.tld/rss.xml,https://autre.tld/atom.xml`
+- Option plus propre (JSON) : `NEWS_FEEDS_JSON=["https://exemple.tld/rss.xml","https://autre.tld/atom.xml"]`
+- Option “encore mieux” (sources + tags) :
+  - `NEWS_SOURCES_JSON=[{"name":"Préfecture","url":"https://.../rss.xml","tag":"securite","enabled":true},{"name":"Sud Ouest","url":"https://.../rss.xml","tag":"commune","enabled":true}]`
+
 ## 5) Vérifications post-déploiement
 
 - `https://famille.opanoma.fr` charge correctement

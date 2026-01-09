@@ -13,6 +13,7 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
 use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
+use App\Http\Controllers\Api\NewsIndexController;
 use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Resource;
@@ -201,6 +202,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/actu', function () {
         return view('actu.index');
     })->name('actu.index');
+
+    Route::get('/api/news', NewsIndexController::class)
+        ->name('news.index');
 
     Route::get('/tarot', [TarotController::class, 'index'])->name('tarot.index');
     Route::post('/tarot/draw', [TarotController::class, 'draw'])->middleware('throttle:tarot-draw')->name('tarot.draw');
