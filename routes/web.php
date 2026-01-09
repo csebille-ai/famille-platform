@@ -114,10 +114,11 @@ Route::get('/home', function () {
     $latestAdds = collect()
         ->merge($latestImages->map(fn ($img) => [
             'type' => 'image',
-            'title' => 'Photo',
+            'title' => (string) (($img->name ?? '') !== '' ? $img->name : 'Photo'),
             'by' => $img->uploader?->name ?? 'Quelqu’un',
             'at' => $img->created_at,
             'href' => route('images.open', $img),
+            'thumb_url' => route('images.view', $img),
         ]))
         ->merge($latestVideos->map(fn ($v) => [
             'type' => 'video',
@@ -125,6 +126,7 @@ Route::get('/home', function () {
             'by' => $v->creator?->name ?? 'Quelqu’un',
             'at' => $v->created_at,
             'href' => route('videos.show', $v),
+            'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
         ]))
         ->merge($latestDocs->map(fn ($r) => [
             'type' => 'doc',

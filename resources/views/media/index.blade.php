@@ -6,17 +6,34 @@
 @endphp
 
 <x-app-layout pageBgClass="bg-slate-50">
+    <script type="application/json" id="media-initial-tab">@json($initialTab)</script>
+    <script type="application/json" id="media-images-items">@json($imagesItems ?? [])</script>
+    <script type="application/json" id="media-videos-items">@json($videosItems ?? [])</script>
+    <script type="application/json" id="media-images-next-cursor">@json($imagesNextCursor ?? null)</script>
+    <script type="application/json" id="media-videos-next-cursor">@json($videosNextCursor ?? null)</script>
+
     <div
         class="max-w-6xl mx-auto px-6 py-6 space-y-4"
         x-data="{
-            tab: '{{ $initialTab }}',
+            tab: 'images',
             pageSize: {{ (int) ($pageSize ?? 24) }},
-            images: @json($imagesItems ?? []),
-            videos: @json($videosItems ?? []),
-            nextImagesCursor: @json($imagesNextCursor ?? null),
-            nextVideosCursor: @json($videosNextCursor ?? null),
+            images: [],
+            videos: [],
+            nextImagesCursor: null,
+            nextVideosCursor: null,
             loadingImages: false,
             loadingVideos: false,
+            readJson(id) {
+                try {
+                    const el = document.getElementById(id);
+                    if (!el) return null;
+                    const txt = (el.textContent || '').trim();
+                    if (!txt) return null;
+                    return JSON.parse(txt);
+                } catch (e) {
+                    return null;
+                }
+            },
             normalize(v) {
                 v = String(v || '').toLowerCase().trim();
                 return (v === 'videos') ? 'videos' : 'images';
@@ -94,7 +111,14 @@
                 }
             },
             init() {
-                this.tab = this.readFromUrl();
+                const initialTab = this.normalize(this.readJson('media-initial-tab') || 'images');
+                this.tab = initialTab;
+                this.images = this.readJson('media-images-items') || [];
+                this.videos = this.readJson('media-videos-items') || [];
+                this.nextImagesCursor = this.readJson('media-images-next-cursor');
+                this.nextVideosCursor = this.readJson('media-videos-next-cursor');
+
+                this.tab = this.normalize(this.readFromUrl() || initialTab);
                 this.writeToUrl(false);
 
                 window.addEventListener('popstate', () => {
