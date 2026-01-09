@@ -47,9 +47,47 @@
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main class="@unless($attributes->get('hideNavigation')) pb-20 sm:pb-0 @endunless">
                 {{ $slot }}
             </main>
+
+            @unless($attributes->get('hideNavigation'))
+                <nav class="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-white border-t border-gray-200">
+                    <div class="max-w-7xl mx-auto px-2">
+                        <div class="grid grid-cols-5 h-16">
+                            <a href="{{ route('dashboard') }}"
+                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('dashboard') ? 'text-gray-900' : 'text-gray-500' }}">
+                                <span class="leading-none">Accueil</span>
+                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('dashboard') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                            </a>
+
+                            <a href="{{ route('chat.index') }}"
+                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('chat.*') ? 'text-gray-900' : 'text-gray-500' }}">
+                                <span class="leading-none">Chat</span>
+                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('chat.*') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                            </a>
+
+                            <a href="{{ route('resources.index') }}"
+                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('resources.*') ? 'text-gray-900' : 'text-gray-500' }}">
+                                <span class="leading-none">Docs</span>
+                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('resources.*') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                            </a>
+
+                            <a href="{{ route('images.index') }}"
+                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('images.*') ? 'text-gray-900' : 'text-gray-500' }}">
+                                <span class="leading-none">Photos</span>
+                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('images.*') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                            </a>
+
+                            <a href="{{ route('videos.index') }}"
+                               class="flex flex-col items-center justify-center text-xs font-semibold {{ request()->routeIs('videos.*') ? 'text-gray-900' : 'text-gray-500' }}">
+                                <span class="leading-none">Vidéos</span>
+                                <span class="mt-1 h-0.5 w-6 rounded-full {{ request()->routeIs('videos.*') ? 'bg-gray-900' : 'bg-transparent' }}"></span>
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+            @endunless
         </div>
     </body>
 </html>
