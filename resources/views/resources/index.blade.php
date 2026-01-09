@@ -139,7 +139,11 @@
                                                                 <span class="text-gray-400">›</span>
                                                                 Dossier {{ $resource->folder ?? 'A1' }}
                                                                 <span class="text-gray-400">·</span>
-                                                                {{ $u?->name ?? 'Commun' }}
+                                                                @if ($u)
+                                                                    {{ $u->name }}
+                                                                @else
+                                                                    <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold {{ $commonPill }}">Commun</span>
+                                                                @endif
                                                                 <span class="text-gray-400">·</span>
                                                                 {{ $resource->creator?->name ?? 'Quelqu’un' }}
                                                                 <span class="text-gray-400">·</span>
@@ -318,7 +322,11 @@
                                                         <span class="text-gray-400">›</span>
                                                         Dossier {{ $r->folder ?? 'A1' }}
                                                         <span class="text-gray-400">·</span>
-                                                        {{ $u?->name ?? 'Commun' }}
+                                                        @if ($u)
+                                                            {{ $u->name }}
+                                                        @else
+                                                            <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold {{ $commonPill }}">Commun</span>
+                                                        @endif
                                                         <span class="text-gray-400">·</span>
                                                         <span class="font-semibold text-gray-700">{{ $fileCount }} fichier{{ $fileCount > 1 ? 's' : '' }}</span>
                                                     </div>
