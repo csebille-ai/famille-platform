@@ -88,7 +88,8 @@ Route::get('/home', function () {
         $todayNewsItem = null;
     }
 
-    $mediaCandidates = collect([
+    $heroMedia = null;
+    $heroCandidates = collect([
         [
             'type' => 'image',
             'model' => $latestImages->first(),
@@ -99,20 +100,45 @@ Route::get('/home', function () {
             'model' => $latestVideos->first(),
             'at' => $latestVideos->first()?->created_at,
         ],
-        [
-            'type' => 'doc',
-            'model' => $latestDocs->first(),
-            'at' => $latestDocs->first()?->created_at,
-        ],
     ])
         ->filter(fn ($c) => !empty($c['model']) && !empty($c['at']))
         ->sortByDesc('at')
         ->values();
 
-    $todayMedia = $mediaCandidates->first();
+    $heroPick = $heroCandidates->first();
+    $heroKey = null;
+    if ($heroPick && !empty($heroPick['model'])) {
+        $model = $heroPick['model'];
+        $type = (string) ($heroPick['type'] ?? '');
+        $id = (int) ($model->id ?? 0);
+        $heroKey = $type . ':' . $id;
+
+        if ($type === 'image') {
+            $heroMedia = [
+                'key' => $heroKey,
+                'type' => 'image',
+                'title' => (string) (($model->name ?? '') !== '' ? $model->name : 'Photo'),
+                'by' => (string) ($model->uploader?->name ?? 'Quelqu’un'),
+                'at' => $model->created_at,
+                'href' => route('images.open', $model),
+                'preview_url' => route('images.view', $model),
+            ];
+        } elseif ($type === 'video') {
+            $heroMedia = [
+                'key' => $heroKey,
+                'type' => 'video',
+                'title' => (string) (($model->title ?? '') !== '' ? $model->title : 'Vidéo'),
+                'by' => (string) ($model->creator?->name ?? 'Quelqu’un'),
+                'at' => $model->created_at,
+                'href' => route('videos.show', $model),
+                'preview_url' => !empty($model->poster_path) ? route('videos.poster', $model) : null,
+            ];
+        }
+    }
 
     $latestAdds = collect()
         ->merge($latestImages->map(fn ($img) => [
+            'key' => 'image:' . (int) $img->id,
             'type' => 'image',
             'title' => (string) (($img->name ?? '') !== '' ? $img->name : 'Photo'),
             'by' => $img->uploader?->name ?? 'Quelqu’un',
@@ -121,6 +147,7 @@ Route::get('/home', function () {
             'thumb_url' => route('images.view', $img),
         ]))
         ->merge($latestVideos->map(fn ($v) => [
+            'key' => 'video:' . (int) $v->id,
             'type' => 'video',
             'title' => $v->title ?: 'Vidéo',
             'by' => $v->creator?->name ?? 'Quelqu’un',
@@ -129,6 +156,7 @@ Route::get('/home', function () {
             'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
         ]))
         ->merge($latestDocs->map(fn ($r) => [
+            'key' => 'doc:' . (int) $r->id,
             'type' => 'doc',
             'title' => $r->title,
             'by' => $r->creator?->name ?? 'Quelqu’un',
@@ -138,6 +166,12 @@ Route::get('/home', function () {
         ->filter(fn ($x) => !empty($x['at']))
         ->sortByDesc('at')
         ->values();
+
+    if ($heroKey !== null) {
+        $latestAdds = $latestAdds
+            ->reject(fn ($x) => (string) ($x['key'] ?? '') === $heroKey)
+            ->values();
+    }
 
     if ($feed === 'photos') {
         $latestAdds = $latestAdds->where('type', 'image')->values();
@@ -378,7 +412,7 @@ Route::get('/home', function () {
         'latestVideos' => $latestVideos,
         'latestDocs' => $latestDocs,
         'todayNewsItem' => $todayNewsItem,
-        'todayMedia' => $todayMedia,
+        'heroMedia' => $heroMedia,
         'chatOnlineCount' => $chatOnlineCount,
         'communLinks' => $communLinks,
         'familyMoments' => $familyMoments,

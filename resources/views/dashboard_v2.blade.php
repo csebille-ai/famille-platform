@@ -1,40 +1,43 @@
 <x-app-layout pageBgClass="bg-slate-50">
     <div class="max-w-5xl mx-auto px-6 py-6 space-y-4">
-        <div class="flex items-center justify-between">
-            <h1 class="text-lg font-semibold text-slate-900">Accueil</h1>
-            <a href="{{ route('chat.index') }}" class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900">
-                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                <span>Chat</span>
-                <span class="text-slate-500">({{ (int) ($chatOnlineCount ?? 0) }})</span>
-            </a>
-        </div>
+        @if(!empty($heroMedia))
+            <a href="{{ $heroMedia['href'] }}" class="block overflow-hidden rounded-3xl bg-white shadow-sm hover:bg-slate-50">
+                <div class="aspect-[16/10] bg-slate-100 overflow-hidden relative">
+                    @if(!empty($heroMedia['preview_url'] ?? null))
+                        <img src="{{ $heroMedia['preview_url'] }}" alt="" class="h-full w-full object-cover" loading="lazy" />
+                    @else
+                        <div class="h-full w-full bg-slate-50"></div>
+                    @endif
 
-        <div class="rounded-2xl bg-white px-4 py-3 shadow-sm">
-            <div class="flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="truncate text-sm font-medium text-slate-900">
-                        @if(($todayNewsItem ?? null))
-                            Actu du jour disponible
-                        @else
-                            Rien de nouveau aujourd’hui
+                    @if(($heroMedia['type'] ?? '') === 'video')
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <div class="h-14 w-14 rounded-full bg-white/80 backdrop-blur border border-white/70 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7 text-slate-900" aria-hidden="true">
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="p-4">
+                    <div class="text-xs font-medium text-slate-500">Dernier média</div>
+                    <div class="mt-1 truncate text-base font-semibold text-slate-900">{{ $heroMedia['title'] }}</div>
+                    <div class="mt-1 truncate text-sm text-slate-600">
+                        {{ $heroMedia['by'] ?? 'Quelqu’un' }}
+                        @if(!empty($heroMedia['at'] ?? null))
+                            <span class="text-slate-400">·</span>
+                            {{ optional($heroMedia['at'])->diffForHumans() }}
                         @endif
                     </div>
                 </div>
-                <div class="shrink-0 text-xs text-slate-500">{{ now()->format('d/m') }}</div>
+            </a>
+        @else
+            <div class="rounded-3xl bg-white p-4 shadow-sm">
+                <div class="text-sm font-medium text-slate-900">Dernier média</div>
+                <div class="mt-1 text-sm text-slate-600">Aucun média récent pour le moment.</div>
             </div>
-        </div>
-
-        <div class="grid gap-3 sm:grid-cols-2">
-            <a href="{{ route('actu.index') }}" class="rounded-2xl bg-white p-4 shadow-sm hover:bg-slate-50">
-                <div class="text-sm font-medium text-slate-900">Actu locale</div>
-                <div class="mt-1 text-sm text-slate-600">{{ $todayNewsItem?->title ?? 'Voir les dernières actus' }}</div>
-            </a>
-
-            <a href="{{ route('tarot.index') }}" class="rounded-2xl bg-white p-4 shadow-sm hover:bg-slate-50">
-                <div class="text-sm font-medium text-slate-900">Tarot</div>
-                <div class="mt-1 text-sm text-slate-600">Tirer une carte</div>
-            </a>
-        </div>
+        @endif
 
         <div class="rounded-2xl bg-white p-4 shadow-sm">
             <div class="flex items-center justify-between gap-3">

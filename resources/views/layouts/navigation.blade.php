@@ -87,6 +87,59 @@
 
             <!-- Mobile avatar menu (bottom bar handles navigation) -->
             <div class="-me-2 flex items-center sm:hidden">
+                @if(request()->routeIs('dashboard'))
+                    <div class="flex items-center gap-2 me-2">
+                        <a
+                            href="{{ route('actu.index') }}"
+                            class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            aria-label="Actu"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                <path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-4-4H6a2 2 0 0 0-2 2z" />
+                                <path d="M8 11h8" />
+                                <path d="M8 15h8" />
+                                <path d="M15 3v4h4" />
+                            </svg>
+                            @if(($todayNewsItem ?? null))
+                                <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+                            @endif
+                        </a>
+
+                        <a
+                            href="{{ route('tarot.index') }}"
+                            class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            aria-label="Tarot"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                <path d="M12 3l2.4 5.4L20 10l-5.6 1.6L12 17l-2.4-5.4L4 10l5.6-1.6L12 3z" />
+                                <path d="M19 14l1 2" />
+                                <path d="M5 14l-1 2" />
+                            </svg>
+                            @if(session()->has('tarot.draft'))
+                                <span class="absolute top-1 right-1 h-2.5 w-2.5 rounded-full bg-slate-900 ring-2 ring-white"></span>
+                            @endif
+                        </a>
+
+                        <a
+                            href="{{ route('chat.index') }}"
+                            class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                            aria-label="Chat"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+                            </svg>
+                            @php
+                                $n = (int) ($chatOnlineCount ?? 0);
+                            @endphp
+                            @if($n > 0)
+                                <span class="absolute -top-1 -right-1 min-w-[1.25rem] rounded-full bg-slate-900 px-1.5 py-0.5 text-[0.65rem] font-semibold leading-none text-white ring-2 ring-white">
+                                    {{ $n > 99 ? '99+' : $n }}
+                                </span>
+                            @endif
+                        </a>
+                    </div>
+                @endif
+
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700">
