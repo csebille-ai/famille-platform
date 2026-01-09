@@ -96,7 +96,7 @@
                             @php $isHome = request()->routeIs('dashboard'); @endphp
                             <a
                                 href="{{ route('dashboard') }}"
-                                class="flex-1 w-full flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition {{ $isHome ? 'text-slate-900' : 'text-slate-600' }}"
+                                class="flex-1 basis-1/4 min-w-0 w-full flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition {{ $isHome ? 'text-slate-900' : 'text-slate-600' }}"
                                 aria-current="{{ $isHome ? 'page' : 'false' }}"
                             >
                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl {{ $isHome ? 'bg-slate-100' : 'bg-transparent' }}">
@@ -105,13 +105,13 @@
                                         <path d="M5 10v10h14V10" />
                                     </svg>
                                 </span>
-                                <span class="leading-none">Accueil</span>
+                                <span class="w-full px-1 text-center text-[11px] leading-none truncate whitespace-nowrap">Accueil</span>
                             </a>
 
                             @php $isMedia = request()->routeIs('media.*') || request()->routeIs('images.*') || request()->routeIs('videos.*'); @endphp
                             <a
                                 href="{{ route('media.index') }}"
-                                class="flex-1 w-full flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition {{ $isMedia ? 'text-slate-900' : 'text-slate-600' }}"
+                                class="flex-1 basis-1/4 min-w-0 w-full flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition {{ $isMedia ? 'text-slate-900' : 'text-slate-600' }}"
                                 aria-current="{{ $isMedia ? 'page' : 'false' }}"
                             >
                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl {{ $isMedia ? 'bg-slate-100' : 'bg-transparent' }}">
@@ -121,13 +121,13 @@
                                         <path d="M8.5 10.5h.01" />
                                     </svg>
                                 </span>
-                                <span class="leading-none">Médias</span>
+                                <span class="w-full px-1 text-center text-[11px] leading-none truncate whitespace-nowrap">Médias</span>
                             </a>
 
                             @php $isResources = request()->routeIs('resources.*'); @endphp
                             <a
                                 href="{{ route('resources.index') }}"
-                                class="flex-1 w-full flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition {{ $isResources ? 'text-slate-900' : 'text-slate-600' }}"
+                                class="flex-1 basis-1/4 min-w-0 w-full flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition {{ $isResources ? 'text-slate-900' : 'text-slate-600' }}"
                                 aria-current="{{ $isResources ? 'page' : 'false' }}"
                             >
                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl {{ $isResources ? 'bg-slate-100' : 'bg-transparent' }}">
@@ -135,13 +135,13 @@
                                         <path d="M4 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
                                     </svg>
                                 </span>
-                                <span class="leading-none">Ressources</span>
+                                <span class="w-full px-1 text-center text-[11px] leading-none truncate whitespace-nowrap">Ress.</span>
                             </a>
 
                             @php $isChat = request()->routeIs('chat.*'); @endphp
                             <a
                                 href="{{ route('chat.index') }}"
-                                class="flex-1 w-full flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition {{ $isChat ? 'text-slate-900' : 'text-slate-600' }}"
+                                class="flex-1 basis-1/4 min-w-0 w-full flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition {{ $isChat ? 'text-slate-900' : 'text-slate-600' }}"
                                 aria-current="{{ $isChat ? 'page' : 'false' }}"
                             >
                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl {{ $isChat ? 'bg-slate-100' : 'bg-transparent' }}">
@@ -149,7 +149,7 @@
                                         <path d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4v8z" />
                                     </svg>
                                 </span>
-                                <span class="leading-none">Chat</span>
+                                <span class="w-full px-1 text-center text-[11px] leading-none truncate whitespace-nowrap">Chat</span>
                             </a>
                         </div>
                     </div>

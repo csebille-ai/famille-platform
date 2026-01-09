@@ -23,28 +23,11 @@
                         <div class="h-full w-full bg-slate-50"></div>
                     @endif
 
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
-
-                    <div class="absolute top-3 left-3 flex items-center gap-2">
-                        <div class="rounded-full bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold tracking-wide text-slate-900">
-                            {{ $heroIsVideo ? 'VIDÉO' : 'PHOTO' }}
-                            @if($heroIsVideo && $heroDuration !== '')
-                                <span class="text-slate-500">·</span>
-                                <span class="text-slate-700">{{ $heroDuration }}</span>
-                            @endif
-                        </div>
-                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
 
                     <div class="absolute bottom-0 left-0 right-0 p-4">
                         <div class="text-xs font-medium text-white/80">Dernier média</div>
                         <div class="mt-1 truncate text-base font-semibold text-white">{{ $heroMedia['title'] }}</div>
-                        <div class="mt-1 truncate text-sm text-white/75">
-                            {{ $heroMedia['by'] ?? 'Quelqu’un' }}
-                            @if(!empty($heroMedia['at'] ?? null))
-                                <span class="text-white/50">·</span>
-                                {{ optional($heroMedia['at'])->diffForHumans() }}
-                            @endif
-                        </div>
                     </div>
                 </div>
             </a>
@@ -58,10 +41,27 @@
         <div class="rounded-2xl bg-white p-4 shadow-sm">
             <div class="flex items-center justify-between gap-3">
                 <div class="text-sm font-medium text-slate-900">Derniers ajouts</div>
-                <div class="-mx-1 flex items-center gap-2 overflow-x-auto whitespace-nowrap px-1">
-                    <a href="{{ route('dashboard', ['feed' => 'all']) }}" class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold {{ ($feed ?? 'all') === 'all' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300' }}">Tous</a>
-                    <a href="{{ route('dashboard', ['feed' => 'photos']) }}" class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold {{ ($feed ?? 'all') === 'photos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300' }}">Photos</a>
-                    <a href="{{ route('dashboard', ['feed' => 'videos']) }}" class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold {{ ($feed ?? 'all') === 'videos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300' }}">Vidéos</a>
+                <div class="w-full max-w-xs">
+                    <div class="grid grid-cols-3 rounded-xl border border-slate-200 bg-white p-1">
+                        <a
+                            href="{{ route('dashboard', ['feed' => 'all']) }}"
+                            class="rounded-lg px-2 py-2 text-center text-[0.72rem] font-semibold transition {{ ($feed ?? 'all') === 'all' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50' }}"
+                        >
+                            Tous
+                        </a>
+                        <a
+                            href="{{ route('dashboard', ['feed' => 'photos']) }}"
+                            class="rounded-lg px-2 py-2 text-center text-[0.72rem] font-semibold transition {{ ($feed ?? 'all') === 'photos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50' }}"
+                        >
+                            Photos
+                        </a>
+                        <a
+                            href="{{ route('dashboard', ['feed' => 'videos']) }}"
+                            class="rounded-lg px-2 py-2 text-center text-[0.72rem] font-semibold transition {{ ($feed ?? 'all') === 'videos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50' }}"
+                        >
+                            Vidéos
+                        </a>
+                    </div>
                 </div>
             </div>
 
