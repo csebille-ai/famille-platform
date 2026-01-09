@@ -16,11 +16,14 @@ use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
 use App\Models\CloudNode;
 use App\Models\ChatMessage;
+use App\Models\Event;
 use App\Models\NewsItem;
 use App\Models\Resource;
 use App\Models\Video;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 
 Route::post('/api/tarot/draw', TarotDrawController::class)
     ->middleware('throttle:tarot-draw')
@@ -92,61 +95,116 @@ Route::get('/dashboard', function () {
         ['label' => 'Recettes', 'category' => 'Recettes'],
     ];
 
-    $activity = collect();
+    $familyMoments = Cache::remember('dashboard.family_moments.' . now()->toDateString(), now()->addDay(), function () {
+        $cards = [];
 
-    $recentImages = CloudNode::query()
-        ->with('uploader:id,name')
-        ->where('type', 'file')
-        ->whereNotNull('stored_path')
-        ->where('mime', 'like', 'image/%')
-        ->latest()
-        ->limit(5)
-        ->get();
+        // Always include at least one visual (photo) to make the end of the dashboard a "reward".
+        $today = now();
 
-    foreach ($recentImages as $img) {
-        $actor = $img->uploader?->name ?: 'Quelqu’un';
-        $activity->push([
-            'at' => $img->created_at,
-            'text' => $actor . ' a ajouté une photo',
-            'href' => route('images.open', $img),
-        ]);
-    }
+        $memoryPhoto = null;
+        try {
+            $memoryPhoto = CloudNode::query()
+                ->with('uploader:id,name')
+                ->where('type', 'file')
+                ->whereNotNull('stored_path')
+                ->where('mime', 'like', 'image/%')
+                ->whereMonth('created_at', $today->month)
+                ->whereDay('created_at', $today->day)
+                ->whereYear('created_at', '!=', $today->year)
+                ->inRandomOrder()
+                ->first();
+        } catch (Throwable $e) {
+            $memoryPhoto = null;
+        }
 
-    $recentVideos = DB::table('videos')
-        ->leftJoin('users', 'users.id', '=', 'videos.created_by')
-        ->orderByDesc('videos.created_at')
-        ->limit(5)
-        ->get(['videos.id', 'videos.title', 'videos.created_at', 'users.name as user_name']);
+        $surprisePhoto = null;
+        try {
+            $surprisePhoto = CloudNode::query()
+                ->with('uploader:id,name')
+                ->where('type', 'file')
+                ->whereNotNull('stored_path')
+                ->where('mime', 'like', 'image/%')
+                ->inRandomOrder()
+                ->first();
+        } catch (Throwable $e) {
+            $surprisePhoto = null;
+        }
 
-    foreach ($recentVideos as $v) {
-        $actor = $v->user_name ?: 'Quelqu’un';
-        $activity->push([
-            'at' => $v->created_at,
-            'text' => $actor . ' a ajouté une vidéo : ' . (string) $v->title,
-            'href' => route('videos.show', ['video' => $v->id]),
-        ]);
-    }
+        $photo = $memoryPhoto ?: $surprisePhoto;
+        if ($photo) {
+            $isMemory = (bool) $memoryPhoto;
+            $years = $photo->created_at ? max(0, (int) $photo->created_at->diffInYears($today)) : 0;
 
-    $recentDocs = DB::table('resources')
-        ->leftJoin('users', 'users.id', '=', 'resources.created_by')
-        ->orderByDesc('resources.created_at')
-        ->limit(5)
-        ->get(['resources.id', 'resources.title', 'resources.created_at', 'users.name as user_name']);
+            $title = $isMemory ? 'Souvenir du jour' : 'Photo surprise';
+            $subtitle = $isMemory
+                ? (($years > 0 ? 'Il y a ' . $years . ' an' . ($years > 1 ? 's' : '') . ' aujourd’hui' : 'Un souvenir du jour') . ' · ' . ($photo->uploader?->name ?: 'Famille'))
+                : 'Un petit clin d’œil au hasard.';
 
-    foreach ($recentDocs as $r) {
-        $actor = $r->user_name ?: 'Quelqu’un';
-        $activity->push([
-            'at' => $r->created_at,
-            'text' => $actor . ' a ajouté un document : ' . (string) $r->title,
-            'href' => route('resources.show', ['resource' => $r->id]),
-        ]);
-    }
+            $cards[] = [
+                'kind' => $isMemory ? 'memory' : 'surprise',
+                'title' => $title,
+                'text' => $subtitle,
+                'image_url' => route('images.view', $photo),
+                'href' => route('images.open', $photo),
+                'cta' => $isMemory ? 'Voir le souvenir' : 'Voir la photo',
+            ];
+        }
 
-    $activity = $activity
-        ->filter(fn ($a) => !empty($a['at']))
-        ->sortByDesc('at')
-        ->values()
-        ->take(5);
+        // Upcoming family event (if enabled).
+        try {
+            if (Schema::hasTable('events')) {
+                $next = Event::query()
+                    ->whereDate('starts_on', '>=', $today->toDateString())
+                    ->orderBy('starts_on')
+                    ->first();
+
+                if ($next) {
+                    $days = (int) $today->startOfDay()->diffInDays($next->starts_on, false);
+                    $when = $days === 0 ? 'aujourd’hui' : ('dans ' . $days . ' jour' . ($days > 1 ? 's' : ''));
+                    $label = $next->type ?: 'Événement';
+
+                    $cards[] = [
+                        'kind' => 'event',
+                        'title' => $next->title,
+                        'text' => $label . ' ' . $when,
+                        'image_url' => null,
+                        'href' => route('moments.index'),
+                        'cta' => 'Voir',
+                    ];
+                }
+            }
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        // Light daily tarot card (fun message, non mystique).
+        $deck = (array) config('tarot.cards', []);
+        if (!empty($deck) && count($cards) < 3) {
+            $seed = crc32('tarot:' . $today->toDateString());
+            $card = $deck[$seed % count($deck)] ?? null;
+
+            if (is_array($card) && !empty($card['name'])) {
+                $messages = [
+                    'Aujourd’hui, on y va tranquillement et on avance quand même.',
+                    'Version du jour: simple, efficace, sans se prendre la tête.',
+                    'Petit rappel: on fait mieux avec une pause qu’avec un sprint.',
+                    'On garde le cap: une petite action vaut mieux qu’un grand plan.',
+                ];
+                $msg = $messages[$seed % count($messages)];
+
+                $cards[] = [
+                    'kind' => 'tarot',
+                    'title' => 'Carte du jour: ' . (string) $card['name'],
+                    'text' => $msg,
+                    'image_url' => null,
+                    'href' => route('tarot.index'),
+                    'cta' => 'Voir',
+                ];
+            }
+        }
+
+        return array_slice($cards, 0, 3);
+    });
 
     return view('dashboard', [
         'latestImages' => $latestImages,
@@ -157,7 +215,7 @@ Route::get('/dashboard', function () {
         'todayMedia' => $todayMedia,
         'chatOnlineCount' => $chatOnlineCount,
         'communLinks' => $communLinks,
-        'activity' => $activity,
+        'familyMoments' => $familyMoments,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 

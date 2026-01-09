@@ -284,21 +284,48 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm p-6">
-            <div class="text-base font-semibold text-gray-900">Activité</div>
-            <div class="text-sm text-slate-500 mt-1">Derniers ajouts</div>
+            <div class="text-base font-semibold text-gray-900">Le petit moment de la famille</div>
+            <div class="text-sm text-slate-500 mt-1">Un mini clin d’œil du jour, rien de plus.</div>
 
-            <div class="mt-4 space-y-2">
-                @if(($activity ?? collect())->count())
-                    @foreach(($activity ?? collect())->take(5) as $a)
-                        <a href="{{ $a['href'] ?? '#' }}" class="block rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-gray-900 hover:bg-slate-50">
-                            {{ $a['text'] ?? '' }}
-                        </a>
-                    @endforeach
-                @else
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                        Aucune activité récente.
+            @php($cards = (array) ($familyMoments ?? []))
+
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                @forelse($cards as $c)
+                    @php
+                        $href = (string) ($c['href'] ?? '#');
+                        $cta = (string) ($c['cta'] ?? 'Voir');
+                        $img = (string) ($c['image_url'] ?? '');
+                        $title = (string) ($c['title'] ?? '');
+                        $text = (string) ($c['text'] ?? '');
+                    @endphp
+
+                    <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                        @if($img !== '')
+                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
+                                <img src="{{ $img }}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                            </div>
+                        @else
+                            <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
+                                <div class="h-10 w-10 rounded-2xl bg-slate-100 border border-slate-200"></div>
+                            </div>
+                        @endif
+
+                        <div class="p-4">
+                            <div class="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{{ $title }}</div>
+                            @if($text !== '')
+                                <div class="mt-1 text-sm text-slate-600 line-clamp-2">{{ $text }}</div>
+                            @endif
+
+                            <div class="mt-3 inline-flex items-center text-sm font-semibold text-indigo-600">
+                                {{ $cta }} ›
+                            </div>
+                        </div>
+                    </a>
+                @empty
+                    <div class="md:col-span-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                        Rien pour aujourd’hui. On se retrouve demain.
                     </div>
-                @endif
+                @endforelse
             </div>
         </div>
     </div>
