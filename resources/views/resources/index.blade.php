@@ -237,7 +237,7 @@
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <div class="mt-1 text-lg font-semibold text-gray-900">Documents par utilisateur</div>
-                            <div class="mt-1 text-sm text-gray-600">Accès rapide par personne (inclut aussi “Commun”).</div>
+                            <div class="mt-1 text-sm text-gray-600">Accès rapide par personne.</div>
                         </div>
                     </div>
 
@@ -248,7 +248,6 @@
                         <select id="user" name="user" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" onchange="this.form.submit()">
                             <option value="" @selected((string) $sel === '')>— Choisir —</option>
                             <option value="all" @selected((string) $sel === 'all')>Tous</option>
-                            <option value="common" @selected((string) $sel === 'common')>Commun (tout le monde)</option>
                             @foreach ($users as $u)
                                 <option value="{{ $u->id }}" @selected((string) $sel === (string) $u->id)>{{ $u->name }}</option>
                             @endforeach
@@ -270,12 +269,6 @@
                            class="shrink-0 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full border {{ $sel === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200' }}">
                             <span class="h-5 w-5 rounded-full bg-gray-600 text-white inline-flex items-center justify-center text-[10px] font-semibold">*</span>
                             <span>Tous</span>
-                        </a>
-
-                        <a href="{{ route('resources.index', ['user' => 'common']) }}"
-                           class="shrink-0 inline-flex items-center gap-2 text-xs px-3 py-2 rounded-full border {{ $sel === 'common' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200' }}">
-                            <span class="h-5 w-5 rounded-full bg-gray-600 text-white inline-flex items-center justify-center text-[10px] font-semibold">C</span>
-                            <span>Commun</span>
                         </a>
 
                         @foreach ($users as $u)
