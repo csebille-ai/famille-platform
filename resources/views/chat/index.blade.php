@@ -169,6 +169,7 @@
                     <form id="chatForm" method="POST" action="{{ route('chat.store') }}">
                         @csrf
                         <div id="chatGate" class="hidden mb-2 text-sm text-slate-600"></div>
+                        <div id="chatVoiceStatus" class="hidden mb-2 text-sm text-slate-600"></div>
 
                         <div class="flex items-end gap-2">
                             <div class="flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2">
@@ -181,6 +182,16 @@
                                     required
                                 >{{ old('body') }}</textarea>
                             </div>
+
+                            <button
+                                type="button"
+                                id="chatVoiceBtn"
+                                class="border border-slate-200 bg-white text-slate-700 rounded-2xl px-4 py-3 text-sm font-semibold"
+                                aria-label="Dicter le message"
+                                title="Dicter le message"
+                            >
+                                🎙️
+                            </button>
 
                             <button
                                 type="submit"
@@ -214,6 +225,64 @@
             const initialOnline = @json($initialOnline ?? []);
 
             const gateEl = document.getElementById('chatGate');
+            const voiceStatusEl = document.getElementById('chatVoiceStatus');
+            const voiceBtn = document.getElementById('chatVoiceBtn');
+            const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = null;
+            let dictationActive = false;
+            let dictationBase = '';
+            let dictationInterim = '';
+
+            function setVoiceStatus(message, options) {
+                if (!voiceStatusEl) return;
+                const msg = String(message || '').trim();
+                if (!msg) {
+                    voiceStatusEl.textContent = '';
+                    voiceStatusEl.className = 'hidden mb-2 text-sm text-slate-600';
+                    return;
+                }
+                voiceStatusEl.textContent = msg;
+                voiceStatusEl.className = 'mb-2 text-sm text-slate-600';
+
+                const autoHideMs = Number(options?.autoHideMs ?? 0);
+                if (autoHideMs > 0) {
+                    setTimeout(() => {
+                        if (voiceStatusEl.textContent === msg) {
+                            setVoiceStatus('');
+                        }
+                    }, autoHideMs);
+                }
+            }
+
+            function setDictationUi(active) {
+                dictationActive = !!active;
+                if (!voiceBtn) return;
+                voiceBtn.setAttribute('aria-pressed', dictationActive ? 'true' : 'false');
+                voiceBtn.classList.toggle('bg-slate-900', dictationActive);
+                voiceBtn.classList.toggle('text-white', dictationActive);
+                voiceBtn.classList.toggle('border-slate-900', dictationActive);
+                voiceBtn.classList.toggle('bg-white', !dictationActive);
+                voiceBtn.classList.toggle('text-slate-700', !dictationActive);
+                voiceBtn.classList.toggle('border-slate-200', !dictationActive);
+                setVoiceStatus(dictationActive ? '🎙️ Dictée en cours…' : '');
+            }
+
+            function syncVoiceAvailability() {
+                if (!voiceBtn) return;
+                const supported = !!SpeechRecognitionCtor;
+                const allowedByGate = !textareaEl?.disabled;
+
+                voiceBtn.disabled = !supported || !allowedByGate;
+                voiceBtn.classList.toggle('opacity-50', voiceBtn.disabled);
+                voiceBtn.classList.toggle('cursor-not-allowed', voiceBtn.disabled);
+                voiceBtn.title = !supported
+                    ? 'Dictée vocale non supportée par ce navigateur'
+                    : (allowedByGate ? 'Dicter le message' : 'Chat désactivé (dictée indisponible)');
+
+                if (!supported) {
+                    setVoiceStatus('');
+                }
+            }
 
             const palette = [
                 { chip: 'bg-indigo-50 text-indigo-700 border-indigo-200', avatar: 'bg-indigo-600 text-white' },
@@ -328,6 +397,8 @@
                     gateEl.textContent = ok ? '' : 'Chat désactivé : il faut au moins 2 connectés.';
                     gateEl.className = ok ? 'hidden mb-2 text-sm text-slate-600' : 'mb-2 text-sm text-slate-600';
                 }
+
+                syncVoiceAvailability();
             }
 
             function dayKeyFromISO(iso) {
@@ -650,6 +721,89 @@
                         formEl.requestSubmit?.();
                     }
                 });
+
+                // Voice dictation (Web Speech API)
+                if (voiceBtn) {
+                    syncVoiceAvailability();
+
+                    if (SpeechRecognitionCtor) {
+                        recognition = new SpeechRecognitionCtor();
+                        recognition.lang = 'fr-FR';
+                        recognition.interimResults = true;
+                        recognition.continuous = true;
+                        recognition.maxAlternatives = 1;
+
+                        recognition.onresult = (event) => {
+                            if (!textareaEl) return;
+                            let finalText = '';
+                            let interimText = '';
+
+                            for (let i = event.resultIndex; i < event.results.length; i++) {
+                                const res = event.results[i];
+                                const chunk = String(res?.[0]?.transcript ?? '').trim();
+                                if (!chunk) continue;
+                                if (res.isFinal) {
+                                    finalText += (finalText ? ' ' : '') + chunk;
+                                } else {
+                                    interimText += (interimText ? ' ' : '') + chunk;
+                                }
+                            }
+
+                            if (finalText) {
+                                dictationBase = (dictationBase || '').trim();
+                                dictationBase = dictationBase
+                                    ? (dictationBase + ' ' + finalText).trim()
+                                    : finalText;
+                            }
+
+                            dictationInterim = interimText;
+                            const composed = [dictationBase, dictationInterim].filter(Boolean).join(' ').trim();
+                            textareaEl.value = composed;
+                            textareaEl.selectionStart = textareaEl.selectionEnd = textareaEl.value.length;
+                            autoGrow();
+                        };
+
+                        recognition.onerror = (event) => {
+                            const code = event?.error ? String(event.error) : 'unknown';
+                            setVoiceStatus(`Dictée vocale indisponible (${code}).`, { autoHideMs: 5000 });
+                            setDictationUi(false);
+                        };
+
+                        recognition.onend = () => {
+                            // If it stopped by itself (silence/permission), reflect it in UI.
+                            if (dictationActive) {
+                                setDictationUi(false);
+                                dictationInterim = '';
+                            }
+                        };
+                    }
+
+                    voiceBtn.addEventListener('click', () => {
+                        if (!SpeechRecognitionCtor || !recognition) return;
+                        if (textareaEl?.disabled) return;
+
+                        if (dictationActive) {
+                            try {
+                                recognition.stop();
+                            } catch {
+                                // ignore
+                            }
+                            setDictationUi(false);
+                            dictationInterim = '';
+                            return;
+                        }
+
+                        dictationBase = String(textareaEl.value || '').trim();
+                        dictationInterim = '';
+                        setDictationUi(true);
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            setDictationUi(false);
+                            setVoiceStatus('Impossible de démarrer la dictée vocale.', { autoHideMs: 5000 });
+                        }
+                    });
+                }
 
                 formEl.addEventListener('submit', async (ev) => {
                     // Progressive enhancement: if Echo isn't loaded, let the normal POST+redirect happen.
