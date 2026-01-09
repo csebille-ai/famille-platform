@@ -19,26 +19,124 @@
 
         <div class="bg-white rounded-2xl shadow-sm p-6">
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                <a href="{{ route('resources.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Ressources
+                <a href="{{ route('resources.create') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                    Ajouter un doc
                 </a>
-                <a href="{{ route('images.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Photos
+                <a href="{{ route('images.create') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                    Ajouter une photo
                 </a>
-                <a href="{{ route('videos.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Vidéos
+                <a href="{{ route('videos.create') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
+                    Ajouter une vidéo
                 </a>
                 <a href="{{ route('actu.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Actu locale
+                    Lire l’actu
                 </a>
                 <a href="{{ route('chat.index') }}" class="min-h-[44px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-gray-900 flex items-center justify-center text-center">
-                    Chat
+                    Écrire sur le chat
                 </a>
             </div>
         </div>
 
         <div>
             <div class="text-base font-semibold text-gray-900">Aujourd’hui</div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="flex items-end justify-between gap-4">
+                <div class="text-base font-semibold text-gray-900">Aujourd’hui dans la famille</div>
+                <a href="{{ route('dashboard') }}" class="text-sm text-slate-500">Résumé</a>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="text-xs font-semibold text-slate-500">ACTU LOCALE</div>
+                    @if(!empty($todayNewsItem))
+                        <a href="{{ $todayNewsItem->url }}" target="_blank" rel="noopener noreferrer" class="block mt-2 text-sm font-semibold text-gray-900 hover:underline">
+                            {{ $short($todayNewsItem->title ?? '', 90) }}
+                        </a>
+                        @if(!empty($todayNewsItem->excerpt))
+                            <div class="mt-1 text-sm text-slate-600">{{ $short($todayNewsItem->excerpt ?? '', 90) }}</div>
+                        @endif
+                        <div class="mt-2 text-xs text-slate-500">
+                            {{ $todayNewsItem->source ?? 'Source' }}
+                            @if(!empty($todayNewsItem->published_at))
+                                <span class="text-slate-400">·</span>
+                                {{ $todayNewsItem->published_at?->diffForHumans() }}
+                            @endif
+                        </div>
+                    @else
+                        <div class="mt-2 text-sm text-slate-600">Aucune actu pour l’instant.</div>
+                        <a href="{{ route('actu.index') }}" class="mt-2 inline-flex text-sm font-semibold text-indigo-600 hover:underline">Voir l’actu ›</a>
+                    @endif
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="text-xs font-semibold text-slate-500">CHAT</div>
+                    @if(!empty($lastChatMessage))
+                        <a href="{{ route('chat.index') }}" class="block mt-2">
+                            <div class="text-sm font-semibold text-gray-900 truncate">{{ $lastChatMessage->user?->name ?? '—' }}</div>
+                            <div class="mt-1 text-sm text-slate-600">{{ $short($lastChatMessage->body ?? '', 90) }}</div>
+                            <div class="mt-2 text-xs text-slate-500">{{ $lastChatMessage->created_at?->diffForHumans() }}</div>
+                        </a>
+                    @else
+                        <div class="mt-2 text-sm text-slate-600">Aucun message pour l’instant.</div>
+                        <a href="{{ route('chat.index') }}" class="mt-2 inline-flex text-sm font-semibold text-indigo-600 hover:underline">Ouvrir le chat ›</a>
+                    @endif
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="text-xs font-semibold text-slate-500">MÉDIA</div>
+                    @if(!empty($todayMedia) && !empty($todayMedia['type']) && !empty($todayMedia['model']))
+                        @php($t = (string) $todayMedia['type'])
+                        @php($m = $todayMedia['model'])
+
+                        @if($t === 'image')
+                            <a href="{{ route('images.open', $m) }}" class="block mt-2">
+                                <div class="rounded-xl overflow-hidden aspect-video bg-slate-100">
+                                    <img src="{{ route('images.view', $m) }}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                                </div>
+                                <div class="mt-2 text-sm font-semibold text-gray-900 truncate">Photo</div>
+                                <div class="mt-1 text-xs text-slate-500 truncate">
+                                    {{ $m->uploader?->name ?? 'Quelqu’un' }}
+                                    <span class="text-slate-400">·</span>
+                                    {{ $m->created_at?->diffForHumans() }}
+                                </div>
+                            </a>
+                        @elseif($t === 'video')
+                            <a href="{{ route('videos.show', $m) }}" class="block mt-2">
+                                <div class="rounded-xl overflow-hidden aspect-video bg-slate-100 flex items-center justify-center">
+                                    @if (!empty($m->poster_path))
+                                        <img src="{{ route('videos.poster', $m) }}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                                    @else
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-slate-400" aria-hidden="true">
+                                            <rect x="3" y="5" width="18" height="14" rx="2" />
+                                            <path d="M10 9l5 3-5 3V9z" />
+                                        </svg>
+                                    @endif
+                                </div>
+                                <div class="mt-2 text-sm font-semibold text-gray-900 truncate">{{ $m->title }}</div>
+                                <div class="mt-1 text-xs text-slate-500 truncate">
+                                    {{ $m->creator?->name ?? 'Quelqu’un' }}
+                                    <span class="text-slate-400">·</span>
+                                    {{ $m->created_at?->diffForHumans() }}
+                                </div>
+                            </a>
+                        @else
+                            <a href="{{ route('resources.show', $m) }}" class="block mt-2">
+                                <div class="text-sm font-semibold text-gray-900 truncate">{{ $m->title }}</div>
+                                <div class="mt-1 text-sm text-slate-600">Document</div>
+                                <div class="mt-2 text-xs text-slate-500 truncate">
+                                    {{ $m->creator?->name ?? 'Quelqu’un' }}
+                                    <span class="text-slate-400">·</span>
+                                    {{ $m->created_at?->diffForHumans() }}
+                                </div>
+                            </a>
+                        @endif
+                    @else
+                        <div class="mt-2 text-sm text-slate-600">Aucun média récent.</div>
+                    @endif
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -52,13 +150,20 @@
                     @if(($latestImages ?? collect())->count())
                         <div class="grid grid-cols-3 gap-3">
                             @foreach(($latestImages ?? collect())->take(3) as $img)
-                                <a href="{{ route('images.open', $img) }}" class="block rounded-xl overflow-hidden aspect-video bg-slate-100" aria-label="Ouvrir photo">
-                                    <img
-                                        src="{{ route('images.view', $img) }}"
-                                        alt="{{ $img->name ?? 'photo' }}"
-                                        class="w-full h-full object-cover"
-                                        loading="lazy"
-                                    />
+                                <a href="{{ route('images.open', $img) }}" class="block" aria-label="Ouvrir photo">
+                                    <div class="rounded-xl overflow-hidden aspect-video bg-slate-100">
+                                        <img
+                                            src="{{ route('images.view', $img) }}"
+                                            alt="{{ $img->name ?? 'photo' }}"
+                                            class="w-full h-full object-cover"
+                                            loading="lazy"
+                                        />
+                                    </div>
+                                    <div class="mt-1 text-xs text-slate-500 truncate">
+                                        {{ $img->uploader?->name ?? 'Quelqu’un' }}
+                                        <span class="text-slate-400">·</span>
+                                        {{ $img->created_at?->diffForHumans() }}
+                                    </div>
                                 </a>
                             @endforeach
                         </div>
@@ -92,6 +197,11 @@
                                         @endif
                                     </div>
                                     <div class="mt-2 text-sm font-semibold text-gray-900 truncate">{{ $v->title }}</div>
+                                    <div class="mt-1 text-xs text-slate-500 truncate">
+                                        {{ $v->creator?->name ?? 'Quelqu’un' }}
+                                        <span class="text-slate-400">·</span>
+                                        {{ $v->created_at?->diffForHumans() }}
+                                    </div>
                                 </a>
                             @endforeach
                         </div>
@@ -116,6 +226,8 @@
                                 <div class="text-sm font-semibold text-gray-900 truncate">{{ $r->title }}</div>
                                 <div class="mt-1 text-xs text-slate-500 truncate">
                                     {{ $r->category ?: 'Document' }}
+                                    <span class="text-slate-400">·</span>
+                                    {{ $r->creator?->name ?? 'Quelqu’un' }}
                                     <span class="text-slate-400">·</span>
                                     {{ $r->created_at?->diffForHumans() }}
                                 </div>

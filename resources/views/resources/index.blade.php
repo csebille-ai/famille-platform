@@ -141,7 +141,11 @@
                                                                 <span class="text-gray-400">·</span>
                                                                 {{ $u?->name ?? 'Commun' }}
                                                                 <span class="text-gray-400">·</span>
+                                                                {{ $resource->creator?->name ?? 'Quelqu’un' }}
+                                                                <span class="text-gray-400">·</span>
                                                                 <span class="font-semibold text-gray-700">{{ $fileCount }} fichier{{ $fileCount > 1 ? 's' : '' }}</span>
+                                                                <span class="text-gray-400">·</span>
+                                                                {{ $resource->created_at?->diffForHumans() }}
                                                             </div>
                                                         </div>
 

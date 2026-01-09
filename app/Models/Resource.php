@@ -28,6 +28,11 @@ class Resource extends Model
         return $this->belongsTo(User::class, 'concerned_user_id');
     }
 
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function files(): HasMany
     {
         return $this->hasMany(ResourceFile::class);

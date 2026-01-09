@@ -54,12 +54,6 @@
                     <x-nav-link :href="route('images.index')" :active="request()->routeIs('images.*')">
                         {{ __('Images') }}
                     </x-nav-link>
-
-                    @can('manage-users')
-                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                            {{ __('Admin') }}
-                        </x-nav-link>
-                    @endcan
                 </div>
             </div>
 
@@ -79,6 +73,12 @@
                     </x-slot>
 
                     <x-slot name="content">
+                        @can('manage-users')
+                            <x-dropdown-link :href="route('admin.users.index')">
+                                {{ __('Admin') }}
+                            </x-dropdown-link>
+                        @endcan
+
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
                         </x-dropdown-link>
@@ -139,12 +139,6 @@
             <x-responsive-nav-link :href="route('images.index')" :active="request()->routeIs('images.*')">
                 {{ __('Images') }}
             </x-responsive-nav-link>
-
-            @can('manage-users')
-                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                    {{ __('Admin') }}
-                </x-responsive-nav-link>
-            @endcan
         </div>
 
         <!-- Responsive Settings Options -->
@@ -155,6 +149,12 @@
             </div>
 
             <div class="mt-3 space-y-1">
+                @can('manage-users')
+                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                        {{ __('Admin') }}
+                    </x-responsive-nav-link>
+                @endcan
+
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>

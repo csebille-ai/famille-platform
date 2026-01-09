@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
 use App\Models\CloudNode;
 use App\Models\ChatMessage;
+use App\Models\NewsItem;
 use App\Models\Resource;
 use App\Models\Video;
 use Illuminate\Support\Facades\DB;
@@ -39,15 +40,44 @@ Route::get('/dashboard', function () {
         ->limit(3)
         ->get();
 
-    $latestVideos = Video::query()->latest()->limit(2)->get();
+    $latestVideos = Video::query()->with('creator:id,name')->latest()->limit(3)->get();
 
     $latestDocs = Resource::query()
-        ->with('concernedUser:id,name')
+        ->with(['concernedUser:id,name', 'creator:id,name'])
         ->latest()
         ->limit(3)
         ->get();
 
     $lastChatMessage = ChatMessage::query()->with('user:id,name')->latest()->first();
+
+    $todayNewsItem = NewsItem::query()
+        ->orderByDesc('published_at')
+        ->orderByDesc('fetched_at')
+        ->orderByDesc('id')
+        ->first();
+
+    $mediaCandidates = collect([
+        [
+            'type' => 'image',
+            'model' => $latestImages->first(),
+            'at' => $latestImages->first()?->created_at,
+        ],
+        [
+            'type' => 'video',
+            'model' => $latestVideos->first(),
+            'at' => $latestVideos->first()?->created_at,
+        ],
+        [
+            'type' => 'doc',
+            'model' => $latestDocs->first(),
+            'at' => $latestDocs->first()?->created_at,
+        ],
+    ])
+        ->filter(fn ($c) => !empty($c['model']) && !empty($c['at']))
+        ->sortByDesc('at')
+        ->values();
+
+    $todayMedia = $mediaCandidates->first();
 
     $chatOnlineCount = (int) DB::table('chat_presences')
         ->where('last_seen_at', '>=', now()->subSeconds(45))
@@ -123,6 +153,8 @@ Route::get('/dashboard', function () {
         'latestVideos' => $latestVideos,
         'latestDocs' => $latestDocs,
         'lastChatMessage' => $lastChatMessage,
+        'todayNewsItem' => $todayNewsItem,
+        'todayMedia' => $todayMedia,
         'chatOnlineCount' => $chatOnlineCount,
         'communLinks' => $communLinks,
         'activity' => $activity,

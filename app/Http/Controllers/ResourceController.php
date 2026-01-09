@@ -17,7 +17,7 @@ class ResourceController extends Controller
     public function index()
     {
         $resources = Resource::query()
-            ->with(['concernedUser:id,name', 'files'])
+            ->with(['concernedUser:id,name', 'creator:id,name', 'files'])
             ->latest()
             ->get();
 
@@ -30,7 +30,7 @@ class ResourceController extends Controller
         // Only show results once the user has picked a filter.
         if ($selected !== '') {
             $resourcesForUser = Resource::query()
-                ->with(['concernedUser:id,name', 'files'])
+                ->with(['concernedUser:id,name', 'creator:id,name', 'files'])
                 ->when($selected === 'common', fn($q) => $q->whereNull('concerned_user_id'))
                 ->when($selected === 'all', fn($q) => $q)
                 ->when(is_numeric($selected), function ($q) use ($selected) {

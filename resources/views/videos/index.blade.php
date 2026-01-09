@@ -75,7 +75,11 @@
                                 </div>
                                 <div class="min-w-0">
                                     <div class="text-sm font-semibold text-gray-900 truncate">{{ $video->title }}</div>
-                                    <div class="text-xs text-slate-500">{{ $video->created_at?->diffForHumans() }}</div>
+                                    <div class="text-xs text-slate-500">
+                                        {{ $video->creator?->name ?? 'Quelqu’un' }}
+                                        <span class="text-slate-400">·</span>
+                                        {{ $video->created_at?->diffForHumans() }}
+                                    </div>
                                 </div>
                             </div>
                         @empty
@@ -113,7 +117,11 @@
                             </div>
                             <div class="p-3">
                                 <div class="text-sm font-semibold text-gray-900 truncate">{{ $video->title }}</div>
-                                <div class="text-xs text-slate-500 mt-0.5">{{ $video->created_at?->diffForHumans() }}</div>
+                                <div class="text-xs text-slate-500 mt-0.5">
+                                    {{ $video->creator?->name ?? 'Quelqu’un' }}
+                                    <span class="text-slate-400">·</span>
+                                    {{ $video->created_at?->diffForHumans() }}
+                                </div>
                             </div>
                         </a>
                     @endforeach

@@ -97,6 +97,7 @@ class VideoController extends Controller
         $categoryPreviews = [];
         foreach ($categories as $cat) {
             $categoryPreviews[$cat] = Video::query()
+                ->with('creator:id,name')
                 ->where('category', $cat)
                 ->latest()
                 ->take(1)
@@ -106,13 +107,14 @@ class VideoController extends Controller
         $videos = null;
         if ($selectedCategory !== '') {
             $videos = Video::query()
+                ->with('creator:id,name')
                 ->where('category', $selectedCategory)
                 ->latest()
                 ->paginate(12)
                 ->withQueryString();
         }
 
-        $latestVideo = Video::query()->latest()->first();
+        $latestVideo = Video::query()->with('creator:id,name')->latest()->first();
 
         return view('videos.index', [
             'category' => $selectedCategory,
