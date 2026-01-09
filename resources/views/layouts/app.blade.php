@@ -96,7 +96,7 @@
                             @php $isHome = request()->routeIs('dashboard'); @endphp
                             <a
                                 href="{{ route('dashboard') }}"
-                                class="flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition {{ $isHome ? 'text-slate-900' : 'text-slate-500' }}"
+                                class="w-full flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition {{ $isHome ? 'text-slate-900' : 'text-slate-600' }}"
                                 aria-current="{{ $isHome ? 'page' : 'false' }}"
                             >
                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl {{ $isHome ? 'bg-slate-100' : 'bg-transparent' }}">
@@ -111,7 +111,7 @@
                             @php $isMedia = request()->routeIs('media.*') || request()->routeIs('images.*') || request()->routeIs('videos.*'); @endphp
                             <a
                                 href="{{ route('media.index') }}"
-                                class="flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition {{ $isMedia ? 'text-slate-900' : 'text-slate-500' }}"
+                                class="w-full flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition {{ $isMedia ? 'text-slate-900' : 'text-slate-600' }}"
                                 aria-current="{{ $isMedia ? 'page' : 'false' }}"
                             >
                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl {{ $isMedia ? 'bg-slate-100' : 'bg-transparent' }}">
@@ -127,7 +127,7 @@
                             @php $isResources = request()->routeIs('resources.*'); @endphp
                             <a
                                 href="{{ route('resources.index') }}"
-                                class="flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition {{ $isResources ? 'text-slate-900' : 'text-slate-500' }}"
+                                class="w-full flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition {{ $isResources ? 'text-slate-900' : 'text-slate-600' }}"
                                 aria-current="{{ $isResources ? 'page' : 'false' }}"
                             >
                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl {{ $isResources ? 'bg-slate-100' : 'bg-transparent' }}">
@@ -141,7 +141,7 @@
                             @php $isChat = request()->routeIs('chat.*'); @endphp
                             <a
                                 href="{{ route('chat.index') }}"
-                                class="flex flex-col items-center justify-center gap-0.5 text-[11px] font-semibold transition {{ $isChat ? 'text-slate-900' : 'text-slate-500' }}"
+                                class="w-full flex flex-col items-center justify-center gap-0.5 text-xs font-semibold transition {{ $isChat ? 'text-slate-900' : 'text-slate-600' }}"
                                 aria-current="{{ $isChat ? 'page' : 'false' }}"
                             >
                                 <span class="inline-flex h-10 w-10 items-center justify-center rounded-2xl {{ $isChat ? 'bg-slate-100' : 'bg-transparent' }}">
