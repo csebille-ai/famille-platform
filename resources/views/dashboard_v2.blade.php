@@ -133,6 +133,21 @@
                 </div>
             </div>
 
+            <div class="bg-white rounded-2xl shadow-sm p-4">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="text-base font-semibold text-gray-900">Chat</div>
+                        @php $online = (int) ($chatOnlineCount ?? 0); @endphp
+                        <div class="text-sm text-slate-600 inline-flex items-center gap-2">
+                            <span class="{{ $online > 0 ? 'text-emerald-600' : 'text-slate-400' }}">●</span>
+                            <span class="font-semibold text-gray-900">{{ $online }}</span>
+                            <span class="whitespace-nowrap">connectés</span>
+                        </div>
+                    </div>
+                    <a href="{{ route('chat.index') }}" class="shrink-0 text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Ouvrir ›</a>
+                </div>
+            </div>
+
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Derniers docs</div>
@@ -156,33 +171,6 @@
                     @else
                         <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                             Aucun document pour l’instant.
-                        </div>
-                    @endif
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl shadow-sm p-6">
-                <div class="flex items-end justify-between gap-4">
-                    <div class="text-base font-semibold text-gray-900">Chat</div>
-                    <a href="{{ route('chat.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Ouvrir ›</a>
-                </div>
-
-                <div class="mt-2 text-sm text-slate-500">
-                    <span class="text-emerald-600">●</span>
-                    <span class="font-semibold text-gray-900">{{ (int) ($chatOnlineCount ?? 0) }}</span>
-                    connectés
-                </div>
-
-                <div class="mt-4">
-                    @if(!empty($lastChatMessage))
-                        <a href="{{ route('chat.index') }}" class="block rounded-xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50">
-                            <div class="text-sm font-semibold text-gray-900 truncate">{{ $lastChatMessage->user?->name ?? '—' }}</div>
-                            <div class="mt-1 text-sm text-slate-600">{{ $short($lastChatMessage->body ?? '', 90) }}</div>
-                            <div class="mt-2 text-xs text-slate-500">{{ $lastChatMessage->created_at?->diffForHumans() }}</div>
-                        </a>
-                    @else
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                            Aucun message pour l’instant.
                         </div>
                     @endif
                 </div>

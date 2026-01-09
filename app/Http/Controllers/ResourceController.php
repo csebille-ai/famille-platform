@@ -24,6 +24,10 @@ class ResourceController extends Controller
         $users = User::query()->orderBy('name')->get(['id', 'name']);
 
         $selected = (string) request()->query('user', '');
+        // Legacy: "Commun" is not a user filter anymore. Keep old bookmarks working by mapping to "all".
+        if ($selected === 'common') {
+            $selected = 'all';
+        }
         $selectedCategory = trim((string) request()->query('category', ''));
         $resourcesForUser = collect();
 
@@ -31,7 +35,6 @@ class ResourceController extends Controller
         if ($selected !== '') {
             $resourcesForUser = Resource::query()
                 ->with(['concernedUser:id,name', 'creator:id,name', 'files'])
-                ->when($selected === 'common', fn($q) => $q->whereNull('concerned_user_id'))
                 ->when($selected === 'all', fn($q) => $q)
                 ->when(is_numeric($selected), function ($q) use ($selected) {
                     $userId = (int) $selected;
