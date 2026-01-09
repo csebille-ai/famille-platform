@@ -299,17 +299,19 @@
             <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                 @if(!empty($c1))
                     @php
+                        $kind = (string) ($c1['kind'] ?? '');
                         $href = (string) ($c1['href'] ?? '#');
                         $cta = (string) ($c1['cta'] ?? 'Voir');
                         $img = (string) ($c1['image_url'] ?? '');
                         $title = (string) ($c1['title'] ?? '');
                         $text = (string) ($c1['text'] ?? '');
+                        $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
                     @endphp
 
                     <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
                         @if($img !== '')
                             <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
-                                <img src="{{ $img }}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                                <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
                             </div>
                         @else
                             <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
@@ -332,17 +334,19 @@
 
                 @if(!empty($c2))
                     @php
+                        $kind = (string) ($c2['kind'] ?? '');
                         $href = (string) ($c2['href'] ?? '#');
                         $cta = (string) ($c2['cta'] ?? 'Voir');
                         $img = (string) ($c2['image_url'] ?? '');
                         $title = (string) ($c2['title'] ?? '');
                         $text = (string) ($c2['text'] ?? '');
+                        $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
                     @endphp
 
                     <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
                         @if($img !== '')
                             <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
-                                <img src="{{ $img }}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                                <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
                             </div>
                         @else
                             <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
@@ -365,17 +369,19 @@
 
                 @if(!empty($c3))
                     @php
+                        $kind = (string) ($c3['kind'] ?? '');
                         $href = (string) ($c3['href'] ?? '#');
                         $cta = (string) ($c3['cta'] ?? 'Voir');
                         $img = (string) ($c3['image_url'] ?? '');
                         $title = (string) ($c3['title'] ?? '');
                         $text = (string) ($c3['text'] ?? '');
+                        $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
                     @endphp
 
                     <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
                         @if($img !== '')
                             <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
-                                <img src="{{ $img }}" alt="" class="w-full h-full object-cover" loading="lazy" />
+                                <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
                             </div>
                         @else
                             <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">

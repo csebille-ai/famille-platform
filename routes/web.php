@@ -192,11 +192,16 @@ Route::get('/dashboard', function () {
                 ];
                 $msg = $messages[$seed % count($messages)];
 
+                $tarotImageUrl = null;
+                if (!empty($card['file'])) {
+                    $tarotImageUrl = 'https://opanoma.fr/tarot/' . ltrim((string) $card['file'], '/');
+                }
+
                 $cards[] = [
                     'kind' => 'tarot',
                     'title' => 'Carte du jour: ' . (string) $card['name'],
                     'text' => $msg,
-                    'image_url' => null,
+                    'image_url' => $tarotImageUrl,
                     'href' => route('tarot.index'),
                     'cta' => 'Voir',
                 ];
