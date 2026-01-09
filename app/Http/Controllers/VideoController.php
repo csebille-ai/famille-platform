@@ -82,6 +82,45 @@ class VideoController extends Controller
         $video->forceFill(['poster_path' => $posterRelativePath])->save();
     }
 
+    private function probeDurationSeconds(string $absolutePath): ?int
+    {
+        if (!is_file($absolutePath)) {
+            return null;
+        }
+
+        $process = new Process([
+            'ffprobe',
+            '-v', 'error',
+            '-show_entries', 'format=duration',
+            '-of', 'default=noprint_wrappers=1:nokey=1',
+            $absolutePath,
+        ]);
+        $process->setTimeout(30);
+
+        try {
+            $process->run();
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (!$process->isSuccessful()) {
+            return null;
+        }
+
+        $out = trim((string) $process->getOutput());
+        if ($out === '') {
+            return null;
+        }
+
+        $secondsFloat = (float) str_replace(',', '.', $out);
+        $seconds = (int) round($secondsFloat);
+        if ($seconds <= 0) {
+            return null;
+        }
+
+        return $seconds;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -189,6 +228,18 @@ class VideoController extends Controller
 
                 $path = $request->file('video_file')->store('videos', 'public');
                 $validated['video_path'] = $path;
+
+                if (\Illuminate\Support\Facades\Schema::hasColumn('videos', 'duration_seconds')) {
+                    try {
+                        $abs = Storage::disk('public')->path($path);
+                        $dur = $this->probeDurationSeconds($abs);
+                        if ($dur !== null) {
+                            $validated['duration_seconds'] = $dur;
+                        }
+                    } catch (\Throwable $e) {
+                        // best-effort
+                    }
+                }
 
                 logger()->info('videos.upload.stored', [
                     'ms' => (int) round((microtime(true) - $t0) * 1000),

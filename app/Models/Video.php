@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Video extends Model
 {
-    protected $fillable = ['title', 'category', 'video_path', 'poster_path', 'description', 'created_by'];
+    protected $fillable = ['title', 'category', 'video_path', 'poster_path', 'description', 'created_by', 'duration_seconds'];
 
     public function creator(): BelongsTo
     {

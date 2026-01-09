@@ -37,6 +37,22 @@ Route::get('/', function () {
 Route::get('/home', function () {
     $feed = (string) request()->query('feed', 'all');
 
+    $prettyTitle = function (?string $raw, string $fallback): string {
+        $name = trim((string) $raw);
+        if ($name === '') return $fallback;
+
+        // Avoid surfacing raw filenames (e.g. IMG_1234.JPG, 20240101_120000.mp4).
+        $base = pathinfo($name, PATHINFO_FILENAME);
+        $ext = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
+        $looksLikeFilename = ($ext !== '' && strpos($name, ' ') === false);
+        if ($looksLikeFilename) return $fallback;
+
+        // Also avoid extremely long machine-ish names.
+        if (mb_strlen($name) > 80) return $fallback;
+
+        return $name;
+    };
+
     $latestImages = collect();
     try {
         if (Schema::hasTable('cloud_nodes')) {
@@ -62,18 +78,8 @@ Route::get('/home', function () {
         $latestVideos = collect();
     }
 
+    // Docs feed is intentionally not used on Home.
     $latestDocs = collect();
-    try {
-        if (Schema::hasTable('resources')) {
-            $latestDocs = Resource::query()
-                ->with(['concernedUser:id,name', 'creator:id,name'])
-                ->latest()
-                ->limit(6)
-                ->get();
-        }
-    } catch (Throwable $e) {
-        $latestDocs = collect();
-    }
 
     $todayNewsItem = null;
     try {
@@ -117,21 +123,27 @@ Route::get('/home', function () {
             $heroMedia = [
                 'key' => $heroKey,
                 'type' => 'image',
-                'title' => (string) (($model->name ?? '') !== '' ? $model->name : 'Photo'),
+                'title' => $prettyTitle((string) ($model->name ?? ''), 'Photo'),
                 'by' => (string) ($model->uploader?->name ?? 'Quelqu’un'),
                 'at' => $model->created_at,
                 'href' => route('images.open', $model),
                 'preview_url' => route('images.view', $model),
             ];
         } elseif ($type === 'video') {
+            $durationSeconds = null;
+            if (Schema::hasColumn('videos', 'duration_seconds')) {
+                $durationSeconds = (int) ($model->duration_seconds ?? 0);
+                if ($durationSeconds <= 0) $durationSeconds = null;
+            }
             $heroMedia = [
                 'key' => $heroKey,
                 'type' => 'video',
-                'title' => (string) (($model->title ?? '') !== '' ? $model->title : 'Vidéo'),
+                'title' => $prettyTitle((string) ($model->title ?? ''), 'Vidéo'),
                 'by' => (string) ($model->creator?->name ?? 'Quelqu’un'),
                 'at' => $model->created_at,
                 'href' => route('videos.show', $model),
                 'preview_url' => !empty($model->poster_path) ? route('videos.poster', $model) : null,
+                'duration_seconds' => $durationSeconds,
             ];
         }
     }
@@ -140,29 +152,30 @@ Route::get('/home', function () {
         ->merge($latestImages->map(fn ($img) => [
             'key' => 'image:' . (int) $img->id,
             'type' => 'image',
-            'title' => (string) (($img->name ?? '') !== '' ? $img->name : 'Photo'),
+            'title' => $prettyTitle((string) ($img->name ?? ''), 'Photo'),
             'by' => $img->uploader?->name ?? 'Quelqu’un',
             'at' => $img->created_at,
             'href' => route('images.open', $img),
             'thumb_url' => route('images.view', $img),
         ]))
-        ->merge($latestVideos->map(fn ($v) => [
-            'key' => 'video:' . (int) $v->id,
-            'type' => 'video',
-            'title' => $v->title ?: 'Vidéo',
-            'by' => $v->creator?->name ?? 'Quelqu’un',
-            'at' => $v->created_at,
-            'href' => route('videos.show', $v),
-            'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
-        ]))
-        ->merge($latestDocs->map(fn ($r) => [
-            'key' => 'doc:' . (int) $r->id,
-            'type' => 'doc',
-            'title' => $r->title,
-            'by' => $r->creator?->name ?? 'Quelqu’un',
-            'at' => $r->created_at,
-            'href' => route('resources.show', $r),
-        ]))
+        ->merge($latestVideos->map(function ($v) use ($prettyTitle) {
+            $durationSeconds = null;
+            if (Schema::hasColumn('videos', 'duration_seconds')) {
+                $durationSeconds = (int) ($v->duration_seconds ?? 0);
+                if ($durationSeconds <= 0) $durationSeconds = null;
+            }
+
+            return [
+                'key' => 'video:' . (int) $v->id,
+                'type' => 'video',
+                'title' => $prettyTitle((string) ($v->title ?? ''), 'Vidéo'),
+                'by' => $v->creator?->name ?? 'Quelqu’un',
+                'at' => $v->created_at,
+                'href' => route('videos.show', $v),
+                'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
+                'duration_seconds' => $durationSeconds,
+            ];
+        }))
         ->filter(fn ($x) => !empty($x['at']))
         ->sortByDesc('at')
         ->values();
@@ -177,8 +190,6 @@ Route::get('/home', function () {
         $latestAdds = $latestAdds->where('type', 'image')->values();
     } elseif ($feed === 'videos') {
         $latestAdds = $latestAdds->where('type', 'video')->values();
-    } elseif ($feed === 'docs') {
-        $latestAdds = $latestAdds->where('type', 'doc')->values();
     } else {
         $feed = 'all';
     }
@@ -480,6 +491,7 @@ Route::get('/media', function () {
     $videosNextCursor = null;
     try {
         if (Schema::hasTable('videos')) {
+            $hasDuration = Schema::hasColumn('videos', 'duration_seconds');
             $rows = Video::query()
                 ->with('creator:id,name')
                 ->orderByDesc('created_at')
@@ -495,6 +507,7 @@ Route::get('/media', function () {
                 'at' => $v->created_at?->toIso8601String(),
                 'at_human' => $v->created_at?->diffForHumans(),
                 'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
+                'duration_seconds' => $hasDuration ? (int) ($v->duration_seconds ?? 0) : null,
                 'open_url' => route('videos.show', $v),
             ])->values()->all();
 
@@ -636,6 +649,7 @@ Route::get('/api/media', function () {
         'at' => $v->created_at?->toIso8601String(),
         'at_human' => $v->created_at?->diffForHumans(),
         'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
+        'duration_seconds' => Schema::hasColumn('videos', 'duration_seconds') ? (int) ($v->duration_seconds ?? 0) : null,
         'open_url' => route('videos.show', $v),
     ])->values();
 

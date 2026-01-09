@@ -23,6 +23,7 @@
             nextVideosCursor: null,
             loadingImages: false,
             loadingVideos: false,
+            skeletonCount: 8,
             readJson(id) {
                 try {
                     const el = document.getElementById(id);
@@ -33,6 +34,16 @@
                 } catch (e) {
                     return null;
                 }
+            },
+            formatDuration(seconds) {
+                const s = Number(seconds || 0);
+                if (!Number.isFinite(s) || s <= 0) return '';
+                const sec = Math.round(s);
+                const h = Math.floor(sec / 3600);
+                const m = Math.floor((sec % 3600) / 60);
+                const r = sec % 60;
+                if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+                return `${m}:${String(r).padStart(2, '0')}`;
             },
             normalize(v) {
                 v = String(v || '').toLowerCase().trim();
@@ -135,11 +146,11 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm p-3 md:p-4">
-            <div class="flex items-center gap-2">
+            <div class="-mx-1 flex items-center gap-2 overflow-x-auto whitespace-nowrap px-1">
                 <button
                     type="button"
-                    class="rounded-full border px-3 py-1 text-xs font-semibold"
-                    :class="tab === 'images' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300'"
+                    class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold"
+                    :class="tab === 'images' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300'"
                     @click="setTab('images')"
                     aria-controls="media-images"
                     :aria-selected="tab === 'images'"
@@ -150,8 +161,8 @@
 
                 <button
                     type="button"
-                    class="rounded-full border px-3 py-1 text-xs font-semibold"
-                    :class="tab === 'videos' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300'"
+                    class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold"
+                    :class="tab === 'videos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300'"
                     @click="setTab('videos')"
                     aria-controls="media-videos"
                     :aria-selected="tab === 'videos'"
@@ -197,10 +208,31 @@
                             :disabled="!nextImagesCursor || loadingImages"
                             x-show="!!nextImagesCursor"
                         >
-                            <span x-show="!loadingImages">Charger plus</span>
-                            <span x-show="loadingImages">Chargement…</span>
+                            <span class="inline-flex items-center gap-2">
+                                <span x-show="!loadingImages">Charger plus</span>
+                                <span x-show="loadingImages" class="inline-flex items-center gap-2">
+                                    <svg class="h-4 w-4 animate-spin text-slate-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+                                    </svg>
+                                    Chargement…
+                                </span>
+                            </span>
                         </button>
                     </div>
+
+                    <template x-if="loadingImages">
+                        <div class="mt-4 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                            <template x-for="i in Array.from({ length: skeletonCount })" :key="'img_skel_' + i">
+                                <div class="rounded-2xl overflow-hidden bg-white shadow-sm">
+                                    <div class="aspect-[4/3] bg-slate-100 animate-pulse"></div>
+                                    <div class="p-3">
+                                        <div class="h-3 w-3/4 bg-slate-100 animate-pulse rounded"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </div>
             </template>
         </div>
@@ -217,8 +249,8 @@
                 <div>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                         <template x-for="v in (videos || [])" :key="'vid_' + v.id">
-                            <a :href="v.open_url" class="block rounded-2xl border border-slate-200 overflow-hidden bg-white">
-                                <div class="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center">
+                            <a :href="v.open_url" class="block rounded-2xl overflow-hidden bg-white shadow-sm">
+                                <div class="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="w-full h-full object-cover" loading="lazy" />
                                     </template>
@@ -228,6 +260,16 @@
                                             <path d="M10 9l5 3-5 3V9z" />
                                         </svg>
                                     </template>
+
+                                    <div class="absolute top-2 left-2 rounded-full bg-white/90 px-2 py-0.5 text-[0.65rem] font-semibold text-slate-900">
+                                        <span>VIDÉO</span>
+                                        <template x-if="!!formatDuration(v.duration_seconds)">
+                                            <span>
+                                                <span class="text-slate-500">·</span>
+                                                <span class="text-slate-700" x-text="formatDuration(v.duration_seconds)"></span>
+                                            </span>
+                                        </template>
+                                    </div>
                                 </div>
                                 <div class="p-3">
                                     <div class="text-sm font-semibold text-gray-900 truncate" x-text="v.title || 'Vidéo'"></div>
@@ -249,10 +291,32 @@
                             :disabled="!nextVideosCursor || loadingVideos"
                             x-show="!!nextVideosCursor"
                         >
-                            <span x-show="!loadingVideos">Charger plus</span>
-                            <span x-show="loadingVideos">Chargement…</span>
+                            <span class="inline-flex items-center gap-2">
+                                <span x-show="!loadingVideos">Charger plus</span>
+                                <span x-show="loadingVideos" class="inline-flex items-center gap-2">
+                                    <svg class="h-4 w-4 animate-spin text-slate-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+                                    </svg>
+                                    Chargement…
+                                </span>
+                            </span>
                         </button>
                     </div>
+
+                    <template x-if="loadingVideos">
+                        <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <template x-for="i in Array.from({ length: skeletonCount })" :key="'vid_skel_' + i">
+                                <div class="rounded-2xl overflow-hidden bg-white shadow-sm">
+                                    <div class="aspect-video bg-slate-100 animate-pulse"></div>
+                                    <div class="p-3">
+                                        <div class="h-4 w-2/3 bg-slate-100 animate-pulse rounded"></div>
+                                        <div class="mt-2 h-3 w-1/2 bg-slate-100 animate-pulse rounded"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </div>
             </template>
         </div>

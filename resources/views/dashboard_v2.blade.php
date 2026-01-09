@@ -1,7 +1,21 @@
 <x-app-layout pageBgClass="bg-slate-50">
     <div class="max-w-5xl mx-auto px-6 py-6 space-y-4">
         @if(!empty($heroMedia))
-            <a href="{{ $heroMedia['href'] }}" class="block overflow-hidden rounded-3xl bg-white shadow-sm hover:bg-slate-50">
+            @php
+                $fmtDuration = function (?int $seconds): string {
+                    $s = (int) ($seconds ?? 0);
+                    if ($s <= 0) return '';
+                    $h = intdiv($s, 3600);
+                    $m = intdiv($s % 3600, 60);
+                    $sec = $s % 60;
+                    if ($h > 0) return sprintf('%d:%02d:%02d', $h, $m, $sec);
+                    return sprintf('%d:%02d', $m, $sec);
+                };
+                $heroIsVideo = (($heroMedia['type'] ?? '') === 'video');
+                $heroDuration = $heroIsVideo ? $fmtDuration($heroMedia['duration_seconds'] ?? null) : '';
+            @endphp
+
+            <a href="{{ $heroMedia['href'] }}" class="block overflow-hidden rounded-3xl bg-slate-900/5 hover:bg-slate-900/10">
                 <div class="aspect-[16/10] bg-slate-100 overflow-hidden relative">
                     @if(!empty($heroMedia['preview_url'] ?? null))
                         <img src="{{ $heroMedia['preview_url'] }}" alt="" class="h-full w-full object-cover" loading="lazy" />
@@ -9,26 +23,28 @@
                         <div class="h-full w-full bg-slate-50"></div>
                     @endif
 
-                    @if(($heroMedia['type'] ?? '') === 'video')
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <div class="h-14 w-14 rounded-full bg-white/80 backdrop-blur border border-white/70 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-7 w-7 text-slate-900" aria-hidden="true">
-                                    <path d="M8 5v14l11-7z" />
-                                </svg>
-                            </div>
-                        </div>
-                    @endif
-                </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
 
-                <div class="p-4">
-                    <div class="text-xs font-medium text-slate-500">Dernier média</div>
-                    <div class="mt-1 truncate text-base font-semibold text-slate-900">{{ $heroMedia['title'] }}</div>
-                    <div class="mt-1 truncate text-sm text-slate-600">
-                        {{ $heroMedia['by'] ?? 'Quelqu’un' }}
-                        @if(!empty($heroMedia['at'] ?? null))
-                            <span class="text-slate-400">·</span>
-                            {{ optional($heroMedia['at'])->diffForHumans() }}
-                        @endif
+                    <div class="absolute top-3 left-3 flex items-center gap-2">
+                        <div class="rounded-full bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold tracking-wide text-slate-900">
+                            {{ $heroIsVideo ? 'VIDÉO' : 'PHOTO' }}
+                            @if($heroIsVideo && $heroDuration !== '')
+                                <span class="text-slate-500">·</span>
+                                <span class="text-slate-700">{{ $heroDuration }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="absolute bottom-0 left-0 right-0 p-4">
+                        <div class="text-xs font-medium text-white/80">Dernier média</div>
+                        <div class="mt-1 truncate text-base font-semibold text-white">{{ $heroMedia['title'] }}</div>
+                        <div class="mt-1 truncate text-sm text-white/75">
+                            {{ $heroMedia['by'] ?? 'Quelqu’un' }}
+                            @if(!empty($heroMedia['at'] ?? null))
+                                <span class="text-white/50">·</span>
+                                {{ optional($heroMedia['at'])->diffForHumans() }}
+                            @endif
+                        </div>
                     </div>
                 </div>
             </a>
@@ -42,11 +58,10 @@
         <div class="rounded-2xl bg-white p-4 shadow-sm">
             <div class="flex items-center justify-between gap-3">
                 <div class="text-sm font-medium text-slate-900">Derniers ajouts</div>
-                <div class="flex items-center gap-2">
-                    <a href="{{ route('dashboard', ['feed' => 'all']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'all' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Tous</a>
-                    <a href="{{ route('dashboard', ['feed' => 'photos']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'photos' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Photos</a>
-                    <a href="{{ route('dashboard', ['feed' => 'videos']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'videos' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Vidéos</a>
-                    <a href="{{ route('dashboard', ['feed' => 'docs']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'docs' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Docs</a>
+                <div class="-mx-1 flex items-center gap-2 overflow-x-auto whitespace-nowrap px-1">
+                    <a href="{{ route('dashboard', ['feed' => 'all']) }}" class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold {{ ($feed ?? 'all') === 'all' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300' }}">Tous</a>
+                    <a href="{{ route('dashboard', ['feed' => 'photos']) }}" class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold {{ ($feed ?? 'all') === 'photos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300' }}">Photos</a>
+                    <a href="{{ route('dashboard', ['feed' => 'videos']) }}" class="rounded-full border px-2.5 py-1 text-[0.7rem] font-semibold {{ ($feed ?? 'all') === 'videos' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 text-slate-700 hover:border-slate-300' }}">Vidéos</a>
                 </div>
             </div>
 
@@ -67,10 +82,11 @@
 
                         <div class="min-w-0 flex-1">
                             <div class="truncate text-sm font-medium text-slate-900">{{ $item['title'] }}</div>
-                            <div class="mt-0.5 truncate text-xs text-slate-500">Ajouté par {{ $item['by'] }}</div>
-                        </div>
-                        <div class="shrink-0 text-xs text-slate-500">
-                            {{ optional($item['at'])->diffForHumans() }}
+                            <div class="mt-0.5 truncate text-xs text-slate-500">
+                                Ajouté par {{ $item['by'] }}
+                                <span class="text-slate-400">·</span>
+                                {{ optional($item['at'])->diffForHumans() }}
+                            </div>
                         </div>
                     </a>
                 @empty
