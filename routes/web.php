@@ -95,7 +95,7 @@ Route::get('/dashboard', function () {
         ['label' => 'Recettes', 'category' => 'Recettes'],
     ];
 
-    $familyMoments = Cache::remember('dashboard.family_moments.' . now()->toDateString(), now()->addDay(), function () {
+    $buildFamilyMoments = function (): array {
         $cards = [];
 
         // Always include at least one visual (photo) to make the end of the dashboard a "reward".
@@ -204,7 +204,19 @@ Route::get('/dashboard', function () {
         }
 
         return array_slice($cards, 0, 3);
-    });
+    };
+
+    $familyMoments = [];
+    try {
+        $familyMoments = Cache::remember(
+            'dashboard.family_moments.' . now()->toDateString(),
+            now()->addDay(),
+            fn () => $buildFamilyMoments()
+        );
+    } catch (Throwable $e) {
+        // If cache is misconfigured/unwritable in production, do not 500 the dashboard.
+        $familyMoments = $buildFamilyMoments();
+    }
 
     return view('dashboard', [
         'latestImages' => $latestImages,
