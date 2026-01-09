@@ -82,9 +82,16 @@ Route::get('/dashboard', function () {
 
     $todayMedia = $mediaCandidates->first();
 
-    $chatOnlineCount = (int) DB::table('chat_presences')
-        ->where('last_seen_at', '>=', now()->subSeconds(45))
-        ->count();
+    $chatOnlineCount = 0;
+    try {
+        if (Schema::hasTable('chat_presences')) {
+            $chatOnlineCount = (int) DB::table('chat_presences')
+                ->where('last_seen_at', '>=', now()->subSeconds(45))
+                ->count();
+        }
+    } catch (Throwable $e) {
+        $chatOnlineCount = 0;
+    }
 
     $communLinks = [
         ['label' => 'Urgences', 'category' => 'Urgences'],
