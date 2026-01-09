@@ -34,30 +34,65 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    $latestImages = CloudNode::query()
-        ->with('uploader:id,name')
-        ->where('type', 'file')
-        ->whereNotNull('stored_path')
-        ->where('mime', 'like', 'image/%')
-        ->latest()
-        ->limit(3)
-        ->get();
+    $latestImages = collect();
+    try {
+        if (Schema::hasTable('cloud_nodes')) {
+            $latestImages = CloudNode::query()
+                ->with('uploader:id,name')
+                ->where('type', 'file')
+                ->whereNotNull('stored_path')
+                ->where('mime', 'like', 'image/%')
+                ->latest()
+                ->limit(3)
+                ->get();
+        }
+    } catch (Throwable $e) {
+        $latestImages = collect();
+    }
 
-    $latestVideos = Video::query()->with('creator:id,name')->latest()->limit(3)->get();
+    $latestVideos = collect();
+    try {
+        if (Schema::hasTable('videos')) {
+            $latestVideos = Video::query()->with('creator:id,name')->latest()->limit(3)->get();
+        }
+    } catch (Throwable $e) {
+        $latestVideos = collect();
+    }
 
-    $latestDocs = Resource::query()
-        ->with(['concernedUser:id,name', 'creator:id,name'])
-        ->latest()
-        ->limit(3)
-        ->get();
+    $latestDocs = collect();
+    try {
+        if (Schema::hasTable('resources')) {
+            $latestDocs = Resource::query()
+                ->with(['concernedUser:id,name', 'creator:id,name'])
+                ->latest()
+                ->limit(3)
+                ->get();
+        }
+    } catch (Throwable $e) {
+        $latestDocs = collect();
+    }
 
-    $lastChatMessage = ChatMessage::query()->with('user:id,name')->latest()->first();
+    $lastChatMessage = null;
+    try {
+        if (Schema::hasTable('chat_messages')) {
+            $lastChatMessage = ChatMessage::query()->with('user:id,name')->latest()->first();
+        }
+    } catch (Throwable $e) {
+        $lastChatMessage = null;
+    }
 
-    $todayNewsItem = NewsItem::query()
-        ->orderByDesc('published_at')
-        ->orderByDesc('fetched_at')
-        ->orderByDesc('id')
-        ->first();
+    $todayNewsItem = null;
+    try {
+        if (Schema::hasTable('news_items')) {
+            $todayNewsItem = NewsItem::query()
+                ->orderByDesc('published_at')
+                ->orderByDesc('fetched_at')
+                ->orderByDesc('id')
+                ->first();
+        }
+    } catch (Throwable $e) {
+        $todayNewsItem = null;
+    }
 
     $mediaCandidates = collect([
         [
@@ -107,6 +142,9 @@ Route::get('/dashboard', function () {
 
         $pickMemoryPhoto = function () use ($today) {
             try {
+                if (!Schema::hasTable('cloud_nodes')) {
+                    return null;
+                }
                 return CloudNode::query()
                     ->with('uploader:id,name')
                     ->where('type', 'file')
@@ -124,6 +162,9 @@ Route::get('/dashboard', function () {
 
         $pickSurprisePhoto = function () {
             try {
+                if (!Schema::hasTable('cloud_nodes')) {
+                    return null;
+                }
                 return CloudNode::query()
                     ->with('uploader:id,name')
                     ->where('type', 'file')
@@ -205,21 +246,23 @@ Route::get('/dashboard', function () {
 
         // 3) Simple weather signal via local news (tag meteo).
         try {
-            $weather = NewsItem::query()
-                ->where('tag', 'meteo')
-                ->orderByDesc('published_at')
-                ->orderByDesc('fetched_at')
-                ->first();
+            if (Schema::hasTable('news_items')) {
+                $weather = NewsItem::query()
+                    ->where('tag', 'meteo')
+                    ->orderByDesc('published_at')
+                    ->orderByDesc('fetched_at')
+                    ->first();
 
-            if ($weather) {
-                return [[
-                    'kind' => 'weather',
-                    'title' => 'Météo du coin',
-                    'text' => (string) ($weather->title ?: 'Un petit point météo'),
-                    'image_url' => (string) ($weather->image_url ?: ''),
-                    'href' => (string) ($weather->url ?: route('actu.index')),
-                    'cta' => 'Voir',
-                ]];
+                if ($weather) {
+                    return [[
+                        'kind' => 'weather',
+                        'title' => 'Météo du coin',
+                        'text' => (string) ($weather->title ?: 'Un petit point météo'),
+                        'image_url' => (string) ($weather->image_url ?: ''),
+                        'href' => (string) ($weather->url ?: route('actu.index')),
+                        'cta' => 'Voir',
+                    ]];
+                }
             }
         } catch (Throwable $e) {
             // ignore

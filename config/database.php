@@ -46,8 +46,22 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            'host' => (function (): string {
+                $host = (string) env('DB_HOST', '127.0.0.1');
+
+                if (PHP_OS_FAMILY === 'Windows' && $host === 'mysql') {
+                    return '127.0.0.1';
+                }
+
+                return $host;
+            })(),
+            'port' => (function (): string {
+                if (PHP_OS_FAMILY === 'Windows' && (string) env('DB_HOST') === 'mysql') {
+                    return (string) env('FORWARD_DB_PORT', env('DB_PORT', '3306'));
+                }
+
+                return (string) env('DB_PORT', '3306');
+            })(),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
@@ -66,8 +80,22 @@ return [
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
-            'port' => env('DB_PORT', '3306'),
+            'host' => (function (): string {
+                $host = (string) env('DB_HOST', '127.0.0.1');
+
+                if (PHP_OS_FAMILY === 'Windows' && $host === 'mysql') {
+                    return '127.0.0.1';
+                }
+
+                return $host;
+            })(),
+            'port' => (function (): string {
+                if (PHP_OS_FAMILY === 'Windows' && (string) env('DB_HOST') === 'mysql') {
+                    return (string) env('FORWARD_DB_PORT', env('DB_PORT', '3306'));
+                }
+
+                return (string) env('DB_PORT', '3306');
+            })(),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
             'password' => env('DB_PASSWORD', ''),
