@@ -87,8 +87,10 @@
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <div class="text-xs font-semibold text-slate-500">MÉDIA</div>
                     @if(!empty($todayMedia) && !empty($todayMedia['type']) && !empty($todayMedia['model']))
-                        @php($t = (string) $todayMedia['type'])
-                        @php($m = $todayMedia['model'])
+                        @php
+                            $t = (string) $todayMedia['type'];
+                            $m = $todayMedia['model'];
+                        @endphp
 
                         @if($t === 'image')
                             <a href="{{ route('images.open', $m) }}" class="block mt-2">
@@ -287,10 +289,12 @@
             <div class="text-base font-semibold text-gray-900">Le petit moment de la famille</div>
             <div class="text-sm text-slate-500 mt-1">Un mini clin d’œil du jour, rien de plus.</div>
 
-            @php($cards = (array) ($familyMoments ?? []))
-            @php($c1 = $cards[0] ?? null)
-            @php($c2 = $cards[1] ?? null)
-            @php($c3 = $cards[2] ?? null)
+            @php
+                $cards = (array) ($familyMoments ?? []);
+                $c1 = $cards[0] ?? null;
+                $c2 = $cards[1] ?? null;
+                $c3 = $cards[2] ?? null;
+            @endphp
 
             <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
                 @if(!empty($c1))
