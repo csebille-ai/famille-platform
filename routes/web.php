@@ -217,9 +217,7 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:tarot-draw')
         ->name('tarot.tts');
 
-    Route::get('/cloud', function () {
-        return redirect()->route('images.index');
-    })->name('cloud.index');
+    Route::get('/cloud', [CloudNodeController::class, 'index'])->name('cloud.index');
     Route::post('/cloud/folders', [CloudNodeController::class, 'storeFolder'])->name('cloud.folders.store');
     Route::post('/cloud/files', [CloudNodeController::class, 'storeFile'])->name('cloud.files.store');
     Route::get('/cloud/files/{node}/download', [CloudNodeController::class, 'download'])->name('cloud.files.download');
@@ -237,6 +235,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
         Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+        Route::post('/users/{user}/invite', [AdminUserController::class, 'resendInvite'])->name('admin.users.invite');
         Route::patch('/users/{user}/role', [AdminUserController::class, 'updateRole'])->name('admin.users.role');
     });
 });

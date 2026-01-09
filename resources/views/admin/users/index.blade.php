@@ -65,7 +65,14 @@
                                                 <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
                                             @enderror
                                         </td>
-                                        <td class="py-3">&nbsp;</td>
+                                        <td class="py-3 whitespace-nowrap text-right">
+                                            <form method="POST" action="{{ route('admin.users.invite', $user) }}">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center h-9 px-3 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50">
+                                                    Renvoyer invitation
+                                                </button>
+                                            </form>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

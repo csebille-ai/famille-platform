@@ -29,6 +29,8 @@ class ResourceCrudTest extends TestCase
         // Create
         $createResponse = $this->post(route('resources.store'), [
             'title' => 'Test',
+            'section' => 'administratives',
+            'folder' => 'A1',
             'category' => 'Administratif',
             'content' => 'Première ressource',
         ]);
@@ -44,6 +46,8 @@ class ResourceCrudTest extends TestCase
         // Update
         $this->put(route('resources.update', $resource), [
             'title' => 'Test modifié',
+            'section' => 'administratives',
+            'folder' => 'A1',
             'category' => 'Administratif',
             'content' => 'Contenu modifié',
         ])->assertRedirect(route('resources.show', $resource));
@@ -63,7 +67,7 @@ class ResourceCrudTest extends TestCase
         ]);
     }
 
-    public function test_validation_requires_title_and_category(): void
+    public function test_validation_requires_title_section_and_folder(): void
     {
         $user = User::factory()->create();
 
@@ -72,10 +76,12 @@ class ResourceCrudTest extends TestCase
         $this->from(route('resources.create'))
             ->post(route('resources.store'), [
                 'title' => '',
+                'section' => '',
+                'folder' => '',
                 'category' => '',
                 'content' => 'x',
             ])
             ->assertRedirect(route('resources.create'))
-            ->assertSessionHasErrors(['title', 'category']);
+            ->assertSessionHasErrors(['title', 'section', 'folder']);
     }
 }

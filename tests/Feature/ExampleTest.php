@@ -14,6 +14,7 @@ class ExampleTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        // This app redirects the root URL to the authenticated dashboard.
+        $response->assertRedirect(route('dashboard'));
     }
 }

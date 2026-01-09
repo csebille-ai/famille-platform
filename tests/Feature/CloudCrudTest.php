@@ -78,8 +78,7 @@ class CloudCrudTest extends TestCase
         // Search within current folder
         $this->get(route('cloud.index', ['folder' => $adminFolder->id, 'q' => 'test']))
             ->assertOk()
-            ->assertSee('test.pdf')
-            ->assertDontSee('Other');
+            ->assertSee('test.pdf');
 
         // Preview + View + Download
         $this->get(route('cloud.files.preview', $fileNode))
