@@ -1,3 +1,70 @@
+<x-app-layout pageBgClass="bg-slate-50">
+    <div class="max-w-5xl mx-auto px-6 py-6 space-y-4">
+        <div class="flex items-center justify-between">
+            <h1 class="text-lg font-semibold text-slate-900">Accueil</h1>
+            <a href="{{ route('chat.index') }}" class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900">
+                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                <span>Chat</span>
+                <span class="text-slate-500">({{ (int) ($chatOnlineCount ?? 0) }})</span>
+            </a>
+        </div>
+
+        <div class="rounded-2xl bg-white px-4 py-3 shadow-sm">
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="truncate text-sm font-medium text-slate-900">
+                        @if(($todayNewsItem ?? null))
+                            Actu du jour disponible
+                        @else
+                            Rien de nouveau aujourd’hui
+                        @endif
+                    </div>
+                </div>
+                <div class="shrink-0 text-xs text-slate-500">{{ now()->format('d/m') }}</div>
+            </div>
+        </div>
+
+        <div class="grid gap-3 sm:grid-cols-2">
+            <a href="{{ route('actu.index') }}" class="rounded-2xl bg-white p-4 shadow-sm hover:bg-slate-50">
+                <div class="text-sm font-medium text-slate-900">Actu locale</div>
+                <div class="mt-1 text-sm text-slate-600">{{ $todayNewsItem?->title ?? 'Voir les dernières actus' }}</div>
+            </a>
+
+            <a href="{{ route('tarot.index') }}" class="rounded-2xl bg-white p-4 shadow-sm hover:bg-slate-50">
+                <div class="text-sm font-medium text-slate-900">Tarot</div>
+                <div class="mt-1 text-sm text-slate-600">Tirer une carte</div>
+            </a>
+        </div>
+
+        <div class="rounded-2xl bg-white p-4 shadow-sm">
+            <div class="flex items-center justify-between gap-3">
+                <div class="text-sm font-medium text-slate-900">Derniers ajouts</div>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('dashboard', ['feed' => 'all']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'all' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Tous</a>
+                    <a href="{{ route('dashboard', ['feed' => 'photos']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'photos' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Photos</a>
+                    <a href="{{ route('dashboard', ['feed' => 'videos']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'videos' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Vidéos</a>
+                    <a href="{{ route('dashboard', ['feed' => 'docs']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'docs' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Docs</a>
+                </div>
+            </div>
+
+            <div class="mt-3 divide-y divide-slate-100">
+                @forelse(($latestAdds ?? collect())->take(15) as $item)
+                    <a href="{{ $item['href'] }}" class="flex items-center justify-between gap-3 py-3 hover:bg-slate-50">
+                        <div class="min-w-0">
+                            <div class="truncate text-sm font-medium text-slate-900">{{ $item['title'] }}</div>
+                            <div class="mt-0.5 truncate text-xs text-slate-500">Ajouté par {{ $item['by'] }}</div>
+                        </div>
+                        <div class="shrink-0 text-xs text-slate-500">
+                            {{ optional($item['at'])->diffForHumans() }}
+                        </div>
+                    </a>
+                @empty
+                    <div class="py-6 text-sm text-slate-500">Aucun ajout pour le moment.</div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+</x-app-layout>
 @php
     $userName = Auth::user()->name ?? '';
     $firstName = trim(explode(' ', trim($userName))[0] ?? $userName);
@@ -52,81 +119,71 @@
                         </div>
                     </a>
                 @else
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                        Rien à signaler aujourd’hui — juste nous.
-                    </div>
-                @endif
-            </div>
-
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="bg-white rounded-2xl shadow-sm p-6">
-                <div class="flex items-end justify-between gap-4">
-                    <div class="text-base font-semibold text-gray-900">Dernières photos</div>
-                    <a href="{{ route('images.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
-                </div>
-
-                <div class="mt-4">
-                    @if(($latestImages ?? collect())->count())
-                        <div class="grid grid-cols-3 gap-3">
-                            @foreach(($latestImages ?? collect())->take(3) as $img)
-                                <a href="{{ route('images.open', $img) }}" class="block" aria-label="Ouvrir photo">
-                                    <div class="rounded-xl overflow-hidden aspect-video bg-slate-100">
-                                        <img
-                                            src="{{ route('images.view', $img) }}"
-                                            alt="{{ $img->name ?? 'photo' }}"
-                                            class="w-full h-full object-cover"
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                    <div class="mt-1 text-xs text-slate-500 truncate">
-                                        {{ $img->uploader?->name ?? 'Quelqu’un' }}
-                                        <span class="text-slate-400">·</span>
-                                        {{ $img->created_at?->diffForHumans() }}
-                                    </div>
+                        <div class="mx-auto max-w-5xl space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h1 class="text-lg font-semibold text-slate-900">Accueil</h1>
+                                <a href="{{ route('chat.index') }}" class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-slate-900">
+                                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                                    <span>Chat</span>
+                                    <span class="text-slate-500">({{ (int) ($chatOnlineCount ?? 0) }})</span>
                                 </a>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                            Aucune photo pour l’instant.
-                        </div>
-                    @endif
-                </div>
-            </div>
+                            </div>
 
-            <div class="bg-white rounded-2xl shadow-sm p-6">
-                <div class="flex items-end justify-between gap-4">
-                    <div class="text-base font-semibold text-gray-900">Dernières vidéos</div>
-                    <a href="{{ route('videos.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
-                </div>
+                            <div class="rounded-2xl bg-white px-4 py-3 shadow-sm">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="truncate text-sm font-medium text-slate-900">
+                                            @if($todayNewsItem)
+                                                Actu du jour disponible
+                                            @else
+                                                Rien de nouveau aujourd’hui
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="shrink-0 text-xs text-slate-500">{{ now()->format('d/m') }}</div>
+                                </div>
+                            </div>
 
-                <div class="mt-4">
-                    @if(($latestVideos ?? collect())->count())
-                        <div class="grid grid-cols-3 gap-3">
-                            @foreach(($latestVideos ?? collect())->take(3) as $v)
-                                <a href="{{ route('videos.show', $v) }}" class="block" aria-label="Ouvrir vidéo">
-                                    <div class="rounded-xl overflow-hidden aspect-video bg-slate-100 flex items-center justify-center">
-                                        @if (!empty($v->poster_path))
-                                            <img src="{{ route('videos.poster', $v) }}" alt="{{ $v->title }}" class="w-full h-full object-cover" loading="lazy" />
-                                        @else
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-slate-400" aria-hidden="true">
-                                                <rect x="3" y="5" width="18" height="14" rx="2" />
-                                                <path d="M10 9l5 3-5 3V9z" />
-                                            </svg>
-                                        @endif
-                                    </div>
-                                    <div class="mt-2 text-sm font-semibold text-gray-900 truncate">{{ $v->title }}</div>
-                                    <div class="mt-1 text-xs text-slate-500 truncate">
-                                        {{ $v->creator?->name ?? 'Quelqu’un' }}
-                                        <span class="text-slate-400">·</span>
-                                        {{ $v->created_at?->diffForHumans() }}
-                                    </div>
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <a href="{{ route('actu.index') }}" class="rounded-2xl bg-white p-4 shadow-sm hover:bg-slate-50">
+                                    <div class="text-sm font-medium text-slate-900">Actu locale</div>
+                                    <div class="mt-1 text-sm text-slate-600">{{ $todayNewsItem?->title ?? 'Voir les dernières actus' }}</div>
                                 </a>
-                            @endforeach
+
+                                <a href="{{ route('tarot.index') }}" class="rounded-2xl bg-white p-4 shadow-sm hover:bg-slate-50">
+                                    <div class="text-sm font-medium text-slate-900">Tarot</div>
+                                    <div class="mt-1 text-sm text-slate-600">Tirer une carte</div>
+                                </a>
+                            </div>
+
+                            <div class="rounded-2xl bg-white p-4 shadow-sm">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="text-sm font-medium text-slate-900">Derniers ajouts</div>
+                                    <div class="flex items-center gap-2">
+                                        <a href="{{ route('dashboard', ['feed' => 'all']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'all' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Tous</a>
+                                        <a href="{{ route('dashboard', ['feed' => 'photos']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'photos' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Photos</a>
+                                        <a href="{{ route('dashboard', ['feed' => 'videos']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'videos' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Vidéos</a>
+                                        <a href="{{ route('dashboard', ['feed' => 'docs']) }}" class="rounded-full border px-3 py-1 text-xs font-medium {{ ($feed ?? 'all') === 'docs' ? 'border-slate-900 text-slate-900' : 'border-slate-200 text-slate-600 hover:border-slate-300' }}">Docs</a>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 divide-y divide-slate-100">
+                                    @forelse(($latestAdds ?? collect())->take(15) as $item)
+                                        <a href="{{ $item['href'] }}" class="flex items-center justify-between gap-3 py-3 hover:bg-slate-50">
+                                            <div class="min-w-0">
+                                                <div class="truncate text-sm font-medium text-slate-900">{{ $item['title'] }}</div>
+                                                <div class="mt-0.5 truncate text-xs text-slate-500">Ajouté par {{ $item['by'] }}</div>
+                                            </div>
+                                            <div class="shrink-0 text-xs text-slate-500">
+                                                {{ optional($item['at'])->diffForHumans() }}
+                                            </div>
+                                        </a>
+                                    @empty
+                                        <div class="py-6 text-sm text-slate-500">Aucun ajout pour le moment.</div>
+                                    @endforelse
+                                </div>
+                            </div>
                         </div>
-                    @else
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                             Aucune vidéo pour l’instant.
                         </div>
                     @endif

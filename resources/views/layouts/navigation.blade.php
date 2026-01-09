@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 sticky top-0 z-50">
+<nav class="bg-white border-b border-gray-100 sticky top-0 z-50">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -28,31 +28,19 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
+                        Accueil
                     </x-nav-link>
 
                     <x-nav-link :href="route('resources.index')" :active="request()->routeIs('resources.*')">
                         {{ __('Ressources') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('actu.index')" :active="request()->routeIs('actu.*')">
-                        Actu locale
-                    </x-nav-link>
-
-                    <x-nav-link :href="route('tarot.index')" :active="request()->routeIs('tarot.*')">
-                        {{ __('Tarot') }}
-                    </x-nav-link>
-
                     <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')">
-                        {{ __('Chat Live') }}
+                        Chat
                     </x-nav-link>
 
-                    <x-nav-link :href="route('videos.index')" :active="request()->routeIs('videos.*')">
-                        {{ __('Vidéos') }}
-                    </x-nav-link>
-
-                    <x-nav-link :href="route('images.index')" :active="request()->routeIs('images.*')">
-                        {{ __('Images') }}
+                    <x-nav-link :href="route('media.index')" :active="request()->routeIs('media.*')">
+                        Médias
                     </x-nav-link>
                 </div>
             </div>
@@ -97,78 +85,36 @@
                 </x-dropdown>
             </div>
 
-            <!-- Hamburger -->
+            <!-- Mobile avatar menu (bottom bar handles navigation) -->
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 focus:text-gray-500 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
+                <x-dropdown align="right" width="48">
+                    <x-slot name="trigger">
+                        <button class="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700">
+                            {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                        </button>
+                    </x-slot>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
+                    <x-slot name="content">
+                        @can('manage-users')
+                            <x-dropdown-link :href="route('admin.users.index')">
+                                {{ __('Admin') }}
+                            </x-dropdown-link>
+                        @endcan
 
-            <x-responsive-nav-link :href="route('resources.index')" :active="request()->routeIs('resources.*')">
-                {{ __('Ressources') }}
-            </x-responsive-nav-link>
+                        <x-dropdown-link :href="route('profile.edit')">
+                            {{ __('Profile') }}
+                        </x-dropdown-link>
 
-            <x-responsive-nav-link :href="route('actu.index')" :active="request()->routeIs('actu.*')">
-                Actu locale
-            </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('tarot.index')" :active="request()->routeIs('tarot.*')">
-                {{ __('Tarot') }}
-            </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')">
-                {{ __('Chat Live') }}
-            </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('videos.index')" :active="request()->routeIs('videos.*')">
-                {{ __('Vidéos') }}
-            </x-responsive-nav-link>
-
-            <x-responsive-nav-link :href="route('images.index')" :active="request()->routeIs('images.*')">
-                {{ __('Images') }}
-            </x-responsive-nav-link>
-        </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
-                <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                @can('manage-users')
-                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
-                        {{ __('Admin') }}
-                    </x-responsive-nav-link>
-                @endcan
-
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <x-dropdown-link :href="route('logout')"
+                                    onclick="event.preventDefault();
+                                                this.closest('form').submit();">
+                                {{ __('Log Out') }}
+                            </x-dropdown-link>
+                        </form>
+                    </x-slot>
+                </x-dropdown>
             </div>
         </div>
     </div>

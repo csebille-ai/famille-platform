@@ -33,7 +33,10 @@ Route::get('/', function () {
     return redirect()->route('dashboard');
 });
 
-Route::get('/dashboard', function () {
+// Home (mobile-first). Keep route name 'dashboard' for backward compatibility.
+Route::get('/home', function () {
+    $feed = (string) request()->query('feed', 'all');
+
     $latestImages = collect();
     try {
         if (Schema::hasTable('cloud_nodes')) {
@@ -43,7 +46,7 @@ Route::get('/dashboard', function () {
                 ->whereNotNull('stored_path')
                 ->where('mime', 'like', 'image/%')
                 ->latest()
-                ->limit(3)
+                ->limit(6)
                 ->get();
         }
     } catch (Throwable $e) {
@@ -53,7 +56,7 @@ Route::get('/dashboard', function () {
     $latestVideos = collect();
     try {
         if (Schema::hasTable('videos')) {
-            $latestVideos = Video::query()->with('creator:id,name')->latest()->limit(3)->get();
+            $latestVideos = Video::query()->with('creator:id,name')->latest()->limit(6)->get();
         }
     } catch (Throwable $e) {
         $latestVideos = collect();
@@ -65,20 +68,11 @@ Route::get('/dashboard', function () {
             $latestDocs = Resource::query()
                 ->with(['concernedUser:id,name', 'creator:id,name'])
                 ->latest()
-                ->limit(3)
+                ->limit(6)
                 ->get();
         }
     } catch (Throwable $e) {
         $latestDocs = collect();
-    }
-
-    $lastChatMessage = null;
-    try {
-        if (Schema::hasTable('chat_messages')) {
-            $lastChatMessage = ChatMessage::query()->with('user:id,name')->latest()->first();
-        }
-    } catch (Throwable $e) {
-        $lastChatMessage = null;
     }
 
     $todayNewsItem = null;
@@ -116,6 +110,42 @@ Route::get('/dashboard', function () {
         ->values();
 
     $todayMedia = $mediaCandidates->first();
+
+    $latestAdds = collect()
+        ->merge($latestImages->map(fn ($img) => [
+            'type' => 'image',
+            'title' => 'Photo',
+            'by' => $img->uploader?->name ?? 'Quelqu’un',
+            'at' => $img->created_at,
+            'href' => route('images.open', $img),
+        ]))
+        ->merge($latestVideos->map(fn ($v) => [
+            'type' => 'video',
+            'title' => $v->title ?: 'Vidéo',
+            'by' => $v->creator?->name ?? 'Quelqu’un',
+            'at' => $v->created_at,
+            'href' => route('videos.show', $v),
+        ]))
+        ->merge($latestDocs->map(fn ($r) => [
+            'type' => 'doc',
+            'title' => $r->title,
+            'by' => $r->creator?->name ?? 'Quelqu’un',
+            'at' => $r->created_at,
+            'href' => route('resources.show', $r),
+        ]))
+        ->filter(fn ($x) => !empty($x['at']))
+        ->sortByDesc('at')
+        ->values();
+
+    if ($feed === 'photos') {
+        $latestAdds = $latestAdds->where('type', 'image')->values();
+    } elseif ($feed === 'videos') {
+        $latestAdds = $latestAdds->where('type', 'video')->values();
+    } elseif ($feed === 'docs') {
+        $latestAdds = $latestAdds->where('type', 'doc')->values();
+    } else {
+        $feed = 'all';
+    }
 
     $chatOnlineCount = 0;
     try {
@@ -345,14 +375,244 @@ Route::get('/dashboard', function () {
         'latestImages' => $latestImages,
         'latestVideos' => $latestVideos,
         'latestDocs' => $latestDocs,
-        'lastChatMessage' => $lastChatMessage,
         'todayNewsItem' => $todayNewsItem,
         'todayMedia' => $todayMedia,
         'chatOnlineCount' => $chatOnlineCount,
         'communLinks' => $communLinks,
         'familyMoments' => $familyMoments,
+        'latestAdds' => $latestAdds,
+        'feed' => $feed,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/dashboard', fn () => redirect()->route('dashboard'))
+    ->middleware(['auth', 'verified']);
+
+Route::get('/media', function () {
+    $tab = (string) request()->query('tab', '');
+    $tab = strtolower(trim($tab));
+    if (!in_array($tab, ['images', 'videos'], true)) {
+        $tab = 'images';
+    }
+
+    $encodeCursor = function ($createdAt, int $id): string {
+        $payload = [
+            't' => $createdAt ? $createdAt->getTimestamp() : 0,
+            'id' => $id,
+        ];
+        return rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '=');
+    };
+
+    $imagesItems = [];
+    $imagesNextCursor = null;
+    try {
+        if (Schema::hasTable('cloud_nodes')) {
+            $rows = CloudNode::query()
+                ->with('uploader:id,name')
+                ->whereNotNull('stored_path')
+                ->where('mime', 'like', 'image/%')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->limit(24)
+                ->get();
+
+            $imagesItems = $rows->map(fn ($img) => [
+                'id' => (int) $img->id,
+                'type' => 'image',
+                'title' => 'Photo',
+                'name' => (string) ($img->name ?? ''),
+                'by' => (string) ($img->uploader?->name ?? 'Quelqu’un'),
+                'at' => $img->created_at?->toIso8601String(),
+                'at_human' => $img->created_at?->diffForHumans(),
+                'thumb_url' => route('images.view', $img),
+                'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'images'])]),
+            ])->values()->all();
+
+            if ($rows->count() === 24) {
+                $last = $rows->last();
+                if ($last) {
+                    $imagesNextCursor = $encodeCursor($last->created_at, (int) $last->id);
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        $imagesItems = [];
+        $imagesNextCursor = null;
+    }
+
+    $videosItems = [];
+    $videosNextCursor = null;
+    try {
+        if (Schema::hasTable('videos')) {
+            $rows = Video::query()
+                ->with('creator:id,name')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->limit(24)
+                ->get();
+
+            $videosItems = $rows->map(fn ($v) => [
+                'id' => (int) $v->id,
+                'type' => 'video',
+                'title' => (string) ($v->title ?? 'Vidéo'),
+                'by' => (string) ($v->creator?->name ?? 'Quelqu’un'),
+                'at' => $v->created_at?->toIso8601String(),
+                'at_human' => $v->created_at?->diffForHumans(),
+                'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
+                'open_url' => route('videos.show', $v),
+            ])->values()->all();
+
+            if ($rows->count() === 24) {
+                $last = $rows->last();
+                if ($last) {
+                    $videosNextCursor = $encodeCursor($last->created_at, (int) $last->id);
+                }
+            }
+        }
+    } catch (Throwable $e) {
+        $videosItems = [];
+        $videosNextCursor = null;
+    }
+
+    return view('media.index', [
+        'tab' => $tab,
+        'imagesItems' => $imagesItems,
+        'imagesNextCursor' => $imagesNextCursor,
+        'videosItems' => $videosItems,
+        'videosNextCursor' => $videosNextCursor,
+        'pageSize' => 24,
+    ]);
+})->middleware(['auth', 'verified'])
+    ->name('media.index');
+
+Route::get('/api/media', function () {
+    $type = strtolower((string) request()->query('type', ''));
+    if (!in_array($type, ['image', 'video'], true)) {
+        return response()->json(['message' => 'Invalid type'], 422);
+    }
+
+    $limit = (int) request()->query('limit', 24);
+    if ($limit <= 0) $limit = 24;
+    if ($limit > 48) $limit = 48;
+
+    $cursorRaw = (string) request()->query('cursor', '');
+    $cursor = null;
+    if ($cursorRaw !== '') {
+        $b64 = strtr($cursorRaw, '-_', '+/');
+        $b64 .= str_repeat('=', (4 - (strlen($b64) % 4)) % 4);
+        $decoded = base64_decode($b64, true);
+        if ($decoded !== false) {
+            $json = json_decode($decoded, true);
+            if (is_array($json) && isset($json['t'], $json['id'])) {
+                $cursor = [
+                    't' => (int) $json['t'],
+                    'id' => (int) $json['id'],
+                ];
+            }
+        }
+    }
+
+    $encodeCursor = function ($createdAt, int $id): string {
+        $payload = [
+            't' => $createdAt ? $createdAt->getTimestamp() : 0,
+            'id' => $id,
+        ];
+        return rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '=');
+    };
+
+    if ($type === 'image') {
+        if (!Schema::hasTable('cloud_nodes')) {
+            return response()->json(['items' => [], 'next_cursor' => null]);
+        }
+
+        $q = CloudNode::query()
+            ->with('uploader:id,name')
+            ->whereNotNull('stored_path')
+            ->where('mime', 'like', 'image/%')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        if ($cursor) {
+            $dt = \Carbon\Carbon::createFromTimestamp($cursor['t']);
+            $q->where(function ($w) use ($cursor) {
+                $dt = \Carbon\Carbon::createFromTimestamp($cursor['t']);
+                $w->where('created_at', '<', $dt)
+                    ->orWhere(function ($w2) use ($cursor) {
+                        $dt = \Carbon\Carbon::createFromTimestamp($cursor['t']);
+                        $w2->where('created_at', '=', $dt)
+                            ->where('id', '<', $cursor['id']);
+                    });
+            });
+        }
+
+        $rows = $q->limit($limit)->get();
+        $items = $rows->map(fn ($img) => [
+            'id' => (int) $img->id,
+            'type' => 'image',
+            'title' => 'Photo',
+            'name' => (string) ($img->name ?? ''),
+            'by' => (string) ($img->uploader?->name ?? 'Quelqu’un'),
+            'at' => $img->created_at?->toIso8601String(),
+            'at_human' => $img->created_at?->diffForHumans(),
+            'thumb_url' => route('images.view', $img),
+            'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'images'])]),
+        ])->values();
+
+        $next = null;
+        if ($rows->count() === $limit) {
+            $last = $rows->last();
+            if ($last) {
+                $next = $encodeCursor($last->created_at, (int) $last->id);
+            }
+        }
+
+        return response()->json(['items' => $items, 'next_cursor' => $next]);
+    }
+
+    // video
+    if (!Schema::hasTable('videos')) {
+        return response()->json(['items' => [], 'next_cursor' => null]);
+    }
+
+    $q = Video::query()
+        ->with('creator:id,name')
+        ->orderByDesc('created_at')
+        ->orderByDesc('id');
+
+    if ($cursor) {
+        $q->where(function ($w) use ($cursor) {
+            $dt = \Carbon\Carbon::createFromTimestamp($cursor['t']);
+            $w->where('created_at', '<', $dt)
+                ->orWhere(function ($w2) use ($cursor) {
+                    $dt = \Carbon\Carbon::createFromTimestamp($cursor['t']);
+                    $w2->where('created_at', '=', $dt)
+                        ->where('id', '<', $cursor['id']);
+                });
+        });
+    }
+
+    $rows = $q->limit($limit)->get();
+    $items = $rows->map(fn ($v) => [
+        'id' => (int) $v->id,
+        'type' => 'video',
+        'title' => (string) ($v->title ?? 'Vidéo'),
+        'by' => (string) ($v->creator?->name ?? 'Quelqu’un'),
+        'at' => $v->created_at?->toIso8601String(),
+        'at_human' => $v->created_at?->diffForHumans(),
+        'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
+        'open_url' => route('videos.show', $v),
+    ])->values();
+
+    $next = null;
+    if ($rows->count() === $limit) {
+        $last = $rows->last();
+        if ($last) {
+            $next = $encodeCursor($last->created_at, (int) $last->id);
+        }
+    }
+
+    return response()->json(['items' => $items, 'next_cursor' => $next]);
+})->middleware(['auth', 'verified']);
 
 Route::get('/moments', function () {
     $moments = collect();
