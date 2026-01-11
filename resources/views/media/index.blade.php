@@ -326,7 +326,7 @@
                     <div class="grid grid-cols-3 gap-2">
                         <template x-for="v in (videos || [])" :key="'vid_' + v.id">
                             <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div class="aspect-square bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                                <div class="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="block w-full h-full object-cover" :style="{ objectPosition: focalPosition(v) }" loading="lazy" />
                                     </template>
@@ -389,7 +389,7 @@
                         <div class="mt-4 grid grid-cols-3 gap-2">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'vid_skel_' + i">
                                 <div class="rounded-xl overflow-hidden bg-white shadow-sm">
-                                    <div class="aspect-square bg-slate-100 animate-pulse"></div>
+                                    <div class="aspect-video bg-slate-100 animate-pulse"></div>
                                     <div class="px-2 py-2">
                                         <div class="h-3 w-2/3 bg-slate-100 animate-pulse rounded"></div>
                                         <div class="mt-2 h-3 w-1/2 bg-slate-100 animate-pulse rounded"></div>
