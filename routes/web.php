@@ -142,7 +142,7 @@ Route::get('/home', function () {
                 'by' => (string) ($model->creator?->name ?? 'Quelqu’un'),
                 'at' => $model->created_at,
                 'href' => route('videos.show', $model),
-                'preview_url' => !empty($model->poster_path) ? route('videos.poster', $model) : null,
+                'preview_url' => $model->video_path ? route('videos.poster', $model) : null,
                 'duration_seconds' => $durationSeconds,
             ];
         }
@@ -172,7 +172,7 @@ Route::get('/home', function () {
                 'by' => $v->creator?->name ?? 'Quelqu’un',
                 'at' => $v->created_at,
                 'href' => route('videos.show', $v),
-                'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
+                'poster_url' => $v->video_path ? route('videos.poster', $v) : null,
                 'duration_seconds' => $durationSeconds,
             ];
         }))
