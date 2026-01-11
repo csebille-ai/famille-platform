@@ -94,6 +94,18 @@ Route::get('/home', function () {
         $todayNewsItem = null;
     }
 
+    $freshNewsAt = null;
+    if ($todayNewsItem) {
+        $freshNewsAt = $todayNewsItem->published_at
+            ?: $todayNewsItem->fetched_at
+            ?: $todayNewsItem->created_at;
+    }
+    $hasNewActu = false;
+    if ($freshNewsAt) {
+        $hasNewActu = $freshNewsAt->greaterThanOrEqualTo(now()->subHours(12));
+    }
+    session()->put('news.has_new', $hasNewActu);
+
     $heroMedia = null;
     $heroCandidates = collect([
         [
@@ -755,6 +767,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 
     Route::get('/actu', function () {
+        session()->put('news.has_new', false);
         return view('actu.index');
     })->name('actu.index');
 

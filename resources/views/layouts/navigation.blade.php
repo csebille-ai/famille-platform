@@ -28,6 +28,10 @@
     $showBack = !$isPrimary;
     $userName = Auth::user()->name ?? '';
     $userInitial = strtoupper(substr(trim($userName), 0, 1));
+
+    $showHomeActions = $isHome;
+    $hasTarotDraft = (bool) session()->has('tarot.draft');
+    $hasNewActu = (bool) session()->get('news.has_new', false);
 @endphp
 
 <nav class="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -61,7 +65,41 @@
                     </div>
 
                     <div class="shrink-0 flex items-center gap-2">
-                        <div class="inline-flex items-center">
+                        <div class="inline-flex items-center gap-2">
+                            @if($showHomeActions)
+                                <a
+                                    href="{{ route('tarot.index') }}"
+                                    class="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                                    aria-label="Tarot"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                        <path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                                        <path d="M9 8h6" />
+                                        <path d="M9 12h6" />
+                                        <path d="M9 16h6" />
+                                    </svg>
+                                    @if($hasTarotDraft)
+                                        <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white"></span>
+                                    @endif
+                                </a>
+
+                                <a
+                                    href="{{ route('actu.index') }}"
+                                    class="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                                    aria-label="Actu"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
+                                        <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+                                        <path d="M8 8h8" />
+                                        <path d="M8 12h8" />
+                                        <path d="M8 16h6" />
+                                    </svg>
+                                    @if($hasNewActu)
+                                        <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white"></span>
+                                    @endif
+                                </a>
+                            @endif
+
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
                                     <button class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#EEF0F4] bg-white text-xs font-semibold text-[#0F172A]">
@@ -90,8 +128,6 @@
                                     </form>
                                 </x-slot>
                             </x-dropdown>
-
-                            <div class="-ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#EEF0F4] bg-white text-xs font-semibold text-slate-300">&nbsp;</div>
                         </div>
                     </div>
                 </div>

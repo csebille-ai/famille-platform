@@ -14,7 +14,7 @@
     <div class="max-w-2xl mx-auto px-4 py-4 space-y-3">
         @if(!empty($heroMedia))
             <a href="{{ $heroMedia['href'] }}" class="block overflow-hidden rounded-2xl border border-[#EEF0F4] bg-white">
-                <div class="aspect-[16/10] bg-[#F6F7F9] overflow-hidden relative">
+                <div class="aspect-video bg-[#F6F7F9] overflow-hidden relative">
                     @if(!empty($heroMedia['preview_url'] ?? null))
                         <img src="{{ $heroMedia['preview_url'] }}" alt="" class="h-full w-full object-cover" style="object-position: 50% 35%;" loading="lazy" />
                     @else
@@ -68,11 +68,11 @@
             @php $videos = ($latestVideos ?? collect())->take(6); @endphp
 
             @if($videos->count())
-                <div class="mt-2 grid grid-cols-3 gap-2">
+                <div class="mt-2 grid grid-cols-2 gap-2">
                     @foreach($videos as $v)
                         @php $dur = $fmtDuration($v->duration_seconds ?? null); @endphp
                         <a href="{{ route('videos.show', $v) }}" class="block" aria-label="Ouvrir vidéo">
-                            <div class="relative aspect-square overflow-hidden rounded-2xl bg-[#F6F7F9]">
+                            <div class="relative aspect-video overflow-hidden rounded-2xl bg-[#F6F7F9]">
                                 <img src="{{ route('videos.poster', $v) }}" alt="" class="block h-full w-full object-cover" style="object-position: 50% 35%;" loading="lazy" />
 
                                 <div class="absolute inset-0 flex items-center justify-center">
