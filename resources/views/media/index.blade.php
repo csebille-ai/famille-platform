@@ -258,7 +258,7 @@
                                 :aria-label="'Ouvrir photo ' + (idx + 1)"
                             >
                                 <div class="aspect-square">
-                                    <img :src="img.thumb_url" alt="" class="h-full w-full object-cover" loading="lazy" />
+                                    <img :src="img.thumb_url" alt="" class="block h-full w-full object-cover" loading="lazy" />
                                 </div>
                             </button>
                         </template>
@@ -313,7 +313,7 @@
                             <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
                                 <div class="aspect-square bg-slate-100 overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
-                                        <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="w-full h-full object-cover" loading="lazy" />
+                                        <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="block w-full h-full object-cover" loading="lazy" />
                                     </template>
                                     <template x-if="!v.poster_url">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-slate-400" aria-hidden="true">
