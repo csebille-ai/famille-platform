@@ -649,11 +649,19 @@ Route::get('/api/media', function () {
     }
 
     $hasVideoFocal = Schema::hasColumn('videos', 'focal_x') && Schema::hasColumn('videos', 'focal_y');
+    $category = strtolower(trim((string) request()->query('category', '')));
+    if (!in_array($category, ['', 'films', 'series'], true)) {
+        return response()->json(['message' => 'Invalid category'], 422);
+    }
 
     $q = Video::query()
         ->with('creator:id,name')
         ->orderByDesc('created_at')
         ->orderByDesc('id');
+
+    if ($category !== '') {
+        $q->where('category', $category);
+    }
 
     if ($cursor) {
         $q->where(function ($w) use ($cursor) {

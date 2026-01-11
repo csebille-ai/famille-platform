@@ -8,6 +8,11 @@
         $mode = (string) request()->query('mode', '');
         $isPersonal = $mode === 'personal';
         $returnPath = (string) request()->query('return', '');
+
+        $prefCategory = strtolower((string) request()->query('category', ''));
+        if (!in_array($prefCategory, ['films', 'series', 'docs'], true)) {
+            $prefCategory = '';
+        }
     @endphp
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -67,9 +72,9 @@
                                     class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
                                 >
                                     <option value="">-- Choisir --</option>
-                                    <option value="films" {{ old('category') === 'films' ? 'selected' : '' }}>Films</option>
-                                    <option value="series" {{ old('category') === 'series' ? 'selected' : '' }}>Séries</option>
-                                    <option value="docs" {{ old('category') === 'docs' ? 'selected' : '' }}>Documentaires</option>
+                                    <option value="films" {{ (old('category') === 'films' || (old('category') === null && $prefCategory === 'films')) ? 'selected' : '' }}>Films</option>
+                                    <option value="series" {{ (old('category') === 'series' || (old('category') === null && $prefCategory === 'series')) ? 'selected' : '' }}>Séries</option>
+                                    <option value="docs" {{ (old('category') === 'docs' || (old('category') === null && $prefCategory === 'docs')) ? 'selected' : '' }}>Documentaires</option>
                                 </select>
                                 @error('category')
                                     <p class="text-red-600 text-sm mt-1">{{ $message }}</p>

@@ -1,35 +1,136 @@
 @php
-    $selectedCategory = (string) ($category ?? '');
-    $categories = [
-        'films' => ['label' => 'Films', 'description' => 'Films et longs-métrages'],
-        'series' => ['label' => 'Séries', 'description' => 'Séries TV et épisodes'],
-        'docs' => ['label' => 'Documentaires', 'description' => 'Documentaires et contenus éducatifs'],
-    ];
-
-    $formatBytes = function (?int $bytes): string {
-        $bytes = (int) ($bytes ?? 0);
-        if ($bytes <= 0) {
-            return '0 B';
-        }
-
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $i = 0;
-        $value = (float) $bytes;
-        while ($value >= 1024 && $i < count($units) - 1) {
-            $value /= 1024;
-            $i++;
-        }
-
-        return rtrim(rtrim(number_format($value, $i === 0 ? 0 : 1, '.', ''), '0'), '.') . ' ' . $units[$i];
-    };
+    $initialTab = strtolower((string) ($tab ?? 'films'));
+    if (!in_array($initialTab, ['films', 'series'], true)) {
+        $initialTab = 'films';
+    }
 @endphp
 
 <x-app-layout pageBgClass="bg-slate-50">
-    <div class="max-w-6xl mx-auto px-6 py-6 space-y-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Médiathèque</h1>
-        </div>
+    <script type="application/json" id="mediatheque-initial-tab">@json($initialTab)</script>
+    <script type="application/json" id="mediatheque-films-items">@json($filmsItems ?? [])</script>
+    <script type="application/json" id="mediatheque-series-items">@json($seriesItems ?? [])</script>
+    <script type="application/json" id="mediatheque-films-next-cursor">@json($filmsNextCursor ?? null)</script>
+    <script type="application/json" id="mediatheque-series-next-cursor">@json($seriesNextCursor ?? null)</script>
 
+    <div
+        class="max-w-6xl mx-auto px-6 pt-4 pb-6 space-y-4"
+        x-data="{
+            tab: 'films',
+            pageSize: {{ (int) ($pageSize ?? 24) }},
+            films: [],
+            series: [],
+            nextFilmsCursor: null,
+            nextSeriesCursor: null,
+            loadingFilms: false,
+            loadingSeries: false,
+            skeletonCount: 12,
+            readJson(id) {
+                try {
+                    const el = document.getElementById(id);
+                    if (!el) return null;
+                    const txt = (el.textContent || '').trim();
+                    if (!txt) return null;
+                    return JSON.parse(txt);
+                } catch (e) {
+                    return null;
+                }
+            },
+            formatDuration(seconds) {
+                const s = Number(seconds || 0);
+                if (!Number.isFinite(s) || s <= 0) return '';
+                const sec = Math.round(s);
+                const h = Math.floor(sec / 3600);
+                const m = Math.floor((sec % 3600) / 60);
+                const r = sec % 60;
+                if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`;
+                return `${m}:${String(r).padStart(2, '0')}`;
+            },
+            normalize(v) {
+                v = String(v || '').toLowerCase().trim();
+                return (v === 'series') ? 'series' : 'films';
+            },
+            readFromUrl() {
+                const url = new URL(window.location.href);
+                const qp = url.searchParams.get('tab');
+                const hash = (window.location.hash || '').replace('#', '');
+                return this.normalize(qp || hash || this.tab);
+            },
+            writeToUrl(push) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', this.tab);
+                url.hash = this.tab;
+                if (push) {
+                    window.history.pushState({ tab: this.tab }, '', url);
+                } else {
+                    window.history.replaceState({ tab: this.tab }, '', url);
+                }
+            },
+            setTab(next) {
+                this.tab = this.normalize(next);
+                this.writeToUrl(true);
+            },
+            async loadMore(type) {
+                const isFilms = (type === 'films');
+                if (isFilms) {
+                    if (!this.nextFilmsCursor || this.loadingFilms) return;
+                    this.loadingFilms = true;
+                } else {
+                    if (!this.nextSeriesCursor || this.loadingSeries) return;
+                    this.loadingSeries = true;
+                }
+
+                const cursor = isFilms ? this.nextFilmsCursor : this.nextSeriesCursor;
+
+                try {
+                    const params = new URLSearchParams();
+                    params.set('type', 'video');
+                    params.set('category', isFilms ? 'films' : 'series');
+                    params.set('limit', String(this.pageSize || 24));
+                    params.set('cursor', String(cursor || ''));
+
+                    const res = await fetch(`/api/media?${params.toString()}`, {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                    });
+                    if (!res.ok) throw new Error('bad_response');
+                    const data = await res.json();
+                    const items = Array.isArray(data.items) ? data.items : [];
+                    const nextCursor = data.next_cursor || null;
+
+                    if (isFilms) {
+                        this.films = [...(this.films || []), ...items];
+                        this.nextFilmsCursor = nextCursor;
+                    } else {
+                        this.series = [...(this.series || []), ...items];
+                        this.nextSeriesCursor = nextCursor;
+                    }
+                } catch (e) {
+                    // noop
+                } finally {
+                    if (isFilms) this.loadingFilms = false;
+                    else this.loadingSeries = false;
+                }
+            },
+            init() {
+                const initialTab = this.normalize(this.readJson('mediatheque-initial-tab') || 'films');
+                this.tab = initialTab;
+                this.films = this.readJson('mediatheque-films-items') || [];
+                this.series = this.readJson('mediatheque-series-items') || [];
+                this.nextFilmsCursor = this.readJson('mediatheque-films-next-cursor');
+                this.nextSeriesCursor = this.readJson('mediatheque-series-next-cursor');
+
+                this.tab = this.normalize(this.readFromUrl() || initialTab);
+                this.writeToUrl(false);
+
+                window.addEventListener('popstate', () => {
+                    this.tab = this.readFromUrl();
+                });
+                window.addEventListener('hashchange', () => {
+                    this.tab = this.readFromUrl();
+                });
+            }
+        }"
+    >
         @if (session('status'))
             <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-gray-900">
                 {{ session('status') }}
@@ -50,195 +151,210 @@
         <div class="bg-white rounded-2xl shadow-sm p-3 md:p-4">
             <div class="flex items-center gap-3">
                 <div class="flex-1">
-                    <div class="grid grid-cols-3 rounded-xl border border-slate-200 bg-white p-1">
-                        @foreach ($categories as $key => $meta)
-                            <a
-                                href="{{ route('videos.index', ['category' => $key]) }}"
-                                class="rounded-lg px-3 py-2 text-center text-[0.72rem] font-semibold transition {{ $selectedCategory === $key ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50' }}"
-                                aria-current="{{ $selectedCategory === $key ? 'page' : 'false' }}"
+                    <div class="flex items-center gap-2.5">
+                        <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1 flex-1">
+                            <button
+                                type="button"
+                                class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
+                                :class="tab === 'films' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
+                                x-on:click="setTab('films')"
+                                aria-controls="mediatheque-films"
+                                :aria-selected="tab === 'films'"
+                                role="tab"
                             >
-                                {{ $meta['label'] }}
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
+                                Films
+                            </button>
 
-                <div class="shrink-0 relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
-                    <button
-                        type="button"
-                        class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
-                        aria-label="Ajouter"
-                        x-on:click="open = !open"
-                    >
-                        <i class="ph ph-plus" aria-hidden="true"></i>
-                    </button>
+                            <button
+                                type="button"
+                                class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
+                                :class="tab === 'series' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
+                                x-on:click="setTab('series')"
+                                aria-controls="mediatheque-series"
+                                :aria-selected="tab === 'series'"
+                                role="tab"
+                            >
+                                Séries
+                            </button>
+                        </div>
 
-                    <div
-                        x-show="open"
-                        x-cloak
-                        x-on:click.outside="open = false"
-                        class="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-lg p-1"
-                    >
-                        <button
-                            type="button"
-                            class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                            x-on:click="open = false; window.dispatchEvent(new CustomEvent('open-library-import', { detail: { category: 'films' } }))"
-                        >
-                            Ajouter un film
-                        </button>
-                        <button
-                            type="button"
-                            class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                            x-on:click="open = false; window.dispatchEvent(new CustomEvent('open-library-import', { detail: { category: 'series' } }))"
-                        >
-                            Ajouter une série
-                        </button>
+                        <div class="shrink-0 relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+                            <button
+                                type="button"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
+                                aria-label="Ajouter"
+                                x-on:click="open = !open"
+                            >
+                                <i class="ph ph-plus" aria-hidden="true"></i>
+                            </button>
+
+                            <div
+                                x-show="open"
+                                x-cloak
+                                x-on:click.outside="open = false"
+                                class="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-lg p-1"
+                            >
+                                <a
+                                    href="{{ route('videos.create', ['category' => 'films', 'return' => route('mediatheque.index', ['tab' => 'films'])]) }}"
+                                    class="block w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                                    x-on:click="open = false"
+                                >
+                                    Ajouter un film
+                                </a>
+                                <a
+                                    href="{{ route('videos.create', ['category' => 'series', 'return' => route('mediatheque.index', ['tab' => 'series'])]) }}"
+                                    class="block w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                                    x-on:click="open = false"
+                                >
+                                    Ajouter une série
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            @foreach ($categories as $key => $meta)
-                @php($previews = ($categoryPreviews ?? [])[$key] ?? collect())
+        <div id="mediatheque-films" x-show="tab === 'films'" x-cloak>
+            <template x-if="(films || []).length === 0">
+                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <div class="text-base font-semibold text-gray-900">Aucun film pour l’instant</div>
+                    <div class="text-sm text-slate-500 mt-1">Ajoutez un premier film avec “+ Ajouter”.</div>
+                </div>
+            </template>
 
-                <a href="{{ route('videos.index', ['category' => $key]) }}" class="bg-white rounded-2xl shadow-sm p-4 block">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <div class="text-base font-semibold text-gray-900">{{ $meta['label'] }}</div>
-                            <div class="mt-1 text-sm text-slate-500 truncate">{{ $meta['description'] }}</div>
-                        </div>
-                        <span class="text-sm font-semibold text-slate-900 whitespace-nowrap">Voir ›</span>
-                    </div>
+            <template x-if="(films || []).length > 0">
+                <div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <template x-for="v in (films || [])" :key="'film_' + v.id">
+                            <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
+                                <div class="aspect-[2/3] bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                                    <template x-if="!!v.poster_url">
+                                        <img :src="v.poster_url" :alt="v.title || 'Film'" class="block w-full h-full object-cover" loading="lazy" />
+                                    </template>
+                                    <template x-if="!v.poster_url">
+                                        <i class="ph ph-film-slate text-slate-400" style="font-size:28px" aria-hidden="true"></i>
+                                    </template>
 
-                    <div class="mt-4 space-y-3">
-                        @forelse ($previews as $video)
-                            <div class="flex items-center gap-3">
-                                <div class="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-                                    @if (!empty($video->poster_path))
-                                        <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
-                                    @else
-                                        <i class="ph ph-video text-slate-400" style="font-size:20px" aria-hidden="true"></i>
-                                    @endif
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="text-sm font-semibold text-gray-900 truncate">{{ $video->title }}</div>
-                                    <div class="text-xs text-slate-500">
-                                        {{ $video->creator?->name ?? 'Quelqu’un' }}
-                                        <span class="text-slate-400">·</span>
-                                        {{ $video->created_at?->diffForHumans() }}
+                                    <template x-if="!!formatDuration(v.duration_seconds)">
+                                        <div class="absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-0.5 text-[0.7rem] font-semibold text-white">
+                                            <span x-text="formatDuration(v.duration_seconds)"></span>
+                                        </div>
+                                    </template>
+
+                                    <div class="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2.5 pt-10">
+                                        <div class="text-[0.72rem] font-semibold text-white truncate" x-text="v.title || 'Film'"></div>
                                     </div>
                                 </div>
-                            </div>
-                        @empty
-                            <div class="text-sm text-slate-500">Aucune vidéo.</div>
-                        @endforelse
+                            </a>
+                        </template>
                     </div>
-                </a>
-            @endforeach
+
+                    <div class="mt-4 flex justify-center">
+                        <button
+                            type="button"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
+                            x-on:click="loadMore('films')"
+                            :disabled="!nextFilmsCursor || loadingFilms"
+                            x-show="!!nextFilmsCursor"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <span x-show="!loadingFilms">Charger plus</span>
+                                <span x-show="loadingFilms" class="inline-flex items-center gap-2">
+                                    <i class="ph ph-circle-notch animate-spin text-slate-600" style="font-size:16px" aria-hidden="true"></i>
+                                    Chargement…
+                                </span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <template x-if="loadingFilms">
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            <template x-for="i in Array.from({ length: skeletonCount })" :key="'film_skel_' + i">
+                                <div class="rounded-xl overflow-hidden bg-white shadow-sm">
+                                    <div class="aspect-[2/3] bg-slate-100 animate-pulse"></div>
+                                    <div class="px-2 py-2">
+                                        <div class="h-3 w-2/3 bg-slate-100 animate-pulse rounded"></div>
+                                        <div class="mt-2 h-3 w-1/2 bg-slate-100 animate-pulse rounded"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
         </div>
 
-        @if (!empty($selectedCategory) && $videos)
-            <div class="bg-white rounded-2xl shadow-sm p-6">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
-                        <div class="text-base font-semibold text-gray-900">{{ $categories[$selectedCategory]['label'] ?? 'Vidéos' }}</div>
-                        <div class="text-sm text-slate-500 mt-1">Parcourir</div>
-                    </div>
-                    <a href="{{ route('videos.index') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
-                        Retour
-                    </a>
+        <div id="mediatheque-series" x-show="tab === 'series'" x-cloak>
+            <template x-if="(series || []).length === 0">
+                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <div class="text-base font-semibold text-gray-900">Aucune série pour l’instant</div>
+                    <div class="text-sm text-slate-500 mt-1">Ajoutez une première série avec “+ Ajouter”.</div>
                 </div>
+            </template>
 
-                <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-                    @foreach ($videos as $video)
-                        <a href="{{ route('videos.show', $video) }}" class="block rounded-2xl border border-slate-200 overflow-hidden bg-white">
-                            <div class="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center">
-                                @if (!empty($video->poster_path))
-                                    <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
-                                @else
-                                    <i class="ph ph-video text-slate-400" style="font-size:28px" aria-hidden="true"></i>
-                                @endif
-                            </div>
-                            <div class="p-3">
-                                <div class="text-sm font-semibold text-gray-900 truncate">{{ $video->title }}</div>
-                                <div class="text-xs text-slate-500 mt-0.5">
-                                    {{ $video->creator?->name ?? 'Quelqu’un' }}
-                                    <span class="text-slate-400">·</span>
-                                    {{ $video->created_at?->diffForHumans() }}
+            <template x-if="(series || []).length > 0">
+                <div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <template x-for="v in (series || [])" :key="'series_' + v.id">
+                            <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
+                                <div class="aspect-[2/3] bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                                    <template x-if="!!v.poster_url">
+                                        <img :src="v.poster_url" :alt="v.title || 'Série'" class="block w-full h-full object-cover" loading="lazy" />
+                                    </template>
+                                    <template x-if="!v.poster_url">
+                                        <i class="ph ph-film-slate text-slate-400" style="font-size:28px" aria-hidden="true"></i>
+                                    </template>
+
+                                    <template x-if="!!formatDuration(v.duration_seconds)">
+                                        <div class="absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-0.5 text-[0.7rem] font-semibold text-white">
+                                            <span x-text="formatDuration(v.duration_seconds)"></span>
+                                        </div>
+                                    </template>
+
+                                    <div class="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2.5 pt-10">
+                                        <div class="text-[0.72rem] font-semibold text-white truncate" x-text="v.title || 'Série'"></div>
+                                    </div>
                                 </div>
-                            </div>
-                        </a>
-                    @endforeach
-                </div>
-
-                @if ($videos->hasPages())
-                    <div class="mt-6">
-                        {{ $videos->links() }}
+                            </a>
+                        </template>
                     </div>
-                @endif
-            </div>
-        @endif
 
-        <div id="import" class="bg-white rounded-2xl shadow-sm p-6"
-            x-data="{
-                file: null,
-                fileName: '',
-                fileSize: '',
-                title: '',
-                category: '',
-                description: '',
-                isDragOver: false,
-                isUploading: false,
-                progress: 0,
-                successMessage: '',
+                    <div class="mt-4 flex justify-center">
+                        <button
+                            type="button"
+                            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
+                            x-on:click="loadMore('series')"
+                            :disabled="!nextSeriesCursor || loadingSeries"
+                            x-show="!!nextSeriesCursor"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <span x-show="!loadingSeries">Charger plus</span>
+                                <span x-show="loadingSeries" class="inline-flex items-center gap-2">
+                                    <i class="ph ph-circle-notch animate-spin text-slate-600" style="font-size:16px" aria-hidden="true"></i>
+                                    Chargement…
+                                </span>
+                            </span>
+                        </button>
+                    </div>
 
-                <!-- Add modal (opened from the + menu) -->
-                <div
-                    x-data="{
-                        open: false,
-                        file: null,
-                        fileName: '',
-                        fileSize: '',
-                        title: '',
-                        category: '',
-                        description: '',
-                        isDragOver: false,
-                        isUploading: false,
-                        progress: 0,
-                        successMessage: '',
-                        errorMessage: '',
-                        resetAll() {
-                            this.file = null;
-                            this.fileName = '';
-                            this.fileSize = 0;
-                            this.title = '';
-                            this.description = '';
-                            this.isDragOver = false;
-                            this.isUploading = false;
-                            this.progress = 0;
-                            this.successMessage = '';
-                            this.errorMessage = '';
-                            try { if (this.$refs.videoInput) this.$refs.videoInput.value = ''; } catch (e) {}
-                        },
-                        openWith(cat) {
-                            this.resetAll();
-                            this.category = String(cat || '').trim();
-                            this.open = true;
-                            try { document.body.style.overflow = 'hidden'; } catch (e) {}
-                        },
-                        close() {
-                            this.open = false;
-                            try { document.body.style.overflow = ''; } catch (e) {}
-                        },
-                        setFile(f) {
-                            if (!f) {
-                                this.file = null;
-                                this.fileName = '';
-                                this.fileSize = 0;
-                                this.progress = 0;
-                                return;
-                            }
+                    <template x-if="loadingSeries">
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            <template x-for="i in Array.from({ length: skeletonCount })" :key="'series_skel_' + i">
+                                <div class="rounded-xl overflow-hidden bg-white shadow-sm">
+                                    <div class="aspect-[2/3] bg-slate-100 animate-pulse"></div>
+                                    <div class="px-2 py-2">
+                                        <div class="h-3 w-2/3 bg-slate-100 animate-pulse rounded"></div>
+                                        <div class="mt-2 h-3 w-1/2 bg-slate-100 animate-pulse rounded"></div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
                             this.file = f;
                             this.fileName = f.name;
                             this.fileSize = (typeof f.size === 'number') ? f.size : 0;

@@ -148,40 +148,80 @@ class VideoController extends Controller
      */
     public function index(Request $request)
     {
-        $selectedCategory = (string) $request->query('category', '');
-        $categories = ['films', 'series', 'docs'];
+        $tab = strtolower(trim((string) $request->query('tab', '')));
 
-        if (! in_array($selectedCategory, $categories, true)) {
-            $selectedCategory = '';
+        // Backward-compat: allow old ?category=series/films to drive the current UI.
+        $legacyCategory = strtolower(trim((string) $request->query('category', '')));
+        if ($tab === '' && in_array($legacyCategory, ['films', 'series'], true)) {
+            $tab = $legacyCategory;
+        }
+        if (!in_array($tab, ['films', 'series'], true)) {
+            $tab = 'films';
         }
 
-        $categoryPreviews = [];
-        foreach ($categories as $cat) {
-            $categoryPreviews[$cat] = Video::query()
+        $encodeCursor = function ($createdAt, int $id): ?string {
+            if (!$createdAt) {
+                return null;
+            }
+
+            $payload = [
+                't' => $createdAt->getTimestamp(),
+                'id' => $id,
+            ];
+
+            return rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '=');
+        };
+
+        $hasDuration = \Illuminate\Support\Facades\Schema::hasTable('videos')
+            && \Illuminate\Support\Facades\Schema::hasColumn('videos', 'duration_seconds');
+
+        $buildItems = function (string $category) use ($hasDuration, $encodeCursor): array {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('videos')) {
+                return [[], null];
+            }
+
+            $limit = 24;
+            $rows = Video::query()
                 ->with('creator:id,name')
-                ->where('category', $cat)
-                ->latest()
-                ->take(1)
+                ->where('category', $category)
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->limit($limit)
                 ->get();
-        }
 
-        $videos = null;
-        if ($selectedCategory !== '') {
-            $videos = Video::query()
-                ->with('creator:id,name')
-                ->where('category', $selectedCategory)
-                ->latest()
-                ->paginate(12)
-                ->withQueryString();
-        }
+            $items = $rows->map(fn (Video $v) => [
+                'id' => (int) $v->id,
+                'type' => 'video',
+                'title' => (string) ($v->title ?? ''),
+                'by' => (string) ($v->creator?->name ?? 'Quelqu’un'),
+                'at' => $v->created_at?->toIso8601String(),
+                'at_human' => $v->created_at?->diffForHumans(),
+                'poster_url' => $v->video_path ? route('videos.poster', $v) : null,
+                'duration_seconds' => $hasDuration ? (int) ($v->duration_seconds ?? 0) : null,
+                'open_url' => route('videos.show', $v),
+            ])->values()->all();
 
-        $latestVideo = Video::query()->with('creator:id,name')->latest()->first();
+            $nextCursor = null;
+            if ($rows->count() === $limit) {
+                $last = $rows->last();
+                if ($last) {
+                    $nextCursor = $encodeCursor($last->created_at, (int) $last->id);
+                }
+            }
+
+            return [$items, $nextCursor];
+        };
+
+        [$filmsItems, $filmsNextCursor] = $buildItems('films');
+        [$seriesItems, $seriesNextCursor] = $buildItems('series');
 
         return view('videos.index', [
-            'category' => $selectedCategory,
-            'categoryPreviews' => $categoryPreviews,
-            'videos' => $videos,
-            'latestVideo' => $latestVideo,
+            'tab' => $tab,
+            'filmsItems' => $filmsItems,
+            'seriesItems' => $seriesItems,
+            'filmsNextCursor' => $filmsNextCursor,
+            'seriesNextCursor' => $seriesNextCursor,
+            'pageSize' => 24,
         ]);
     }
 
