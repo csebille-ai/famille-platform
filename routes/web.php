@@ -900,12 +900,22 @@ Route::middleware('auth')->group(function () {
             'env' => config('app.env'),
         ]);
 
-        return response()->json([
+        $response = response()->json([
             'now' => now()->toIso8601String(),
             'base_path' => base_path(),
+            'host' => request()->getHost(),
+            'https' => request()->isSecure(),
+            'document_root' => $_SERVER['DOCUMENT_ROOT'] ?? null,
+            'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? null,
             'app_env' => config('app.env'),
             'app_debug' => (bool) config('app.debug'),
             'php_sapi' => PHP_SAPI,
+            'php_ini_loaded_file' => function_exists('php_ini_loaded_file') ? php_ini_loaded_file() : null,
+            'php_ini_scanned_files' => function_exists('php_ini_scanned_files') ? php_ini_scanned_files() : null,
+            'user_ini' => [
+                'filename' => ini_get('user_ini.filename'),
+                'cache_ttl' => ini_get('user_ini.cache_ttl'),
+            ],
             'php_ini' => [
                 'upload_max_filesize' => ini_get('upload_max_filesize'),
                 'post_max_size' => ini_get('post_max_size'),
@@ -920,6 +930,13 @@ Route::middleware('auth')->group(function () {
             'opcache' => $opcache,
             'mtimes' => $mtimes,
         ]);
+
+        // Force bypass of any HTML/API cache (LiteSpeed/proxies).
+        return $response
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0')
+            ->header('X-LiteSpeed-Cache-Control', 'no-cache');
     };
 
     // Primary route (double underscore).
