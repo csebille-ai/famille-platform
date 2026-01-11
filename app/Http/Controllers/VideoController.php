@@ -215,7 +215,7 @@ class VideoController extends Controller
         [$filmsItems, $filmsNextCursor] = $buildItems('films');
         [$seriesItems, $seriesNextCursor] = $buildItems('series');
 
-        return view('videos.index', [
+        $response = response()->view('videos.index', [
             'tab' => $tab,
             'filmsItems' => $filmsItems,
             'seriesItems' => $seriesItems,
@@ -223,6 +223,14 @@ class VideoController extends Controller
             'seriesNextCursor' => $seriesNextCursor,
             'pageSize' => 24,
         ]);
+
+        // Some deployments (LiteSpeed / reverse proxies) may cache full HTML pages.
+        // This view is highly dynamic; force bypass of any page cache.
+        return $response
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0')
+            ->header('X-LiteSpeed-Cache-Control', 'no-cache');
     }
 
     /**
