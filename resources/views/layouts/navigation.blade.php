@@ -24,14 +24,14 @@
     <!-- Mobile: 2-row sticky header -->
     <div class="sm:hidden">
         <!-- Row 1: app bar (iOS-clean) -->
-        <div class="border-b border-[#E6E8EE] bg-white/95 backdrop-blur" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem)">
-            <div class="px-4 pb-2">
+        <div class="bg-white/95 backdrop-blur border-b border-[#EEF0F4]" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem)">
+            <div class="px-4 pb-1">
                 <div class="flex items-center justify-between gap-3">
                     <div class="shrink-0">
                         @if($showBack)
                             <button
                                 type="button"
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#E6E8EE] bg-white text-[#0F172A] hover:bg-slate-50"
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
                                 aria-label="Retour"
                                 onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                             >
@@ -40,7 +40,7 @@
                                 </svg>
                             </button>
                         @else
-                            <a href="{{ route('dashboard') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#E6E8EE] bg-white" aria-label="Accueil">
+                            <a href="{{ route('dashboard') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white" aria-label="Accueil">
                                 <x-application-logo class="block h-6 w-auto fill-current text-[#0F172A]" />
                             </a>
                         @endif
@@ -54,7 +54,7 @@
                         <div class="inline-flex items-center">
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
-                                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#E6E8EE] bg-white text-xs font-semibold text-[#0F172A]">
+                                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#EEF0F4] bg-white text-xs font-semibold text-[#0F172A]">
                                         {{ $userInitial }}
                                     </button>
                                 </x-slot>
@@ -81,60 +81,14 @@
                                 </x-slot>
                             </x-dropdown>
 
-                            <div class="-ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#E6E8EE] bg-white text-xs font-semibold text-slate-400">
-                                •
-                            </div>
+                            <div class="-ml-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#EEF0F4] bg-white text-xs font-semibold text-slate-300">&nbsp;</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Row 2: primary nav (icons only, underline active) -->
-            <div class="px-4 pb-2">
-                <div class="flex items-center justify-between">
-                    <a href="{{ route('dashboard') }}" class="relative inline-flex h-9 w-9 items-center justify-center text-[#64748B] {{ $isHome ? 'text-[#0B1220]' : '' }}" aria-label="Accueil" aria-current="{{ $isHome ? 'page' : 'false' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                            <path d="M3 10.5L12 3l9 7.5" />
-                            <path d="M5 10v10h14V10" />
-                        </svg>
-                        @if($isHome)
-                            <span class="absolute -bottom-1 left-0 right-0 mx-auto h-0.5 w-6 rounded-full bg-[#0B1220]"></span>
-                        @endif
-                    </a>
-
-                    <a href="{{ route('media.index') }}" class="relative inline-flex h-9 w-9 items-center justify-center text-[#64748B] {{ $isMedia ? 'text-[#0B1220]' : '' }}" aria-label="Médias" aria-current="{{ $isMedia ? 'page' : 'false' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                            <path d="M8 13l2.5-2.5L14 14l2-2 3 3" />
-                            <path d="M8.5 10.5h.01" />
-                        </svg>
-                        @if($isMedia)
-                            <span class="absolute -bottom-1 left-0 right-0 mx-auto h-0.5 w-6 rounded-full bg-[#0B1220]"></span>
-                        @endif
-                    </a>
-
-                    <a href="{{ route('videos.index') }}" class="relative inline-flex h-9 w-9 items-center justify-center text-[#64748B] {{ $isLibrary ? 'text-[#0B1220]' : '' }}" aria-label="Médiathèque" aria-current="{{ $isLibrary ? 'page' : 'false' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                            <path d="M4 19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7l-4-4H6a2 2 0 0 0-2 2z" />
-                            <path d="M8 11h8" />
-                            <path d="M8 15h8" />
-                            <path d="M15 3v4h4" />
-                        </svg>
-                        @if($isLibrary)
-                            <span class="absolute -bottom-1 left-0 right-0 mx-auto h-0.5 w-6 rounded-full bg-[#0B1220]"></span>
-                        @endif
-                    </a>
-
-                    <a href="{{ route('chat.index') }}" class="relative inline-flex h-9 w-9 items-center justify-center text-[#64748B] {{ $isChat ? 'text-[#0B1220]' : '' }}" aria-label="Chat" aria-current="{{ $isChat ? 'page' : 'false' }}">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                            <path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
-                        </svg>
-                        @if($isChat)
-                            <span class="absolute -bottom-1 left-0 right-0 mx-auto h-0.5 w-6 rounded-full bg-[#0B1220]"></span>
-                        @endif
-                    </a>
-                </div>
-            </div>
+            <!-- Row 2: primary nav (component, 4 equal tap areas) -->
+            <x-mobile-primary-nav />
         </div>
     </div>
 

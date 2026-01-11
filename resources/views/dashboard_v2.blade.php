@@ -39,9 +39,9 @@
         }
     @endphp
 
-    <div class="max-w-2xl mx-auto px-4 py-4 space-y-4">
+    <div class="max-w-2xl mx-auto px-4 py-4 space-y-3">
         <div
-            class="rounded-2xl border border-[#E6E8EE] bg-white p-4"
+            class="rounded-2xl border border-[#EEF0F4] bg-white p-3"
             x-data="{
                 tab: 'photos',
                 addOpen: false,
@@ -69,7 +69,7 @@
                 <div class="text-base font-semibold text-[#0F172A]">Médias</div>
 
                 <div class="flex items-center gap-2">
-                    <div class="inline-flex items-center rounded-2xl border border-[#E6E8EE] bg-white p-1">
+                    <div class="inline-flex items-center rounded-2xl border border-[#EEF0F4] bg-white p-1">
                         <button
                             type="button"
                             class="rounded-2xl px-3 py-2 text-[0.78rem] font-semibold transition"
@@ -91,7 +91,7 @@
                     <div class="relative">
                         <button
                             type="button"
-                            class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#E6E8EE] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                            class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
                             @click="addOpen = !addOpen"
                             aria-haspopup="menu"
                             aria-label="Ajouter"
@@ -105,11 +105,11 @@
                         <div
                             x-show="addOpen"
                             x-cloak
-                            class="absolute right-0 mt-2 w-44 rounded-2xl border border-[#E6E8EE] bg-white p-2 shadow-sm"
+                            class="absolute right-0 mt-2 w-44 rounded-2xl border border-[#EEF0F4] bg-white p-2 shadow-sm"
                             role="menu"
                         >
                             <a href="{{ route('images.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#0F172A] hover:bg-[#F6F7F9]" role="menuitem">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6E8EE] bg-[#F6F7F9]">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#EEF0F4] bg-[#F6F7F9]">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-[#64748B]" aria-hidden="true">
                                         <rect x="3" y="5" width="18" height="14" rx="2" />
                                         <path d="M8 13l2.5-2.5L14 14l2-2 3 3" />
@@ -119,7 +119,7 @@
                                 <span>Photo</span>
                             </a>
                             <a href="{{ route('videos.create', ['category' => 'docs']) }}" class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#0F172A] hover:bg-[#F6F7F9]" role="menuitem">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6E8EE] bg-[#F6F7F9]">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#EEF0F4] bg-[#F6F7F9]">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-[#64748B]" aria-hidden="true">
                                         <rect x="3" y="5" width="18" height="14" rx="2" />
                                         <path d="M10 9l5 3-5 3V9z" />
@@ -132,7 +132,7 @@
                 </div>
             </div>
 
-            <div class="mt-3">
+            <div class="mt-2">
                 <div
                     class="overflow-hidden rounded-2xl"
                 >
@@ -222,7 +222,7 @@
         </div>
 
         <div
-            class="rounded-2xl border border-[#E6E8EE] bg-white p-4"
+            class="rounded-2xl border border-[#EEF0F4] bg-white p-3"
             x-data="{ tab: 'films', addOpen: false, closeAll() { this.addOpen = false; } }"
             @click.outside="closeAll()"
         >
@@ -230,7 +230,7 @@
                 <div class="text-base font-semibold text-[#0F172A]">Médiathèque</div>
 
                 <div class="flex items-center gap-2">
-                    <div class="inline-flex items-center rounded-2xl border border-[#E6E8EE] bg-white p-1">
+                    <div class="inline-flex items-center rounded-2xl border border-[#EEF0F4] bg-white p-1">
                         <button
                             type="button"
                             class="rounded-2xl px-3 py-2 text-[0.78rem] font-semibold transition"
@@ -262,11 +262,11 @@
                         <div
                             x-show="addOpen"
                             x-cloak
-                            class="absolute right-0 mt-2 w-52 rounded-2xl border border-[#E6E8EE] bg-white p-2 shadow-sm"
+                            class="absolute right-0 mt-2 w-52 rounded-2xl border border-[#EEF0F4] bg-white p-2 shadow-sm"
                             role="menu"
                         >
                             <a href="{{ route('images.create') }}" class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#0F172A] hover:bg-[#F6F7F9]" role="menuitem">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6E8EE] bg-[#F6F7F9]">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#EEF0F4] bg-[#F6F7F9]">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-[#64748B]" aria-hidden="true">
                                         <rect x="3" y="5" width="18" height="14" rx="2" />
                                         <path d="M8 13l2.5-2.5L14 14l2-2 3 3" />
@@ -276,7 +276,7 @@
                                 <span>Photo</span>
                             </a>
                             <a href="{{ route('videos.create', ['category' => 'docs']) }}" class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#0F172A] hover:bg-[#F6F7F9]" role="menuitem">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6E8EE] bg-[#F6F7F9]">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#EEF0F4] bg-[#F6F7F9]">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-[#64748B]" aria-hidden="true">
                                         <rect x="3" y="5" width="18" height="14" rx="2" />
                                         <path d="M10 9l5 3-5 3V9z" />
@@ -285,7 +285,7 @@
                                 <span>Vidéo perso</span>
                             </a>
                             <a href="{{ route('videos.create', ['category' => 'films']) }}" class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#0F172A] hover:bg-[#F6F7F9]" role="menuitem">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6E8EE] bg-[#F6F7F9]">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#EEF0F4] bg-[#F6F7F9]">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-[#64748B]" aria-hidden="true">
                                         <rect x="3" y="3" width="18" height="18" rx="2" />
                                         <path d="M7 7h0" />
@@ -302,7 +302,7 @@
                                 <span>Ajouter un film</span>
                             </a>
                             <a href="{{ route('videos.create', ['category' => 'series']) }}" class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#0F172A] hover:bg-[#F6F7F9]" role="menuitem">
-                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6E8EE] bg-[#F6F7F9]">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#EEF0F4] bg-[#F6F7F9]">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4 text-[#64748B]" aria-hidden="true">
                                         <path d="M4 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7z" />
                                     </svg>
@@ -314,14 +314,14 @@
                 </div>
             </div>
 
-            <div class="mt-3">
+            <div class="mt-2">
                 <div class="grid grid-cols-2 gap-3">
                     <template x-if="tab === 'films'">
                         <div class="contents">
                             @foreach($films->take(6) as $v)
                                 @php $dur = $fmtDuration($v->duration_seconds ?? null); @endphp
                                 <a href="{{ route('videos.show', $v) }}" class="block" aria-label="Ouvrir film">
-                                    <div class="relative overflow-hidden rounded-2xl border border-[#E6E8EE] bg-[#F6F7F9] aspect-[3/4]">
+                                    <div class="relative overflow-hidden rounded-2xl border border-[#EEF0F4] bg-[#F6F7F9] aspect-[3/4]">
                                         <img src="{{ route('videos.poster', $v) }}" alt="" class="block h-full w-full object-cover" loading="lazy" />
 
                                         @if($dur !== '')
@@ -340,7 +340,7 @@
                             @foreach($series->take(6) as $v)
                                 @php $dur = $fmtDuration($v->duration_seconds ?? null); @endphp
                                 <a href="{{ route('videos.show', $v) }}" class="block" aria-label="Ouvrir série">
-                                    <div class="relative overflow-hidden rounded-2xl border border-[#E6E8EE] bg-[#F6F7F9] aspect-[3/4]">
+                                    <div class="relative overflow-hidden rounded-2xl border border-[#EEF0F4] bg-[#F6F7F9] aspect-[3/4]">
                                         <img src="{{ route('videos.poster', $v) }}" alt="" class="block h-full w-full object-cover" loading="lazy" />
 
                                         @if($dur !== '')
