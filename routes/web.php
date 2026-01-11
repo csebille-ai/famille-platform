@@ -14,6 +14,7 @@ use App\Http\Controllers\TarotController;
 use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
+use App\Http\Controllers\Api\ChatAttachmentController;
 use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Event;
@@ -29,6 +30,9 @@ use Illuminate\Support\Facades\Schema;
 Route::post('/api/tarot/draw', TarotDrawController::class)
     ->middleware('throttle:tarot-draw')
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::post('/api/chat/{thread}/attachments', ChatAttachmentController::class)
+    ->middleware(['auth', 'verified', 'throttle:30,1']);
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -902,6 +906,17 @@ Route::middleware('auth')->group(function () {
             'app_env' => config('app.env'),
             'app_debug' => (bool) config('app.debug'),
             'php_sapi' => PHP_SAPI,
+            'php_ini' => [
+                'upload_max_filesize' => ini_get('upload_max_filesize'),
+                'post_max_size' => ini_get('post_max_size'),
+                'max_file_uploads' => ini_get('max_file_uploads'),
+                'max_execution_time' => ini_get('max_execution_time'),
+                'max_input_time' => ini_get('max_input_time'),
+                'memory_limit' => ini_get('memory_limit'),
+                'file_uploads' => ini_get('file_uploads'),
+                'upload_tmp_dir' => ini_get('upload_tmp_dir'),
+                'sys_temp_dir' => ini_get('sys_temp_dir'),
+            ],
             'opcache' => $opcache,
             'mtimes' => $mtimes,
         ]);
