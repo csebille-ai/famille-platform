@@ -84,7 +84,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     <a
-                        href="{{ route('visio.index') }}"
+                        href="{{ route('visio.room', ['room' => (string) (config('visio.default_room') ?? 'famille')]) }}"
                         class="inline-flex items-center gap-2 border border-slate-200 bg-white text-slate-700 rounded-2xl px-3 py-2 text-xs font-semibold hover:bg-slate-50"
                     >
                         <i class="ph ph-video-camera" aria-hidden="true"></i>

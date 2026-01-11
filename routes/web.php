@@ -817,6 +817,26 @@ Route::get('/visio', function () {
 })->middleware(['auth', 'verified'])
     ->name('visio.index');
 
+Route::get('/visio/{room}', function (string $room) {
+    $provider = (string) (config('visio.provider') ?? 'link');
+    $domain = (string) (config('visio.jitsi_domain') ?? 'meet.jit.si');
+
+    $response = response()->view('visio.room', [
+        'provider' => $provider,
+        'domain' => $domain,
+        'room' => $room,
+    ]);
+
+    // Force bypass of any HTML page cache (LiteSpeed/proxies).
+    return $response
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0')
+        ->header('X-LiteSpeed-Cache-Control', 'no-cache');
+})->where('room', '[A-Za-z0-9_-]{3,64}')
+    ->middleware(['auth', 'verified'])
+    ->name('visio.room');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
