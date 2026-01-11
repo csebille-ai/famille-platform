@@ -238,19 +238,6 @@
                         </button>
                     </div>
                 </div>
-
-                <button
-                    type="button"
-                    class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
-                    @click="$dispatch('open-add')"
-                    aria-haspopup="dialog"
-                    aria-label="Ajouter"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
-                        <path d="M12 5v14" />
-                        <path d="M5 12h14" />
-                    </svg>
-                </button>
             </div>
         </div>
 
