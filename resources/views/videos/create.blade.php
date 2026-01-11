@@ -4,10 +4,14 @@
         $maxVideoLabel = $maxVideoMb >= 1024
             ? (string) ((int) floor($maxVideoMb / 1024)) . ' GB'
             : (string) $maxVideoMb . ' MB';
+
+        $mode = (string) request()->query('mode', '');
+        $isPersonal = $mode === 'personal';
+        $returnPath = (string) request()->query('return', '');
     @endphp
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Importer une vidéo') }}
+            {{ $isPersonal ? __('Importer une vidéo perso') : __('Importer une vidéo') }}
         </h2>
     </x-slot>
 
@@ -28,6 +32,10 @@
                     <form method="POST" action="{{ route('videos.store') }}" enctype="multipart/form-data" class="space-y-6">
                         @csrf
 
+                        @if($returnPath !== '')
+                            <input type="hidden" name="return" value="{{ $returnPath }}" />
+                        @endif
+
                         <div>
                             <label for="title" class="block font-medium text-sm text-gray-700">
                                 {{ __('Titre') }}
@@ -45,25 +53,29 @@
                             @enderror
                         </div>
 
-                        <div>
-                            <label for="category" class="block font-medium text-sm text-gray-700">
-                                {{ __('Catégorie') }}
-                            </label>
-                            <select
-                                id="category"
-                                name="category"
-                                required
-                                class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
-                            >
-                                <option value="">-- Choisir --</option>
-                                <option value="films" {{ old('category') === 'films' ? 'selected' : '' }}>Films</option>
-                                <option value="series" {{ old('category') === 'series' ? 'selected' : '' }}>Séries</option>
-                                <option value="docs" {{ old('category') === 'docs' ? 'selected' : '' }}>Documentaires</option>
-                            </select>
-                            @error('category')
-                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        @if($isPersonal)
+                            <input type="hidden" name="category" value="docs" />
+                        @else
+                            <div>
+                                <label for="category" class="block font-medium text-sm text-gray-700">
+                                    {{ __('Catégorie') }}
+                                </label>
+                                <select
+                                    id="category"
+                                    name="category"
+                                    required
+                                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
+                                >
+                                    <option value="">-- Choisir --</option>
+                                    <option value="films" {{ old('category') === 'films' ? 'selected' : '' }}>Films</option>
+                                    <option value="series" {{ old('category') === 'series' ? 'selected' : '' }}>Séries</option>
+                                    <option value="docs" {{ old('category') === 'docs' ? 'selected' : '' }}>Documentaires</option>
+                                </select>
+                                @error('category')
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endif
 
                         <div>
                             <label for="video_file" class="block font-medium text-sm text-gray-700">
@@ -105,7 +117,7 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <a href="{{ route('videos.index') }}" class="text-gray-600 hover:text-gray-900">
+                            <a href="{{ $returnPath !== '' ? $returnPath : route('videos.index') }}" class="text-gray-600 hover:text-gray-900">
                                 {{ __('Annuler') }}
                             </a>
                             <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">

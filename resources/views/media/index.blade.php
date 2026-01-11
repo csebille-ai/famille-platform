@@ -16,7 +16,7 @@
     <script type="application/json" id="media-videos-next-cursor">@json($videosNextCursor ?? null)</script>
 
     <div
-        class="max-w-6xl mx-auto px-6 py-6 space-y-4"
+        class="max-w-6xl mx-auto px-6 pt-4 pb-6 space-y-4"
         x-data="{
             tab: 'photos',
             pageSize: {{ (int) ($pageSize ?? 24) }},
@@ -205,37 +205,68 @@
             }
         }"
     >
-        <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold text-gray-900">Médias</h1>
-        </div>
-
         <div class="bg-white rounded-2xl shadow-sm p-3 md:p-4">
             <div class="flex items-center gap-3">
                 <div class="flex-1">
-                    <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1">
-                        <button
-                            type="button"
-                            class="rounded-lg px-3 py-2 text-center text-[0.72rem] font-semibold transition"
-                            :class="tab === 'photos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
-                            @click="setTab('photos')"
-                            aria-controls="media-photos"
-                            :aria-selected="tab === 'photos'"
-                            role="tab"
-                        >
-                            Photos
-                        </button>
+                    <div class="flex items-center gap-2.5">
+                        <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1 flex-1">
+                            <button
+                                type="button"
+                                class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
+                                :class="tab === 'photos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
+                                @click="setTab('photos')"
+                                aria-controls="media-photos"
+                                :aria-selected="tab === 'photos'"
+                                role="tab"
+                            >
+                                Photos
+                            </button>
 
-                        <button
-                            type="button"
-                            class="rounded-lg px-3 py-2 text-center text-[0.72rem] font-semibold transition"
-                            :class="tab === 'videos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
-                            @click="setTab('videos')"
-                            aria-controls="media-videos"
-                            :aria-selected="tab === 'videos'"
-                            role="tab"
-                        >
-                            Vidéos
-                        </button>
+                            <button
+                                type="button"
+                                class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
+                                :class="tab === 'videos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
+                                @click="setTab('videos')"
+                                aria-controls="media-videos"
+                                :aria-selected="tab === 'videos'"
+                                role="tab"
+                            >
+                                Vidéos
+                            </button>
+                        </div>
+
+                        <div class="shrink-0 relative" x-data="{ open: false }" @keydown.escape.window="open = false">
+                            <button
+                                type="button"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
+                                aria-label="Ajouter"
+                                @click="open = !open"
+                            >
+                                <i class="ph ph-plus" aria-hidden="true"></i>
+                            </button>
+
+                            <div
+                                x-show="open"
+                                x-cloak
+                                @click.outside="open = false"
+                                class="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-lg p-1"
+                            >
+                                <a
+                                    href="{{ route('images.create', ['return' => route('media.index', ['tab' => 'photos'])]) }}"
+                                    class="block w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                                    @click="open = false"
+                                >
+                                    Ajouter une photo
+                                </a>
+                                <a
+                                    href="{{ route('videos.create', ['mode' => 'personal', 'return' => route('media.index', ['tab' => 'videos'])]) }}"
+                                    class="block w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                                    @click="open = false"
+                                >
+                                    Ajouter une vidéo perso
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

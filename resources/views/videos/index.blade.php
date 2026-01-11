@@ -352,7 +352,8 @@
 
                             await new Promise((resolve) => {
                                 const xhr = new XMLHttpRequest();
-                                xhr.open('POST', '{{ route('videos.import') }}', true);
+                                xhr.open('POST', '{{ route('videos.store') }}', true);
+                                xhr.setRequestHeader('Accept', 'application/json');
                                 xhr.upload.onprogress = (e) => {
                                     if (e.lengthComputable) {
                                         this.progress = Math.round((e.loaded / e.total) * 100);

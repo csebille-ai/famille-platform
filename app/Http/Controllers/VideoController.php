@@ -317,6 +317,11 @@ class VideoController extends Controller
             ]);
         }
 
+        $returnPath = $this->safeReturnPath($request->input('return') ?: $request->query('return'));
+        if ($returnPath !== null) {
+            return redirect($returnPath)->with('status', 'Vidéo importée');
+        }
+
         return redirect()->route('videos.index')
             ->with('status', 'Vidéo importée');
     }
