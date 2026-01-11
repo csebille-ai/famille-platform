@@ -22,6 +22,7 @@ use App\Models\Resource;
 use App\Models\Video;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
@@ -752,6 +753,70 @@ Route::middleware('auth')->group(function () {
 
     // Médiathèque (alias route to the existing videos index)
     Route::get('/mediatheque', [VideoController::class, 'index'])->name('mediatheque.index');
+
+    // Admin-only diagnostics (helps debug “server not updating” issues).
+    Route::get('/__diag', function () {
+        Gate::authorize('manage-users');
+
+        $paths = [
+            'routes_web' => base_path('routes/web.php'),
+            'videos_index' => resource_path('views/videos/index.blade.php'),
+            'cached_routes' => app()->getCachedRoutesPath(),
+            'cached_config' => app()->getCachedConfigPath(),
+            'cached_services' => app()->getCachedServicesPath(),
+            'cached_packages' => app()->getCachedPackagesPath(),
+        ];
+
+        $mtimes = [];
+        foreach ($paths as $key => $path) {
+            $mtimes[$key] = file_exists($path) ? filemtime($path) : null;
+        }
+
+        $opcache = null;
+        if (function_exists('opcache_get_configuration')) {
+            $cfg = opcache_get_configuration();
+            $directives = $cfg['directives'] ?? [];
+            $opcache = [
+                'enabled' => (bool) ($directives['opcache.enable'] ?? false),
+                'validate_timestamps' => $directives['opcache.validate_timestamps'] ?? null,
+                'revalidate_freq' => $directives['opcache.revalidate_freq'] ?? null,
+            ];
+        }
+
+        \Illuminate\Support\Facades\Log::info('diag.ping', [
+            'path' => base_path(),
+            'env' => config('app.env'),
+        ]);
+
+        return response()->json([
+            'now' => now()->toIso8601String(),
+            'base_path' => base_path(),
+            'app_env' => config('app.env'),
+            'app_debug' => (bool) config('app.debug'),
+            'php_sapi' => PHP_SAPI,
+            'opcache' => $opcache,
+            'mtimes' => $mtimes,
+        ]);
+    })->name('diag.index');
+
+    Route::post('/__opcache/reset', function () {
+        Gate::authorize('manage-users');
+
+        $ok = null;
+        if (function_exists('opcache_reset')) {
+            $ok = (bool) opcache_reset();
+        }
+
+        \Illuminate\Support\Facades\Log::warning('diag.opcache_reset', [
+            'ok' => $ok,
+            'path' => base_path(),
+        ]);
+
+        return response()->json([
+            'ok' => $ok,
+            'note' => 'If ok=true, PHP-FPM OPcache was reset for this pool.',
+        ]);
+    })->middleware('throttle:2,1')->name('diag.opcache.reset');
 
     Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->name('videos.stream');
     Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->name('videos.poster');
