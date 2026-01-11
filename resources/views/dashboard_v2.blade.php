@@ -77,9 +77,7 @@
 
                                 <div class="absolute inset-0 flex items-center justify-center">
                                     <span class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/45">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" class="h-5 w-5" aria-hidden="true">
-                                            <path d="M8 5v14l11-7z" />
-                                        </svg>
+                                        <i class="ph ph-play text-white text-[20px]" aria-hidden="true"></i>
                                     </span>
                                 </div>
 

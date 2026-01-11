@@ -154,13 +154,9 @@
                                                         </div>
 
                                                         <a href="{{ route('resources.show', $resource) }}"
-                                                           class="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                                                           class="shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                                                            title="Actions">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true">
-                                                                <circle cx="12" cy="5" r="1.6" />
-                                                                <circle cx="12" cy="12" r="1.6" />
-                                                                <circle cx="12" cy="19" r="1.6" />
-                                                            </svg>
+                                                            <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
                                                             <span class="sr-only">Actions</span>
                                                         </a>
                                                     </div>
@@ -204,13 +200,9 @@
                                                                 </a>
 
                                                                 <a href="{{ $downloadHref }}"
-                                                                   class="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                                                                   class="shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                                                                    title="Télécharger">
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                                                                        <path d="M12 3v10" />
-                                                                        <path d="M7 11l5 5 5-5" />
-                                                                        <path d="M5 21h14" />
-                                                                    </svg>
+                                                                    <i class="ph ph-download-simple" aria-hidden="true"></i>
                                                                     <span class="sr-only">Télécharger</span>
                                                                 </a>
                                                             </div>
@@ -333,13 +325,9 @@
                                                 </div>
 
                                                 <a href="{{ route('resources.show', $r) }}"
-                                                   class="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                                                   class="shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                                                    title="Actions">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5" aria-hidden="true">
-                                                        <circle cx="12" cy="5" r="1.6" />
-                                                        <circle cx="12" cy="12" r="1.6" />
-                                                        <circle cx="12" cy="19" r="1.6" />
-                                                    </svg>
+                                                    <i class="ph ph-dots-three-vertical" aria-hidden="true"></i>
                                                     <span class="sr-only">Actions</span>
                                                 </a>
                                             </div>
@@ -383,13 +371,9 @@
                                                         </a>
 
                                                         <a href="{{ $downloadHref }}"
-                                                           class="shrink-0 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                                                           class="shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
                                                            title="Télécharger">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                                                                <path d="M12 3v10" />
-                                                                <path d="M7 11l5 5 5-5" />
-                                                                <path d="M5 21h14" />
-                                                            </svg>
+                                                            <i class="ph ph-download-simple" aria-hidden="true"></i>
                                                             <span class="sr-only">Télécharger</span>
                                                         </a>
                                                     </div>

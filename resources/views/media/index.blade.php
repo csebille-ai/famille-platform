@@ -277,10 +277,7 @@
                             <span class="inline-flex items-center gap-2">
                                 <span x-show="!loadingPhotos">Charger plus</span>
                                 <span x-show="loadingPhotos" class="inline-flex items-center gap-2">
-                                    <svg class="h-4 w-4 animate-spin text-slate-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
-                                    </svg>
+                                    <i class="ph ph-circle-notch animate-spin text-slate-600" style="font-size:16px" aria-hidden="true"></i>
                                     Chargement…
                                 </span>
                             </span>
@@ -318,17 +315,12 @@
                                         <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="block w-full h-full object-cover" :style="{ objectPosition: focalPosition(v) }" loading="lazy" />
                                     </template>
                                     <template x-if="!v.poster_url">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-slate-400" aria-hidden="true">
-                                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                                            <path d="M10 9l5 3-5 3V9z" />
-                                        </svg>
+                                        <i class="ph ph-video text-slate-400" style="font-size:28px" aria-hidden="true"></i>
                                     </template>
 
                                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                                         <div class="h-12 w-12 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-6 w-6 text-white" aria-hidden="true">
-                                                <path d="M8 5v14l11-7z" />
-                                            </svg>
+                                            <i class="ph ph-play text-white" aria-hidden="true"></i>
                                         </div>
                                     </div>
 
@@ -357,10 +349,7 @@
                             <span class="inline-flex items-center gap-2">
                                 <span x-show="!loadingVideos">Charger plus</span>
                                 <span x-show="loadingVideos" class="inline-flex items-center gap-2">
-                                    <svg class="h-4 w-4 animate-spin text-slate-600" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
-                                    </svg>
+                                    <i class="ph ph-circle-notch animate-spin text-slate-600" style="font-size:16px" aria-hidden="true"></i>
                                     Chargement…
                                 </span>
                             </span>
@@ -408,10 +397,7 @@
                     @click.stop="closeViewer()"
                     aria-label="Fermer"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
-                        <path d="M18 6L6 18" />
-                        <path d="M6 6l12 12" />
-                    </svg>
+                    <i class="ph ph-x" aria-hidden="true"></i>
                 </button>
 
                 <button
@@ -420,9 +406,7 @@
                     @click.stop="prevPhoto()"
                     aria-label="Précédent"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
-                        <path d="M15 18l-6-6 6-6" />
-                    </svg>
+                    <i class="ph ph-caret-left" aria-hidden="true"></i>
                 </button>
                 <button
                     type="button"
@@ -430,9 +414,7 @@
                     @click.stop="nextPhoto()"
                     aria-label="Suivant"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
-                        <path d="M9 18l6-6-6-6" />
-                    </svg>
+                    <i class="ph ph-caret-right" aria-hidden="true"></i>
                 </button>
             </div>
         </div>

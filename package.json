@@ -19,6 +19,7 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "@phosphor-icons/web": "^2.1.2",
         "laravel-echo": "^2.2.7",
         "pusher-js": "^8.4.0"
     }

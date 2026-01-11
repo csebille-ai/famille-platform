@@ -45,13 +45,11 @@
                         @if($showBack)
                             <button
                                 type="button"
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
                                 aria-label="Retour"
                                 onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                                    <path d="M15 18l-6-6 6-6" />
-                                </svg>
+                                <i class="ph ph-caret-left" aria-hidden="true"></i>
                             </button>
                         @else
                             <a href="{{ route('dashboard') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white" aria-label="Accueil">
@@ -66,18 +64,22 @@
 
                     <div class="shrink-0 flex items-center gap-2">
                         <div class="inline-flex items-center gap-2">
+                            <button
+                                type="button"
+                                class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                                aria-label="Ajouter"
+                                onclick="window.dispatchEvent(new Event('open-add'))"
+                            >
+                                <i class="ph ph-plus" aria-hidden="true"></i>
+                            </button>
+
                             @if($showHomeActions)
                                 <a
                                     href="{{ route('tarot.index') }}"
-                                    class="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                                    class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
                                     aria-label="Tarot"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                                        <path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-                                        <path d="M9 8h6" />
-                                        <path d="M9 12h6" />
-                                        <path d="M9 16h6" />
-                                    </svg>
+                                    <i class="ph ph-sparkle" aria-hidden="true"></i>
                                     @if($hasTarotDraft)
                                         <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white"></span>
                                     @endif
@@ -85,15 +87,10 @@
 
                                 <a
                                     href="{{ route('actu.index') }}"
-                                    class="relative inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                                    class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
                                     aria-label="Actu"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                                        <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
-                                        <path d="M8 8h8" />
-                                        <path d="M8 12h8" />
-                                        <path d="M8 16h6" />
-                                    </svg>
+                                    <i class="ph ph-newspaper-clipping" aria-hidden="true"></i>
                                     @if($hasNewActu)
                                         <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white"></span>
                                     @endif
@@ -151,9 +148,7 @@
                                 aria-label="Retour"
                                 onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                                    <path d="M15 18l-6-6 6-6" />
-                                </svg>
+                                <i class="ph ph-caret-left" aria-hidden="true"></i>
                             </button>
                         </div>
                     @endunless
@@ -190,9 +185,7 @@
                                 <div>{{ Auth::user()->name }}</div>
 
                                 <div class="ms-1">
-                                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                    </svg>
+                                    <i class="ph ph-caret-down text-[16px]" aria-hidden="true"></i>
                                 </div>
                             </button>
                         </x-slot>

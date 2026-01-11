@@ -67,10 +67,7 @@
                                     @if (!empty($video->poster_path))
                                         <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
                                     @else
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400" aria-hidden="true">
-                                            <rect x="3" y="5" width="18" height="14" rx="2" />
-                                            <path d="M10 9l5 3-5 3V9z" />
-                                        </svg>
+                                        <i class="ph ph-video text-slate-400" style="font-size:20px" aria-hidden="true"></i>
                                     @endif
                                 </div>
                                 <div class="min-w-0">
@@ -109,10 +106,7 @@
                                 @if (!empty($video->poster_path))
                                     <img src="{{ route('videos.poster', $video) }}" alt="{{ $video->title }}" class="w-full h-full object-cover" loading="lazy" />
                                 @else
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-slate-400" aria-hidden="true">
-                                        <rect x="3" y="5" width="18" height="14" rx="2" />
-                                        <path d="M10 9l5 3-5 3V9z" />
-                                    </svg>
+                                    <i class="ph ph-video text-slate-400" style="font-size:28px" aria-hidden="true"></i>
                                 @endif
                             </div>
                             <div class="p-3">
@@ -338,10 +332,7 @@
                             @if (!empty($latestVideo->poster_path))
                                 <img src="{{ route('videos.poster', $latestVideo) }}" alt="{{ $latestVideo->title }}" class="w-full h-full object-cover" loading="lazy" />
                             @else
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-slate-400" aria-hidden="true">
-                                    <rect x="3" y="5" width="18" height="14" rx="2" />
-                                    <path d="M10 9l5 3-5 3V9z" />
-                                </svg>
+                                <i class="ph ph-video text-slate-400" style="font-size:20px" aria-hidden="true"></i>
                             @endif
                         </div>
                         <div class="min-w-0">
