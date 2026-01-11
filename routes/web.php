@@ -907,6 +907,12 @@ Route::middleware('auth')->group(function () {
             'https' => request()->isSecure(),
             'document_root' => $_SERVER['DOCUMENT_ROOT'] ?? null,
             'server_software' => $_SERVER['SERVER_SOFTWARE'] ?? null,
+            'request' => [
+                'method' => request()->getMethod(),
+                'uri' => request()->getRequestUri(),
+                'content_length' => request()->server('CONTENT_LENGTH'),
+                'content_type' => request()->header('Content-Type'),
+            ],
             'app_env' => config('app.env'),
             'app_debug' => (bool) config('app.debug'),
             'php_sapi' => PHP_SAPI,
@@ -915,6 +921,9 @@ Route::middleware('auth')->group(function () {
             'user_ini' => [
                 'filename' => ini_get('user_ini.filename'),
                 'cache_ttl' => ini_get('user_ini.cache_ttl'),
+                'base_exists' => file_exists(base_path('.user.ini')),
+                'public_exists' => file_exists(public_path('.user.ini')),
+                'public_path' => public_path('.user.ini'),
             ],
             'php_ini' => [
                 'upload_max_filesize' => ini_get('upload_max_filesize'),
@@ -926,6 +935,12 @@ Route::middleware('auth')->group(function () {
                 'file_uploads' => ini_get('file_uploads'),
                 'upload_tmp_dir' => ini_get('upload_tmp_dir'),
                 'sys_temp_dir' => ini_get('sys_temp_dir'),
+                'sys_get_temp_dir' => function_exists('sys_get_temp_dir') ? sys_get_temp_dir() : null,
+            ],
+            'disk' => [
+                'free_base_mb' => @disk_free_space(base_path()) ? (int) floor(@disk_free_space(base_path()) / 1024 / 1024) : null,
+                'free_public_mb' => @disk_free_space(public_path()) ? (int) floor(@disk_free_space(public_path()) / 1024 / 1024) : null,
+                'free_storage_mb' => @disk_free_space(storage_path()) ? (int) floor(@disk_free_space(storage_path()) / 1024 / 1024) : null,
             ],
             'opcache' => $opcache,
             'mtimes' => $mtimes,
