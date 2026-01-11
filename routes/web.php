@@ -755,6 +755,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->name('videos.stream');
     Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->name('videos.poster');
+
+    // Backward-compat: some older cached views referenced route('videos.import')
+    Route::post('videos/import', [VideoController::class, 'store'])->name('videos.import');
     Route::resource('videos', VideoController::class);
 
     Route::get('/cloud/create', function () {
