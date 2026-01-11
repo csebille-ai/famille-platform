@@ -30,6 +30,12 @@
     $userInitial = strtoupper(substr(trim($userName), 0, 1));
 
     $showHomeActions = $isHome;
+    $showAddAction = request()->routeIs('media.index')
+        || request()->is('media')
+        || request()->routeIs('mediatheque.index')
+        || request()->is('mediatheque')
+        || request()->routeIs('videos.index')
+        || request()->is('videos');
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
 @endphp
@@ -64,14 +70,16 @@
 
                     <div class="shrink-0 flex items-center gap-2">
                         <div class="inline-flex items-center gap-2">
-                            <button
-                                type="button"
-                                class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
-                                aria-label="Ajouter"
-                                onclick="window.dispatchEvent(new Event('open-add'))"
-                            >
-                                <i class="ph ph-plus" aria-hidden="true"></i>
-                            </button>
+                            @if($showAddAction)
+                                <button
+                                    type="button"
+                                    class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                                    aria-label="Ajouter"
+                                    onclick="window.dispatchEvent(new Event('open-add'))"
+                                >
+                                    <i class="ph ph-plus" aria-hidden="true"></i>
+                                </button>
+                            @endif
 
                             @if($showHomeActions)
                                 <a
