@@ -57,6 +57,21 @@
                 if (v === 'images') v = 'photos';
                 return (v === 'videos') ? 'videos' : 'photos';
             },
+            focalPosition(item) {
+                const defX = 50;
+                const defY = 35;
+                const fxRaw = item?.focal_x;
+                const fyRaw = item?.focal_y;
+                const fx = Number(fxRaw);
+                const fy = Number(fyRaw);
+                if (!Number.isFinite(fx) || !Number.isFinite(fy)) {
+                    return `${defX}% ${defY}%`;
+                }
+                const clamp01 = (n) => Math.max(0, Math.min(1, n));
+                const x = Math.round(clamp01(fx) * 1000) / 10;
+                const y = Math.round(clamp01(fy) * 1000) / 10;
+                return `${x}% ${y}%`;
+            },
             readFromUrl() {
                 const url = new URL(window.location.href);
                 const qp = url.searchParams.get('tab');
@@ -258,7 +273,7 @@
                                 :aria-label="'Ouvrir photo ' + (idx + 1)"
                             >
                                 <div class="aspect-square">
-                                    <img :src="img.thumb_url" alt="" class="block h-full w-full object-cover" loading="lazy" />
+                                    <img :src="img.thumb_url" alt="" class="block h-full w-full object-cover" :style="{ objectPosition: focalPosition(img) }" loading="lazy" />
                                 </div>
                             </button>
                         </template>
@@ -313,7 +328,7 @@
                             <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
                                 <div class="aspect-square bg-slate-100 overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
-                                        <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="block w-full h-full object-cover" loading="lazy" />
+                                        <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="block w-full h-full object-cover" :style="{ objectPosition: focalPosition(v) }" loading="lazy" />
                                     </template>
                                     <template x-if="!v.poster_url">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-7 w-7 text-slate-400" aria-hidden="true">

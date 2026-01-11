@@ -457,6 +457,7 @@ Route::get('/media', function () {
     $imagesNextCursor = null;
     try {
         if (Schema::hasTable('cloud_nodes')) {
+            $hasImageFocal = Schema::hasColumn('cloud_nodes', 'focal_x') && Schema::hasColumn('cloud_nodes', 'focal_y');
             $rows = CloudNode::query()
                 ->with('uploader:id,name')
                 ->whereNotNull('stored_path')
@@ -476,6 +477,8 @@ Route::get('/media', function () {
                 'at_human' => $img->created_at?->diffForHumans(),
                 'thumb_url' => route('images.view', $img),
                 'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'photos'])]),
+                'focal_x' => $hasImageFocal ? (is_null($img->focal_x) ? null : (float) $img->focal_x) : null,
+                'focal_y' => $hasImageFocal ? (is_null($img->focal_y) ? null : (float) $img->focal_y) : null,
             ])->values()->all();
 
             if ($rows->count() === 24) {
@@ -495,6 +498,7 @@ Route::get('/media', function () {
     try {
         if (Schema::hasTable('videos')) {
             $hasDuration = Schema::hasColumn('videos', 'duration_seconds');
+            $hasVideoFocal = Schema::hasColumn('videos', 'focal_x') && Schema::hasColumn('videos', 'focal_y');
             $rows = Video::query()
                 ->with('creator:id,name')
                 ->orderByDesc('created_at')
@@ -512,6 +516,8 @@ Route::get('/media', function () {
                 'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
                 'duration_seconds' => $hasDuration ? (int) ($v->duration_seconds ?? 0) : null,
                 'open_url' => route('videos.show', $v),
+                'focal_x' => $hasVideoFocal ? (is_null($v->focal_x) ? null : (float) $v->focal_x) : null,
+                'focal_y' => $hasVideoFocal ? (is_null($v->focal_y) ? null : (float) $v->focal_y) : null,
             ])->values()->all();
 
             if ($rows->count() === 24) {
@@ -577,6 +583,8 @@ Route::get('/api/media', function () {
             return response()->json(['items' => [], 'next_cursor' => null]);
         }
 
+        $hasImageFocal = Schema::hasColumn('cloud_nodes', 'focal_x') && Schema::hasColumn('cloud_nodes', 'focal_y');
+
         $q = CloudNode::query()
             ->with('uploader:id,name')
             ->whereNotNull('stored_path')
@@ -608,6 +616,8 @@ Route::get('/api/media', function () {
             'at_human' => $img->created_at?->diffForHumans(),
             'thumb_url' => route('images.view', $img),
             'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'photos'])]),
+            'focal_x' => $hasImageFocal ? (is_null($img->focal_x) ? null : (float) $img->focal_x) : null,
+            'focal_y' => $hasImageFocal ? (is_null($img->focal_y) ? null : (float) $img->focal_y) : null,
         ])->values();
 
         $next = null;
@@ -625,6 +635,8 @@ Route::get('/api/media', function () {
     if (!Schema::hasTable('videos')) {
         return response()->json(['items' => [], 'next_cursor' => null]);
     }
+
+    $hasVideoFocal = Schema::hasColumn('videos', 'focal_x') && Schema::hasColumn('videos', 'focal_y');
 
     $q = Video::query()
         ->with('creator:id,name')
@@ -654,6 +666,8 @@ Route::get('/api/media', function () {
         'poster_url' => !empty($v->poster_path) ? route('videos.poster', $v) : null,
         'duration_seconds' => Schema::hasColumn('videos', 'duration_seconds') ? (int) ($v->duration_seconds ?? 0) : null,
         'open_url' => route('videos.show', $v),
+        'focal_x' => $hasVideoFocal ? (is_null($v->focal_x) ? null : (float) $v->focal_x) : null,
+        'focal_y' => $hasVideoFocal ? (is_null($v->focal_y) ? null : (float) $v->focal_y) : null,
     ])->values();
 
     $next = null;

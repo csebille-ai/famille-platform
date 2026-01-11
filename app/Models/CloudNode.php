@@ -19,7 +19,14 @@ class CloudNode extends Model
         'stored_path',
         'mime',
         'size',
+        'focal_x',
+        'focal_y',
         'uploaded_by',
+    ];
+
+    protected $casts = [
+        'focal_x' => 'float',
+        'focal_y' => 'float',
     ];
 
     public function parent(): BelongsTo
