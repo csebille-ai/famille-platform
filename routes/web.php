@@ -556,6 +556,83 @@ Route::get('/media', function () {
 })->middleware(['auth', 'verified'])
     ->name('media.index');
 
+Route::get('/mediatheque', function () {
+    $tab = strtolower(trim((string) request()->query('tab', '')));
+    if (!in_array($tab, ['films', 'series'], true)) {
+        $tab = 'films';
+    }
+
+    $encodeCursor = function ($createdAt, int $id): string {
+        $payload = [
+            't' => $createdAt ? $createdAt->getTimestamp() : 0,
+            'id' => $id,
+        ];
+        return rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '=');
+    };
+
+    $buildItems = function (string $category) use ($encodeCursor): array {
+        if (!Schema::hasTable('videos')) {
+            return [[], null];
+        }
+
+        $hasDuration = Schema::hasColumn('videos', 'duration_seconds');
+        $hasVideoFocal = Schema::hasColumn('videos', 'focal_x') && Schema::hasColumn('videos', 'focal_y');
+
+        $limit = 24;
+        $rows = Video::query()
+            ->with('creator:id,name')
+            ->where('category', $category)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+
+        $items = $rows->map(fn ($v) => [
+            'id' => (int) $v->id,
+            'type' => 'video',
+            'title' => (string) ($v->title ?? ($category === 'series' ? 'Série' : 'Film')),
+            'by' => (string) ($v->creator?->name ?? 'Quelqu’un'),
+            'at' => $v->created_at?->toIso8601String(),
+            'at_human' => $v->created_at?->diffForHumans(),
+            'poster_url' => $v->video_path ? route('videos.poster', $v) : null,
+            'duration_seconds' => $hasDuration ? (int) ($v->duration_seconds ?? 0) : null,
+            'open_url' => route('videos.show', $v),
+            'focal_x' => $hasVideoFocal ? (is_null($v->focal_x) ? null : (float) $v->focal_x) : null,
+            'focal_y' => $hasVideoFocal ? (is_null($v->focal_y) ? null : (float) $v->focal_y) : null,
+        ])->values()->all();
+
+        $nextCursor = null;
+        if ($rows->count() === $limit) {
+            $last = $rows->last();
+            if ($last) {
+                $nextCursor = $encodeCursor($last->created_at, (int) $last->id);
+            }
+        }
+
+        return [$items, $nextCursor];
+    };
+
+    [$filmsItems, $filmsNextCursor] = $buildItems('films');
+    [$seriesItems, $seriesNextCursor] = $buildItems('series');
+
+    $response = response()->view('mediatheque.index', [
+        'tab' => $tab,
+        'filmsItems' => $filmsItems,
+        'seriesItems' => $seriesItems,
+        'filmsNextCursor' => $filmsNextCursor,
+        'seriesNextCursor' => $seriesNextCursor,
+        'pageSize' => 24,
+    ]);
+
+    // Force bypass of any HTML page cache (LiteSpeed/proxies).
+    return $response
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0')
+        ->header('X-LiteSpeed-Cache-Control', 'no-cache');
+})->middleware(['auth', 'verified'])
+    ->name('mediatheque.index');
+
 Route::get('/api/media', function () {
     $type = strtolower((string) request()->query('type', ''));
     if (!in_array($type, ['image', 'video'], true)) {
@@ -751,8 +828,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
 
-    // Médiathèque (alias route to the existing videos index)
-    Route::get('/mediatheque', [VideoController::class, 'index'])->name('mediatheque.index');
+
 
     // Admin-only diagnostics (helps debug “server not updating” issues).
     $diagHandler = function () {
