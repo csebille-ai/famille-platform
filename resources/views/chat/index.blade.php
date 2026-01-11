@@ -83,13 +83,15 @@
                     <div id="chatPushStatus" class="mt-1 text-xs text-slate-500"></div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a
-                        href="{{ route('visio.room', ['room' => (string) (config('visio.default_room') ?? 'famille')]) }}"
+                    <button
+                        type="button"
+                        id="chatVisioBtn"
                         class="inline-flex items-center gap-2 border border-slate-200 bg-white text-slate-700 rounded-2xl px-3 py-2 text-xs font-semibold hover:bg-slate-50"
+                        data-jitsi-domain="{{ (string) (config('visio.jitsi_domain') ?? 'meet.jit.si') }}"
                     >
                         <i class="ph ph-video-camera" aria-hidden="true"></i>
                         Visio
-                    </a>
+                    </button>
 
                     <button
                         type="button"
@@ -243,6 +245,8 @@
             let lastMessageId = @json($lastMessageId ?? 0);
             const initialOnline = @json($initialOnline ?? []);
 
+            const visioBtn = document.getElementById('chatVisioBtn');
+
             const gateEl = document.getElementById('chatGate');
             const voiceStatusEl = document.getElementById('chatVoiceStatus');
             const voiceBtn = document.getElementById('chatVoiceBtn');
@@ -300,6 +304,62 @@
 
                 if (!supported) {
                     setVoiceStatus('');
+                }
+            }
+
+            function sanitizeDomain(raw) {
+                const v = String(raw || '').trim();
+                return v.replace(/^https?:\/\//i, '').replace(/\/+$/g, '') || 'meet.jit.si';
+            }
+
+            function randomBase64Url(byteLen) {
+                const len = Number(byteLen || 18);
+                const cryptoObj = (window.crypto || window.msCrypto);
+                if (!cryptoObj || !cryptoObj.getRandomValues) {
+                    throw new Error('Secure random not available');
+                }
+                const bytes = new Uint8Array(len);
+                cryptoObj.getRandomValues(bytes);
+                let binary = '';
+                for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+                return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+            }
+
+            function buildVisioRoom() {
+                return `famille-${randomBase64Url(18)}`;
+            }
+
+            async function postVisioLinkToChat(url) {
+                if (!formEl) return;
+                const token = formEl.querySelector('input[name="_token"]')?.value;
+                if (!token) return;
+
+                const message = `📹 Visio: ${url}`;
+                const body = new URLSearchParams();
+                body.set('_token', token);
+                body.set('body', message);
+
+                try {
+                    await fetch(formEl.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': token,
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        },
+                        body: body.toString(),
+                        credentials: 'same-origin',
+                    });
+                } catch (e) {
+                    // Ignore; user still has the link opened.
+                }
+            }
+
+            function openVisioInNewTab(url) {
+                const w = window.open(url, '_blank', 'noopener,noreferrer');
+                if (!w) {
+                    // Pop-up blocked: fallback to normal navigation.
+                    window.location.href = url;
                 }
             }
 
@@ -619,6 +679,21 @@
                         const appended = appendMessage(e);
                         if (e?.id) lastMessageId = Math.max(lastMessageId, Number(e.id));
                     });
+            }
+
+            if (visioBtn) {
+                visioBtn.addEventListener('click', async () => {
+                    const domain = sanitizeDomain(visioBtn.dataset.jitsiDomain);
+                    try {
+                        const room = buildVisioRoom();
+                        const url = `https://${domain}/${encodeURIComponent(room)}`;
+
+                        openVisioInNewTab(url);
+                        await postVisioLinkToChat(url);
+                    } catch (e) {
+                        alert('Impossible de générer un lien visio sur ce navigateur.');
+                    }
+                });
             }
 
             let pollingTimer = null;

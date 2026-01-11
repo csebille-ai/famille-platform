@@ -20,30 +20,50 @@
             </div>
 
             @if ($provider === 'jitsi')
-                <div class="mt-5 flex flex-wrap items-center gap-3">
-                    <a
-                        href="{{ route('visio.room', ['room' => $defaultRoom]) }}"
+                <div class="mt-5 flex flex-wrap items-center gap-3" x-data="{ url: '' }">
+                    <button
+                        type="button"
                         class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+                        @click="
+                            (function(){
+                                const rawDomain = @json($jitsiDomain);
+                                const domain = String(rawDomain || '').replace(/^https?:\\/\\//i, '').replace(/\\/+$/g,'') || 'meet.jit.si';
+                                const cryptoObj = (window.crypto || window.msCrypto);
+                                if (!cryptoObj || !cryptoObj.getRandomValues) {
+                                    alert('Ton navigateur ne supporte pas la génération sécurisée de lien visio.');
+                                    return;
+                                }
+                                const bytes = new Uint8Array(18);
+                                cryptoObj.getRandomValues(bytes);
+                                let bin=''; for(let i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+                                const rnd = btoa(bin).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/g,'');
+                                const room = 'famille-' + rnd;
+                                url = 'https://' + domain + '/' + encodeURIComponent(room);
+                                const w = window.open(url, '_blank', 'noopener,noreferrer');
+                                if (!w) window.location.href = url;
+                            })();
+                        "
                     >
                         <i class="ph ph-video-camera mr-2" aria-hidden="true"></i>
                         {{ $visioLabel }}
-                    </a>
+                    </button>
 
-                    @if ($jitsiDirectUrl)
-                        <a
-                            href="{{ $jitsiDirectUrl }}"
-                            class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-slate-50"
-                            target="_blank"
-                            rel="noopener"
-                        >
-                            <i class="ph ph-arrow-square-out mr-2" aria-hidden="true"></i>
-                            Ouvrir en plein écran
-                        </a>
-                    @endif
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-slate-50"
+                        @click="if(url){ navigator.clipboard?.writeText(url) }"
+                        :disabled="!url"
+                        :class="!url ? 'opacity-50 cursor-not-allowed' : ''"
+                    >
+                        <i class="ph ph-copy mr-2" aria-hidden="true"></i>
+                        Copier le lien
+                    </button>
+
+                    <div class="w-full text-xs text-slate-500 break-all" x-show="url" x-text="url"></div>
                 </div>
 
                 <div class="mt-4 text-xs text-slate-500">
-                    Astuce iPhone/iPad: si la caméra/micro ne marchent pas dans l’iframe, utilise “Ouvrir en plein écran”.
+                    La visio s’ouvre dans un nouvel onglet (plus fiable que l’iframe sur mobile).
                 </div>
             @elseif (!$hasUrl)
                 <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">

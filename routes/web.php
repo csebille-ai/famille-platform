@@ -818,14 +818,14 @@ Route::get('/visio', function () {
     ->name('visio.index');
 
 Route::get('/visio/{room}', function (string $room) {
-    $provider = (string) (config('visio.provider') ?? 'link');
     $domain = (string) (config('visio.jitsi_domain') ?? 'meet.jit.si');
+    $domain = preg_replace('#^https?://#i', '', trim($domain));
+    $domain = rtrim((string) $domain, '/');
 
-    $response = response()->view('visio.room', [
-        'provider' => $provider,
-        'domain' => $domain,
-        'room' => $room,
-    ]);
+    $url = 'https://' . $domain . '/' . rawurlencode($room);
+
+    // Avoid embedding Jitsi: open in a new tab/window instead.
+    $response = redirect()->away($url);
 
     // Force bypass of any HTML page cache (LiteSpeed/proxies).
     return $response
