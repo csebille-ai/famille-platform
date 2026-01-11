@@ -1,5 +1,23 @@
 <x-app-layout pageBgClass="bg-slate-50">
     @php
+        $ATTACH_PREFIX = '[[ATTACHMENT]]';
+        $parseAttachment = function (?string $body) use ($ATTACH_PREFIX): ?array {
+            $body = (string) $body;
+            if (!str_starts_with($body, $ATTACH_PREFIX)) {
+                return null;
+            }
+            $json = substr($body, strlen($ATTACH_PREFIX));
+            $data = json_decode($json, true);
+            if (!is_array($data)) {
+                return null;
+            }
+            $type = (string) ($data['media_type'] ?? '');
+            if (!in_array($type, ['image', 'video'], true)) {
+                return null;
+            }
+            return $data;
+        };
+
         $palette = [
             ['chip' => 'bg-indigo-50 text-indigo-700 border-indigo-200', 'avatar' => 'bg-indigo-600 text-white'],
             ['chip' => 'bg-emerald-50 text-emerald-700 border-emerald-200', 'avatar' => 'bg-emerald-600 text-white'],
@@ -174,7 +192,32 @@
                                         </div>
 
                                         <div class="px-4 py-3 border {{ $isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md' }}" data-bubble>
-                                            <div class="text-sm whitespace-pre-wrap">{{ $m->body }}</div>
+                                            @php $att = $parseAttachment($m->body); @endphp
+                                            @if ($att)
+                                                @php
+                                                    $attType = (string) ($att['media_type'] ?? '');
+                                                    $attUrl = (string) ($att['url'] ?? '#');
+                                                    $attThumb = (string) ($att['thumb_url'] ?? '');
+                                                    $attName = (string) ($att['name'] ?? ($attType === 'video' ? 'Vidéo' : 'Photo'));
+                                                @endphp
+                                                <a href="{{ $attUrl }}" class="block" target="_blank" rel="noopener">
+                                                    <div class="relative overflow-hidden rounded-xl border border-slate-200 bg-black/5">
+                                                        @if ($attThumb !== '')
+                                                            <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-56 max-w-full h-auto" loading="lazy" />
+                                                        @else
+                                                            <div class="w-56 h-36 flex items-center justify-center text-xs text-slate-500">{{ $attName }}</div>
+                                                        @endif
+                                                        @if ($attType === 'video')
+                                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                                <div class="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white text-xl">▶</div>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                    <div class="mt-2 text-xs opacity-80">{{ $attName }}</div>
+                                                </a>
+                                            @else
+                                                <div class="text-sm whitespace-pre-wrap">{{ $m->body }}</div>
+                                            @endif
                                             <div class="mt-1 text-right text-xs opacity-60">{{ $m->created_at?->format('H:i') }}</div>
                                         </div>
                                     </div>
@@ -204,6 +247,23 @@
                                 >{{ old('body') }}</textarea>
                             </div>
 
+                            <input
+                                type="file"
+                                id="chatAttachInput"
+                                class="hidden"
+                                accept="image/*,video/*"
+                            />
+
+                            <button
+                                type="button"
+                                id="chatAttachBtn"
+                                class="border border-slate-200 bg-white text-slate-700 rounded-2xl px-4 py-3 text-sm font-semibold"
+                                aria-label="Ajouter une pièce jointe"
+                                title="Ajouter une pièce jointe"
+                            >
+                                ＋
+                            </button>
+
                             <button
                                 type="button"
                                 id="chatVoiceBtn"
@@ -228,6 +288,24 @@
                 </div>
             </div>
         </div>
+
+        <div id="chatAttachSheet" class="fixed inset-0 z-50 hidden">
+            <div id="chatAttachBackdrop" class="absolute inset-0 bg-black/40"></div>
+            <div class="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl p-4 shadow-2xl">
+                <div class="text-sm font-semibold text-gray-900 px-2">Ajouter</div>
+                <div class="mt-3 grid gap-2">
+                    <button
+                        type="button"
+                        id="chatAttachPickMedia"
+                        class="w-full inline-flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900"
+                    >
+                        <span>Photo / Vidéo</span>
+                        <i class="ph ph-image" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <button type="button" id="chatAttachCancel" class="mt-3 w-full text-sm text-slate-600 py-2">Annuler</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -239,9 +317,16 @@
             const onlineAvatarsEl = document.getElementById('chatOnlineAvatars');
             const formEl = document.getElementById('chatForm');
             const textareaEl = document.getElementById('body');
+            const attachBtn = document.getElementById('chatAttachBtn');
+            const attachInput = document.getElementById('chatAttachInput');
+            const attachSheet = document.getElementById('chatAttachSheet');
+            const attachBackdrop = document.getElementById('chatAttachBackdrop');
+            const attachCancel = document.getElementById('chatAttachCancel');
+            const attachPickMedia = document.getElementById('chatAttachPickMedia');
             const currentUserId = @json(auth()->id());
             const currentUserName = @json(auth()->user()?->name);
             const pollUrl = @json(route('chat.poll'));
+            const attachUrl = @json(url('/api/chat/default/attachments'));
             let lastMessageId = @json($lastMessageId ?? 0);
             const initialOnline = @json($initialOnline ?? []);
 
@@ -274,6 +359,21 @@
                             setVoiceStatus('');
                         }
                     }, autoHideMs);
+                }
+            }
+
+            function parseAttachmentBody(body) {
+                const prefix = '[[ATTACHMENT]]';
+                const b = String(body || '');
+                if (!b.startsWith(prefix)) return null;
+                try {
+                    const data = JSON.parse(b.slice(prefix.length));
+                    if (!data || typeof data !== 'object') return null;
+                    const t = String(data.media_type || '');
+                    if (t !== 'image' && t !== 'video') return null;
+                    return data;
+                } catch (e) {
+                    return null;
                 }
             }
 
@@ -601,9 +701,58 @@
                 const wrapper = document.createElement('div');
                 wrapper.className = `px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
 
+                const att = parseAttachmentBody(body);
                 const bodyEl = document.createElement('div');
-                bodyEl.className = 'text-sm whitespace-pre-wrap';
-                bodyEl.textContent = body;
+
+                if (att) {
+                    bodyEl.className = 'text-sm';
+                    const a = document.createElement('a');
+                    a.href = String(att.url || '#');
+                    a.target = '_blank';
+                    a.rel = 'noopener';
+                    a.className = 'block';
+
+                    const card = document.createElement('div');
+                    card.className = 'relative overflow-hidden rounded-xl border border-slate-200 bg-black/5';
+
+                    const thumb = String(att.thumb_url || '');
+                    const nameLabel = String(att.name || (att.media_type === 'video' ? 'Vidéo' : 'Photo'));
+
+                    if (thumb) {
+                        const img = document.createElement('img');
+                        img.src = thumb;
+                        img.alt = nameLabel;
+                        img.loading = 'lazy';
+                        img.className = 'block w-56 max-w-full h-auto';
+                        card.appendChild(img);
+                    } else {
+                        const ph = document.createElement('div');
+                        ph.className = 'w-56 h-36 flex items-center justify-center text-xs text-slate-500';
+                        ph.textContent = nameLabel;
+                        card.appendChild(ph);
+                    }
+
+                    if (String(att.media_type) === 'video') {
+                        const overlay = document.createElement('div');
+                        overlay.className = 'absolute inset-0 flex items-center justify-center';
+                        const pill = document.createElement('div');
+                        pill.className = 'w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white text-xl';
+                        pill.textContent = '▶';
+                        overlay.appendChild(pill);
+                        card.appendChild(overlay);
+                    }
+
+                    const caption = document.createElement('div');
+                    caption.className = 'mt-2 text-xs opacity-80';
+                    caption.textContent = nameLabel;
+
+                    a.appendChild(card);
+                    a.appendChild(caption);
+                    bodyEl.appendChild(a);
+                } else {
+                    bodyEl.className = 'text-sm whitespace-pre-wrap';
+                    bodyEl.textContent = body;
+                }
 
                 const timeEl = document.createElement('div');
                 timeEl.className = 'mt-1 text-right text-xs opacity-60';
@@ -619,6 +768,94 @@
                 messagesEl.appendChild(outer);
                 focusLastMessage();
                 return true;
+            }
+
+            function setAttachSheetOpen(open) {
+                if (!attachSheet) return;
+                attachSheet.classList.toggle('hidden', !open);
+            }
+
+            function appendUploadPlaceholder(name) {
+                const tempId = `upload-${Date.now()}`;
+                const payload = {
+                    id: tempId,
+                    body: `⏳ Envoi de ${name}… 0%`,
+                    created_at: new Date().toISOString(),
+                    user: { id: currentUserId, name: currentUserName || 'Vous' },
+                };
+                appendMessage(payload);
+                return tempId;
+            }
+
+            function updateUploadPlaceholder(tempId, pct) {
+                const row = messagesEl?.querySelector(`[data-message-id="${tempId}"]`);
+                if (!row) return;
+                const b = row.querySelector('[data-bubble] .text-sm') || row.querySelector('[data-bubble]');
+                const bodyEl = row.querySelector('[data-bubble] .text-sm');
+                const bubble = row.querySelector('[data-bubble]');
+                // find the first body element inside wrapper
+                const bodyDiv = bubble?.querySelector('div');
+                if (bodyDiv) bodyDiv.textContent = `⏳ Envoi… ${pct}%`;
+            }
+
+            function removeUploadPlaceholder(tempId) {
+                const row = messagesEl?.querySelector(`[data-message-id="${tempId}"]`);
+                if (row) row.remove();
+            }
+
+            function uploadAttachment(file) {
+                if (!file) return;
+                if (!formEl) return;
+
+                const token = formEl.querySelector('input[name="_token"]')?.value;
+                if (!token) {
+                    alert('Session expirée. Recharge la page.');
+                    return;
+                }
+
+                const tempId = appendUploadPlaceholder(file.name || 'fichier');
+                setAttachSheetOpen(false);
+
+                const fd = new FormData();
+                fd.append('_token', token);
+                fd.append('file', file);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', attachUrl, true);
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                xhr.setRequestHeader('X-CSRF-TOKEN', token);
+
+                xhr.upload.onprogress = (evt) => {
+                    if (!evt.lengthComputable) return;
+                    const pct = Math.max(0, Math.min(100, Math.round((evt.loaded / evt.total) * 100)));
+                    updateUploadPlaceholder(tempId, pct);
+                };
+
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState !== 4) return;
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const res = JSON.parse(xhr.responseText || '{}');
+                            removeUploadPlaceholder(tempId);
+                            if (res?.message) {
+                                const appended = appendMessage(res.message);
+                                if (res?.message?.id) lastMessageId = Math.max(lastMessageId, Number(res.message.id));
+                            }
+                        } catch (e) {
+                            removeUploadPlaceholder(tempId);
+                        }
+                    } else {
+                        removeUploadPlaceholder(tempId);
+                        let msg = 'Upload impossible.';
+                        try {
+                            const res = JSON.parse(xhr.responseText || '{}');
+                            if (res?.message) msg = String(res.message);
+                        } catch (e) {}
+                        alert(msg);
+                    }
+                };
+
+                xhr.send(fd);
             }
 
             const online = new Map();
@@ -694,6 +931,23 @@
                         alert('Impossible de générer un lien visio sur ce navigateur.');
                     }
                 });
+            }
+
+            if (attachBtn && attachPickMedia && attachInput) {
+                attachBtn.addEventListener('click', () => setAttachSheetOpen(true));
+                attachPickMedia.addEventListener('click', () => attachInput.click());
+                attachInput.addEventListener('change', () => {
+                    const f = attachInput.files && attachInput.files[0];
+                    attachInput.value = '';
+                    if (f) uploadAttachment(f);
+                });
+            }
+
+            if (attachBackdrop) {
+                attachBackdrop.addEventListener('click', () => setAttachSheetOpen(false));
+            }
+            if (attachCancel) {
+                attachCancel.addEventListener('click', () => setAttachSheetOpen(false));
             }
 
             let pollingTimer = null;
