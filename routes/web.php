@@ -62,7 +62,7 @@ Route::get('/home', function () {
                 ->whereNotNull('stored_path')
                 ->where('mime', 'like', 'image/%')
                 ->latest()
-                ->limit(12)
+                ->limit(6)
                 ->get();
         }
     } catch (Throwable $e) {
@@ -70,42 +70,12 @@ Route::get('/home', function () {
     }
 
     $latestVideos = collect();
-    $personalVideos = collect();
-    $libraryFilms = collect();
-    $librarySeries = collect();
     try {
         if (Schema::hasTable('videos')) {
-            $latestVideos = Video::query()->with('creator:id,name')->latest()->limit(12)->get();
-
-            $hasCategory = Schema::hasColumn('videos', 'category');
-            if ($hasCategory) {
-                $personalVideos = Video::query()
-                    ->with('creator:id,name')
-                    ->where('category', 'docs')
-                    ->latest()
-                    ->limit(12)
-                    ->get();
-
-                $libraryFilms = Video::query()
-                    ->with('creator:id,name')
-                    ->where('category', 'films')
-                    ->latest()
-                    ->limit(8)
-                    ->get();
-
-                $librarySeries = Video::query()
-                    ->with('creator:id,name')
-                    ->where('category', 'series')
-                    ->latest()
-                    ->limit(8)
-                    ->get();
-            }
+            $latestVideos = Video::query()->with('creator:id,name')->latest()->limit(6)->get();
         }
     } catch (Throwable $e) {
         $latestVideos = collect();
-        $personalVideos = collect();
-        $libraryFilms = collect();
-        $librarySeries = collect();
     }
 
     // Docs feed is intentionally not used on Home.
@@ -451,9 +421,6 @@ Route::get('/home', function () {
     return view('dashboard_v2', [
         'latestImages' => $latestImages,
         'latestVideos' => $latestVideos,
-        'personalVideos' => $personalVideos,
-        'libraryFilms' => $libraryFilms,
-        'librarySeries' => $librarySeries,
         'latestDocs' => $latestDocs,
         'todayNewsItem' => $todayNewsItem,
         'heroMedia' => $heroMedia,
@@ -762,6 +729,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+
+    // Médiathèque (alias route to the existing videos index)
+    Route::get('/mediatheque', [VideoController::class, 'index'])->name('mediatheque.index');
 
     Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->name('videos.stream');
     Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->name('videos.poster');

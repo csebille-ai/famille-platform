@@ -1,18 +1,28 @@
 @php
-    $isHome = request()->routeIs('dashboard');
-    $isMedia = request()->routeIs('media.*') || request()->routeIs('images.*') || request()->routeIs('videos.*');
-    $isLibrary = request()->routeIs('videos.index');
-    $isChat = request()->routeIs('chat.*');
+    $isHome = request()->routeIs('dashboard') || request()->is('home');
+    $isMedia = request()->routeIs('media.*') || request()->routeIs('images.*') || request()->is('media') || request()->is('media/*');
+    $isLibrary = request()->routeIs('mediatheque.*')
+        || request()->is('mediatheque')
+        || request()->is('mediatheque/*')
+        || request()->routeIs('videos.*')
+        || request()->is('videos')
+        || request()->is('videos/*');
+    $isChat = request()->routeIs('chat.*') || request()->is('chat') || request()->is('chat/*');
 
-    $isPrimary = $isHome || request()->routeIs('media.index') || request()->routeIs('videos.index') || request()->routeIs('chat.index');
+    $isPrimary = $isHome
+        || request()->routeIs('media.index')
+        || request()->routeIs('mediatheque.index')
+        || request()->routeIs('videos.index')
+        || request()->routeIs('chat.index');
 
     $mobileTitle = '—';
     if ($isHome) $mobileTitle = 'Accueil';
+    elseif (request()->routeIs('mediatheque.index') || request()->routeIs('videos.index')) $mobileTitle = 'Médiathèque';
+    elseif (request()->routeIs('images.*')) $mobileTitle = 'Photo';
+    elseif (request()->routeIs('videos.*')) $mobileTitle = 'Vidéo';
     elseif ($isMedia) $mobileTitle = 'Médias';
     elseif ($isLibrary) $mobileTitle = 'Médiathèque';
     elseif ($isChat) $mobileTitle = 'Chat';
-    elseif (request()->routeIs('images.*')) $mobileTitle = 'Photo';
-    elseif (request()->routeIs('videos.*')) $mobileTitle = 'Vidéo';
     else $mobileTitle = 'Famille';
 
     $showBack = !$isPrimary;
