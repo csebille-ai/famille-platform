@@ -323,7 +323,7 @@
 
             <template x-if="(videos || []).length > 0">
                 <div>
-                    <div class="grid grid-cols-3 gap-2">
+                    <div class="grid grid-cols-2 gap-2">
                         <template x-for="v in (videos || [])" :key="'vid_' + v.id">
                             <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
                                 <div class="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center relative">
@@ -351,8 +351,7 @@
                                         </div>
                                     </template>
 
-                                    <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none"></div>
-                                    <div class="absolute inset-x-0 bottom-0 p-2 pr-12 pointer-events-none">
+                                    <div class="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2.5 pt-10">
                                         <div class="text-[0.72rem] font-semibold text-white truncate" x-text="v.title || 'Vidéo'"></div>
                                     </div>
                                 </div>
@@ -382,7 +381,7 @@
                     </div>
 
                     <template x-if="loadingVideos">
-                        <div class="mt-4 grid grid-cols-3 gap-2">
+                        <div class="mt-4 grid grid-cols-2 gap-2">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'vid_skel_' + i">
                                 <div class="rounded-xl overflow-hidden bg-white shadow-sm">
                                     <div class="aspect-video bg-slate-100 animate-pulse"></div>
