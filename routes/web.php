@@ -755,7 +755,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/mediatheque', [VideoController::class, 'index'])->name('mediatheque.index');
 
     // Admin-only diagnostics (helps debug “server not updating” issues).
-    Route::get('/__diag', function () {
+    $diagHandler = function () {
         Gate::authorize('manage-users');
 
         $paths = [
@@ -797,9 +797,15 @@ Route::middleware('auth')->group(function () {
             'opcache' => $opcache,
             'mtimes' => $mtimes,
         ]);
-    })->name('diag.index');
+    };
 
-    Route::post('/__opcache/reset', function () {
+    // Primary route (double underscore).
+    Route::get('/__diag', $diagHandler)->name('diag.index');
+    // Aliases (some servers/WAF rules dislike “hidden” paths).
+    Route::get('/_diag', $diagHandler);
+    Route::get('/diag', $diagHandler);
+
+    $opcacheResetHandler = function () {
         Gate::authorize('manage-users');
 
         $ok = null;
@@ -816,7 +822,11 @@ Route::middleware('auth')->group(function () {
             'ok' => $ok,
             'note' => 'If ok=true, PHP-FPM OPcache was reset for this pool.',
         ]);
-    })->middleware('throttle:2,1')->name('diag.opcache.reset');
+    };
+
+    Route::post('/__opcache/reset', $opcacheResetHandler)->middleware('throttle:2,1')->name('diag.opcache.reset');
+    Route::post('/_opcache/reset', $opcacheResetHandler)->middleware('throttle:2,1');
+    Route::post('/opcache/reset', $opcacheResetHandler)->middleware('throttle:2,1');
 
     Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->name('videos.stream');
     Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->name('videos.poster');
