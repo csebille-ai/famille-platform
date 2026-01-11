@@ -32,7 +32,7 @@
         x-data="{ addOpen: false }"
         @open-add.window="addOpen = true"
     >
-        <div class="min-h-screen {{ $attributes->get('pageBgClass', 'bg-gray-100') }}">
+        <div class="min-h-screen {{ $attributes->get('pageBgClass', 'bg-[#F6F7F9]') }}">
             @unless($attributes->get('hideNavigation'))
                 <div class="{{ $attributes->get('navigationClass', '') }}">
                     @include('layouts.navigation')
@@ -51,7 +51,7 @@
             @endisset
 
             <!-- Page Content -->
-            <main class="@unless($attributes->get('hideNavigation')) pb-6 @endunless">
+            <main class="@unless($attributes->get('hideNavigation')) pb-8 @endunless">
                 {{ $slot }}
             </main>
 
