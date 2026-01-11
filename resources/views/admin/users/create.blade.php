@@ -26,7 +26,7 @@
                         </div>
 
                         <div class="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
-                            Un email d’invitation sera envoyé à l’utilisateur. Il choisira ensuite son nom et son mot de passe via le lien reçu.
+                            Aucun email n’est envoyé automatiquement à la création. Tu peux créer tous les utilisateurs d’abord, puis envoyer toutes les invitations plus tard depuis la liste.
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

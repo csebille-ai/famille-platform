@@ -10,9 +10,18 @@
                 </div>
             </div>
 
-            <a href="{{ route('admin.users.create') }}" class="inline-flex items-center h-10 px-4 rounded-md bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
-                {{ __('Add user') }}
-            </a>
+            <div class="flex items-center gap-3">
+                <form method="POST" action="{{ route('admin.users.invites.sendPending') }}">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center h-10 px-4 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50">
+                        Envoyer invitations en attente
+                    </button>
+                </form>
+
+                <a href="{{ route('admin.users.create') }}" class="inline-flex items-center h-10 px-4 rounded-md bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+                    {{ __('Add user') }}
+                </a>
+            </div>
         </div>
     </x-slot>
 
@@ -35,6 +44,7 @@
                                     <th class="py-2 pr-4">{{ __('Name') }}</th>
                                     <th class="py-2 pr-4">{{ __('Email') }}</th>
                                     <th class="py-2 pr-4">{{ __('Role') }}</th>
+                                    <th class="py-2 pr-4">Invitation</th>
                                     <th class="py-2">&nbsp;</th>
                                 </tr>
                             </thead>
@@ -65,11 +75,24 @@
                                                 <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
                                             @enderror
                                         </td>
+
+                                        <td class="py-3 pr-4 whitespace-nowrap">
+                                            @if ($user->invited_at)
+                                                <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
+                                                    Envoyée
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-900 border border-amber-200">
+                                                    En attente
+                                                </span>
+                                            @endif
+                                        </td>
+
                                         <td class="py-3 whitespace-nowrap text-right">
                                             <form method="POST" action="{{ route('admin.users.invite', $user) }}">
                                                 @csrf
                                                 <button type="submit" class="inline-flex items-center h-9 px-3 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50">
-                                                    Renvoyer invitation
+                                                    {{ $user->invited_at ? 'Renvoyer invitation' : 'Envoyer invitation' }}
                                                 </button>
                                             </form>
                                         </td>

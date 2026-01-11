@@ -74,17 +74,9 @@ class UserController extends Controller
 
         $user->save();
 
-        $token = Password::createToken($user);
-        $acceptUrl = route('invite.create', ['token' => $token, 'email' => $user->email]);
-        try {
-            Mail::to($user->email)->send(new UserInviteMail($user, $token, $acceptUrl));
-
-            $status = __('User created and invitation email sent.');
-        } catch (\Throwable $e) {
-            report($e);
-
-            $status = __('User created, but invitation email could not be sent.');
-        }
+        // Do not auto-send invitation emails on creation.
+        // Admin can send later (bulk or per-user) when ready.
+        $status = __('User created. Invitation will be sent later.');
 
         return redirect()
             ->route('admin.users.index')
@@ -101,12 +93,61 @@ class UserController extends Controller
         try {
             Mail::to($user->email)->send(new UserInviteMail($user, $token, $acceptUrl));
 
+            $user->forceFill(['invited_at' => now()])->save();
+
             $status = __('Invitation email sent.');
         } catch (\Throwable $e) {
             report($e);
 
             $status = __('Invitation email could not be sent.');
         }
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('status', $status);
+    }
+
+    public function sendPendingInvites(Request $request): RedirectResponse
+    {
+        Gate::authorize('manage-users');
+
+        $limit = (int) $request->input('limit', 0);
+        if ($limit < 0) {
+            $limit = 0;
+        }
+        if ($limit > 500) {
+            $limit = 500;
+        }
+
+        $q = User::query()
+            ->whereNull('invited_at')
+            ->orderBy('id');
+
+        if ($limit > 0) {
+            $q->limit($limit);
+        }
+
+        $users = $q->get();
+        $sent = 0;
+        $failed = 0;
+
+        foreach ($users as $user) {
+            $token = Password::createToken($user);
+            $acceptUrl = route('invite.create', ['token' => $token, 'email' => $user->email]);
+
+            try {
+                Mail::to($user->email)->send(new UserInviteMail($user, $token, $acceptUrl));
+                $user->forceFill(['invited_at' => now()])->save();
+                $sent++;
+            } catch (\Throwable $e) {
+                report($e);
+                $failed++;
+            }
+        }
+
+        $status = $failed === 0
+            ? "Invitations envoyées : {$sent}."
+            : "Invitations envoyées : {$sent}. Échecs : {$failed}.";
 
         return redirect()
             ->route('admin.users.index')
