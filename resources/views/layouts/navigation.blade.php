@@ -31,11 +31,7 @@
 
     $showHomeActions = $isHome;
     $showAddAction = request()->routeIs('media.index')
-        || request()->is('media')
-        || request()->routeIs('mediatheque.index')
-        || request()->is('mediatheque')
-        || request()->routeIs('videos.index')
-        || request()->is('videos');
+        || request()->is('media');
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
 @endphp
