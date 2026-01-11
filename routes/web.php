@@ -805,6 +805,18 @@ Route::get('/moments', function () {
     return view('moments.index', ['moments' => $momentsForUi]);
 })->middleware(['auth', 'verified'])->name('moments.index');
 
+Route::get('/visio', function () {
+    $response = response()->view('visio.index');
+
+    // Force bypass of any HTML page cache (LiteSpeed/proxies).
+    return $response
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0')
+        ->header('X-LiteSpeed-Cache-Control', 'no-cache');
+})->middleware(['auth', 'verified'])
+    ->name('visio.index');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
