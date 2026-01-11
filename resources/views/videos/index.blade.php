@@ -63,12 +63,12 @@
                     </div>
                 </div>
 
-                <div class="shrink-0 relative" x-data="{ open: false }" @keydown.escape.window="open = false">
+                <div class="shrink-0 relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
                     <button
                         type="button"
                         class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
                         aria-label="Ajouter"
-                        @click="open = !open"
+                        x-on:click="open = !open"
                     >
                         <i class="ph ph-plus" aria-hidden="true"></i>
                     </button>
@@ -76,20 +76,20 @@
                     <div
                         x-show="open"
                         x-cloak
-                        @click.outside="open = false"
+                        x-on:click.outside="open = false"
                         class="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-lg p-1"
                     >
                         <button
                             type="button"
                             class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                            @click="open = false; window.dispatchEvent(new CustomEvent('open-library-import', { detail: { category: 'films' } }))"
+                            x-on:click="open = false; window.dispatchEvent(new CustomEvent('open-library-import', { detail: { category: 'films' } }))"
                         >
                             Ajouter un film
                         </button>
                         <button
                             type="button"
                             class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                            @click="open = false; window.dispatchEvent(new CustomEvent('open-library-import', { detail: { category: 'series' } }))"
+                            x-on:click="open = false; window.dispatchEvent(new CustomEvent('open-library-import', { detail: { category: 'series' } }))"
                         >
                             Ajouter une série
                         </button>
@@ -389,16 +389,16 @@
                     x-on:keydown.escape.window="if (open) close()"
                 >
                     <div x-show="open" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
-                        <button type="button" class="absolute inset-0 bg-black/50" @click="close()" aria-label="Fermer"></button>
+                        <button type="button" class="absolute inset-0 bg-black/50" x-on:click="close()" aria-label="Fermer"></button>
 
                         <div class="relative mx-auto max-w-2xl px-6 py-10">
-                            <div class="bg-white rounded-2xl shadow-sm p-6" @click.stop>
+                            <div class="bg-white rounded-2xl shadow-sm p-6" x-on:click.stop>
                                 <div class="flex items-start justify-between gap-4">
                                     <div>
                                         <div class="text-base font-semibold text-gray-900">Ajouter à la médiathèque</div>
                                         <div class="text-sm text-slate-500 mt-1">Importer un film ou une série</div>
                                     </div>
-                                    <button type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50" @click="close()" aria-label="Fermer">
+                                    <button type="button" class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50" x-on:click="close()" aria-label="Fermer">
                                         <i class="ph ph-x" aria-hidden="true"></i>
                                     </button>
                                 </div>
