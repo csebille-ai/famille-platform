@@ -350,14 +350,10 @@
                                             <span x-text="formatDuration(v.duration_seconds)"></span>
                                         </div>
                                     </template>
-                                </div>
 
-                                <div class="px-2 py-2">
-                                    <div class="text-xs font-semibold text-gray-900 truncate" x-text="v.title || 'Vidéo'"></div>
-                                    <div class="text-[0.7rem] text-slate-500 truncate">
-                                        <span x-text="v.by || 'Quelqu\u2019un'"></span>
-                                        <span class="text-slate-400">·</span>
-                                        <span x-text="v.at_human || ''"></span>
+                                    <div class="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/70 via-black/25 to-transparent pointer-events-none"></div>
+                                    <div class="absolute inset-x-0 bottom-0 p-2 pr-12 pointer-events-none">
+                                        <div class="text-[0.72rem] font-semibold text-white truncate" x-text="v.title || 'Vidéo'"></div>
                                     </div>
                                 </div>
                             </a>
