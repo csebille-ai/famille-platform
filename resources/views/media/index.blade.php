@@ -195,9 +195,9 @@
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm p-3 md:p-4">
-            <div class="flex items-center">
-                <div class="flex w-full items-stretch gap-1 rounded-xl border border-slate-200 bg-white p-1">
-                    <div class="grid grid-cols-2 flex-1 min-w-0">
+            <div class="flex items-center gap-3">
+                <div class="flex-1">
+                    <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1">
                         <button
                             type="button"
                             class="rounded-lg px-3 py-2 text-center text-[0.72rem] font-semibold transition"
@@ -222,20 +222,20 @@
                             Vidéos
                         </button>
                     </div>
-
-                    <button
-                        type="button"
-                        class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-900 hover:bg-slate-50"
-                        @click="$dispatch('open-add')"
-                        aria-haspopup="dialog"
-                        aria-label="Ajouter"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5" aria-hidden="true">
-                            <path d="M12 5v14" />
-                            <path d="M5 12h14" />
-                        </svg>
-                    </button>
                 </div>
+
+                <button
+                    type="button"
+                    class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
+                    @click="$dispatch('open-add')"
+                    aria-haspopup="dialog"
+                    aria-label="Ajouter"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6" aria-hidden="true">
+                        <path d="M12 5v14" />
+                        <path d="M5 12h14" />
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -308,10 +308,10 @@
 
             <template x-if="(videos || []).length > 0">
                 <div>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-3 gap-2">
                         <template x-for="v in (videos || [])" :key="'vid_' + v.id">
-                            <a :href="v.open_url" class="block rounded-2xl overflow-hidden bg-white shadow-sm">
-                                <div class="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                            <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
+                                <div class="aspect-square bg-slate-100 overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="w-full h-full object-cover" loading="lazy" />
                                     </template>
@@ -336,9 +336,10 @@
                                         </div>
                                     </template>
                                 </div>
-                                <div class="p-3">
-                                    <div class="text-sm font-semibold text-gray-900 truncate" x-text="v.title || 'Vidéo'"></div>
-                                    <div class="text-xs text-slate-500 mt-0.5">
+
+                                <div class="px-2 py-2">
+                                    <div class="text-xs font-semibold text-gray-900 truncate" x-text="v.title || 'Vidéo'"></div>
+                                    <div class="text-[0.7rem] text-slate-500 truncate">
                                         <span x-text="v.by || 'Quelqu\u2019un'"></span>
                                         <span class="text-slate-400">·</span>
                                         <span x-text="v.at_human || ''"></span>
@@ -370,12 +371,12 @@
                     </div>
 
                     <template x-if="loadingVideos">
-                        <div class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <div class="mt-4 grid grid-cols-3 gap-2">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'vid_skel_' + i">
-                                <div class="rounded-2xl overflow-hidden bg-white shadow-sm">
-                                    <div class="aspect-video bg-slate-100 animate-pulse"></div>
-                                    <div class="p-3">
-                                        <div class="h-4 w-2/3 bg-slate-100 animate-pulse rounded"></div>
+                                <div class="rounded-xl overflow-hidden bg-white shadow-sm">
+                                    <div class="aspect-square bg-slate-100 animate-pulse"></div>
+                                    <div class="px-2 py-2">
+                                        <div class="h-3 w-2/3 bg-slate-100 animate-pulse rounded"></div>
                                         <div class="mt-2 h-3 w-1/2 bg-slate-100 animate-pulse rounded"></div>
                                     </div>
                                 </div>
