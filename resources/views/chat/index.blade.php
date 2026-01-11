@@ -83,6 +83,14 @@
                     <div id="chatPushStatus" class="mt-1 text-xs text-slate-500"></div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <a
+                        href="{{ route('visio.index') }}"
+                        class="inline-flex items-center gap-2 border border-slate-200 bg-white text-slate-700 rounded-2xl px-3 py-2 text-xs font-semibold hover:bg-slate-50"
+                    >
+                        <i class="ph ph-video-camera" aria-hidden="true"></i>
+                        Visio
+                    </a>
+
                     <button
                         type="button"
                         id="chatPushToggle"
