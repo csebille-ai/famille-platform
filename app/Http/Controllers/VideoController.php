@@ -14,6 +14,28 @@ use Symfony\Component\Process\Process;
 
 class VideoController extends Controller
 {
+    private function safeReturnPath(?string $path): ?string
+    {
+        if ($path === null) {
+            return null;
+        }
+
+        $path = trim($path);
+        if ($path === '') {
+            return null;
+        }
+
+        // Only allow same-site relative paths to avoid open redirects.
+        if (str_contains($path, '://') || str_starts_with($path, '//')) {
+            return null;
+        }
+        if (!str_starts_with($path, '/')) {
+            return null;
+        }
+
+        return $path;
+    }
+
     private function maxVideoUploadKb(): int
     {
         return max(1, (int) config('videos.max_upload_kb', 2097152));
@@ -409,13 +431,38 @@ class VideoController extends Controller
 
     public function poster(Video $video): \Symfony\Component\HttpFoundation\Response
     {
-        if (!$video->poster_path) {
-            abort(404);
-        }
+                if (!$video->poster_path) {
+                        // Best-effort lazy generation for older uploads or servers where
+                        // synchronous generation may fail intermittently.
+                        $this->generatePosterForVideo($video);
+                        $video->refresh();
+                }
 
         $disk = Storage::disk('public');
-        if (!$disk->exists($video->poster_path)) {
-            abort(404);
+                if (!$video->poster_path || !$disk->exists($video->poster_path)) {
+                        $title = trim((string) ($video->title ?? 'Vidéo'));
+                        $label = htmlspecialchars($title !== '' ? $title : 'Vidéo', ENT_QUOTES, 'UTF-8');
+                        $svg = <<<SVG
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+    <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#0f172a"/>
+            <stop offset="1" stop-color="#111827"/>
+        </linearGradient>
+    </defs>
+    <rect width="1280" height="720" fill="url(#g)"/>
+    <g opacity="0.35">
+        <rect x="120" y="140" width="1040" height="440" rx="28" fill="#ffffff"/>
+    </g>
+    <g>
+        <circle cx="640" cy="360" r="78" fill="rgba(0,0,0,0.35)"/>
+        <path d="M618 318v84l72-42z" fill="#ffffff"/>
+    </g>
+    <rect x="0" y="560" width="1280" height="160" fill="rgba(0,0,0,0.35)"/>
+    <text x="80" y="650" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto" font-size="44" font-weight="700" fill="#ffffff">{$label}</text>
+</svg>
+SVG;
+                        return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
         }
 
         $mime = $disk->mimeType($video->poster_path) ?: 'image/jpeg';
@@ -479,8 +526,11 @@ class VideoController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Video $video)
+    public function destroy(Request $request, Video $video)
     {
+        $returnPath = $this->safeReturnPath($request->input('return'))
+            ?? route('media.index', ['tab' => 'videos'], false);
+
         $userId = Auth::id();
         $isOwner = $userId !== null && (int) $video->created_by === (int) $userId;
         if (!$isOwner) {
@@ -497,7 +547,6 @@ class VideoController extends Controller
 
         $video->delete();
 
-        return redirect()->route('videos.index')
-            ->with('status', 'Vidéo supprimée.');
+        return redirect($returnPath)->with('status', 'Vidéo supprimée.');
     }
 }

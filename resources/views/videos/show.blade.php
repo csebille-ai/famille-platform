@@ -41,6 +41,7 @@
                             <form method="POST" action="{{ route('videos.destroy', $video) }}" onsubmit="return confirm('Supprimer cette vidéo ?');">
                                 @csrf
                                 @method('DELETE')
+                                <input type="hidden" name="return" value="{{ route('media.index', ['tab' => 'videos'], false) }}">
                                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700">
                                     {{ __('Supprimer') }}
                                 </button>
@@ -49,6 +50,7 @@
                             <form method="POST" action="{{ route('videos.destroy', $video) }}" onsubmit="return confirm('Supprimer cette vidéo ?');">
                                 @csrf
                                 @method('DELETE')
+                                <input type="hidden" name="return" value="{{ route('media.index', ['tab' => 'videos'], false) }}">
                                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700">
                                     {{ __('Supprimer') }}
                                 </button>
@@ -59,8 +61,8 @@
             </div>
 
             <div class="mt-6">
-                <a href="{{ route('videos.index') }}" class="text-indigo-600 hover:text-indigo-900">
-                    ← {{ __('Retour aux vidéos') }}
+                <a href="{{ route('media.index', ['tab' => 'videos']) }}" class="text-indigo-600 hover:text-indigo-900">
+                    ← {{ __('Retour aux médias') }}
                 </a>
             </div>
         </div>
