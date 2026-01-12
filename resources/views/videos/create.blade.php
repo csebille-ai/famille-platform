@@ -125,6 +125,13 @@
                             <a href="{{ $returnPath !== '' ? $returnPath : route('videos.index') }}" class="text-gray-600 hover:text-gray-900">
                                 {{ __('Annuler') }}
                             </a>
+                            <div class="flex-1 px-4">
+                                <div id="r2Quota" class="text-xs text-slate-500"></div>
+                                <div id="r2UploadStatus" class="text-xs text-slate-600"></div>
+                                <div id="r2UploadBarWrap" class="hidden mt-1 h-2 w-full rounded bg-slate-100 overflow-hidden">
+                                    <div id="r2UploadBar" class="h-full bg-slate-900" style="width:0%"></div>
+                                </div>
+                            </div>
                             <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
                                 {{ __('Importer la vidéo') }}
                             </button>
@@ -137,6 +144,21 @@
 
     <script>
         (function () {
+            const quotaUrl = @json(url('/api/uploads/quota'));
+            const presignUrl = @json(url('/api/uploads/presign'));
+            const mpInitUrl = @json(url('/api/uploads/multipart/init'));
+            const mpCompleteUrl = @json(url('/api/uploads/multipart/complete'));
+            const finalizeUrl = @json(url('/api/uploads/finalize'));
+            const returnPath = @json($returnPath);
+            const MAX_UPLOAD_BYTES = @json((int) config('uploads.max_upload_bytes'));
+            const MULTIPART_THRESHOLD_BYTES = @json((int) config('uploads.multipart_threshold_bytes'));
+
+            const form = document.querySelector('form[action="{{ route('videos.store') }}"]');
+            const quotaEl = document.getElementById('r2Quota');
+            const statusEl = document.getElementById('r2UploadStatus');
+            const barWrap = document.getElementById('r2UploadBarWrap');
+            const barEl = document.getElementById('r2UploadBar');
+
             const videoInput = document.getElementById('video_file');
             const posterInput = document.getElementById('poster_file');
             const posterStatus = document.getElementById('poster_status');
@@ -149,6 +171,89 @@
             const setStatus = (txt) => {
                 if (posterStatus) posterStatus.textContent = txt;
             };
+
+            const setUploadStatus = (txt) => {
+                if (statusEl) statusEl.textContent = String(txt || '');
+            };
+
+            const setUploadProgress = (pct) => {
+                const p = Math.max(0, Math.min(100, Math.round(Number(pct || 0))));
+                if (barWrap) barWrap.classList.toggle('hidden', p <= 0 || p >= 100);
+                if (barEl) barEl.style.width = p + '%';
+            };
+
+            const formatBytes = (bytes) => {
+                const b = Number(bytes || 0);
+                if (!Number.isFinite(b) || b <= 0) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                let v = b;
+                let i = 0;
+                while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+                const txt = (v >= 10 || i === 0) ? v.toFixed(0) : v.toFixed(1);
+                return `${txt} ${units[i]}`;
+            };
+
+            const postJson = async (url, payload) => {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: JSON.stringify(payload || {}),
+                });
+                const txt = await res.text();
+                let json = null;
+                try { json = txt ? JSON.parse(txt) : null; } catch (e) {}
+                if (!res.ok) {
+                    const msg = (json && json.message) ? String(json.message) : `Erreur upload (${res.status})`;
+                    throw new Error(msg);
+                }
+                return json;
+            };
+
+            const putWithProgress = (url, blobOrFile, contentType, onProgress) => {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('PUT', url, true);
+                    if (contentType) xhr.setRequestHeader('Content-Type', contentType);
+                    xhr.upload.onprogress = (evt) => {
+                        if (!evt.lengthComputable) return;
+                        if (typeof onProgress === 'function') onProgress(evt.loaded, evt.total);
+                    };
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve({ etag: xhr.getResponseHeader('ETag') || xhr.getResponseHeader('etag') || null });
+                        } else {
+                            reject(new Error(`Upload failed (${xhr.status})`));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('network_error'));
+                    xhr.send(blobOrFile);
+                });
+            };
+
+            const refreshQuota = async () => {
+                if (!quotaEl) return;
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch(quotaUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token,
+                    },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const remaining = Number(data?.remaining_bytes ?? 0);
+                quotaEl.textContent = `Espace restant : ${formatBytes(remaining)}`;
+            };
+
+            refreshQuota().catch(() => {});
 
             const clearPreview = () => {
                 if (previewUrl) {
@@ -275,6 +380,161 @@
             });
 
             setStatus('Miniature : génération automatique…');
+
+            if (form) {
+                form.addEventListener('submit', async (e) => {
+                    try {
+                        e.preventDefault();
+
+                        const file = videoInput.files && videoInput.files[0];
+                        if (!file) {
+                            alert('Choisis une vidéo.');
+                            return;
+                        }
+
+                        const size = Number(file.size || 0);
+                        if (size <= 0) {
+                            alert('Fichier invalide.');
+                            return;
+                        }
+
+                        if (size > MAX_UPLOAD_BYTES) {
+                            alert('Fichier trop volumineux (max 2 Go).');
+                            return;
+                        }
+
+                        const title = (document.getElementById('title')?.value || '').trim();
+                        const category = (document.getElementById('category')?.value || '').trim();
+                        const description = (document.getElementById('description')?.value || '').trim();
+                        const mime = String(file.type || 'video/mp4');
+
+                        setUploadStatus('Upload…');
+                        setUploadProgress(1);
+
+                        let key = '';
+                        let publicUrl = null;
+
+                        if (size > MULTIPART_THRESHOLD_BYTES) {
+                            const init = await postJson(mpInitUrl, {
+                                filename: file.name || 'video',
+                                mime,
+                                size,
+                                kind: 'video',
+                                context: 'media',
+                            });
+
+                            const partSize = Number(init?.part_size || 0);
+                            const parts = Array.isArray(init?.parts) ? init.parts : [];
+                            const uploadId = String(init?.upload_id || '');
+                            key = String(init?.key || '');
+                            publicUrl = init?.public_url || null;
+
+                            if (!uploadId || !key || !partSize || parts.length === 0) {
+                                throw new Error('Multipart init invalide.');
+                            }
+
+                            const etags = [];
+                            let uploadedTotal = 0;
+
+                            for (let idx = 0; idx < parts.length; idx++) {
+                                const p = parts[idx];
+                                const partNumber = Number(p?.part_number || 0);
+                                const uploadUrl = String(p?.upload_url || '');
+                                if (!partNumber || !uploadUrl) throw new Error('Part invalide.');
+
+                                const start = (partNumber - 1) * partSize;
+                                const end = Math.min(size, start + partSize);
+                                const blob = file.slice(start, end);
+                                const partBytes = end - start;
+
+                                let attempt = 0;
+                                while (true) {
+                                    try {
+                                        const before = uploadedTotal;
+                                        const res = await putWithProgress(uploadUrl, blob, mime, (loaded) => {
+                                            const totalLoaded = before + Number(loaded || 0);
+                                            const pct = Math.max(0, Math.min(99, Math.round((totalLoaded / size) * 100)));
+                                            setUploadStatus(`Upload… ${pct}%`);
+                                            setUploadProgress(pct);
+                                        });
+                                        const etag = String(res?.etag || '').trim();
+                                        if (!etag) throw new Error('ETag manquant (R2).');
+                                        etags.push({ part_number: partNumber, etag });
+                                        uploadedTotal += partBytes;
+                                        const pctDone = Math.max(0, Math.min(99, Math.round((uploadedTotal / size) * 100)));
+                                        setUploadStatus(`Upload… ${pctDone}%`);
+                                        setUploadProgress(pctDone);
+                                        break;
+                                    } catch (err) {
+                                        attempt++;
+                                        if (attempt >= 3) throw err;
+                                        await new Promise(r => setTimeout(r, 750 * attempt));
+                                    }
+                                }
+                            }
+
+                            const complete = await postJson(mpCompleteUrl, {
+                                key,
+                                upload_id: uploadId,
+                                parts: etags,
+                                mime,
+                                size,
+                                kind: 'video',
+                                context: 'media',
+                            });
+                            publicUrl = complete?.public_url || publicUrl;
+                        } else {
+                            const presign = await postJson(presignUrl, {
+                                filename: file.name || 'video',
+                                mime,
+                                size,
+                                kind: 'video',
+                                context: 'media',
+                            });
+                            const uploadUrl = String(presign?.upload_url || '');
+                            key = String(presign?.key || '');
+                            publicUrl = presign?.public_url || null;
+                            if (!uploadUrl || !key) throw new Error('Presign invalide.');
+
+                            await putWithProgress(uploadUrl, file, mime, (loaded, total) => {
+                                const pct = Math.max(0, Math.min(99, Math.round((loaded / (total || size)) * 100)));
+                                setUploadStatus(`Upload… ${pct}%`);
+                                setUploadProgress(pct);
+                            });
+                        }
+
+                        setUploadStatus('Finalisation…');
+                        setUploadProgress(99);
+
+                        const fin = await postJson(finalizeUrl, {
+                            key,
+                            public_url: publicUrl,
+                            mime,
+                            size,
+                            kind: 'video',
+                            context: 'media',
+                            filename: file.name || null,
+                            title,
+                            category,
+                            description,
+                        });
+
+                        setUploadProgress(100);
+                        setUploadStatus('Terminé.');
+                        refreshQuota().catch(() => {});
+
+                        const target = (returnPath && String(returnPath).trim() !== '')
+                            ? returnPath
+                            : (fin?.open_url || '{{ route('videos.index') }}');
+
+                        window.location.href = target;
+                    } catch (err) {
+                        setUploadProgress(0);
+                        setUploadStatus('');
+                        alert(String(err?.message || 'Upload impossible.'));
+                    }
+                });
+            }
         })();
     </script>
 </x-app-layout>

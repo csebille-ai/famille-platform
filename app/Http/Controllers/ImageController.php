@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\CloudNode;
+use App\Models\UploadAsset;
 use App\Models\User;
+use App\Services\Uploads\R2UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -225,6 +227,22 @@ class ImageController extends Controller
             abort(404);
         }
 
+        $diskName = (string) ($node->storage_disk ?? 'local');
+        if ($diskName !== 'local') {
+            $url = (string) ($node->public_url ?? '');
+            if ($url === '') {
+                try {
+                    $url = Storage::disk($diskName)->url($node->stored_path);
+                } catch (\Throwable $e) {
+                    $url = '';
+                }
+            }
+            if ($url === '') {
+                abort(404);
+            }
+            return redirect()->away($url);
+        }
+
         if (!Storage::disk('local')->exists($node->stored_path)) {
             abort(404);
         }
@@ -250,8 +268,11 @@ class ImageController extends Controller
             abort(404);
         }
 
-        if (!Storage::disk('local')->exists($node->stored_path)) {
-            abort(404);
+        $diskName = (string) ($node->storage_disk ?? 'local');
+        if ($diskName === 'local') {
+            if (!Storage::disk('local')->exists($node->stored_path)) {
+                abort(404);
+            }
         }
 
         $selectedUserId = (int) $request->query('user', 0);
@@ -308,7 +329,7 @@ class ImageController extends Controller
         ]);
     }
 
-    public function destroy(CloudNode $node)
+    public function destroy(CloudNode $node, R2UploadService $r2)
     {
         Gate::authorize('images-delete');
 
@@ -321,11 +342,30 @@ class ImageController extends Controller
             abort(404);
         }
 
-        if (Storage::disk('local')->exists($node->stored_path)) {
-            Storage::disk('local')->delete($node->stored_path);
+        $diskName = (string) ($node->storage_disk ?? 'local');
+        if ($diskName === 'local') {
+            if (Storage::disk('local')->exists($node->stored_path)) {
+                Storage::disk('local')->delete($node->stored_path);
+            }
+        } elseif ($diskName === 'r2') {
+            try {
+                $r2->deleteObject($node->stored_path);
+            } catch (\Throwable $e) {
+                // Best-effort.
+            }
+        } else {
+            try {
+                Storage::disk($diskName)->delete($node->stored_path);
+            } catch (\Throwable $e) {
+                // Best-effort.
+            }
         }
 
         $node->forceDelete();
+
+        UploadAsset::query()
+            ->where('cloud_node_id', $node->id)
+            ->delete();
 
         return redirect()->route('images.index')->with('status', __('Image deleted.'));
     }

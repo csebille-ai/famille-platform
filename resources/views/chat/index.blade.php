@@ -293,6 +293,7 @@
             <div id="chatAttachBackdrop" class="absolute inset-0 bg-black/40"></div>
             <div class="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl p-4 shadow-2xl">
                 <div class="text-sm font-semibold text-gray-900 px-2">Ajouter</div>
+                <div id="chatAttachQuota" class="mt-1 text-xs text-slate-500 px-2"></div>
                 <div class="mt-3 grid gap-2">
                     <button
                         type="button"
@@ -326,9 +327,18 @@
             const currentUserId = @json(auth()->id());
             const currentUserName = @json(auth()->user()?->name);
             const pollUrl = @json(route('chat.poll'));
-            const attachUrl = @json(url('/api/chat/default/attachments'));
+            const quotaUrl = @json(url('/api/uploads/quota'));
+            const presignUrl = @json(url('/api/uploads/presign'));
+            const mpInitUrl = @json(url('/api/uploads/multipart/init'));
+            const mpCompleteUrl = @json(url('/api/uploads/multipart/complete'));
+            const finalizeUrl = @json(url('/api/uploads/finalize'));
             let lastMessageId = @json($lastMessageId ?? 0);
             const initialOnline = @json($initialOnline ?? []);
+
+            const MAX_UPLOAD_BYTES = @json((int) config('uploads.max_upload_bytes'));
+            const MULTIPART_THRESHOLD_BYTES = @json((int) config('uploads.multipart_threshold_bytes'));
+
+            const quotaEl = document.getElementById('chatAttachQuota');
 
             const visioBtn = document.getElementById('chatVisioBtn');
 
@@ -773,6 +783,96 @@
             function setAttachSheetOpen(open) {
                 if (!attachSheet) return;
                 attachSheet.classList.toggle('hidden', !open);
+                if (open) {
+                    refreshQuota().catch(() => {});
+                }
+            }
+
+            function formatBytes(bytes) {
+                const b = Number(bytes || 0);
+                if (!Number.isFinite(b) || b <= 0) return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                let v = b;
+                let i = 0;
+                while (v >= 1024 && i < units.length - 1) {
+                    v /= 1024;
+                    i++;
+                }
+                const txt = (v >= 10 || i === 0) ? v.toFixed(0) : v.toFixed(1);
+                return `${txt} ${units[i]}`;
+            }
+
+            async function refreshQuota() {
+                if (!quotaEl || !formEl) return;
+                const token = formEl.querySelector('input[name="_token"]')?.value;
+                if (!token) return;
+
+                const res = await fetch(quotaUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token,
+                    },
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                const remaining = Number(data?.remaining_bytes ?? 0);
+                quotaEl.textContent = `Espace restant : ${formatBytes(remaining)}`;
+            }
+
+            async function postJson(url, payload) {
+                const token = formEl?.querySelector('input[name="_token"]')?.value;
+                if (!token) throw new Error('missing_csrf');
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: JSON.stringify(payload || {}),
+                });
+                const txt = await res.text();
+                let json = null;
+                try { json = txt ? JSON.parse(txt) : null; } catch (e) {}
+                if (!res.ok) {
+                    const msg = (json && json.message) ? String(json.message) : `Erreur upload (${res.status})`;
+                    const err = new Error(msg);
+                    err.status = res.status;
+                    err.data = json;
+                    throw err;
+                }
+                return json;
+            }
+
+            function putWithProgress(url, blobOrFile, contentType, onProgress) {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('PUT', url, true);
+                    if (contentType) xhr.setRequestHeader('Content-Type', contentType);
+
+                    xhr.upload.onprogress = (evt) => {
+                        if (!evt.lengthComputable) return;
+                        if (typeof onProgress === 'function') {
+                            onProgress(evt.loaded, evt.total);
+                        }
+                    };
+
+                    xhr.onload = () => {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve({
+                                status: xhr.status,
+                                etag: xhr.getResponseHeader('ETag') || xhr.getResponseHeader('etag') || null,
+                            });
+                        } else {
+                            reject(new Error(`Upload failed (${xhr.status})`));
+                        }
+                    };
+                    xhr.onerror = () => reject(new Error('network_error'));
+                    xhr.send(blobOrFile);
+                });
             }
 
             function appendUploadPlaceholder(name) {
@@ -813,49 +913,134 @@
                     return;
                 }
 
+                const size = Number(file.size || 0);
+                if (size > MAX_UPLOAD_BYTES) {
+                    alert('Fichier trop volumineux (max 2 Go).');
+                    return;
+                }
+
+                const mime = String(file.type || 'application/octet-stream');
+                const kind = mime.startsWith('video/') ? 'video' : 'photo';
+
                 const tempId = appendUploadPlaceholder(file.name || 'fichier');
                 setAttachSheetOpen(false);
 
-                const fd = new FormData();
-                fd.append('_token', token);
-                fd.append('file', file);
+                (async () => {
+                    try {
+                        if (size > MULTIPART_THRESHOLD_BYTES) {
+                            const init = await postJson(mpInitUrl, {
+                                filename: file.name || 'file',
+                                mime,
+                                size,
+                                kind,
+                                context: 'chat',
+                            });
 
-                const xhr = new XMLHttpRequest();
-                xhr.open('POST', attachUrl, true);
-                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                xhr.setRequestHeader('X-CSRF-TOKEN', token);
+                            const partSize = Number(init?.part_size || 0);
+                            const parts = Array.isArray(init?.parts) ? init.parts : [];
+                            const uploadId = String(init?.upload_id || '');
+                            const key = String(init?.key || '');
 
-                xhr.upload.onprogress = (evt) => {
-                    if (!evt.lengthComputable) return;
-                    const pct = Math.max(0, Math.min(100, Math.round((evt.loaded / evt.total) * 100)));
-                    updateUploadPlaceholder(tempId, pct);
-                };
-
-                xhr.onreadystatechange = () => {
-                    if (xhr.readyState !== 4) return;
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        try {
-                            const res = JSON.parse(xhr.responseText || '{}');
-                            removeUploadPlaceholder(tempId);
-                            if (res?.message) {
-                                const appended = appendMessage(res.message);
-                                if (res?.message?.id) lastMessageId = Math.max(lastMessageId, Number(res.message.id));
+                            if (!uploadId || !key || !partSize || parts.length === 0) {
+                                throw new Error('Multipart init invalide.');
                             }
-                        } catch (e) {
-                            removeUploadPlaceholder(tempId);
-                        }
-                    } else {
-                        removeUploadPlaceholder(tempId);
-                        let msg = 'Upload impossible.';
-                        try {
-                            const res = JSON.parse(xhr.responseText || '{}');
-                            if (res?.message) msg = String(res.message);
-                        } catch (e) {}
-                        alert(msg);
-                    }
-                };
 
-                xhr.send(fd);
+                            const etags = [];
+                            let uploadedTotal = 0;
+
+                            for (let idx = 0; idx < parts.length; idx++) {
+                                const p = parts[idx];
+                                const partNumber = Number(p?.part_number || 0);
+                                const uploadUrl = String(p?.upload_url || '');
+                                if (!partNumber || !uploadUrl) throw new Error('Part invalide.');
+
+                                const start = (partNumber - 1) * partSize;
+                                const end = Math.min(size, start + partSize);
+                                const blob = file.slice(start, end);
+                                const partBytes = end - start;
+
+                                let attempt = 0;
+                                while (true) {
+                                    try {
+                                        const before = uploadedTotal;
+                                        const res = await putWithProgress(uploadUrl, blob, mime, (loaded) => {
+                                            const totalLoaded = before + Number(loaded || 0);
+                                            const pct = Math.max(0, Math.min(100, Math.round((totalLoaded / size) * 100)));
+                                            updateUploadPlaceholder(tempId, pct);
+                                        });
+                                        const etag = String(res?.etag || '').trim();
+                                        if (!etag) {
+                                            throw new Error('ETag manquant (R2).');
+                                        }
+                                        etags.push({ part_number: partNumber, etag });
+                                        uploadedTotal += partBytes;
+                                        updateUploadPlaceholder(tempId, Math.max(0, Math.min(100, Math.round((uploadedTotal / size) * 100))));
+                                        break;
+                                    } catch (e) {
+                                        attempt++;
+                                        if (attempt >= 3) throw e;
+                                        await new Promise(r => setTimeout(r, 750 * attempt));
+                                    }
+                                }
+                            }
+
+                            const complete = await postJson(mpCompleteUrl, {
+                                key,
+                                upload_id: uploadId,
+                                parts: etags,
+                                mime,
+                                size,
+                                kind,
+                                context: 'chat',
+                            });
+
+                            await postJson(finalizeUrl, {
+                                key,
+                                public_url: complete?.public_url || init?.public_url || null,
+                                mime,
+                                size,
+                                kind,
+                                context: 'chat',
+                                filename: file.name || null,
+                                chat_thread_id: 'default',
+                            });
+                        } else {
+                            const presign = await postJson(presignUrl, {
+                                filename: file.name || 'file',
+                                mime,
+                                size,
+                                kind,
+                                context: 'chat',
+                            });
+
+                            const uploadUrl = String(presign?.upload_url || '');
+                            const key = String(presign?.key || '');
+                            if (!uploadUrl || !key) throw new Error('Presign invalide.');
+
+                            await putWithProgress(uploadUrl, file, mime, (loaded, total) => {
+                                const pct = Math.max(0, Math.min(100, Math.round((loaded / (total || size)) * 100)));
+                                updateUploadPlaceholder(tempId, pct);
+                            });
+
+                            await postJson(finalizeUrl, {
+                                key,
+                                public_url: presign?.public_url || null,
+                                mime,
+                                size,
+                                kind,
+                                context: 'chat',
+                                filename: file.name || null,
+                                chat_thread_id: 'default',
+                            });
+                        }
+
+                        removeUploadPlaceholder(tempId);
+                        refreshQuota().catch(() => {});
+                    } catch (e) {
+                        removeUploadPlaceholder(tempId);
+                        alert(String(e?.message || 'Upload impossible.'));
+                    }
+                })();
             }
 
             const online = new Map();

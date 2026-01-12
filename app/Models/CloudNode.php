@@ -17,6 +17,8 @@ class CloudNode extends Model
         'type',
         'name',
         'stored_path',
+        'storage_disk',
+        'public_url',
         'mime',
         'size',
         'focal_x',

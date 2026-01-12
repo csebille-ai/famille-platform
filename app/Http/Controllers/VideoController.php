@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Video;
+use App\Models\UploadAsset;
+use App\Services\Uploads\R2UploadService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Gate;
@@ -43,6 +45,11 @@ class VideoController extends Controller
 
     private function generatePosterForVideo(Video $video): void
     {
+        $diskName = (string) ($video->storage_disk ?? 'public');
+        if ($diskName !== 'public') {
+            return;
+        }
+
         if ($video->poster_path) {
             return;
         }
@@ -392,6 +399,15 @@ class VideoController extends Controller
             abort(404);
         }
 
+        $diskName = (string) ($video->storage_disk ?? 'public');
+        if ($diskName !== 'public') {
+            $url = trim((string) ($video->url ?? ''));
+            if ($url === '') {
+                abort(404);
+            }
+            return redirect()->away($url);
+        }
+
         $disk = Storage::disk('public');
         if (!$disk->exists($video->video_path)) {
             abort(404);
@@ -484,12 +500,12 @@ class VideoController extends Controller
 
     public function poster(Video $video): \Symfony\Component\HttpFoundation\Response
     {
-                if (!$video->poster_path) {
-                        // Best-effort lazy generation for older uploads or servers where
-                        // synchronous generation may fail intermittently.
-                        $this->generatePosterForVideo($video);
-                        $video->refresh();
-                }
+            if ((string) ($video->storage_disk ?? 'public') === 'public' && !$video->poster_path) {
+                // Best-effort lazy generation for older uploads or servers where
+                // synchronous generation may fail intermittently.
+                $this->generatePosterForVideo($video);
+                $video->refresh();
+            }
 
         $disk = Storage::disk('public');
                 if (!$video->poster_path || !$disk->exists($video->poster_path)) {
@@ -540,7 +556,7 @@ SVG;
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Video $video)
+    public function update(Request $request, Video $video, R2UploadService $r2)
     {
         $maxKb = $this->maxVideoUploadKb();
         $validated = $request->validate([
@@ -551,8 +567,17 @@ SVG;
         ]);
 
         if ($request->hasFile('video_file')) {
-            if ($video->video_path && Storage::disk('public')->exists($video->video_path)) {
-                Storage::disk('public')->delete($video->video_path);
+            $oldDisk = (string) ($video->storage_disk ?? 'public');
+            if ($video->video_path) {
+                try {
+                    if ($oldDisk === 'r2') {
+                        $r2->deleteObject($video->video_path);
+                    } else {
+                        Storage::disk($oldDisk)->delete($video->video_path);
+                    }
+                } catch (\Throwable $e) {
+                    // Best-effort.
+                }
             }
 
             if ($video->poster_path && Storage::disk('public')->exists($video->poster_path)) {
@@ -562,6 +587,8 @@ SVG;
             $path = $request->file('video_file')->store('videos', 'public');
             $validated['video_path'] = $path;
             $validated['poster_path'] = null;
+            $validated['storage_disk'] = 'public';
+            $validated['url'] = null;
         }
 
         unset($validated['video_file']);
@@ -579,7 +606,7 @@ SVG;
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, Video $video)
+    public function destroy(Request $request, Video $video, R2UploadService $r2)
     {
         $returnPath = $this->safeReturnPath($request->input('return'))
             ?? route('media.index', ['tab' => 'videos'], false);
@@ -590,8 +617,17 @@ SVG;
             Gate::authorize('videos-delete');
         }
 
-        if ($video->video_path && Storage::disk('public')->exists($video->video_path)) {
-            Storage::disk('public')->delete($video->video_path);
+        $diskName = (string) ($video->storage_disk ?? 'public');
+        if ($video->video_path) {
+            try {
+                if ($diskName === 'r2') {
+                    $r2->deleteObject($video->video_path);
+                } else {
+                    Storage::disk($diskName)->delete($video->video_path);
+                }
+            } catch (\Throwable $e) {
+                // Best-effort.
+            }
         }
 
         if ($video->poster_path && Storage::disk('public')->exists($video->poster_path)) {
@@ -599,6 +635,10 @@ SVG;
         }
 
         $video->delete();
+
+        UploadAsset::query()
+            ->where('video_id', $video->id)
+            ->delete();
 
         return redirect($returnPath)->with('status', 'Vidéo supprimée.');
     }

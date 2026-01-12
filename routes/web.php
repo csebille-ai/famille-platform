@@ -15,12 +15,14 @@ use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
 use App\Http\Controllers\Api\ChatAttachmentController;
+use App\Http\Controllers\Api\UploadsController;
 use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Event;
 use App\Models\NewsItem;
 use App\Models\Resource;
 use App\Models\Video;
+use App\Services\Uploads\R2UploadService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -32,6 +34,21 @@ Route::post('/api/tarot/draw', TarotDrawController::class)
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 Route::post('/api/chat/{thread}/attachments', ChatAttachmentController::class)
+    ->middleware(['auth', 'verified', 'throttle:30,1']);
+
+Route::get('/api/uploads/quota', [UploadsController::class, 'quota'])
+    ->middleware(['auth', 'verified', 'throttle:30,1']);
+
+Route::post('/api/uploads/presign', [UploadsController::class, 'presign'])
+    ->middleware(['auth', 'verified', 'throttle:30,1']);
+
+Route::post('/api/uploads/multipart/init', [UploadsController::class, 'multipartInit'])
+    ->middleware(['auth', 'verified', 'throttle:30,1']);
+
+Route::post('/api/uploads/multipart/complete', [UploadsController::class, 'multipartComplete'])
+    ->middleware(['auth', 'verified', 'throttle:30,1']);
+
+Route::post('/api/uploads/finalize', [UploadsController::class, 'finalize'])
     ->middleware(['auth', 'verified', 'throttle:30,1']);
 
 Route::get('/', function () {
@@ -947,6 +964,133 @@ Route::middleware('auth')->group(function () {
             'preview' => $readPreview($publicUserIniPath),
         ];
 
+        $redactPresignedUrl = static function (?string $url): ?string {
+            if ($url === null || trim($url) === '') {
+                return null;
+            }
+
+            $u = parse_url($url);
+            if (!is_array($u)) {
+                return null;
+            }
+
+            $query = [];
+            parse_str((string) ($u['query'] ?? ''), $query);
+
+            if (isset($query['X-Amz-Signature'])) {
+                $query['X-Amz-Signature'] = 'REDACTED';
+            }
+
+            if (isset($query['X-Amz-Credential'])) {
+                $cred = (string) $query['X-Amz-Credential'];
+                $parts = explode('/', $cred);
+                $accessKey = (string) ($parts[0] ?? '');
+                if ($accessKey !== '') {
+                    $masked = str_repeat('*', max(0, strlen($accessKey) - 4)) . substr($accessKey, -4);
+                    $parts[0] = $masked;
+                    $query['X-Amz-Credential'] = implode('/', $parts);
+                }
+            }
+
+            $scheme = (string) ($u['scheme'] ?? 'https');
+            $host = (string) ($u['host'] ?? '');
+            $path = (string) ($u['path'] ?? '');
+            $out = $scheme . '://' . $host . $path;
+            if (!empty($query)) {
+                ksort($query);
+                $out .= '?' . http_build_query($query);
+            }
+            return $out;
+        };
+
+        $r2 = null;
+        try {
+            $r2 = app(R2UploadService::class);
+        } catch (Throwable $e) {
+            $r2 = null;
+        }
+
+        $r2Info = null;
+        if ($r2) {
+            $endpoint = (string) $r2->endpoint();
+            $bucket = (string) $r2->bucket();
+            $publicBase = (string) config('uploads.r2_public_base_url');
+
+            $missing = [];
+            if (trim((string) env('R2_ACCESS_KEY_ID', '')) === '') $missing[] = 'R2_ACCESS_KEY_ID';
+            if (trim((string) env('R2_SECRET_ACCESS_KEY', '')) === '') $missing[] = 'R2_SECRET_ACCESS_KEY';
+            if (trim((string) env('R2_BUCKET', '')) === '') $missing[] = 'R2_BUCKET';
+            if (trim($endpoint) === '') $missing[] = 'R2_ENDPOINT or R2_ACCOUNT_ID';
+            if (trim($publicBase) === '') $missing[] = 'R2_PUBLIC_BASE_URL';
+
+            $test = null;
+            $testEnabled = (string) request()->query('r2_test', '') === '1';
+            if ($testEnabled && empty($missing)) {
+                $t0 = microtime(true);
+                $key = $r2->buildObjectKey('media', 'video', 'diag-test.txt');
+
+                $uploadId = null;
+                $abortOk = null;
+                $error = null;
+                try {
+                    $uploadId = $r2->createMultipartUpload($key, 'application/octet-stream');
+                    $r2->abortMultipartUpload($key, $uploadId);
+                    $abortOk = true;
+                } catch (Throwable $e) {
+                    $error = $e->getMessage();
+                    $abortOk = false;
+                }
+
+                $test = [
+                    'enabled' => true,
+                    'ms' => (int) round((microtime(true) - $t0) * 1000),
+                    'key' => $key,
+                    'upload_id_prefix' => $uploadId ? substr((string) $uploadId, 0, 6) . '…' : null,
+                    'abort_ok' => $abortOk,
+                    'error' => $error,
+                ];
+            } else {
+                $test = [
+                    'enabled' => $testEnabled,
+                    'note' => $testEnabled ? 'Test skipped due to missing config.' : 'Add ?r2_test=1 to run a signed multipart init+abort test.',
+                ];
+            }
+
+            $presigned = null;
+            if (empty($missing)) {
+                try {
+                    $key = $r2->buildObjectKey('media', 'photo', 'diag-presign.jpg');
+                    $url = $r2->presignPutObject($key, 'image/jpeg', 900);
+                    $presigned = [
+                        'ok' => true,
+                        'key' => $key,
+                        'url_redacted' => $redactPresignedUrl($url),
+                    ];
+                } catch (Throwable $e) {
+                    $presigned = [
+                        'ok' => false,
+                        'error' => $e->getMessage(),
+                    ];
+                }
+            }
+
+            $r2Info = [
+                'endpoint' => $endpoint,
+                'bucket' => $bucket,
+                'public_base_url' => $publicBase,
+                'region' => (string) env('R2_REGION', 'auto'),
+                'uploads_config' => [
+                    'max_upload_bytes' => (int) config('uploads.max_upload_bytes'),
+                    'multipart_threshold_bytes' => (int) config('uploads.multipart_threshold_bytes'),
+                    'multipart_part_size_bytes' => (int) config('uploads.multipart_part_size_bytes'),
+                    'quota_bytes' => (int) config('uploads.quota_bytes'),
+                ],
+                'missing' => $missing,
+                'presign' => $presigned,
+                'test' => $test,
+            ];
+        }
+
         $response = response()->json([
             'now' => now()->toIso8601String(),
             'base_path' => base_path(),
@@ -991,6 +1135,7 @@ Route::middleware('auth')->group(function () {
                 'free_public_mb' => @disk_free_space(public_path()) ? (int) floor(@disk_free_space(public_path()) / 1024 / 1024) : null,
                 'free_storage_mb' => @disk_free_space(storage_path()) ? (int) floor(@disk_free_space(storage_path()) / 1024 / 1024) : null,
             ],
+            'r2' => $r2Info,
             'opcache' => $opcache,
             'mtimes' => $mtimes,
         ]);
