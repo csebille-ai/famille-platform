@@ -51,6 +51,57 @@
                             </div>
                         </div>
 
+                        <div class="rounded-md border border-gray-200 bg-gray-50 p-4">
+                            <div class="text-sm font-semibold text-gray-800">Naissance (astro fun)</div>
+                            <div class="mt-1 text-xs text-gray-600">Optionnel — sert à calculer la fiche astrale.</div>
+
+                            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="birth_time">Heure de naissance</label>
+                                    <input id="birth_time" name="birth_time" type="time" value="{{ old('birth_time') }}" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                    @error('birth_time')
+                                        <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700" for="birth_timezone">Fuseau horaire</label>
+                                    <input id="birth_timezone" name="birth_timezone" type="text" value="{{ old('birth_timezone') }}" placeholder="Europe/Paris" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                    @error('birth_timezone')
+                                        <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-gray-700" for="birth_place">Lieu de naissance</label>
+                                <input id="birth_place" name="birth_place" type="text" value="{{ old('birth_place') }}" placeholder="Lille, France" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                @error('birth_place')
+                                    <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <details class="mt-4">
+                                <summary class="cursor-pointer text-sm font-medium text-gray-700">Coordonnées (optionnel)</summary>
+                                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700" for="birth_latitude">Latitude</label>
+                                        <input id="birth_latitude" name="birth_latitude" type="text" value="{{ old('birth_latitude') }}" placeholder="50.6292" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                        @error('birth_latitude')
+                                            <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700" for="birth_longitude">Longitude</label>
+                                        <input id="birth_longitude" name="birth_longitude" type="text" value="{{ old('birth_longitude') }}" placeholder="3.0573" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                        @error('birth_longitude')
+                                            <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700" for="phone">{{ __('Phone') }}</label>
                             <input id="phone" name="phone" type="text" value="{{ old('phone') }}" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />

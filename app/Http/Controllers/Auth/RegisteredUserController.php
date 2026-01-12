@@ -29,16 +29,31 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+
+            // Optional birth details (used for the fun astro profile).
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'birth_time' => ['nullable', 'date_format:H:i'],
+            'birth_place' => ['nullable', 'string', 'max:255'],
+            'birth_timezone' => ['nullable', 'string', 'max:64'],
+            'birth_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'birth_longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make((string) $validated['password']),
+
+            'date_of_birth' => $validated['date_of_birth'] ?? null,
+            'birth_time' => $validated['birth_time'] ?? null,
+            'birth_place' => $validated['birth_place'] ?? null,
+            'birth_timezone' => $validated['birth_timezone'] ?? null,
+            'birth_latitude' => $validated['birth_latitude'] ?? null,
+            'birth_longitude' => $validated['birth_longitude'] ?? null,
         ]);
 
         event(new Registered($user));

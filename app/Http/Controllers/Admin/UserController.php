@@ -48,6 +48,11 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'in:member,editor,admin'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'birth_time' => ['nullable', 'date_format:H:i'],
+            'birth_place' => ['nullable', 'string', 'max:255'],
+            'birth_timezone' => ['nullable', 'string', 'max:64'],
+            'birth_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'birth_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'address_line1' => ['nullable', 'string', 'max:255'],
             'address_line2' => ['nullable', 'string', 'max:255'],
             'postal_code' => ['nullable', 'string', 'max:32'],
@@ -66,6 +71,11 @@ class UserController extends Controller
         $user->email_verified_at = now();
 
         $user->date_of_birth = $validated['date_of_birth'] ?? null;
+        $user->birth_time = $validated['birth_time'] ?? null;
+        $user->birth_place = $validated['birth_place'] ?? null;
+        $user->birth_timezone = $validated['birth_timezone'] ?? null;
+        $user->birth_latitude = $validated['birth_latitude'] ?? null;
+        $user->birth_longitude = $validated['birth_longitude'] ?? null;
         $user->address_line1 = $validated['address_line1'] ?? null;
         $user->address_line2 = $validated['address_line2'] ?? null;
         $user->postal_code = $validated['postal_code'] ?? null;

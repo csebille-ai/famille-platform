@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -23,6 +24,11 @@ class User extends Authenticatable
         'password',
         'role',
         'date_of_birth',
+        'birth_time',
+        'birth_place',
+        'birth_timezone',
+        'birth_latitude',
+        'birth_longitude',
         'phone',
         'address_line1',
         'address_line2',
@@ -53,6 +59,11 @@ class User extends Authenticatable
             'password' => 'hashed',
             'date_of_birth' => 'date',
         ];
+    }
+
+    public function astroProfile(): HasOne
+    {
+        return $this->hasOne(AstroProfile::class);
     }
 
     public function initials(): string

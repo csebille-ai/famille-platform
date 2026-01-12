@@ -57,4 +57,18 @@ return [
         'tts_speed' => env('OPENAI_TTS_SPEED'),
     ],
 
+    'geo' => [
+        // OpenStreetMap Nominatim (place -> lat/lon)
+        'nominatim_url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
+        // Nominatim requires an identifying User-Agent.
+        'nominatim_user_agent' => env('NOMINATIM_USER_AGENT', 'FamillePlatform/1.0'),
+
+        // Timezone API (lat/lon -> IANA timezone)
+        // Default uses timeapi.io coordinate endpoint.
+        'timezone_url' => env('TIMEZONE_API_URL', 'https://timeapi.io/api/TimeZone/coordinate'),
+
+        // Cache TTL for geo/timezone lookups.
+        'cache_days' => (int) env('GEO_CACHE_DAYS', 365),
+    ],
+
 ];

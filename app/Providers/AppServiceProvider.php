@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Observers\UserObserver;
+use App\Services\Astro\NatalChartProvider;
+use App\Services\Astro\NullNatalChartProvider;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Gate;
@@ -15,7 +18,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(NatalChartProvider::class, NullNatalChartProvider::class);
     }
 
     /**
@@ -23,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        User::observe(UserObserver::class);
+
         RateLimiter::for('tarot-draw', function ($request) {
             $userId = (string) optional($request->user())->id;
             $key = $userId !== '' ? 'u:' . $userId : (string) $request->ip();
