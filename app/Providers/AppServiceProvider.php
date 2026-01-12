@@ -25,7 +25,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(NatalChartProvider::class, NullNatalChartProvider::class);
 
         $this->app->bind(ImageProvider::class, function () {
-            $provider = strtolower(trim((string) env('ASTRO_CARD_IMAGE_PROVIDER', 'openai')));
+            $provider = strtolower(trim((string) env('ASTRO_CARD_IMAGE_PROVIDER', 'auto')));
+
+            if ($provider === 'auto') {
+                $hasCloudflare = trim((string) config('services.cloudflare.account_id')) !== ''
+                    && trim((string) config('services.cloudflare.api_token')) !== '';
+
+                $provider = $hasCloudflare ? 'cloudflare' : 'openai';
+            }
 
             return match ($provider) {
                 'openai' => app(OpenAiImageProvider::class),
