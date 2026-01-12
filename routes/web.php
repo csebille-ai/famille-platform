@@ -1243,6 +1243,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/astro-card/status', [\App\Http\Controllers\Api\AstroCardController::class, 'status'])
         ->name('astro.card.status');
 
+    // Admin override: generate/check astro cards for any user.
+    Route::post('/api/admin/users/{user}/astro-card/generate', [\App\Http\Controllers\Api\AstroCardController::class, 'generateForUser'])
+        ->middleware(['can:manage-users', 'throttle:astro-card-generate'])
+        ->name('astro.card.generateForUser');
+
+    Route::get('/api/admin/users/{user}/astro-card/status', [\App\Http\Controllers\Api\AstroCardController::class, 'statusForUser'])
+        ->middleware(['can:manage-users'])
+        ->name('astro.card.statusForUser');
+
     Route::get('/cloud', [CloudNodeController::class, 'index'])->name('cloud.index');
     Route::post('/cloud/folders', [CloudNodeController::class, 'storeFolder'])->name('cloud.folders.store');
     Route::post('/cloud/files', [CloudNodeController::class, 'storeFile'])->name('cloud.files.store');
