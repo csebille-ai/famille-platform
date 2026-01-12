@@ -46,7 +46,6 @@ class UploadsController extends Controller
         if (!Schema::hasColumn('cloud_nodes', 'storage_disk')) $missingCols[] = 'cloud_nodes.storage_disk';
         if (!Schema::hasColumn('cloud_nodes', 'public_url')) $missingCols[] = 'cloud_nodes.public_url';
         if (!Schema::hasColumn('videos', 'storage_disk')) $missingCols[] = 'videos.storage_disk';
-        if (!Schema::hasColumn('videos', 'url')) $missingCols[] = 'videos.url';
 
         if (!empty($missingCols)) {
             return response()->json([
@@ -407,7 +406,6 @@ class UploadsController extends Controller
                 'created_by' => $userId,
                 'video_path' => $key,
                 'storage_disk' => 'r2',
-                'url' => $publicUrl !== '' ? $publicUrl : null,
                 'poster_path' => null,
             ]);
 

@@ -393,7 +393,7 @@ class VideoController extends Controller
         ]);
     }
 
-    public function stream(Request $request, Video $video): \Symfony\Component\HttpFoundation\Response
+    public function stream(Request $request, Video $video, \App\Services\Uploads\R2UploadService $r2): \Symfony\Component\HttpFoundation\Response
     {
         if (!$video->video_path) {
             abort(404);
@@ -401,7 +401,14 @@ class VideoController extends Controller
 
         $diskName = (string) ($video->storage_disk ?? 'public');
         if ($diskName !== 'public') {
-            $url = trim((string) ($video->url ?? ''));
+            $url = '';
+            if ($diskName === 'r2') {
+                $url = trim((string) $r2->publicUrlForKey((string) $video->video_path));
+            }
+            if ($url === '') {
+                // Backward-compat for legacy rows.
+                $url = trim((string) ($video->url ?? ''));
+            }
             if ($url === '') {
                 abort(404);
             }
@@ -588,7 +595,6 @@ SVG;
             $validated['video_path'] = $path;
             $validated['poster_path'] = null;
             $validated['storage_disk'] = 'public';
-            $validated['url'] = null;
         }
 
         unset($validated['video_file']);
