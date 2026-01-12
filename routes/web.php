@@ -10,6 +10,7 @@ use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
+use App\Http\Controllers\AstroCardImageController;
 use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
@@ -1242,6 +1243,13 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/api/astro-card/status', [\App\Http\Controllers\Api\AstroCardController::class, 'status'])
         ->name('astro.card.status');
+
+    Route::get('/astro-card/image', [AstroCardImageController::class, 'show'])
+        ->name('astro.card.image');
+
+    Route::get('/admin/users/{user}/astro-card/image', [AstroCardImageController::class, 'showForUser'])
+        ->middleware(['can:manage-users'])
+        ->name('astro.card.imageForUser');
 
     // Admin override: generate/check astro cards for any user.
     Route::post('/api/admin/users/{user}/astro-card/generate', [\App\Http\Controllers\Api\AstroCardController::class, 'generateForUser'])

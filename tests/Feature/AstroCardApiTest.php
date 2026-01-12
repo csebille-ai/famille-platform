@@ -79,6 +79,6 @@ class AstroCardApiTest extends TestCase
         $this->actingAs($user)
             ->getJson('/api/astro-card/status')
             ->assertOk()
-            ->assertJsonStructure(['status', 'image_url', 'generated_at', 'error', 'overlay']);
+            ->assertJsonStructure(['status', 'image_url', 'image_display_url', 'generated_at', 'error', 'overlay']);
     }
 }

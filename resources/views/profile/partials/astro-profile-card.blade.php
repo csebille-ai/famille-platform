@@ -108,6 +108,12 @@
         @php
             $status = (string) ($user->astro_card_status ?? '');
             $imageUrl = trim((string) ($user->astro_card_image_url ?? ''));
+            $displayUrl = '';
+            if ($imageUrl !== '') {
+                $displayUrl = $isSelf
+                    ? route('astro.card.image')
+                    : ($isAdmin ? route('astro.card.imageForUser', $user) : '');
+            }
             $error = trim((string) ($user->astro_card_error ?? ''));
 
             $overlay = null;
@@ -126,7 +132,16 @@
                 <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                         <div class="relative aspect-[2/3] w-full">
-                            <img src="{{ $imageUrl }}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+                            <img src="{{ $displayUrl }}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');">
+
+                            <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
+                                <div class="rounded-xl border border-red-200 bg-red-50 p-3">
+                                    Impossible de charger l’image.
+                                    <div class="mt-2">
+                                        <a href="{{ $imageUrl }}" target="_blank" rel="noreferrer" class="font-semibold underline">Ouvrir l’image</a>
+                                    </div>
+                                </div>
+                            </div>
 
                             @if(is_array($overlay))
                                 <div class="pointer-events-none absolute inset-0 p-3">
@@ -161,6 +176,10 @@
                     <div class="text-sm text-slate-600">
                         <div class="font-semibold text-slate-900">Prête</div>
                         <div class="mt-1">Format 2:3 · style <span class="font-mono">{{ $user->astro_card_style ?? 'tarot_modern' }}</span></div>
+
+                        <div class="mt-2 text-xs text-slate-500">
+                            <a href="{{ $imageUrl }}" target="_blank" rel="noreferrer" class="underline">Ouvrir l’image</a>
+                        </div>
 
                         @if($canGenerateTarot)
                             <div class="mt-4 flex flex-wrap gap-2">
@@ -275,7 +294,7 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 
-    const renderReady = (imageUrl, overlay = null) => {
+    const renderReady = (imageUrl, overlay = null, externalUrl = null) => {
         const title = overlay?.title ? escapeHtml(overlay.title) : '';
         const signature = overlay?.signature_line ? escapeHtml(overlay.signature_line) : '';
         const tags = Array.isArray(overlay?.tags) ? overlay.tags.filter(t => t && t !== '—') : [];
@@ -301,13 +320,25 @@
             <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     <div class="relative aspect-[2/3] w-full">
-                        <img src="${escapeHtml(imageUrl)}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+                        <img src="${escapeHtml(imageUrl)}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');">
+                        <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
+                            <div class="rounded-xl border border-red-200 bg-red-50 p-3">
+                                Impossible de charger l’image.
+                                <div class="mt-2">
+                                    <a href="${escapeHtml(externalUrl || imageUrl)}" target="_blank" rel="noreferrer" class="font-semibold underline">Ouvrir l’image</a>
+                                </div>
+                            </div>
+                        </div>
                         ${overlayHtml}
                     </div>
                 </div>
                 <div class="text-sm text-slate-600">
                     <div class="font-semibold text-slate-900">Prête</div>
                     <div class="mt-1">Format 2:3 · style <span class="font-mono">${escapeHtml(style)}</span></div>
+
+                    <div class="mt-2 text-xs text-slate-500">
+                        <a href="${escapeHtml(externalUrl || imageUrl)}" target="_blank" rel="noreferrer" class="underline">Ouvrir l’image</a>
+                    </div>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
                     </div>
@@ -332,13 +363,16 @@
             const { ok, data } = await fetchJson(statusUrl, { method: 'GET' });
             if (!ok) return;
 
-            if (data.status === 'ready' && data.image_url) {
+            const displayUrl = data?.image_display_url || data?.image_url;
+            const externalUrl = data?.image_url;
+
+            if (data.status === 'ready' && displayUrl) {
                 stopPolling();
-                renderReady(data.image_url, data.overlay || null);
+                renderReady(displayUrl, data.overlay || null, externalUrl);
                 return;
             }
 
-            if (data.status === 'ready' && !data.image_url) {
+            if (data.status === 'ready' && !displayUrl) {
                 stopPolling();
                 renderError('Carte générée, mais URL publique manquante. Vérifie R2_PUBLIC_BASE_URL (et que le bucket est bien servi en public).');
                 return;

@@ -34,7 +34,7 @@ class AstroCardController
         $user = $request->user();
         abort_unless($user !== null, 401);
 
-        return response()->json($this->statusPayload($user));
+        return response()->json($this->statusPayload($user, false));
     }
 
     public function statusForUser(Request $request, User $user): JsonResponse
@@ -42,7 +42,7 @@ class AstroCardController
         abort_unless($request->user() !== null, 401);
         abort_unless($request->user()?->can('manage-users') === true, 403);
 
-        return response()->json($this->statusPayload($user));
+        return response()->json($this->statusPayload($user, true));
     }
 
     private function doGenerate(Request $request, User $target): JsonResponse
@@ -147,8 +147,19 @@ class AstroCardController
     /**
      * @return array{status:mixed,image_url:mixed,generated_at:?string,error:mixed}
      */
-    private function statusPayload(User $user): array
+    private function statusPayload(User $user, bool $forAdminUser): array
     {
+        $displayUrl = null;
+        try {
+            if (!empty($user->astro_card_image_url)) {
+                $displayUrl = $forAdminUser
+                    ? route('astro.card.imageForUser', $user)
+                    : route('astro.card.image');
+            }
+        } catch (\Throwable) {
+            $displayUrl = null;
+        }
+
         $overlay = null;
         try {
             $signature = $this->normalizeSignature($user);
@@ -162,6 +173,7 @@ class AstroCardController
         return [
             'status' => $user->astro_card_status,
             'image_url' => $user->astro_card_image_url,
+            'image_display_url' => $displayUrl,
             'generated_at' => optional($user->astro_card_generated_at)->toISOString(),
             'error' => $user->astro_card_error,
             'overlay' => $overlay,
