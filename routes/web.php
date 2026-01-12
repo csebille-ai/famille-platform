@@ -1236,6 +1236,13 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:tarot-draw')
         ->name('tarot.tts');
 
+    Route::post('/api/astro-card/generate', [\App\Http\Controllers\Api\AstroCardController::class, 'generate'])
+        ->middleware('throttle:astro-card-generate')
+        ->name('astro.card.generate');
+
+    Route::get('/api/astro-card/status', [\App\Http\Controllers\Api\AstroCardController::class, 'status'])
+        ->name('astro.card.status');
+
     Route::get('/cloud', [CloudNodeController::class, 'index'])->name('cloud.index');
     Route::post('/cloud/folders', [CloudNodeController::class, 'storeFolder'])->name('cloud.folders.store');
     Route::post('/cloud/files', [CloudNodeController::class, 'storeFile'])->name('cloud.files.store');

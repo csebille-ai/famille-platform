@@ -50,7 +50,7 @@ class ComputeAstroProfile implements ShouldQueue
 
             if ($payload === []) {
                 $mix = AstroMixer::mix([]);
-                AstroProfile::updateOrCreate(
+                $profile = AstroProfile::updateOrCreate(
                     ['user_id' => $user->id],
                     [
                         'user_id' => $user->id,
@@ -61,16 +61,56 @@ class ComputeAstroProfile implements ShouldQueue
                         'computed_at' => now(),
                     ]
                 );
+
+                $signatureJson = [
+                    'sun_sign' => null,
+                    'ascendant' => null,
+                    'chinese' => [
+                        'polarity' => null,
+                        'element' => null,
+                        'animal' => null,
+                    ],
+                    'life_path' => null,
+                    'archetype' => (string) ($profile->archetype ?? ''),
+                    'talents' => (array) ($profile->talents ?? []),
+                    'vigilance' => (string) ($profile->weakness ?? ''),
+                ];
+
+                User::withoutEvents(function () use ($user, $signatureJson) {
+                    $user->forceFill([
+                        'astro_signature_json' => $signatureJson,
+                    ])->save();
+                });
                 return;
             }
 
-            AstroProfile::updateOrCreate(
+            $profile = AstroProfile::updateOrCreate(
                 ['user_id' => $user->id],
                 array_merge($payload, [
                     'user_id' => $user->id,
                     'computed_at' => now(),
                 ])
             );
+
+            $signatureJson = [
+                'sun_sign' => $profile->western_sign ?? null,
+                'ascendant' => $profile->ascendant_sign ?? null,
+                'chinese' => [
+                    'polarity' => $profile->chinese_yin_yang ?? null,
+                    'element' => $profile->chinese_element ?? null,
+                    'animal' => $profile->chinese_animal ?? null,
+                ],
+                'life_path' => $profile->life_path ?? null,
+                'archetype' => $profile->archetype ?? null,
+                'talents' => (array) ($profile->talents ?? []),
+                'vigilance' => $profile->weakness ?? null,
+            ];
+
+            User::withoutEvents(function () use ($user, $signatureJson) {
+                $user->forceFill([
+                    'astro_signature_json' => $signatureJson,
+                ])->save();
+            });
         } catch (Throwable $e) {
             Log::error('ComputeAstroProfile failed', [
                 'user_id' => $this->userId,

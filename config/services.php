@@ -50,6 +50,8 @@ return [
         'key' => env('OPENAI_API_KEY'),
         'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        // Images
+        'image_model' => env('OPENAI_IMAGE_MODEL', 'gpt-image-1'),
         // Audio TTS
         'tts_model' => env('OPENAI_TTS_MODEL', 'tts-1'),
         'tts_voice' => env('OPENAI_TTS_VOICE', 'alloy'),

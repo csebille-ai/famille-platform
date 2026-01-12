@@ -34,6 +34,16 @@ class User extends Authenticatable
         'address_line2',
         'postal_code',
         'city',
+
+        // Astro (fun) signature + generated card
+        'astro_signature_json',
+        'astro_card_style',
+        'astro_card_status',
+        'astro_card_image_url',
+        'astro_card_prompt',
+        'astro_card_seed',
+        'astro_card_generated_at',
+        'astro_card_error',
     ];
 
     /**
@@ -58,6 +68,9 @@ class User extends Authenticatable
             'invited_at' => 'datetime',
             'password' => 'hashed',
             'date_of_birth' => 'date',
+
+            'astro_signature_json' => 'array',
+            'astro_card_generated_at' => 'datetime',
         ];
     }
 

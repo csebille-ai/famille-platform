@@ -31,11 +31,26 @@ class AdminUserShowTest extends TestCase
             ]
         );
 
+        // Canonical display now comes from structured JSON keys.
+        $target->forceFill([
+            'astro_signature_json' => [
+                'sun_sign' => 'Taureau',
+                'ascendant' => 'Bélier',
+                'chinese' => ['polarity' => 'Yang', 'element' => 'Métal', 'animal' => 'Chien'],
+                'life_path' => 8,
+                'archetype' => 'Test archetype',
+                'talents' => ['A', 'B'],
+                'vigilance' => 'Test weakness',
+            ],
+        ])->save();
+
         $this->actingAs($admin)
             ->get(route('admin.users.show', $target))
             ->assertOk()
             ->assertSee($target->email)
             ->assertSee('Fiche astrale')
-            ->assertSee('Test signature');
+            ->assertSee('Test archetype')
+            ->assertSee('Test weakness')
+            ->assertSee('A');
     }
 }

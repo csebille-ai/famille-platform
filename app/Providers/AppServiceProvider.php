@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Observers\UserObserver;
+use App\Services\Astro\Images\ImageProvider;
+use App\Services\Astro\Images\NullImageProvider;
+use App\Services\Astro\Images\OpenAiImageProvider;
 use App\Services\Astro\NatalChartProvider;
 use App\Services\Astro\NullNatalChartProvider;
 use App\Models\User;
@@ -19,6 +22,16 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(NatalChartProvider::class, NullNatalChartProvider::class);
+
+        $this->app->bind(ImageProvider::class, function () {
+            $provider = strtolower(trim((string) env('ASTRO_CARD_IMAGE_PROVIDER', 'openai')));
+
+            return match ($provider) {
+                'openai' => app(OpenAiImageProvider::class),
+                'none', 'null', '' => app(NullImageProvider::class),
+                default => app(NullImageProvider::class),
+            };
+        });
     }
 
     /**
@@ -33,6 +46,13 @@ class AppServiceProvider extends ServiceProvider
             $key = $userId !== '' ? 'u:' . $userId : (string) $request->ip();
 
             return Limit::perMinute(10)->by($key);
+        });
+
+        RateLimiter::for('astro-card-generate', function ($request) {
+            $userId = (string) optional($request->user())->id;
+            $key = $userId !== '' ? 'u:' . $userId : (string) $request->ip();
+
+            return Limit::perMinute(3)->by($key);
         });
 
         Gate::define('manage-users', function (User $user): bool {
