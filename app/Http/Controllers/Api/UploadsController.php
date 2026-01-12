@@ -11,15 +11,65 @@ use App\Models\Video;
 use App\Services\Uploads\R2UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class UploadsController extends Controller
 {
     private const ATTACH_PREFIX = '[[ATTACHMENT]]';
 
+    private function requireMigrations(): ?\Illuminate\Http\JsonResponse
+    {
+        if (!Schema::hasTable('upload_assets')) {
+            return response()->json([
+                'message' => 'Base de données non à jour. Lance les migrations (php artisan migrate --force).',
+                'missing' => ['upload_assets'],
+            ], 500);
+        }
+
+        if (!Schema::hasTable('cloud_nodes')) {
+            return response()->json([
+                'message' => 'Base de données non à jour. Lance les migrations (php artisan migrate --force).',
+                'missing' => ['cloud_nodes'],
+            ], 500);
+        }
+
+        if (!Schema::hasTable('videos')) {
+            return response()->json([
+                'message' => 'Base de données non à jour. Lance les migrations (php artisan migrate --force).',
+                'missing' => ['videos'],
+            ], 500);
+        }
+
+        // Columns added by migrations.
+        $missingCols = [];
+        if (!Schema::hasColumn('cloud_nodes', 'storage_disk')) $missingCols[] = 'cloud_nodes.storage_disk';
+        if (!Schema::hasColumn('cloud_nodes', 'public_url')) $missingCols[] = 'cloud_nodes.public_url';
+        if (!Schema::hasColumn('videos', 'storage_disk')) $missingCols[] = 'videos.storage_disk';
+
+        if (!empty($missingCols)) {
+            return response()->json([
+                'message' => 'Base de données non à jour. Lance les migrations (php artisan migrate --force).',
+                'missing' => $missingCols,
+            ], 500);
+        }
+
+        return null;
+    }
+
     public function quota(Request $request)
     {
+        if ($resp = $this->requireMigrations()) {
+            return $resp;
+        }
+
         $quotaBytes = (int) config('uploads.quota_bytes', 10 * 1024 * 1024 * 1024);
-        $usedBytes = (int) UploadAsset::query()->sum('size_bytes');
+        try {
+            $usedBytes = (int) UploadAsset::query()->sum('size_bytes');
+        } catch (\Throwable $e) {
+            Log::error('uploads.quota.failed', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erreur serveur pendant le calcul du quota.'], 500);
+        }
         $remaining = max(0, $quotaBytes - $usedBytes);
 
         return response()->json([
@@ -202,6 +252,10 @@ class UploadsController extends Controller
 
     public function finalize(Request $request, R2UploadService $r2)
     {
+        if ($resp = $this->requireMigrations()) {
+            return $resp;
+        }
+
         $max = (int) config('uploads.max_upload_bytes');
 
         $validated = $request->validate([
@@ -232,31 +286,41 @@ class UploadsController extends Controller
         $key = (string) $validated['key'];
         $publicUrl = $r2->publicUrlForKey($key) ?: (string) ($validated['public_url'] ?? '');
 
-        $asset = UploadAsset::withTrashed()->firstOrNew([
-            'provider' => 'r2',
-            'key' => $key,
-        ]);
+        try {
+            $asset = UploadAsset::withTrashed()->firstOrNew([
+                'provider' => 'r2',
+                'key' => $key,
+            ]);
 
-        $asset->fill([
-            'public_url' => $publicUrl !== '' ? $publicUrl : null,
-            'mime' => $mime,
-            'size_bytes' => $size,
-            'kind' => (string) $validated['kind'],
-            'context' => (string) $validated['context'],
-            'user_id' => $userId,
-        ]);
+            $asset->fill([
+                'public_url' => $publicUrl !== '' ? $publicUrl : null,
+                'mime' => $mime,
+                'size_bytes' => $size,
+                'kind' => (string) $validated['kind'],
+                'context' => (string) $validated['context'],
+                'user_id' => $userId,
+            ]);
 
-        if ($asset->trashed()) {
-            $asset->restore();
+            if ($asset->trashed()) {
+                $asset->restore();
+            }
+
+            $asset->save();
+        } catch (\Throwable $e) {
+            Log::error('uploads.finalize.asset_failed', [
+                'user_id' => $userId,
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Erreur serveur pendant la finalisation (DB).'], 500);
         }
-
-        $asset->save();
 
         $mediaId = null;
         $chatMessageId = null;
         $openUrl = null;
         $thumbUrl = null;
 
+        try {
         if ((string) $validated['kind'] === 'photo') {
             $root = CloudNode::query()
                 ->whereNull('parent_id')
@@ -372,6 +436,17 @@ class UploadsController extends Controller
                 $chatMessageId = (int) $msg->id;
                 $asset->forceFill(['chat_message_id' => $msg->id])->save();
             }
+        }
+
+        } catch (\Throwable $e) {
+            Log::error('uploads.finalize.failed', [
+                'user_id' => $userId,
+                'key' => $key,
+                'kind' => (string) $validated['kind'],
+                'context' => (string) $validated['context'],
+                'error' => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Erreur serveur pendant la création du média.'], 500);
         }
 
         return response()->json([
