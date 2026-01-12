@@ -53,7 +53,7 @@
                             </button>
                         @else
                             <a href="{{ route('dashboard') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white" aria-label="Accueil">
-                                <x-application-logo class="block h-6 w-auto fill-current text-[#0F172A]" />
+                                <x-application-logo class="block h-6" />
                             </a>
                         @endif
                     </div>
@@ -146,7 +146,7 @@
 
                     <div class="shrink-0 flex items-center">
                         <a href="{{ route('dashboard') }}">
-                            <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                            <x-application-logo class="block h-9" />
                         </a>
                     </div>
 
