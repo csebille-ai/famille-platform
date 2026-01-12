@@ -40,6 +40,17 @@ class UserController extends Controller
         ]);
     }
 
+    public function show(Request $request, User $user): View
+    {
+        Gate::authorize('manage-users');
+
+        $user->load('astroProfile');
+
+        return view('admin.users.show', [
+            'user' => $user,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Gate::authorize('manage-users');

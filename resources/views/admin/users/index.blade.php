@@ -51,8 +51,16 @@
                             <tbody>
                                 @foreach ($users as $user)
                                     <tr class="border-t border-gray-200">
-                                        <td class="py-3 pr-4 whitespace-nowrap">{{ $user->name }}</td>
-                                        <td class="py-3 pr-4 whitespace-nowrap">{{ $user->email }}</td>
+                                        <td class="py-3 pr-4 whitespace-nowrap">
+                                            <a href="{{ route('admin.users.show', $user) }}" class="font-semibold text-indigo-700 hover:text-indigo-900">
+                                                {{ $user->name }}
+                                            </a>
+                                        </td>
+                                        <td class="py-3 pr-4 whitespace-nowrap">
+                                            <a href="{{ route('admin.users.show', $user) }}" class="text-indigo-700 hover:text-indigo-900">
+                                                {{ $user->email }}
+                                            </a>
+                                        </td>
                                         <td class="py-3 pr-4">
                                             <form method="POST" action="{{ route('admin.users.role', $user) }}" class="flex items-center gap-3">
                                                 @csrf

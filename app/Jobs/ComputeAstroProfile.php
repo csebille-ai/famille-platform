@@ -12,6 +12,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ComputeAstroProfile implements ShouldQueue
 {
@@ -23,50 +25,57 @@ class ComputeAstroProfile implements ShouldQueue
 
     public function handle(AstroProfileComputer $computer): void
     {
-        $user = User::query()->find($this->userId);
-        if (!$user) {
-            return;
-        }
-
-        // Auto-fill missing geo/timezone data from birth_place (best effort).
         try {
-            $resolver = app(BirthPlaceAutoResolver::class);
-            $updates = $resolver->resolve($user);
-            if ($updates !== []) {
-                User::withoutEvents(function () use ($user, $updates) {
-                    $user->forceFill($updates);
-                    $user->save();
-                });
-                $user->refresh();
+            $user = User::query()->find($this->userId);
+            if (!$user) {
+                return;
             }
-        } catch (\Throwable $e) {
-            // best-effort; do not block profile computation
-        }
 
-        $payload = $computer->compute($user);
+            // Auto-fill missing geo/timezone data from birth_place (best effort).
+            try {
+                $resolver = app(BirthPlaceAutoResolver::class);
+                $updates = $resolver->resolve($user);
+                if ($updates !== []) {
+                    User::withoutEvents(function () use ($user, $updates) {
+                        $user->forceFill($updates);
+                        $user->save();
+                    });
+                    $user->refresh();
+                }
+            } catch (Throwable $e) {
+                // best-effort; do not block profile computation
+            }
 
-        if ($payload === []) {
-            $mix = AstroMixer::mix([]);
+            $payload = $computer->compute($user);
+
+            if ($payload === []) {
+                $mix = AstroMixer::mix([]);
+                AstroProfile::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'user_id' => $user->id,
+                        'signature' => $mix['signature'],
+                        'archetype' => $mix['archetype'],
+                        'talents' => $mix['talents'],
+                        'weakness' => $mix['weakness'],
+                        'computed_at' => now(),
+                    ]
+                );
+                return;
+            }
+
             AstroProfile::updateOrCreate(
                 ['user_id' => $user->id],
-                [
+                array_merge($payload, [
                     'user_id' => $user->id,
-                    'signature' => $mix['signature'],
-                    'archetype' => $mix['archetype'],
-                    'talents' => $mix['talents'],
-                    'weakness' => $mix['weakness'],
                     'computed_at' => now(),
-                ]
+                ])
             );
-            return;
+        } catch (Throwable $e) {
+            Log::error('ComputeAstroProfile failed', [
+                'user_id' => $this->userId,
+                'exception' => $e,
+            ]);
         }
-
-        AstroProfile::updateOrCreate(
-            ['user_id' => $user->id],
-            array_merge($payload, [
-                'user_id' => $user->id,
-                'computed_at' => now(),
-            ])
-        );
     }
 }

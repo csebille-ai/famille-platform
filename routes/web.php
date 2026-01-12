@@ -1252,6 +1252,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('admin')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
+        Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
         Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
         Route::post('/users/invites/send-pending', [AdminUserController::class, 'sendPendingInvites'])->name('admin.users.invites.sendPending');
