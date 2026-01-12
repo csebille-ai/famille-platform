@@ -150,18 +150,42 @@
                         </a>
                     </div>
 
-                    <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    <div class="hidden sm:-my-px sm:ms-10 sm:flex items-center gap-8">
+                        <x-nav-link :href="route('dashboard')" :active="$isHome">
                             Accueil
                         </x-nav-link>
 
-                        <x-nav-link :href="route('media.index')" :active="request()->routeIs('media.*')">
+                        <x-nav-link :href="route('media.index')" :active="$isMedia">
                             Médias
                         </x-nav-link>
 
-                        <x-nav-link :href="route('chat.index')" :active="request()->routeIs('chat.*')">
+                        <x-nav-link :href="route('mediatheque.index')" :active="$isLibrary">
+                            Médiathèque
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('chat.index')" :active="$isChat">
                             Chat
                         </x-nav-link>
+
+                        <div class="flex items-center gap-8 ms-10">
+                            <x-nav-link :href="route('tarot.index')" :active="request()->routeIs('tarot.*')">
+                                <span class="inline-flex items-center">
+                                    Tarot
+                                    @if($hasTarotDraft)
+                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-red-500" aria-hidden="true"></span>
+                                    @endif
+                                </span>
+                            </x-nav-link>
+
+                            <x-nav-link :href="route('actu.index')" :active="request()->routeIs('actu.*')">
+                                <span class="inline-flex items-center">
+                                    Actu locale
+                                    @if($hasNewActu)
+                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-red-500" aria-hidden="true"></span>
+                                    @endif
+                                </span>
+                            </x-nav-link>
+                        </div>
                     </div>
                 </div>
 
