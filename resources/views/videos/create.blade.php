@@ -434,9 +434,27 @@
                             }
 
                             const etags = [];
-                            let uploadedTotal = 0;
 
-                            for (let idx = 0; idx < parts.length; idx++) {
+                            const partBytesArr = parts.map((p) => {
+                                const partNumber = Number(p?.part_number || 0);
+                                const start = (partNumber - 1) * partSize;
+                                const end = Math.min(size, start + partSize);
+                                return Math.max(0, end - start);
+                            });
+                            const partLoadedArr = parts.map(() => 0);
+
+                            const updateOverallProgress = () => {
+                                const loaded = partLoadedArr.reduce((a, b) => a + Number(b || 0), 0);
+                                const pct = Math.max(0, Math.min(99, Math.round((loaded / size) * 100)));
+                                setUploadStatus(`Upload… ${pct}%`);
+                                setUploadProgress(pct);
+                            };
+
+                            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+                            const maxConc = isMobile ? 2 : 4;
+                            const concurrency = Math.max(1, Math.min(maxConc, parts.length));
+
+                            const uploadPartAtIndex = async (idx) => {
                                 const p = parts[idx];
                                 const partNumber = Number(p?.part_number || 0);
                                 const uploadUrl = String(p?.upload_url || '');
@@ -445,33 +463,42 @@
                                 const start = (partNumber - 1) * partSize;
                                 const end = Math.min(size, start + partSize);
                                 const blob = file.slice(start, end);
-                                const partBytes = end - start;
+                                const partBytes = partBytesArr[idx];
 
                                 let attempt = 0;
                                 while (true) {
                                     try {
-                                        const before = uploadedTotal;
                                         const res = await putWithProgress(uploadUrl, blob, mime, (loaded) => {
-                                            const totalLoaded = before + Number(loaded || 0);
-                                            const pct = Math.max(0, Math.min(99, Math.round((totalLoaded / size) * 100)));
-                                            setUploadStatus(`Upload… ${pct}%`);
-                                            setUploadProgress(pct);
+                                            const v = Math.max(0, Math.min(partBytes, Number(loaded || 0)));
+                                            partLoadedArr[idx] = v;
+                                            updateOverallProgress();
                                         });
                                         const etag = String(res?.etag || '').trim();
                                         if (!etag) throw new Error('ETag manquant (R2).');
+                                        partLoadedArr[idx] = partBytes;
+                                        updateOverallProgress();
                                         etags.push({ part_number: partNumber, etag });
-                                        uploadedTotal += partBytes;
-                                        const pctDone = Math.max(0, Math.min(99, Math.round((uploadedTotal / size) * 100)));
-                                        setUploadStatus(`Upload… ${pctDone}%`);
-                                        setUploadProgress(pctDone);
-                                        break;
+                                        return;
                                     } catch (err) {
                                         attempt++;
                                         if (attempt >= 3) throw err;
                                         await new Promise(r => setTimeout(r, 750 * attempt));
                                     }
                                 }
-                            }
+                            };
+
+                            let nextIndex = 0;
+                            const workers = Array.from({ length: concurrency }, () => (async () => {
+                                while (true) {
+                                    const idx = nextIndex;
+                                    nextIndex++;
+                                    if (idx >= parts.length) return;
+                                    await uploadPartAtIndex(idx);
+                                }
+                            })());
+
+                            await Promise.all(workers);
+                            etags.sort((a, b) => Number(a.part_number) - Number(b.part_number));
 
                             const complete = await postJson(mpCompleteUrl, {
                                 key,
