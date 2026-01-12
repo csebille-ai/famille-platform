@@ -18,6 +18,38 @@ Le reste du site (playlists Spotify embed, images/vidéos) est OK.
 - PHP 8.2+ disponible côté serveur
 - Une base MySQL créée (et identifiants)
 
+### Note importante (Composer sur mutualisé / cPanel)
+
+Sur certains hébergements, la commande `composer` fournie par cPanel peut être cassée (ex: erreur fatale `React\Promise\ExtendedPromiseInterface::otherwise(...) must be compatible with ...`).
+
+Dans ce cas, n’utilise pas `composer` global. Installe un Composer local dans le dossier du projet :
+
+```bash
+cd ~/apps/famille-platform
+
+# Télécharge Composer (phar) propre
+php -r "copy('https://getcomposer.org/composer-stable.phar', 'composer.phar');"
+
+# Vérifie la version
+php composer.phar --version
+
+# Installe les deps
+php composer.phar install --no-dev --optimize-autoloader
+```
+
+Si `php` n’est pas en 8.2+ sur ton serveur, utilise le binaire PHP correct (ex: `php82`, `php83` selon l’hébergeur) :
+
+```bash
+php82 -v
+php82 composer.phar install --no-dev --optimize-autoloader
+```
+
+Si tu installes en `--no-dev` et/ou `--no-scripts`, pense aussi à vider les caches Laravel *avant* de relancer des commandes `artisan` (sinon un ancien cache peut référencer des packages dev comme `laravel/pail`) :
+
+```bash
+rm -f bootstrap/cache/*.php
+```
+
 ## 1) Arborescence recommandée
 
 Sur le serveur, clone le projet hors du webroot, puis fais pointer le sous-domaine vers `public/`.
