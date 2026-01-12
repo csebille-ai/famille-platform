@@ -1,6 +1,47 @@
 @php
     /** @var \App\Models\User $user */
     $p = $user->astroProfile;
+
+    $sunSign = null;
+    $ascendant = null;
+    $chinese = null;
+    $numerology = null;
+
+    $rawSignature = trim((string) ($p->signature ?? ''));
+    if ($rawSignature !== '') {
+        $parts = preg_split('/\s*·\s*/u', $rawSignature, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        foreach ($parts as $part) {
+            $part = trim((string) $part);
+            if ($part === '') {
+                continue;
+            }
+
+            if ($ascendant === null && \Illuminate\Support\Str::startsWith($part, 'Asc')) {
+                $ascendant = trim((string) preg_replace('/^Asc\s*/u', '', $part));
+                continue;
+            }
+
+            if ($numerology === null && \Illuminate\Support\Str::contains($part, ['Chemin', 'Numérologie', 'Numerologie'], true)) {
+                $numerology = $part;
+                continue;
+            }
+
+            if ($sunSign === null) {
+                $sunSign = $part;
+                continue;
+            }
+
+            if ($chinese === null) {
+                $chinese = $part;
+                continue;
+            }
+        }
+    }
+
+    if ($numerology !== null) {
+        $numerology = trim((string) preg_replace('/^Chemin\s*/u', 'Chemin de vie ', $numerology));
+    }
 @endphp
 
 <div class="rounded-2xl border border-slate-200 bg-white p-5">
@@ -17,8 +58,24 @@
 
     <div class="mt-4 grid gap-3 sm:grid-cols-2">
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <div class="text-xs text-slate-500">Signature</div>
-            <div class="mt-1 text-sm font-semibold text-slate-900">{{ $p->signature ?? 'Profil en cours (ajoute date/heure/lieu)' }}</div>
+            <div class="text-xs text-slate-500">Soleil</div>
+            <div class="mt-1 text-sm font-semibold text-slate-900">{{ $sunSign ?? '—' }}</div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <div class="text-xs text-slate-500">Ascendant</div>
+            <div class="mt-1 text-sm font-semibold text-slate-900">{{ $ascendant ?? '—' }}</div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
+            <div class="text-xs text-slate-500">Signe chinois</div>
+            <div class="mt-1 text-sm font-semibold text-slate-900">{{ $chinese ?? '—' }}</div>
+            <div class="mt-1 text-xs text-slate-500">(inclut parfois Yin/Yang + élément)</div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 bg-white p-4">
+            <div class="text-xs text-slate-500">Numérologie</div>
+            <div class="mt-1 text-sm font-semibold text-slate-900">{{ $numerology ?? '—' }}</div>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -45,6 +102,6 @@
     </div>
 
     <div class="mt-4 text-xs text-slate-500">
-        Note: le thème natal (planètes/maisons) n’est pas encore calculé automatiquement sans provider externe.
+        Note: le thème natal complet (planètes/maisons/aspects) n’est pas encore calculé automatiquement sans provider externe.
     </div>
 </div>
