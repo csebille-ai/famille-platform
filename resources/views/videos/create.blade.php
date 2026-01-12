@@ -10,8 +10,13 @@
         $returnPath = (string) request()->query('return', '');
 
         $prefCategory = strtolower((string) request()->query('category', ''));
-        if (!in_array($prefCategory, ['films', 'series', 'docs'], true)) {
-            $prefCategory = '';
+        if ($isPersonal) {
+            $prefCategory = 'docs';
+        } else {
+            // Médiathèque uploads are only films/series.
+            if (!in_array($prefCategory, ['films', 'series'], true)) {
+                $prefCategory = '';
+            }
         }
     @endphp
     <x-slot name="header">
@@ -74,7 +79,6 @@
                                     <option value="">-- Choisir --</option>
                                     <option value="films" {{ (old('category') === 'films' || (old('category') === null && $prefCategory === 'films')) ? 'selected' : '' }}>Films</option>
                                     <option value="series" {{ (old('category') === 'series' || (old('category') === null && $prefCategory === 'series')) ? 'selected' : '' }}>Séries</option>
-                                    <option value="docs" {{ (old('category') === 'docs' || (old('category') === null && $prefCategory === 'docs')) ? 'selected' : '' }}>Documentaires</option>
                                 </select>
                                 @error('category')
                                     <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
@@ -150,6 +154,7 @@
             const mpCompleteUrl = @json(url('/api/uploads/multipart/complete'));
             const finalizeUrl = @json(url('/api/uploads/finalize'));
             const returnPath = @json($returnPath);
+            const IS_PERSONAL = @json($isPersonal);
             const MAX_UPLOAD_BYTES = @json((int) config('uploads.max_upload_bytes'));
             const MULTIPART_THRESHOLD_BYTES = @json((int) config('uploads.multipart_threshold_bytes'));
 
@@ -571,6 +576,7 @@
                         finForm.append('size', String(size));
                         finForm.append('kind', 'video');
                         finForm.append('context', 'media');
+                        finForm.append('scope', IS_PERSONAL ? 'personal' : 'library');
                         if (file.name) finForm.append('filename', String(file.name));
                         if (title) finForm.append('title', String(title));
                         if (category) finForm.append('category', String(category));

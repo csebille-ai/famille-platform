@@ -266,6 +266,10 @@ class UploadsController extends Controller
             'size' => ['required', 'integer', 'min:1'],
             'kind' => ['required', 'string', 'in:photo,video'],
             'context' => ['required', 'string', 'in:media,chat'],
+            // Optional: helps us enforce correct category conventions.
+            // - personal => docs
+            // - library  => films|series
+            'scope' => ['nullable', 'string', 'in:personal,library'],
             'filename' => ['nullable', 'string', 'max:255'],
             'chat_thread_id' => ['nullable', 'string', 'max:100'],
             'title' => ['nullable', 'string', 'max:255'],
@@ -274,12 +278,26 @@ class UploadsController extends Controller
             'poster_file' => ['nullable', 'image', 'max:5120'],
         ]);
 
-        // Prevent Médiathèque items from being accidentally saved as "docs".
+        // Enforce category conventions.
         if ((string) $validated['kind'] === 'video' && (string) $validated['context'] === 'media') {
+            $scope = strtolower(trim((string) ($validated['scope'] ?? '')));
             $cat = strtolower(trim((string) ($validated['category'] ?? '')));
+
             if ($cat === '') {
                 return response()->json([
-                    'message' => 'Catégorie requise pour les vidéos (films / séries / documentaires).',
+                    'message' => 'Catégorie requise pour les vidéos.',
+                ], 422);
+            }
+
+            if ($scope === 'library' && !in_array($cat, ['films', 'series'], true)) {
+                return response()->json([
+                    'message' => 'Catégorie invalide pour la Médiathèque (films / séries).',
+                ], 422);
+            }
+
+            if ($scope === 'personal' && $cat !== 'docs') {
+                return response()->json([
+                    'message' => 'Catégorie invalide pour une vidéo perso (docs).',
                 ], 422);
             }
         }
