@@ -132,7 +132,7 @@
                 <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                         <div class="relative aspect-[2/3] w-full">
-                            <img src="{{ $displayUrl }}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');">
+                            <img src="{{ $displayUrl }}" data-external-src="{{ $imageUrl }}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
 
                             <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
                                 <div class="rounded-xl border border-red-200 bg-red-50 p-3">
@@ -179,6 +179,10 @@
 
                         <div class="mt-2 text-xs text-slate-500">
                             <a href="{{ $imageUrl }}" target="_blank" rel="noreferrer" class="underline">Ouvrir l’image</a>
+                            @if($displayUrl !== '')
+                                <span class="mx-2">·</span>
+                                <a href="{{ $displayUrl }}" target="_blank" rel="noreferrer" class="underline">Ouvrir via proxy</a>
+                            @endif
                         </div>
 
                         @if($canGenerateTarot)
@@ -320,7 +324,7 @@
             <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     <div class="relative aspect-[2/3] w-full">
-                        <img src="${escapeHtml(imageUrl)}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" onerror="this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');">
+                        <img src="${escapeHtml(imageUrl)}" data-external-src="${escapeHtml(externalUrl || '')}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
                         <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
                             <div class="rounded-xl border border-red-200 bg-red-50 p-3">
                                 Impossible de charger l’image.
@@ -338,6 +342,7 @@
 
                     <div class="mt-2 text-xs text-slate-500">
                         <a href="${escapeHtml(externalUrl || imageUrl)}" target="_blank" rel="noreferrer" class="underline">Ouvrir l’image</a>
+                        ${imageUrl ? ` <span class=\"mx-2\">·</span> <a href=\"${escapeHtml(imageUrl)}\" target=\"_blank\" rel=\"noreferrer\" class=\"underline\">Ouvrir via proxy</a>` : ''}
                     </div>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
