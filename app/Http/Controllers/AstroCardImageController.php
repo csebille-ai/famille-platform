@@ -29,6 +29,14 @@ class AstroCardImageController
         return $this->streamUserCard($user);
     }
 
+    public function showForUserPublic(Request $request, User $user)
+    {
+        // Auth is enforced by the route group; this is a double-safety.
+        abort_unless($request->user() !== null, 401);
+
+        return $this->streamUserCard($user);
+    }
+
     private function streamUserCard(User $user)
     {
         $url = trim((string) ($user->astro_card_image_url ?? ''));

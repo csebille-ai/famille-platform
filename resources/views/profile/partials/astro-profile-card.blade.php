@@ -112,7 +112,7 @@
             if ($imageUrl !== '') {
                 $displayUrl = $isSelf
                     ? route('astro.card.image')
-                    : ($isAdmin ? route('astro.card.imageForUser', $user) : '');
+                    : route('astro.card.imagePublic', $user);
             }
             $error = trim((string) ($user->astro_card_error ?? ''));
 

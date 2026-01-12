@@ -1247,6 +1247,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/astro-card/image', [AstroCardImageController::class, 'show'])
         ->name('astro.card.image');
 
+    // Authenticated users can view another member's card image (used on profile pages).
+    Route::get('/users/{user}/astro-card/image', [AstroCardImageController::class, 'showForUserPublic'])
+        ->name('astro.card.imagePublic');
+
     Route::get('/admin/users/{user}/astro-card/image', [AstroCardImageController::class, 'showForUser'])
         ->middleware(['can:manage-users'])
         ->name('astro.card.imageForUser');
