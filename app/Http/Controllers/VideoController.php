@@ -538,16 +538,69 @@ class VideoController extends Controller
     <text x="80" y="650" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto" font-size="44" font-weight="700" fill="#ffffff">{$label}</text>
 </svg>
 SVG;
-                        return response($svg, 200, ['Content-Type' => 'image/svg+xml']);
+
+                        // Do not cache the fallback, so when a poster becomes available
+                        // the UI can pick it up immediately.
+                        return response($svg, 200, [
+                            'Content-Type' => 'image/svg+xml',
+                            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                            'Pragma' => 'no-cache',
+                            'Expires' => '0',
+                        ]);
         }
 
         $mime = $disk->mimeType($video->poster_path) ?: 'image/jpeg';
         $downloadName = 'poster-' . $video->id . '.jpg';
 
-        return $disk->response($video->poster_path, $downloadName, [
+        // Strong-ish caching for posters (they rarely change). Use conditional requests (ETag/If-Modified-Since)
+        // so browsers can get 304 instead of re-downloading the image.
+        $etag = null;
+        $lastModified = null;
+        try {
+            $abs = $disk->path($video->poster_path);
+            if (is_file($abs)) {
+                $mtime = @filemtime($abs) ?: null;
+                $size = @filesize($abs) ?: null;
+                if ($mtime) {
+                    $lastModified = gmdate('D, d M Y H:i:s', (int) $mtime) . ' GMT';
+                }
+                if ($mtime && $size !== null) {
+                    $etag = '"' . sha1((string) $video->id . '|' . (string) $mtime . '|' . (string) $size) . '"';
+                }
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+
+        $req = request();
+        if ($etag !== null) {
+            $ifNoneMatch = (string) $req->headers->get('If-None-Match', '');
+            if ($ifNoneMatch !== '' && trim($ifNoneMatch) === $etag) {
+                return response('', 304, array_filter([
+                    'ETag' => $etag,
+                    'Last-Modified' => $lastModified,
+                    'Cache-Control' => 'public, max-age=604800, stale-while-revalidate=86400',
+                ]));
+            }
+        }
+        if ($lastModified !== null) {
+            $ifModifiedSince = (string) $req->headers->get('If-Modified-Since', '');
+            if ($ifModifiedSince !== '' && trim($ifModifiedSince) === $lastModified) {
+                return response('', 304, array_filter([
+                    'ETag' => $etag,
+                    'Last-Modified' => $lastModified,
+                    'Cache-Control' => 'public, max-age=604800, stale-while-revalidate=86400',
+                ]));
+            }
+        }
+
+        return $disk->response($video->poster_path, $downloadName, array_filter([
             'Content-Type' => $mime,
             'Content-Disposition' => 'inline; filename="' . addslashes($downloadName) . '"',
-        ]);
+            'Cache-Control' => 'public, max-age=604800, stale-while-revalidate=86400',
+            'ETag' => $etag,
+            'Last-Modified' => $lastModified,
+        ]));
     }
 
     /**
