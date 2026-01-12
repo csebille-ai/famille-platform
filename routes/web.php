@@ -900,6 +900,53 @@ Route::middleware('auth')->group(function () {
             'env' => config('app.env'),
         ]);
 
+        $baseUserIniPath = base_path('.user.ini');
+        $publicUserIniPath = public_path('.user.ini');
+
+        $readPreview = static function (string $path): ?string {
+            if (!is_file($path) || !is_readable($path)) {
+                return null;
+            }
+
+            $contents = @file_get_contents($path);
+            if (!is_string($contents)) {
+                return null;
+            }
+
+            $contents = str_replace(["\r\n", "\r"], "\n", $contents);
+            $contents = preg_replace('/\x00+/', '', $contents) ?? $contents;
+            $contents = trim($contents);
+
+            if ($contents === '') {
+                return '';
+            }
+
+            $max = 1200;
+            if (strlen($contents) > $max) {
+                return substr($contents, 0, $max) . "\n…(truncated)";
+            }
+
+            return $contents;
+        };
+
+        $baseUserIni = [
+            'exists' => file_exists($baseUserIniPath),
+            'path' => $baseUserIniPath,
+            'size_bytes' => is_file($baseUserIniPath) ? @filesize($baseUserIniPath) : null,
+            'mtime' => is_file($baseUserIniPath) ? @filemtime($baseUserIniPath) : null,
+            'sha1' => is_file($baseUserIniPath) ? @sha1_file($baseUserIniPath) : null,
+            'preview' => $readPreview($baseUserIniPath),
+        ];
+
+        $publicUserIni = [
+            'exists' => file_exists($publicUserIniPath),
+            'path' => $publicUserIniPath,
+            'size_bytes' => is_file($publicUserIniPath) ? @filesize($publicUserIniPath) : null,
+            'mtime' => is_file($publicUserIniPath) ? @filemtime($publicUserIniPath) : null,
+            'sha1' => is_file($publicUserIniPath) ? @sha1_file($publicUserIniPath) : null,
+            'preview' => $readPreview($publicUserIniPath),
+        ];
+
         $response = response()->json([
             'now' => now()->toIso8601String(),
             'base_path' => base_path(),
@@ -924,6 +971,8 @@ Route::middleware('auth')->group(function () {
                 'base_exists' => file_exists(base_path('.user.ini')),
                 'public_exists' => file_exists(public_path('.user.ini')),
                 'public_path' => public_path('.user.ini'),
+                'base' => $baseUserIni,
+                'public' => $publicUserIni,
             ],
             'php_ini' => [
                 'upload_max_filesize' => ini_get('upload_max_filesize'),
