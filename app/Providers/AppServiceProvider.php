@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Observers\UserObserver;
+use App\Services\Astro\Images\CloudflareWorkersAiImageProvider;
 use App\Services\Astro\Images\ImageProvider;
 use App\Services\Astro\Images\NullImageProvider;
 use App\Services\Astro\Images\OpenAiImageProvider;
@@ -28,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
 
             return match ($provider) {
                 'openai' => app(OpenAiImageProvider::class),
+                'cloudflare', 'workersai', 'workers-ai' => app(CloudflareWorkersAiImageProvider::class),
                 'none', 'null', '' => app(NullImageProvider::class),
                 default => app(NullImageProvider::class),
             };

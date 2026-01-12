@@ -59,6 +59,15 @@ return [
         'tts_speed' => env('OPENAI_TTS_SPEED'),
     ],
 
+    'cloudflare' => [
+        'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+        'api_token' => env('CLOUDFLARE_API_TOKEN'),
+        // Workers AI
+        'ai_base_url' => env('CLOUDFLARE_AI_BASE_URL', 'https://api.cloudflare.com/client/v4'),
+        // Example: @cf/stabilityai/stable-diffusion-xl-base-1.0
+        'ai_image_model' => env('CLOUDFLARE_AI_IMAGE_MODEL', '@cf/stabilityai/stable-diffusion-xl-base-1.0'),
+    ],
+
     'geo' => [
         // OpenStreetMap Nominatim (place -> lat/lon)
         'nominatim_url' => env('NOMINATIM_URL', 'https://nominatim.openstreetmap.org'),
