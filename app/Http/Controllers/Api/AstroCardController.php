@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Jobs\GenerateAstroCardJob;
 use App\Models\User;
+use App\Services\AstroCardPromptBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class AstroCardController
 {
@@ -45,11 +47,29 @@ class AstroCardController
 
     private function doGenerate(Request $request, User $target): JsonResponse
     {
-        $signature = $target->astro_signature_json;
-        if (!is_array($signature) || $signature === []) {
+        // If the DB isn't migrated yet, fail fast with a helpful error.
+        if (!Schema::hasColumn('users', 'astro_signature_json') || !Schema::hasColumn('users', 'astro_card_status')) {
             return response()->json([
                 'status' => 'error',
-                'error' => 'Signature astro manquante.',
+                'error' => 'Serveur non à jour (migration Astro Card manquante).',
+            ], 500);
+        }
+
+        $signature = $this->normalizeSignature($target);
+        if ($signature === []) {
+            return response()->json([
+                'status' => 'error',
+                'error' => 'Signature astro manquante. Renseigne ta date/heure/lieu de naissance puis recalcul la fiche astrale.',
+            ], 400);
+        }
+
+        // Validate early so we don't enqueue jobs that will fail instantly.
+        try {
+            app(AstroCardPromptBuilder::class)->build($target, $signature);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'status' => 'error',
+                'error' => $e->getMessage(),
             ], 400);
         }
 
@@ -80,6 +100,48 @@ class AstroCardController
         return response()->json([
             'status' => 'pending',
         ], 202);
+    }
+
+    /**
+     * Returns a structured signature (canonical), trying in this order:
+     * 1) users.astro_signature_json
+     * 2) derived from astroProfile (and persisted back to users.astro_signature_json)
+     *
+     * @return array<string,mixed>
+     */
+    private function normalizeSignature(User $target): array
+    {
+        $sig = $target->astro_signature_json;
+        if (is_array($sig) && $sig !== []) {
+            return $sig;
+        }
+
+        $target->loadMissing('astroProfile');
+        $p = $target->astroProfile;
+        if (!$p) {
+            return [];
+        }
+
+        $derived = [
+            'sun_sign' => $p->western_sign ?? null,
+            'ascendant' => $p->ascendant_sign ?? null,
+            'chinese' => [
+                'polarity' => $p->chinese_yin_yang ?? null,
+                'element' => $p->chinese_element ?? null,
+                'animal' => $p->chinese_animal ?? null,
+            ],
+            'life_path' => $p->life_path ?? null,
+            'archetype' => $p->archetype ?? null,
+            'talents' => (array) ($p->talents ?? []),
+            'vigilance' => $p->weakness ?? null,
+        ];
+
+        // Persist for future calls (canonical source of truth).
+        $target->forceFill([
+            'astro_signature_json' => $derived,
+        ])->save();
+
+        return $derived;
     }
 
     /**
