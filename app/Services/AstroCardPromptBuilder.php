@@ -175,6 +175,10 @@ class AstroCardPromptBuilder
         $template = <<<PROMPT
 Premium RPG character card, 2:3 portrait, full-body single character centered, cinematic AAA game key art. NO TEXT.
 
+Include a clean modern RPG trading-card frame integrated into the artwork:
+- Thin beveled border, subtle corner notches/rivets, premium materials (no ornate filigree).
+- Frame must NOT contain any letters or symbols that look like text.
+
 Character core:
 - Class: {{RPG_CLASS}} (from archetype: {{ARCHETYPE}})
 - Pose: {{POSE_CUE}}. Expression: {{EXPRESSION_CUE}}.
@@ -199,7 +203,7 @@ Astro synthesis (MUST be visible, not text):
 6) Vigilance point => subtle flaw cue: {{VIGILANCE_FLAW_CUE}}
 
 Background:
-Clean atmospheric gradient + faint sigils only. No ornate frame. High readability.
+Clean atmospheric gradient + faint sigils only. High readability.
 
 NO TEXT inside the image.
 PROMPT;
@@ -213,9 +217,10 @@ PROMPT;
             'signature',
             'caption',
             'typography',
-            'ornamental frame',
+            'ornate frame',
             'tarot poster',
             'art nouveau',
+            'art nouveau frame',
             'symmetrical decorative poster',
             'abstract drapery-only',
             'messy clutter',
