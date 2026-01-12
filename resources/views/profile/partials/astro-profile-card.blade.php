@@ -131,7 +131,7 @@
             @if($status === 'ready' && $imageUrl !== '')
                 <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                        <div class="relative w-full pb-[150%]">
+                        <div class="relative w-full" style="padding-bottom:150%;">
                             <img src="{{ $displayUrl }}" data-external-src="{{ $imageUrl }}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
 
                             <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
@@ -323,7 +323,7 @@
         stateEl.innerHTML = `
             <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                    <div class="relative w-full pb-[150%]">
+                    <div class="relative w-full" style="padding-bottom:150%;">
                         <img src="${escapeHtml(imageUrl)}" data-external-src="${escapeHtml(externalUrl || '')}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
                         <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
                             <div class="rounded-xl border border-red-200 bg-red-50 p-3">
