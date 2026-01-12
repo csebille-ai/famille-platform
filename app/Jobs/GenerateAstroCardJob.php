@@ -60,9 +60,11 @@ class GenerateAstroCardJob implements ShouldQueue
                 'CacheControl' => 'public, max-age=31536000, immutable',
             ]);
 
-            $url = (string) $disk->url($key);
-            if (trim($url) === '') {
-                $base = trim((string) config('uploads.r2_public_base_url'));
+            $url = trim((string) $disk->url($key));
+
+            // Prefer the disk URL if it's already absolute.
+            if ($url === '' || !preg_match('#^https?://#i', $url)) {
+                $base = trim((string) (config('filesystems.disks.r2.url') ?: config('uploads.r2_public_base_url')));
                 if ($base !== '') {
                     $url = rtrim($base, '/') . '/' . ltrim($key, '/');
                 }

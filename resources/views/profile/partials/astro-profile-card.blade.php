@@ -338,6 +338,12 @@
                 return;
             }
 
+            if (data.status === 'ready' && !data.image_url) {
+                stopPolling();
+                renderError('Carte générée, mais URL publique manquante. Vérifie R2_PUBLIC_BASE_URL (et que le bucket est bien servi en public).');
+                return;
+            }
+
             if (data.status === 'error') {
                 stopPolling();
                 renderError(data.error || 'Une erreur est survenue.');
