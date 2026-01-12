@@ -26,8 +26,9 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             throw new \InvalidArgumentException('Prompt vide.');
         }
 
-        // Workers AI models are identified like @cf/.... which must be URL-encoded.
-        $modelEncoded = rawurlencode($model);
+        // Workers AI models are identified like @cf/... and are part of the URL path.
+        // IMPORTANT: do NOT URL-encode slashes, otherwise Cloudflare may not match the route.
+        $modelEncoded = $this->encodeModelForPath($model);
         $url = "{$baseUrl}/accounts/{$accountId}/ai/run/{$modelEncoded}";
 
         // Size handling: Workers AI commonly uses width/height.
@@ -64,7 +65,9 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             $msg = $e->response?->json('errors.0.message')
                 ?? $e->response?->json('error.message')
                 ?? $e->getMessage();
-            throw new \RuntimeException('Erreur Cloudflare Workers AI: ' . (string) $msg, previous: $e);
+            $code = $e->response?->status();
+            $prefix = $code ? "Erreur Cloudflare Workers AI ({$code}): " : 'Erreur Cloudflare Workers AI: ';
+            throw new \RuntimeException($prefix . (string) $msg, previous: $e);
         }
 
         $contentType = strtolower((string) $resp->header('Content-Type'));
@@ -131,5 +134,22 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             'image/webp' => 'webp',
             default => 'png',
         };
+    }
+
+    private function encodeModelForPath(string $model): string
+    {
+        $model = trim($model);
+        if ($model === '') {
+            return '';
+        }
+
+        // Encode each path segment separately so slashes remain slashes.
+        $parts = array_values(array_filter(explode('/', $model), static fn ($p) => $p !== ''));
+        $encoded = array_map('rawurlencode', $parts);
+
+        // Preserve a leading slash if provided (not expected but safe).
+        $leadingSlash = str_starts_with($model, '/') ? '/' : '';
+
+        return $leadingSlash . implode('/', $encoded);
     }
 }
