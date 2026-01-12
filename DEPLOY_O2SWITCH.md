@@ -10,7 +10,7 @@ Ce guide suppose un hébergement mutualisé o2switch avec accès SSH et un sous-
   2) utiliser un service externe (Pusher/Ably),
   3) héberger le WebSocket sur un VPS.
 
-Le reste du site (ressources, playlists Spotify embed, images/vidéos) est OK.
+Le reste du site (playlists Spotify embed, images/vidéos) est OK.
 
 ## Pré-requis
 
@@ -143,6 +143,5 @@ Et dans ton `.env`, configure tes flux :
 
 - `https://famille.opanoma.fr` charge correctement
 - Login OK
-- Ressources : upload/download OK
 - Playlists : création + ajout d’un track `open.spotify.com/.../track/...` OK
 - Chat : page OK (temps réel selon infra)

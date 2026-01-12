@@ -3,7 +3,6 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CloudNodeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
-use App\Http\Controllers\ResourceController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\VideoController;
@@ -20,7 +19,6 @@ use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Event;
 use App\Models\NewsItem;
-use App\Models\Resource;
 use App\Models\Video;
 use App\Services\Uploads\R2UploadService;
 use Illuminate\Support\Facades\Cache;
@@ -111,8 +109,7 @@ Route::get('/home', function () {
         $latestVideos = collect();
     }
 
-    // Docs feed is intentionally not used on Home.
-    $latestDocs = collect();
+    // Docs feed removed.
 
     $todayNewsItem = null;
     try {
@@ -249,15 +246,6 @@ Route::get('/home', function () {
     } catch (Throwable $e) {
         $chatOnlineCount = 0;
     }
-
-    $communLinks = [
-        ['label' => 'Urgences', 'category' => 'Urgences'],
-        ['label' => 'Maison', 'category' => 'Maison'],
-        ['label' => 'Voyages', 'category' => 'Voyages'],
-        ['label' => 'École', 'category' => 'École'],
-        ['label' => 'Administratif', 'category' => 'Administratif'],
-        ['label' => 'Recettes', 'category' => 'Recettes'],
-    ];
 
     $buildFamilyMoments = function (): array {
         $today = now();
@@ -466,11 +454,9 @@ Route::get('/home', function () {
     $response = response()->view('dashboard_v2', [
         'latestImages' => $latestImages,
         'latestVideos' => $latestVideos,
-        'latestDocs' => $latestDocs,
         'todayNewsItem' => $todayNewsItem,
         'heroMedia' => $heroMedia,
         'chatOnlineCount' => $chatOnlineCount,
-        'communLinks' => $communLinks,
         'familyMoments' => $familyMoments,
         'latestAdds' => $latestAdds,
         'feed' => $feed,
@@ -901,15 +887,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    Route::get('resources/{resource}/files/{file}/open', [ResourceController::class, 'openFile'])->name('resources.files.open');
-    Route::get('resources/{resource}/files/{file}/preview', [ResourceController::class, 'previewFile'])->name('resources.files.preview');
-    Route::get('resources/{resource}/files/{file}/download', [ResourceController::class, 'downloadFile'])->name('resources.files.download');
-
-    Route::get('resources/{resource}/open', [ResourceController::class, 'open'])->name('resources.open');
-    Route::get('resources/{resource}/preview', [ResourceController::class, 'preview'])->name('resources.preview');
-    Route::get('resources/{resource}/download', [ResourceController::class, 'download'])->name('resources.download');
-    Route::resource('resources', ResourceController::class);
 
     Route::resource('playlists', PlaylistController::class);
     Route::get('playlists/{playlist}/items/search', [PlaylistItemController::class, 'search'])->name('playlists.items.search');

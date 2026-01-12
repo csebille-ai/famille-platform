@@ -70,8 +70,6 @@
                             <div class="mt-4 grid grid-cols-2 gap-2">
                                 <a href="{{ route('images.create') }}" class="rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Photo</a>
                                 <a href="{{ route('videos.create') }}" class="rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Vidéo</a>
-                                <a href="{{ route('resources.create') }}" class="rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Document</a>
-                                <a href="{{ route('resources.create', ['mode' => 'scan']) }}" class="rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Scanner</a>
                             </div>
                         </div>
                     </div>

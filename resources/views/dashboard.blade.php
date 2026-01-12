@@ -57,16 +57,6 @@
             </div>
                                 </div>
                             </a>
-                        @else
-                            <a href="{{ route('resources.show', $m) }}" class="block mt-2">
-                                <div class="text-sm font-semibold text-gray-900 truncate">{{ $m->title }}</div>
-                                <div class="mt-1 text-sm text-slate-600">Document</div>
-                                <div class="mt-2 text-xs text-slate-500 truncate">
-                                    {{ $m->creator?->name ?? 'Quelqu’un' }}
-                                    <span class="text-slate-400">·</span>
-                                    {{ $m->created_at?->diffForHumans() }}
-                                </div>
-                            </a>
                         @endif
                     @else
                         <div class="mt-2 text-sm text-slate-600">Aucun média récent.</div>
@@ -161,69 +151,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl shadow-sm p-6">
-                <div class="flex items-end justify-between gap-4">
-                    <div class="text-base font-semibold text-gray-900">Derniers docs</div>
-                    <a href="{{ route('resources.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
-                </div>
-
-                <div class="mt-4 space-y-3">
-                    @if(($latestDocs ?? collect())->count())
-                        @foreach(($latestDocs ?? collect())->take(3) as $r)
-                            <a href="{{ route('resources.show', $r) }}" class="block rounded-xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50">
-                                <div class="text-sm font-semibold text-gray-900 truncate">{{ $r->title }}</div>
-                                <div class="mt-1 text-xs text-slate-500 truncate">
-                                    {{ $r->category ?: 'Document' }}
-                                    <span class="text-slate-400">·</span>
-                                    {{ $r->creator?->name ?? 'Quelqu’un' }}
-                                    <span class="text-slate-400">·</span>
-                                    {{ $r->created_at?->diffForHumans() }}
-                                </div>
-                            </a>
-                        @endforeach
-                    @else
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
-                            Aucun document pour l’instant.
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <div class="rounded-2xl border border-slate-200 bg-white px-3 py-2">
-            <div class="overflow-x-auto">
-                <div class="flex items-center gap-2 md:gap-3 min-w-max">
-                    @foreach(($communLinks ?? []) as $link)
-                        @php
-                            $label = (string) ($link['label'] ?? '');
-                            $category = (string) ($link['category'] ?? '');
-                        @endphp
-
-                        <a
-                            href="{{ route('resources.index', ['user' => 'common', 'category' => $category]) }}"
-                            class="h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 inline-flex items-center gap-2 whitespace-nowrap"
-                        >
-                            @if($label === 'Urgences')
-                                <i class="ph ph-first-aid text-slate-500" style="font-size:16px" aria-hidden="true"></i>
-                            @elseif($label === 'Maison')
-                                <i class="ph ph-house text-slate-500" style="font-size:16px" aria-hidden="true"></i>
-                            @elseif($label === 'Voyages')
-                                <i class="ph ph-airplane text-slate-500" style="font-size:16px" aria-hidden="true"></i>
-                            @elseif($label === 'École' || $label === 'Ecole')
-                                <i class="ph ph-graduation-cap text-slate-500" style="font-size:16px" aria-hidden="true"></i>
-                            @elseif($label === 'Administratif')
-                                <i class="ph ph-file-text text-slate-500" style="font-size:16px" aria-hidden="true"></i>
-                            @elseif($label === 'Recettes')
-                                <i class="ph ph-fork-knife text-slate-500" style="font-size:16px" aria-hidden="true"></i>
-                            @else
-                                <i class="ph ph-list text-slate-500" style="font-size:16px" aria-hidden="true"></i>
-                            @endif
-
-                            <span>{{ $label }}</span>
-                        </a>
-                    @endforeach
-                </div>
-            </div>
+            
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm p-6">
