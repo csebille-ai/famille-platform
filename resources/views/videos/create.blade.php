@@ -167,6 +167,7 @@
             if (!videoInput || !posterInput) return;
 
             let previewUrl = null;
+            let posterBlob = null;
 
             const setStatus = (txt) => {
                 if (posterStatus) posterStatus.textContent = txt;
@@ -204,6 +205,27 @@
                         'X-CSRF-TOKEN': token,
                     },
                     body: JSON.stringify(payload || {}),
+                });
+                const txt = await res.text();
+                let json = null;
+                try { json = txt ? JSON.parse(txt) : null; } catch (e) {}
+                if (!res.ok) {
+                    const msg = (json && json.message) ? String(json.message) : `Erreur upload (${res.status})`;
+                    throw new Error(msg);
+                }
+                return json;
+            };
+
+            const postForm = async (url, formData) => {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: formData,
                 });
                 const txt = await res.text();
                 let json = null;
@@ -260,6 +282,7 @@
                     try { URL.revokeObjectURL(previewUrl); } catch (e) {}
                     previewUrl = null;
                 }
+                posterBlob = null;
                 if (posterPreview) {
                     posterPreview.src = '';
                     posterPreview.classList.add('hidden');
@@ -365,13 +388,15 @@
                     return;
                 }
 
-                const ok = setPosterFile(blob);
-                if (!ok) {
-                    setStatus('Miniature : non attachée (support limité)');
-                    return;
-                }
+                // Keep a reference to the blob so we can always upload it later,
+                // even if the browser prevents programmatically setting <input type="file">.
+                posterBlob = blob;
 
-                setStatus('Miniature : générée automatiquement');
+                const ok = setPosterFile(blob);
+                setStatus(ok
+                    ? 'Miniature : générée automatiquement'
+                    : 'Miniature : générée (sera envoyée directement)'
+                );
                 if (posterPreview) {
                     previewUrl = URL.createObjectURL(blob);
                     posterPreview.src = previewUrl;
@@ -404,9 +429,15 @@
                         }
 
                         const title = (document.getElementById('title')?.value || '').trim();
-                        const category = (document.getElementById('category')?.value || '').trim();
+                        const category = (document.getElementById('category')?.value || document.querySelector('input[name="category"]')?.value || '').trim();
                         const description = (document.getElementById('description')?.value || '').trim();
                         const mime = String(file.type || 'video/mp4');
+
+                        // Médiathèque uploads MUST have an explicit category (films/series).
+                        if (document.getElementById('category') && !category) {
+                            alert('Choisis une catégorie (films / séries / documentaires).');
+                            return;
+                        }
 
                         setUploadStatus('Upload…');
                         setUploadProgress(1);
@@ -533,18 +564,23 @@
                         setUploadStatus('Finalisation…');
                         setUploadProgress(99);
 
-                        const fin = await postJson(finalizeUrl, {
-                            key,
-                            public_url: publicUrl,
-                            mime,
-                            size,
-                            kind: 'video',
-                            context: 'media',
-                            filename: file.name || null,
-                            title,
-                            category,
-                            description,
-                        });
+                        const finForm = new FormData();
+                        finForm.append('key', key);
+                        if (publicUrl) finForm.append('public_url', String(publicUrl));
+                        finForm.append('mime', mime);
+                        finForm.append('size', String(size));
+                        finForm.append('kind', 'video');
+                        finForm.append('context', 'media');
+                        if (file.name) finForm.append('filename', String(file.name));
+                        if (title) finForm.append('title', String(title));
+                        if (category) finForm.append('category', String(category));
+                        if (description) finForm.append('description', String(description));
+
+                        const posterFile = posterInput?.files?.[0];
+                        if (posterFile) finForm.append('poster_file', posterFile, posterFile.name || 'poster.jpg');
+                        else if (posterBlob) finForm.append('poster_file', posterBlob, 'poster.jpg');
+
+                        const fin = await postForm(finalizeUrl, finForm);
 
                         setUploadProgress(100);
                         setUploadStatus('Terminé.');

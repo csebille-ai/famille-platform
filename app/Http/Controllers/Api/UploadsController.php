@@ -12,6 +12,7 @@ use App\Services\Uploads\R2UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
 
 class UploadsController extends Controller
@@ -270,7 +271,18 @@ class UploadsController extends Controller
             'title' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'in:films,series,docs'],
             'description' => ['nullable', 'string'],
+            'poster_file' => ['nullable', 'image', 'max:5120'],
         ]);
+
+        // Prevent Médiathèque items from being accidentally saved as "docs".
+        if ((string) $validated['kind'] === 'video' && (string) $validated['context'] === 'media') {
+            $cat = strtolower(trim((string) ($validated['category'] ?? '')));
+            if ($cat === '') {
+                return response()->json([
+                    'message' => 'Catégorie requise pour les vidéos (films / séries / documentaires).',
+                ], 422);
+            }
+        }
 
         $size = (int) $validated['size'];
         if ($size > $max) {
@@ -408,6 +420,23 @@ class UploadsController extends Controller
                 'storage_disk' => 'r2',
                 'poster_path' => null,
             ]);
+
+            if ($request->hasFile('poster_file')) {
+                try {
+                    $poster = $request->file('poster_file');
+                    $ext = $poster->guessExtension() ?: 'jpg';
+                    $posterRelativePath = 'videos/posters/' . $video->id . '.' . $ext;
+                    Storage::disk('public')->putFileAs('videos/posters', $poster, $video->id . '.' . $ext);
+                    $video->forceFill(['poster_path' => $posterRelativePath])->save();
+                } catch (\Throwable $e) {
+                    Log::warning('uploads.finalize.poster_failed', [
+                        'user_id' => $userId,
+                        'key' => $key,
+                        'video_id' => $video->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             $asset->forceFill(['video_id' => $video->id])->save();
 

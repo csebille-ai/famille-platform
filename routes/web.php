@@ -94,7 +94,18 @@ Route::get('/home', function () {
     $latestVideos = collect();
     try {
         if (Schema::hasTable('videos')) {
-            $latestVideos = Video::query()->with('creator:id,name')->latest()->limit(6)->get();
+            // Home: show only "perso" videos (exclude Médiathèque films/séries).
+            // Convention: Médiathèque uses category=films|series. Personal uploads use category=docs or NULL.
+            $latestVideos = Video::query()
+                ->with('creator:id,name')
+                ->where(function ($q) {
+                    $q->whereNull('category')
+                        ->orWhere('category', '')
+                        ->orWhere('category', 'docs');
+                })
+                ->latest()
+                ->limit(6)
+                ->get();
         }
     } catch (Throwable $e) {
         $latestVideos = collect();
@@ -452,7 +463,7 @@ Route::get('/home', function () {
         $familyMoments = $buildFamilyMoments();
     }
 
-    return view('dashboard_v2', [
+    $response = response()->view('dashboard_v2', [
         'latestImages' => $latestImages,
         'latestVideos' => $latestVideos,
         'latestDocs' => $latestDocs,
@@ -464,6 +475,13 @@ Route::get('/home', function () {
         'latestAdds' => $latestAdds,
         'feed' => $feed,
     ]);
+
+    // Avoid stale HTML being served by proxies (LiteSpeed) after deploy.
+    return $response
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0')
+        ->header('X-LiteSpeed-Cache-Control', 'no-cache');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/dashboard', fn () => redirect()->route('dashboard'))
@@ -535,6 +553,12 @@ Route::get('/media', function () {
             $hasVideoFocal = Schema::hasColumn('videos', 'focal_x') && Schema::hasColumn('videos', 'focal_y');
             $rows = Video::query()
                 ->with('creator:id,name')
+                // /media (tab=videos) is for personal videos only.
+                ->where(function ($q) {
+                    $q->whereNull('category')
+                        ->orWhere('category', '')
+                        ->orWhere('category', 'docs');
+                })
                 ->orderByDesc('created_at')
                 ->orderByDesc('id')
                 ->limit(24)
@@ -566,7 +590,7 @@ Route::get('/media', function () {
         $videosNextCursor = null;
     }
 
-    return view('media.index', [
+    $response = response()->view('media.index', [
         'tab' => $tab,
         'imagesItems' => $imagesItems,
         'imagesNextCursor' => $imagesNextCursor,
@@ -574,6 +598,13 @@ Route::get('/media', function () {
         'videosNextCursor' => $videosNextCursor,
         'pageSize' => 24,
     ]);
+
+    // Avoid stale HTML being served by proxies (LiteSpeed) after deploy.
+    return $response
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0')
+        ->header('X-LiteSpeed-Cache-Control', 'no-cache');
 })->middleware(['auth', 'verified'])
     ->name('media.index');
 
@@ -759,7 +790,15 @@ Route::get('/api/media', function () {
         ->orderByDesc('id');
 
     if ($category !== '') {
+        // Explicit category used by Médiathèque infinite scrolling.
         $q->where('category', $category);
+    } else {
+        // Default "video" feed (used by /media) must not include Médiathèque items.
+        $q->where(function ($w) {
+            $w->whereNull('category')
+                ->orWhere('category', '')
+                ->orWhere('category', 'docs');
+        });
     }
 
     if ($cursor) {
