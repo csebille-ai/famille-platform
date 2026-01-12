@@ -41,6 +41,7 @@ class GenerateAstroCardJob implements ShouldQueue
                 'aspect_ratio' => '2:3',
                 'size' => '1024x1536',
                 'seed' => $built['seed'],
+                'negative_prompt' => $built['negative_prompt'] ?? null,
             ]);
 
             $bytes = (string) ($generated['bytes'] ?? '');

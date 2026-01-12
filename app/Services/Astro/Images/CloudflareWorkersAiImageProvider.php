@@ -48,6 +48,11 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             'height' => $h,
         ];
 
+        $negative = $opts['negative_prompt'] ?? null;
+        if (is_string($negative) && trim($negative) !== '') {
+            $payload['negative_prompt'] = trim($negative);
+        }
+
         if ($seedInt !== null) {
             $payload['seed'] = $seedInt;
         }

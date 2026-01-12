@@ -149,11 +149,22 @@ class AstroCardController
      */
     private function statusPayload(User $user): array
     {
+        $overlay = null;
+        try {
+            $signature = $this->normalizeSignature($user);
+            if ($signature !== []) {
+                $overlay = app(AstroCardPromptBuilder::class)->overlay($user, $signature);
+            }
+        } catch (\Throwable) {
+            $overlay = null;
+        }
+
         return [
             'status' => $user->astro_card_status,
             'image_url' => $user->astro_card_image_url,
             'generated_at' => optional($user->astro_card_generated_at)->toISOString(),
             'error' => $user->astro_card_error,
+            'overlay' => $overlay,
         ];
     }
 }

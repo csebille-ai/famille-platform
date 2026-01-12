@@ -95,8 +95,8 @@
     <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5" id="astro-tarot-card" data-status-url="{{ $tarotStatusUrl }}" data-generate-url="{{ $tarotGenerateUrl }}">
         <div class="flex items-start justify-between gap-4">
             <div>
-                <div class="text-xs text-slate-500">Tarot Moderne</div>
-                <div class="mt-1 text-lg font-semibold text-slate-900">Carte Tarot</div>
+                <div class="text-xs text-slate-500">Tarot-RPG</div>
+                <div class="mt-1 text-lg font-semibold text-slate-900">Carte RPG</div>
                 <div class="mt-1 text-xs text-slate-500">Générée depuis la signature JSON (pas depuis le texte affiché).</div>
             </div>
 
@@ -109,13 +109,54 @@
             $status = (string) ($user->astro_card_status ?? '');
             $imageUrl = trim((string) ($user->astro_card_image_url ?? ''));
             $error = trim((string) ($user->astro_card_error ?? ''));
+
+            $overlay = null;
+            try {
+                $sig = is_array($user->astro_signature_json ?? null) ? (array) $user->astro_signature_json : [];
+                if ($sig !== []) {
+                    $overlay = app(\App\Services\AstroCardPromptBuilder::class)->overlay($user, $sig);
+                }
+            } catch (\Throwable $e) {
+                $overlay = null;
+            }
         @endphp
 
         <div class="mt-4" data-state>
             @if($status === 'ready' && $imageUrl !== '')
                 <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                        <img src="{{ $imageUrl }}" alt="Carte Tarot" class="aspect-[2/3] w-full object-cover" loading="lazy">
+                        <div class="relative aspect-[2/3] w-full">
+                            <img src="{{ $imageUrl }}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+
+                            @if(is_array($overlay))
+                                <div class="pointer-events-none absolute inset-0 p-3">
+                                    <div class="flex h-full flex-col">
+                                        @if(($overlay['title'] ?? '') !== '')
+                                            <div class="rounded-lg bg-white/70 px-2 py-1 text-center text-[11px] font-semibold tracking-[0.18em] text-slate-900 backdrop-blur">
+                                                {{ $overlay['title'] }}
+                                            </div>
+                                        @endif
+
+                                        <div class="mt-auto">
+                                            @php($tags = is_array($overlay['tags'] ?? null) ? (array) $overlay['tags'] : [])
+                                            @if(!empty($tags))
+                                                <div class="mb-2 flex flex-wrap justify-center gap-1.5">
+                                                    @foreach($tags as $t)
+                                                        <span class="rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-slate-800 backdrop-blur">{{ $t }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+
+                                            @if(($overlay['signature_line'] ?? '') !== '')
+                                                <div class="rounded-lg bg-white/70 px-2 py-1 text-center text-[10px] font-medium text-slate-800 backdrop-blur">
+                                                    {{ $overlay['signature_line'] }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
                     </div>
                     <div class="text-sm text-slate-600">
                         <div class="font-semibold text-slate-900">Prête</div>
@@ -150,10 +191,10 @@
             @else
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <div class="text-sm font-semibold text-slate-900">Pas encore générée</div>
-                    <div class="mt-1 text-xs text-slate-500">Une carte premium « Tarot Moderne » basée sur ta fiche astrale.</div>
+                    <div class="mt-1 text-xs text-slate-500">Une carte premium « Tarot-RPG » basée sur ta fiche astrale.</div>
                     @if($canGenerateTarot)
                         <div class="mt-3">
-                            <button type="button" data-action="generate" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Générer ma carte (Tarot)</button>
+                            <button type="button" data-action="generate" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Générer ma carte (RPG)</button>
                         </div>
                     @else
                         <div class="mt-2 text-xs text-slate-500">(disponible sur le profil du membre)</div>
@@ -175,6 +216,8 @@
 
     const canGenerate = @json($canGenerateTarot);
     if (!canGenerate) return;
+
+    const style = @json((string) ($user->astro_card_style ?? 'tarot_modern'));
 
     const statusUrl = root.getAttribute('data-status-url');
     const generateUrl = root.getAttribute('data-generate-url');
@@ -225,14 +268,46 @@
         `;
     };
 
-    const renderReady = (imageUrl) => {
+    const escapeHtml = (s) => String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    const renderReady = (imageUrl, overlay = null) => {
+        const title = overlay?.title ? escapeHtml(overlay.title) : '';
+        const signature = overlay?.signature_line ? escapeHtml(overlay.signature_line) : '';
+        const tags = Array.isArray(overlay?.tags) ? overlay.tags.filter(t => t && t !== '—') : [];
+        const tagsHtml = tags.length
+            ? `<div class="mb-2 flex flex-wrap justify-center gap-1.5">${tags.map(t => `<span class=\"rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-slate-800 backdrop-blur\">${escapeHtml(t)}</span>`).join('')}</div>`
+            : '';
+
+        const overlayHtml = (title || signature || tagsHtml)
+            ? `
+                <div class="pointer-events-none absolute inset-0 p-3">
+                    <div class="flex h-full flex-col">
+                        ${title ? `<div class=\"rounded-lg bg-white/70 px-2 py-1 text-center text-[11px] font-semibold tracking-[0.18em] text-slate-900 backdrop-blur\">${title}</div>` : ''}
+                        <div class="mt-auto">
+                            ${tagsHtml}
+                            ${signature ? `<div class=\"rounded-lg bg-white/70 px-2 py-1 text-center text-[10px] font-medium text-slate-800 backdrop-blur\">${signature}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `
+            : '';
+
         stateEl.innerHTML = `
             <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                    <img src="${imageUrl}" alt="Carte Tarot" class="aspect-[2/3] w-full object-cover" loading="lazy">
+                    <div class="relative aspect-[2/3] w-full">
+                        <img src="${escapeHtml(imageUrl)}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy">
+                        ${overlayHtml}
+                    </div>
                 </div>
                 <div class="text-sm text-slate-600">
                     <div class="font-semibold text-slate-900">Prête</div>
+                    <div class="mt-1">Format 2:3 · style <span class="font-mono">${escapeHtml(style)}</span></div>
                     <div class="mt-4 flex flex-wrap gap-2">
                         <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
                     </div>
@@ -259,7 +334,7 @@
 
             if (data.status === 'ready' && data.image_url) {
                 stopPolling();
-                renderReady(data.image_url);
+                renderReady(data.image_url, data.overlay || null);
                 return;
             }
 

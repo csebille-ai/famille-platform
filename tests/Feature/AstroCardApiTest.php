@@ -66,11 +66,19 @@ class AstroCardApiTest extends TestCase
         $user = User::factory()->create([
             'astro_card_status' => 'ready',
             'astro_card_image_url' => 'https://example.test/card.png',
+            'astro_signature_json' => [
+                'sun_sign' => 'Taureau',
+                'ascendant' => 'Bélier',
+                'chinese' => ['polarity' => 'Yang', 'element' => 'Métal', 'animal' => 'Chien'],
+                'life_path' => 8,
+                'archetype' => 'Gardien',
+                'talents' => ['Protège et sécurise', 'Structure le quotidien', 'Rassure naturellement'],
+            ],
         ]);
 
         $this->actingAs($user)
             ->getJson('/api/astro-card/status')
             ->assertOk()
-            ->assertJsonStructure(['status', 'image_url', 'generated_at', 'error']);
+            ->assertJsonStructure(['status', 'image_url', 'generated_at', 'error', 'overlay']);
     }
 }
