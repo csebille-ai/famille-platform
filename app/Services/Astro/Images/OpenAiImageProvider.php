@@ -24,7 +24,6 @@ class OpenAiImageProvider implements ImageProvider
             'prompt' => $prompt,
             // OpenAI image generation supports these common sizes.
             'size' => $size,
-            'response_format' => 'b64_json',
         ];
 
         try {
@@ -38,14 +37,24 @@ class OpenAiImageProvider implements ImageProvider
             throw new \RuntimeException('Erreur OpenAI Image: ' . (string) $msg, previous: $e);
         }
 
-        $b64 = (string) ($resp->json('data.0.b64_json') ?? '');
-        if (trim($b64) === '') {
-            throw new \RuntimeException('OpenAI Image: image vide.');
-        }
+        $b64 = $resp->json('data.0.b64_json');
+        $url = $resp->json('data.0.url');
 
-        $bytes = base64_decode($b64, true);
-        if (!is_string($bytes) || $bytes === '') {
-            throw new \RuntimeException('OpenAI Image: base64 invalide.');
+        $bytes = null;
+        if (is_string($b64) && trim($b64) !== '') {
+            $bytes = base64_decode($b64, true);
+            if (!is_string($bytes) || $bytes === '') {
+                throw new \RuntimeException('OpenAI Image: base64 invalide.');
+            }
+        } elseif (is_string($url) && trim($url) !== '') {
+            // Some gateways/models only return a URL.
+            $img = Http::timeout(60)->get($url);
+            $bytes = $img->body();
+            if (!is_string($bytes) || $bytes === '') {
+                throw new \RuntimeException('OpenAI Image: téléchargement vide.');
+            }
+        } else {
+            throw new \RuntimeException('OpenAI Image: image vide.');
         }
 
         return [
