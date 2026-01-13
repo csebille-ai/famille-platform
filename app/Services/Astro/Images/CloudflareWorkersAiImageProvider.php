@@ -32,10 +32,10 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
         $modelEncoded = $this->encodeModelForPath($model);
         $url = "{$baseUrl}/accounts/{$accountId}/ai/run/{$modelEncoded}";
 
-        // Size handling: Workers AI commonly uses width/height.
-        $size = (string) ($opts['size'] ?? '1024x1536');
-        [$w, $h] = $this->parseSize($size);
+        $negative = $opts['negative_prompt'] ?? null;
 
+        // Model-specific inputs: not all Workers AI image models accept width/height/seed/negative.
+        $modelLower = strtolower(trim($model));
         $seed = $opts['seed'] ?? null;
         $seedInt = null;
         if (is_string($seed) && $seed !== '') {
@@ -43,19 +43,38 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             $seedInt = hexdec(substr(sha1($seed), 0, 8));
         }
 
-        $jsonPayload = [
-            'prompt' => $prompt,
-            'width' => $w,
-            'height' => $h,
-        ];
+        if (str_contains($modelLower, 'flux-1-schnell')) {
+            $steps = (int) ($opts['steps'] ?? 4);
+            $steps = max(1, min(8, $steps));
 
-        $negative = $opts['negative_prompt'] ?? null;
-        if (is_string($negative) && trim($negative) !== '') {
-            $jsonPayload['negative_prompt'] = trim($negative);
-        }
+            $jsonPayload = [
+                'prompt' => $prompt,
+                'steps' => $steps,
+            ];
 
-        if ($seedInt !== null) {
-            $jsonPayload['seed'] = $seedInt;
+            // flux-1-schnell schema: prompt + steps only.
+            $w = 0;
+            $h = 0;
+            $seedInt = null;
+            $negative = null;
+        } else {
+            // Size handling: most Workers AI image models use width/height.
+            $size = (string) ($opts['size'] ?? '1024x1536');
+            [$w, $h] = $this->parseSize($size);
+
+            $jsonPayload = [
+                'prompt' => $prompt,
+                'width' => $w,
+                'height' => $h,
+            ];
+
+            if (is_string($negative) && trim($negative) !== '') {
+                $jsonPayload['negative_prompt'] = trim($negative);
+            }
+
+            if ($seedInt !== null) {
+                $jsonPayload['seed'] = $seedInt;
+            }
         }
 
         $request = Http::timeout(120)
