@@ -18,6 +18,10 @@
                     <div class="min-w-0">
                         <h1 class="text-xl font-bold text-gray-900">Actu locale</h1>
                         <div class="mt-1 text-sm text-slate-500">Zone: Local</div>
+                        <div id="actu-last" class="mt-1 text-xs text-slate-500"></div>
+                        <div id="actu-stale" class="hidden mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                            Actu possiblement bloquée (pas de synchro récente).
+                        </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <button
@@ -27,6 +31,15 @@
                         >
                             Actualiser
                         </button>
+                        @if(auth()->check() && auth()->user()?->can('manage-users') === true)
+                            <button
+                                type="button"
+                                id="actu-sync"
+                                class="inline-flex items-center h-10 px-3 rounded-xl border border-indigo-200 bg-indigo-50 text-sm font-semibold text-indigo-900 hover:bg-indigo-100"
+                            >
+                                Synchroniser
+                            </button>
+                        @endif
                         <button
                             type="button"
                             id="actu-filters"
@@ -88,6 +101,11 @@
             const elRefresh = document.getElementById('actu-refresh');
             const elFilters = document.getElementById('actu-filters');
             const elChips = document.getElementById('actu-chips');
+            const elLast = document.getElementById('actu-last');
+            const elStale = document.getElementById('actu-stale');
+            const elSync = document.getElementById('actu-sync');
+            const isAdmin = @json(auth()->check() && auth()->user()?->can('manage-users') === true);
+            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             const chips = Array.from(document.querySelectorAll('.actu-chip'));
 
             let selectedTag = '';
@@ -298,6 +316,21 @@
                     const data = await resp.json();
                     if (!data || data.ok !== true || !Array.isArray(data.items)) throw new Error('Bad payload');
 
+                    // Last update (fetched_at) hint
+                    if (elLast) {
+                        const lf = data.latest_fetched_at || null;
+                        elLast.textContent = lf ? `Dernière synchro: ${timeAgo(lf)}` : '';
+                        if (elStale) {
+                            if (lf) {
+                                const d = new Date(lf);
+                                const ageHours = isNaN(d.getTime()) ? 0 : ((Date.now() - d.getTime()) / 3600000);
+                                elStale.classList.toggle('hidden', !(ageHours >= 24));
+                            } else {
+                                elStale.classList.remove('hidden');
+                            }
+                        }
+                    }
+
                     const items = data.items;
                     nextCursor = data.next_cursor ?? null;
 
@@ -362,6 +395,36 @@
 
             if (elRefresh) {
                 elRefresh.addEventListener('click', () => fetchPage({ reset: true }));
+            }
+
+            if (elSync && isAdmin) {
+                elSync.addEventListener('click', async () => {
+                    if (loading) return;
+                    loading = true;
+                    setError(false);
+                    elSync.disabled = true;
+
+                    try {
+                        const resp = await fetch('/api/news/import', {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+                            },
+                            credentials: 'same-origin',
+                        });
+                        const data = await resp.json().catch(() => ({}));
+                        if (!resp.ok || data?.ok !== true) {
+                            throw new Error(data?.output || `Import failed (HTTP ${resp.status})`);
+                        }
+                        await fetchPage({ reset: true });
+                    } catch (e) {
+                        setError(true);
+                    } finally {
+                        loading = false;
+                        elSync.disabled = false;
+                    }
+                });
             }
 
             if (elFilters && elChips) {

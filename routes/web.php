@@ -1226,6 +1226,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/news', NewsIndexController::class)
         ->name('news.index');
 
+    Route::post('/api/news/import', \App\Http\Controllers\Api\NewsImportController::class)
+        ->middleware(['can:manage-users', 'throttle:6,1'])
+        ->name('news.import');
+
     Route::get('/tarot', [TarotController::class, 'index'])->name('tarot.index');
     Route::post('/tarot/draw', [TarotController::class, 'draw'])->middleware('throttle:tarot-draw')->name('tarot.draw');
     Route::post('/tarot/reset', [TarotController::class, 'reset'])->name('tarot.reset');

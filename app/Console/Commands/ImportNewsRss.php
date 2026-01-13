@@ -6,6 +6,7 @@ use App\Models\NewsItem;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class ImportNewsRss extends Command
@@ -63,6 +64,11 @@ class ImportNewsRss extends Command
         }
 
         $total = 0;
+        $anyFeedOk = false;
+
+        Log::info('news.import.start', [
+            'sources_count' => count($sources),
+        ]);
         foreach ($sources as $src) {
             $feedUrl = (string) $src['url'];
             $sourceName = (string) (($src['name'] ?? null) ?: $this->inferSourceFromUrl($feedUrl));
@@ -71,7 +77,8 @@ class ImportNewsRss extends Command
             $this->info(sprintf('Fetching: %s%s', $feedUrl, $sourceName !== '' ? ' (' . $sourceName . ')' : ''));
 
             try {
-                $resp = Http::timeout($timeout)
+                $resp = Http::retry(2, 500)
+                    ->timeout($timeout)
                     ->withHeaders([
                         'User-Agent' => $ua,
                         'Accept' => 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.1',
@@ -79,25 +86,45 @@ class ImportNewsRss extends Command
                     ->get($feedUrl);
             } catch (\Throwable $e) {
                 $this->warn('HTTP error: ' . $e->getMessage());
+                Log::warning('news.import.http_error', [
+                    'url' => $feedUrl,
+                    'source' => $sourceName,
+                    'error' => $e->getMessage(),
+                ]);
                 continue;
             }
 
             if (!$resp->ok()) {
                 $this->warn('HTTP ' . $resp->status());
+                Log::warning('news.import.http_status', [
+                    'url' => $feedUrl,
+                    'source' => $sourceName,
+                    'status' => $resp->status(),
+                ]);
                 continue;
             }
 
             $xml = $this->parseXml((string) $resp->body());
             if (!$xml) {
                 $this->warn('Invalid XML');
+                Log::warning('news.import.invalid_xml', [
+                    'url' => $feedUrl,
+                    'source' => $sourceName,
+                ]);
                 continue;
             }
 
             $items = $this->extractItems($xml);
             if (count($items) === 0) {
                 $this->warn('No items found');
+                Log::warning('news.import.no_items', [
+                    'url' => $feedUrl,
+                    'source' => $sourceName,
+                ]);
                 continue;
             }
+
+            $anyFeedOk = true;
 
             $imported = 0;
             foreach (array_slice($items, 0, $maxPerFeed) as $it) {
@@ -142,7 +169,14 @@ class ImportNewsRss extends Command
         }
 
         $this->info(sprintf('Done. Total: %d', $total));
-        return self::SUCCESS;
+
+        Log::info('news.import.done', [
+            'total' => $total,
+            'any_feed_ok' => $anyFeedOk,
+        ]);
+
+        // If nothing succeeded at all, return failure so cron/scheduler can detect the problem.
+        return $anyFeedOk ? self::SUCCESS : self::FAILURE;
     }
 
     private function inferSourceFromUrl(string $feedUrl): string

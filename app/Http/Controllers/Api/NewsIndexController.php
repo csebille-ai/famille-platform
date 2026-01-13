@@ -78,10 +78,23 @@ class NewsIndexController extends Controller
             ];
         })->values();
 
+        $latestFetchedAt = null;
+        try {
+            $raw = NewsItem::query()->max('fetched_at');
+            if (is_string($raw) && trim($raw) !== '') {
+                $latestFetchedAt = Carbon::parse($raw)->toIso8601String();
+            } elseif ($raw instanceof Carbon) {
+                $latestFetchedAt = $raw->toIso8601String();
+            }
+        } catch (\Throwable $e) {
+            $latestFetchedAt = null;
+        }
+
         return response()->json([
             'ok' => true,
             'items' => $itemsForUi,
             'next_cursor' => $nextCursor,
+            'latest_fetched_at' => $latestFetchedAt,
         ]);
     }
 
