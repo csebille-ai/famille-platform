@@ -58,7 +58,6 @@
         <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
             <div class="text-xs text-slate-500">Signe chinois</div>
             <div class="mt-1 text-sm font-semibold text-slate-900">{{ $chinese !== '' ? $chinese : '—' }}</div>
-            <div class="mt-1 text-xs text-slate-500">(inclut parfois Yin/Yang + élément)</div>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
