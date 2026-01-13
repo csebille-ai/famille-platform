@@ -54,8 +54,9 @@ class GenerateAstroCardJob implements ShouldQueue
             $iconPngBytes = $this->makeSquareIconPng($bytes, 1024);
 
             $ts = now()->format('YmdHis');
-            $cardKey = sprintf('astro/cards/%d/blason-card-%s.%s', (int) $user->id, $ts, $ext);
-            $iconKey = sprintf('astro/cards/%d/blason-icon-%s.png', (int) $user->id, $ts);
+            $uniq = $ts . '-' . bin2hex(random_bytes(3));
+            $cardKey = sprintf('astro/cards/%d/blason-card-%s.%s', (int) $user->id, $uniq, $ext);
+            $iconKey = sprintf('astro/cards/%d/blason-icon-%s.png', (int) $user->id, $uniq);
 
             $disk = Storage::disk('r2');
 
