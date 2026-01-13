@@ -92,6 +92,7 @@ class AstroCardPromptBuilder
             'LIFE_PATH' => (string) $lifePath,
             'LIFE_PATH_SIGIL' => $lifePathSigil,
             'LIFE_PATH_PIPS' => (string) $this->clampLifePathPips($lifePath),
+            'LIFE_PATH_DIGIT' => (string) $this->clampLifePathPips($lifePath),
             'TALENT_1' => $talent1,
             'TALENT_2' => $talent2,
             'TALENT_3' => $talent3,
@@ -166,13 +167,15 @@ class AstroCardPromptBuilder
     }
 
         /**
-            * @param array{RPG_CLASS:string,ARCHETYPE:string,MATERIALS_PALETTE:string,SHAPE_LANGUAGE:string,SUN_SIGN:string,SUN_CHARGE:string,SUN_MOTIF:string,ASC_SIGN:string,ASC_EMBLEM:string,CHINESE_SIGN:string,CHINESE_ELEMENT_POLARITY:string,CHINESE_TOTEM:string,CHINESE_PATTERN:string,LIFE_PATH:string,LIFE_PATH_SIGIL:string,LIFE_PATH_PIPS:string,TALENT_1:string,TALENT_2:string,TALENT_3:string,TALENT_1_GEAR:string,TALENT_2_GEAR:string,TALENT_3_GEAR:string,VIGILANCE_FLAW_CUE:string} $vars
+            * @param array{RPG_CLASS:string,ARCHETYPE:string,MATERIALS_PALETTE:string,SHAPE_LANGUAGE:string,SUN_SIGN:string,SUN_CHARGE:string,SUN_MOTIF:string,ASC_SIGN:string,ASC_EMBLEM:string,CHINESE_SIGN:string,CHINESE_ELEMENT_POLARITY:string,CHINESE_TOTEM:string,CHINESE_PATTERN:string,LIFE_PATH:string,LIFE_PATH_SIGIL:string,LIFE_PATH_PIPS:string,LIFE_PATH_DIGIT:string,TALENT_1:string,TALENT_2:string,TALENT_3:string,TALENT_1_GEAR:string,TALENT_2_GEAR:string,TALENT_3_GEAR:string,VIGILANCE_FLAW_CUE:string} $vars
          * @return array{0:string,1:string}
          */
     private function buildPrompt(array $vars): array
     {
         $template = <<<PROMPT
-Premium modern family coat-of-arms (blazon), 2:3 card composition. NO TEXT.
+        Premium modern family coat-of-arms (blazon), 2:3 card composition.
+
+        NO WORDS. The ONLY allowed character is the single digit "{{LIFE_PATH_DIGIT}}" (no other letters or numbers).
 
 ABSOLUTE RULES:
 - Emblem-only / heraldic design ONLY.
@@ -183,6 +186,11 @@ Composition:
 - Central shield/escutcheon with clean modern bevel frame (premium materials, minimal, no ornate filigree).
 - Above: crest. Around: subtle halo motifs and small heraldic badges.
 - Optional subtle supporters must be abstract animals only (silhouette relief), never humans.
+
+        Mood (IMPORTANT):
+        - Family-friendly, playful, warm, a bit whimsical.
+        - Use a colorful palette (2–4 accent colors) + soft gradients and gentle highlights.
+        - Avoid monochrome / austere / overly serious vibes.
 
 Style:
 - High-end emblem design, crisp vector-like shapes with a touch of painterly depth.
@@ -198,7 +206,8 @@ Astro signature (MUST be visible as symbols, NOT words):
     - totem: {{CHINESE_TOTEM}} rendered as a wax seal emblem or carved relief (serious, not cute)
     - micro-pattern: {{CHINESE_PATTERN}} integrated into the shield field
 4) Life path {{LIFE_PATH}} as the "card number":
-    - represent it as exactly {{LIFE_PATH_PIPS}} small pips/dots (constellation) in a corner cartouche (NO digits)
+    - place the digit "{{LIFE_PATH_DIGIT}}" directly UNDER the sun emblem, inside a small friendly cartouche/badge (this is the ONLY allowed character)
+    - also represent it as exactly {{LIFE_PATH_PIPS}} small pips/dots (constellation) nearby (no other digits)
     - also include a geometric sigil engraving: {{LIFE_PATH_SIGIL}}
 5) Talents (3) as three small badges/tools around the shield, no text:
     - {{TALENT_1}} => {{TALENT_1_GEAR}}
@@ -215,7 +224,7 @@ PROMPT;
         $negative = implode(', ', [
             'text',
             'letters',
-            'numbers',
+            'long text',
             'watermark',
             'logo',
             'signature',
