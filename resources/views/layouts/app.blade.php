@@ -367,6 +367,24 @@
                     <input id="global-cloud-upload-input" name="file" type="file" accept="image/*,video/*,application/pdf" />
                 </form>
 
+                <div id="global-cloud-upload-overlay" class="fixed inset-0 z-[60] hidden" aria-modal="true" role="dialog">
+                    <div class="absolute inset-0 bg-black/40"></div>
+                    <div class="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white p-4 shadow-sm sm:inset-0 sm:m-auto sm:h-auto sm:max-w-md sm:rounded-2xl">
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm font-semibold text-gray-900">Upload…</div>
+                            <button type="button" id="global-cloud-upload-cancel" class="text-sm font-medium text-gray-600 hover:text-gray-900">Fermer</button>
+                        </div>
+
+                        <div class="mt-3">
+                            <div class="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                                <div id="global-cloud-upload-bar" class="h-2 rounded-full bg-slate-900" style="width: 0%"></div>
+                            </div>
+                            <div id="global-cloud-upload-text" class="mt-2 text-sm text-gray-700">Préparation…</div>
+                            <div id="global-cloud-upload-hint" class="microcopy mt-1 text-xs text-gray-500">Un fichier de 300–400MB peut prendre un moment selon la connexion.</div>
+                        </div>
+                    </div>
+                </div>
+
                 <script>
                     window.openGlobalUploadPicker = function () {
                         const input = document.getElementById('global-cloud-upload-input');
@@ -377,10 +395,108 @@
                         const input = document.getElementById('global-cloud-upload-input');
                         if (!input) return;
 
+                        const form = document.getElementById('global-cloud-upload-form');
+                        const overlay = document.getElementById('global-cloud-upload-overlay');
+                        const bar = document.getElementById('global-cloud-upload-bar');
+                        const text = document.getElementById('global-cloud-upload-text');
+                        const cancelBtn = document.getElementById('global-cloud-upload-cancel');
+
+                        let currentXhr = null;
+
+                        const showOverlay = () => {
+                            if (!overlay) return;
+                            overlay.classList.remove('hidden');
+                        };
+
+                        const hideOverlay = () => {
+                            if (!overlay) return;
+                            overlay.classList.add('hidden');
+                        };
+
+                        const setProgress = (pct, label) => {
+                            if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+                            if (text && typeof label === 'string') text.textContent = label;
+                        };
+
+                        const formatBytes = (bytes) => {
+                            if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+                            const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                            let v = bytes;
+                            let i = 0;
+                            while (v >= 1024 && i < units.length - 1) {
+                                v /= 1024;
+                                i++;
+                            }
+                            const n = v >= 10 ? v.toFixed(0) : v.toFixed(1);
+                            return n + ' ' + units[i];
+                        };
+
+                        if (cancelBtn) {
+                            cancelBtn.addEventListener('click', function () {
+                                if (currentXhr) {
+                                    try { currentXhr.abort(); } catch (e) {}
+                                    currentXhr = null;
+                                }
+                                hideOverlay();
+                            });
+                        }
+
                         input.addEventListener('change', function () {
                             if (!input.files || input.files.length === 0) return;
-                            const form = document.getElementById('global-cloud-upload-form');
-                            if (form) form.submit();
+                            if (!form) return;
+
+                            const fd = new FormData(form);
+                            const file = input.files[0];
+
+                            showOverlay();
+                            setProgress(0, 'Démarrage…');
+
+                            const xhr = new XMLHttpRequest();
+                            currentXhr = xhr;
+
+                            xhr.open('POST', form.action, true);
+                            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+                            xhr.upload.onprogress = function (e) {
+                                if (!e.lengthComputable) {
+                                    setProgress(5, 'Upload…');
+                                    return;
+                                }
+                                const pct = Math.round((e.loaded / e.total) * 100);
+                                setProgress(pct, `Upload… ${pct}% (${formatBytes(e.loaded)} / ${formatBytes(e.total)})`);
+                            };
+
+                            xhr.onload = function () {
+                                const finalUrl = xhr.responseURL || null;
+                                setProgress(100, 'Finalisation…');
+
+                                // Ensure we re-navigate so session flashes/errors display properly.
+                                if (finalUrl) {
+                                    window.location.href = finalUrl;
+                                    return;
+                                }
+
+                                // Fallback: reload.
+                                window.location.reload();
+                            };
+
+                            xhr.onerror = function () {
+                                setProgress(0, 'Erreur réseau pendant l\'upload.');
+                                currentXhr = null;
+                            };
+
+                            xhr.onabort = function () {
+                                setProgress(0, 'Annulé.');
+                                currentXhr = null;
+                            };
+
+                            // Send
+                            try {
+                                xhr.send(fd);
+                            } catch (e) {
+                                setProgress(0, 'Impossible de démarrer l\'upload.');
+                                currentXhr = null;
+                            }
                         });
                     })();
                 </script>
