@@ -511,14 +511,24 @@ class CloudNodeController extends Controller
     {
         Gate::authorize('cloud-write');
 
-        $configMaxKb = (int) config('cloud.max_upload_kb', 10240);
+        // Per-request server limit (relevant for the chunk POSTs, not for init).
+        $perRequestMaxKb = (int) config('cloud.max_upload_kb', 10240);
         $iniMaxKb = $this->phpIniMaxUploadKb();
-        $maxKb = $iniMaxKb > 0 ? min($configMaxKb, $iniMaxKb) : $configMaxKb;
-        $maxBytes = max(1, $maxKb) * 1024;
+        $effectivePerRequestMaxKb = $iniMaxKb > 0 ? min($perRequestMaxKb, $iniMaxKb) : $perRequestMaxKb;
+        $effectivePerRequestMaxBytes = max(1, $effectivePerRequestMaxKb) * 1024;
+
+        // Total file size limit (relevant for chunked uploads).
+        $maxFileKb = (int) config('cloud.max_file_kb', 0);
+        $maxFileBytes = $maxFileKb > 0 ? max(1, $maxFileKb) * 1024 : null;
+
+        $sizeRules = ['required', 'integer', 'min:1'];
+        if ($maxFileBytes !== null) {
+            $sizeRules[] = 'max:' . $maxFileBytes;
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'size' => ['required', 'integer', 'min:1', 'max:' . $maxBytes],
+            'size' => $sizeRules,
             'mime' => ['nullable', 'string', 'max:255'],
             'parent_id' => ['nullable', 'integer', 'exists:cloud_nodes,id'],
             'return' => ['nullable', 'string', 'max:2048'],
@@ -563,7 +573,13 @@ class CloudNodeController extends Controller
         }
 
         // Choose a conservative chunk size to stay under host limits.
-        $chunkSize = 5 * 1024 * 1024; // 5MB
+        // Keep it safely under the per-request max (if known) to avoid 413/POST size errors.
+        $chunkSize = 5 * 1024 * 1024; // 5MB default
+        if ($effectivePerRequestMaxBytes > 0) {
+            $headroom = 1024 * 1024; // 1MB for headers/form overhead
+            $ceiling = max(1024 * 1024, $effectivePerRequestMaxBytes - $headroom);
+            $chunkSize = min($chunkSize, $ceiling);
+        }
         $totalChunks = (int) max(1, (int) ceil($size / $chunkSize));
 
         $uploadId = (string) Str::uuid();
