@@ -74,7 +74,7 @@
                                     class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
                                     aria-label="Tarot"
                                 >
-                                    <i class="ph ph-sparkle" aria-hidden="true"></i>
+                                    <img src="{{ asset('images/tirage.png') }}" alt="" class="h-6 w-6" aria-hidden="true" loading="lazy" />
                                     @if($hasTarotDraft)
                                         <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white"></span>
                                     @endif
