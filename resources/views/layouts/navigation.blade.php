@@ -17,6 +17,7 @@
 
     $mobileTitle = '—';
     if ($isHome) $mobileTitle = 'Accueil';
+    elseif (request()->routeIs('profile.*')) $mobileTitle = 'Profile';
     elseif (request()->routeIs('mediatheque.index') || request()->routeIs('videos.index')) $mobileTitle = 'Médiathèque';
     elseif (request()->routeIs('images.*')) $mobileTitle = 'Photo';
     elseif (request()->routeIs('videos.*')) $mobileTitle = 'Vidéo';

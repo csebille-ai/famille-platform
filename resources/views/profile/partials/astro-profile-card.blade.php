@@ -44,34 +44,34 @@
         </div>
     </div>
 
-    <div class="mt-4 grid gap-3 sm:grid-cols-2">
-        <div class="rounded-xl border p-4" style="background: rgba(79, 70, 229, 0.08); border-color: rgba(79, 70, 229, 0.28);">
+    <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="rounded-xl border p-3 sm:p-4" style="background: rgba(79, 70, 229, 0.08); border-color: rgba(79, 70, 229, 0.28);">
             <div class="text-xs font-semibold" style="color: #3730a3;">Soleil</div>
             <div class="mt-1 text-base font-extrabold text-slate-900">{{ $sunSign !== '' ? $sunSign : '—' }}</div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
             <div class="text-xs text-slate-500">Ascendant</div>
             <div class="mt-1 text-sm font-semibold text-slate-900">{{ $ascendant !== '' ? $ascendant : '—' }}</div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
             <div class="text-xs text-slate-500">Signe chinois</div>
             <div class="mt-1 text-sm font-semibold text-slate-900">{{ $chinese !== '' ? $chinese : '—' }}</div>
             <div class="mt-1 text-xs text-slate-500">(inclut parfois Yin/Yang + élément)</div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
             <div class="text-xs text-slate-500">Numérologie</div>
             <div class="mt-1 text-sm font-semibold text-slate-900">{{ $numerology !== '' ? $numerology : '—' }}</div>
         </div>
 
-        <div class="rounded-xl border p-4" style="background: rgba(217, 119, 6, 0.10); border-color: rgba(217, 119, 6, 0.30);">
+        <div class="rounded-xl border p-3 sm:p-4" style="background: rgba(217, 119, 6, 0.10); border-color: rgba(217, 119, 6, 0.30);">
             <div class="text-xs font-semibold" style="color: #92400e;">Archétype</div>
             <div class="mt-1 text-sm font-bold text-slate-900">{{ $archetype !== '' ? $archetype : '—' }}</div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
             <div class="text-xs text-slate-500">Talents</div>
             <div class="mt-2 flex flex-wrap gap-2">
                 @foreach($talents as $t)
@@ -83,7 +83,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <div class="col-span-2 rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
             <div class="text-xs text-slate-500">Point de vigilance</div>
             <div class="mt-1 text-sm font-semibold text-slate-900">{{ $vigilance !== '' ? $vigilance : '—' }}</div>
         </div>
