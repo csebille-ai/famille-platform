@@ -178,38 +178,18 @@
                             </button>
                         </div>
 
-                        <div class="shrink-0 relative" x-data="{ open: false }" x-on:keydown.escape.window="open = false">
+                        @can('cloud-write')
+                        <div class="shrink-0">
                             <button
                                 type="button"
                                 class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
                                 aria-label="Ajouter"
-                                x-on:click="open = !open"
+                                onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker()"
                             >
                                 <i class="ph ph-plus" aria-hidden="true"></i>
                             </button>
-
-                            <div
-                                x-show="open"
-                                x-cloak
-                                x-on:click.outside="open = false"
-                                class="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-lg p-1"
-                            >
-                                <a
-                                    href="{{ route('cloud.index') }}"
-                                    class="block w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                                    x-on:click="open = false"
-                                >
-                                    Ajouter un film
-                                </a>
-                                <a
-                                    href="{{ route('cloud.index') }}"
-                                    class="block w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                                    x-on:click="open = false"
-                                >
-                                    Ajouter une série
-                                </a>
-                            </div>
                         </div>
+                        @endcan
                     </div>
                 </div>
             </div>

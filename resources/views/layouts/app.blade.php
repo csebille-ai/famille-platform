@@ -352,12 +352,39 @@
                             </div>
 
                             <div class="mt-4">
-                                <a href="{{ route('cloud.index') }}" class="block rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Uploader</a>
+                                <button type="button" @click="addOpen = false; window.openGlobalUploadPicker && window.openGlobalUploadPicker()" class="w-full rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Uploader</button>
                             </div>
                         </div>
                     </div>
                 </div>
             @endunless
+
+            @can('cloud-write')
+                <form id="global-cloud-upload-form" method="POST" action="{{ route('cloud.files.store') }}" enctype="multipart/form-data" class="hidden">
+                    @csrf
+                    <input type="hidden" name="parent_id" value="" />
+                    <input type="hidden" name="return" value="{{ request()->getRequestUri() }}" />
+                    <input id="global-cloud-upload-input" name="file" type="file" accept="image/*,video/*,application/pdf" />
+                </form>
+
+                <script>
+                    window.openGlobalUploadPicker = function () {
+                        const input = document.getElementById('global-cloud-upload-input');
+                        if (input) input.click();
+                    };
+
+                    (function () {
+                        const input = document.getElementById('global-cloud-upload-input');
+                        if (!input) return;
+
+                        input.addEventListener('change', function () {
+                            if (!input.files || input.files.length === 0) return;
+                            const form = document.getElementById('global-cloud-upload-form');
+                            if (form) form.submit();
+                        });
+                    })();
+                </script>
+            @endcan
         </div>
     </body>
 </html>

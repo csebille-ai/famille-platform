@@ -13,6 +13,28 @@ use Illuminate\Support\Facades\Storage;
 
 class CloudNodeController extends Controller
 {
+    private function safeReturnPath(?string $path): ?string
+    {
+        if ($path === null) {
+            return null;
+        }
+
+        $path = trim($path);
+        if ($path === '') {
+            return null;
+        }
+
+        // Only allow same-site relative paths to avoid open redirects.
+        if (str_contains($path, '://') || str_starts_with($path, '//')) {
+            return null;
+        }
+        if (!str_starts_with($path, '/')) {
+            return null;
+        }
+
+        return $path;
+    }
+
     private function audit(string $action, ?CloudNode $node = null, array $meta = []): void
     {
         CloudAuditLog::create([
@@ -283,7 +305,7 @@ class CloudNodeController extends Controller
         $maxKb = $iniMaxKb > 0 ? min($configMaxKb, $iniMaxKb) : $configMaxKb;
 
         $validated = $request->validate([
-            'parent_id' => ['required', 'integer', 'exists:cloud_nodes,id'],
+            'parent_id' => ['nullable', 'integer', 'exists:cloud_nodes,id'],
             'file' => [
                 'required',
                 'file',
@@ -313,11 +335,16 @@ class CloudNodeController extends Controller
             'file.max' => __('The file may not be greater than :max kilobytes.', ['max' => $maxKb]),
         ]);
 
-        $parent = CloudNode::query()->findOrFail($validated['parent_id']);
-        if (!$parent->isFolder()) {
-            throw ValidationException::withMessages([
-                'parent_id' => __('Invalid destination folder.'),
-            ]);
+        $parentId = $validated['parent_id'] ?? null;
+        if ($parentId === null) {
+            $parent = $this->rootFolder();
+        } else {
+            $parent = CloudNode::query()->findOrFail($parentId);
+            if (!$parent->isFolder()) {
+                throw ValidationException::withMessages([
+                    'parent_id' => __('Invalid destination folder.'),
+                ]);
+            }
         }
 
         if (!$request->hasFile('file')) {
@@ -378,6 +405,11 @@ class CloudNodeController extends Controller
         $mime = (string) ($node->mime ?? '');
         if (str_starts_with($mime, 'video/')) {
             return redirect()->route('videos.classify', ['node' => $node->id]);
+        }
+
+        $returnPath = $this->safeReturnPath($request->input('return') ?: $request->query('return'));
+        if ($returnPath !== null) {
+            return redirect($returnPath)->with('status', __('File uploaded.'));
         }
 
         return redirect()->route('cloud.index', ['folder' => $parent->id])
