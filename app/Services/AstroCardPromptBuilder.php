@@ -182,7 +182,8 @@ class AstroCardPromptBuilder
 ABSOLUTE RULES:
 - Emblem-only / heraldic design ONLY.
 - NO people, NO human, NO character, NO portrait, NO face, NO body.
-- NO armor, NO clothing, NO warrior, NO weapons.
+    - NO armor, NO clothing, NO warrior. No realistic weapons.
+    - Symbolic zodiac icons are allowed (e.g. Sagittarius bow/arrow as a glyph emblem).
 - DO NOT use ANY other western zodiac sign symbol. The central shield MUST represent {{SUN_SIGN}}.
 
 Composition:
@@ -203,7 +204,8 @@ Style:
 Astro signature (MUST be visible as symbols, NOT words):
 1) Sun sign {{SUN_SIGN}} at the CENTER of the shield:
     - central heraldic charge MUST be unmistakably {{SUN_SIGN}}: {{SUN_CHARGE}}
-    - it must be the only central charge (no other zodiac glyphs)
+    - MUST be the dominant element on the shield (occupy ~60% of shield area)
+    - MUST be the ONLY central charge (no other zodiac glyphs)
     - background halo motif (very subtle): {{SUN_MOTIF}}
 2) Ascendant {{ASC_SIGN}} as a clear heraldic emblem on the crest:
     - emblem: {{ASC_EMBLEM}} (recognizable, icon-like)
@@ -211,7 +213,8 @@ Astro signature (MUST be visible as symbols, NOT words):
     - totem: {{CHINESE_TOTEM}} rendered as a wax seal emblem or carved relief (serious, not cute)
     - micro-pattern: {{CHINESE_PATTERN}} integrated into the shield field
 4) Life path {{LIFE_PATH}} as the "card number":
-    - place the digit "{{LIFE_PATH_DIGIT}}" directly UNDER the sun emblem, inside a small friendly cartouche/badge (this is the ONLY allowed character)
+    - place the digit "{{LIFE_PATH_DIGIT}}" directly UNDER the sun emblem, inside a SMALL friendly cartouche/badge (this is the ONLY allowed character)
+    - IMPORTANT: the digit must be small and secondary (do NOT dominate the image)
     - also represent it as exactly {{LIFE_PATH_PIPS}} small pips/dots (constellation) nearby (no other digits)
     - also include a geometric sigil engraving: {{LIFE_PATH_SIGIL}}
 5) Talents (3) as three small badges/tools around the shield, no text:
@@ -242,7 +245,7 @@ PROMPT;
             'character',
             'wings',
             'feathers',
-            'weapon',
+            'realistic weapon',
             'sword',
             'gun',
             'blood',
@@ -251,6 +254,8 @@ PROMPT;
             'armor',
             'soldier',
             'violent',
+            'giant number',
+            'big number in center',
             'ornate filigree overload',
             'tarot poster',
             'art nouveau',
