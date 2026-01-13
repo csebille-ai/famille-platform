@@ -4,6 +4,7 @@ namespace App\Services\Astro\Images;
 
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CloudflareWorkersAiImageProvider implements ImageProvider
 {
@@ -66,6 +67,12 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
 
         try {
             if ($this->modelRequiresMultipartWrapper($model)) {
+                Log::warning('Workers AI image generation: using multipart wrapper (model requires it).', [
+                    'model' => $model,
+                    'size' => "{$w}x{$h}",
+                    'has_seed' => $seedInt !== null,
+                    'has_negative' => is_string($negative) && trim($negative) !== '',
+                ]);
                 $resp = $this->postMultipartWrapper($request, $url, $prompt, $w, $h, $seedInt, $negative);
             } else {
                 try {
@@ -73,6 +80,12 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
                 } catch (RequestException $e) {
                     // Some models (e.g. flux-2-dev) require a multipart wrapper; retry automatically.
                     if ($this->isMultipartRequiredError($e)) {
+                        Log::warning('Workers AI image generation: retrying with multipart wrapper (API requires multipart).', [
+                            'model' => $model,
+                            'size' => "{$w}x{$h}",
+                            'has_seed' => $seedInt !== null,
+                            'has_negative' => is_string($negative) && trim($negative) !== '',
+                        ]);
                         $resp = $this->postMultipartWrapper($request, $url, $prompt, $w, $h, $seedInt, $negative);
                     } else {
                         throw $e;
@@ -217,6 +230,11 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             if (!$canRetry) {
                 throw $e;
             }
+
+            Log::warning('Workers AI image generation: multipart wrapper rejected extra fields; retrying with prompt-only.', [
+                'status' => $code,
+                'message' => (string) $msg,
+            ]);
 
             return $request->post($url, [
                 'multipart' => [
