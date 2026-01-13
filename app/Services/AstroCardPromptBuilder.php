@@ -50,7 +50,7 @@ class AstroCardPromptBuilder
         // Keep the old key for backward compatibility; meaning is now "heraldic theme".
         $rpgClass = 'Heraldry';
 
-        [$sunSilhouette, $sunMotif] = $this->mapSunSignToSilhouetteAndMotif($sun);
+        [$sunCharge, $sunMotif] = $this->mapSunSignToChargeAndMotif($sun);
         $ascEmblem = $this->mapAscendantToEmblem($asc);
         [$materialsPalette, $shapeLanguage] = $this->mapPolarityElementToMaterialsAndShapes($polarity, $element);
 
@@ -60,7 +60,7 @@ class AstroCardPromptBuilder
         $chinesePattern = $this->mapChineseElementPolarityToPattern($polarity, $element);
 
         $lifePathSigil = $this->mapLifePathToSigil($lifePath);
-        $vigilanceFlawCue = $this->mapVigilanceToFlawCue($vigilance, $seedHint);
+        $vigilanceFlawCue = $this->mapVigilanceToHeraldicFlawCue($vigilance, $seedHint);
 
         // Talents -> 3 concrete gear details/badges (NOT text).
         [$talent1, $talent2, $talent3] = $this->pickThreeTalents($talents);
@@ -75,7 +75,7 @@ class AstroCardPromptBuilder
             'ARCHETYPE' => $archetype,
 
             'SUN_SIGN' => $sun,
-            'SUN_SILHOUETTE' => $sunSilhouette,
+            'SUN_CHARGE' => $sunCharge,
             'SUN_MOTIF' => $sunMotif,
             'ASC_SIGN' => $asc,
             'ASC_EMBLEM' => $ascEmblem,
@@ -165,19 +165,24 @@ class AstroCardPromptBuilder
         return [$tags[0], $tags[1], $tags[2]];
     }
 
-    /**
-      * @param array{RPG_CLASS:string,ARCHETYPE:string,MATERIALS_PALETTE:string,SHAPE_LANGUAGE:string,SUN_SIGN:string,SUN_SILHOUETTE:string,SUN_MOTIF:string,ASC_SIGN:string,ASC_EMBLEM:string,CHINESE_SIGN:string,CHINESE_ELEMENT_POLARITY:string,CHINESE_TOTEM:string,CHINESE_PATTERN:string,LIFE_PATH:string,LIFE_PATH_SIGIL:string,LIFE_PATH_PIPS:string,TALENT_1:string,TALENT_2:string,TALENT_3:string,TALENT_1_GEAR:string,TALENT_2_GEAR:string,TALENT_3_GEAR:string,VIGILANCE_FLAW_CUE:string} $vars
-     * @return array{0:string,1:string}
-     */
+        /**
+            * @param array{RPG_CLASS:string,ARCHETYPE:string,MATERIALS_PALETTE:string,SHAPE_LANGUAGE:string,SUN_SIGN:string,SUN_CHARGE:string,SUN_MOTIF:string,ASC_SIGN:string,ASC_EMBLEM:string,CHINESE_SIGN:string,CHINESE_ELEMENT_POLARITY:string,CHINESE_TOTEM:string,CHINESE_PATTERN:string,LIFE_PATH:string,LIFE_PATH_SIGIL:string,LIFE_PATH_PIPS:string,TALENT_1:string,TALENT_2:string,TALENT_3:string,TALENT_1_GEAR:string,TALENT_2_GEAR:string,TALENT_3_GEAR:string,VIGILANCE_FLAW_CUE:string} $vars
+         * @return array{0:string,1:string}
+         */
     private function buildPrompt(array $vars): array
     {
         $template = <<<PROMPT
 Premium modern family coat-of-arms (blazon), 2:3 card composition. NO TEXT.
 
+ABSOLUTE RULES:
+- Emblem-only / heraldic design ONLY.
+- NO people, NO human, NO character, NO portrait, NO face, NO body.
+- NO armor, NO clothing, NO warrior, NO weapons.
+
 Composition:
 - Central shield/escutcheon with clean modern bevel frame (premium materials, minimal, no ornate filigree).
 - Above: crest. Around: subtle halo motifs and small heraldic badges.
-- Optional two subtle supporters (abstract animals/guardians), non-violent, family-friendly.
+- Optional subtle supporters must be abstract animals only (silhouette relief), never humans.
 
 Style:
 - High-end emblem design, crisp vector-like shapes with a touch of painterly depth.
@@ -185,7 +190,7 @@ Style:
 
 Astro signature (MUST be visible as symbols, NOT words):
 1) Sun sign {{SUN_SIGN}} at the CENTER of the shield:
-    - silhouette cue: {{SUN_SILHOUETTE}}
+    - central heraldic charge (symbol): {{SUN_CHARGE}}
     - background halo motif (very subtle): {{SUN_MOTIF}}
 2) Ascendant {{ASC_SIGN}} as a clear heraldic emblem on the crest:
     - emblem: {{ASC_EMBLEM}} (recognizable, icon-like)
@@ -216,6 +221,11 @@ PROMPT;
             'signature',
             'caption',
             'typography',
+            'person',
+            'human',
+            'face',
+            'portrait',
+            'character',
             'weapon',
             'sword',
             'gun',
@@ -225,7 +235,6 @@ PROMPT;
             'armor',
             'soldier',
             'violent',
-            'rpg character',
             'ornate filigree overload',
             'tarot poster',
             'art nouveau',
@@ -265,11 +274,56 @@ PROMPT;
         return max(1, min(9, $n));
     }
 
-    private function mapVigilanceToFlawCue(string $vigilance, string $seedHint): string
+    private function mapVigilanceToHeraldicFlawCue(string $vigilance, string $seedHint): string
     {
-        // Reuse the existing mapping without carrying pose/expression into the prompt.
-        [, , $flaw] = $this->mapVigilanceToPoseExpressionAndFlaw($vigilance, $seedHint);
-        return $flaw;
+        $v = Str::of($vigilance)->lower()->ascii();
+
+        if (str_contains($v, 'control') || str_contains($v, 'controle') || str_contains($v, 'contr')) {
+            return 'too-perfect symmetry with a barely noticeable rigid alignment (subtle)';
+        }
+        if (str_contains($v, 'doute')) {
+            return 'a tiny off-center balance in the composition (subtle)';
+        }
+        if (str_contains($v, 'peur') || str_contains($v, 'anx')) {
+            return 'slightly sharper micro-patterns as if over-alert (subtle)';
+        }
+        if (str_contains($v, 'colere') || str_contains($v, 'rage')) {
+            return 'a hint of warm ember glow in one corner (subtle)';
+        }
+
+        $fallback = [
+            'a hairline crack in the enamel (subtle)',
+            'a tiny imperfect gilding edge (subtle)',
+            'a slight asymmetry in one corner notch (subtle)',
+            'a faint ripple in the halo motif (subtle)',
+        ];
+
+        $idx = hexdec(substr(sha1($seedHint . '|heraldry-flaw'), 0, 2)) % count($fallback);
+        return $fallback[$idx];
+    }
+
+    /**
+     * @return array{0:string,1:string} [sunCharge, sunMotif]
+     */
+    private function mapSunSignToChargeAndMotif(string $sun): array
+    {
+        $k = $this->key($sun);
+
+        return match ($k) {
+            'belier', 'aries' => ['ram horns emblem (stylized, no skull), angular lines', 'very subtle chevron sparks / ember-streaks'],
+            'taureau', 'taurus' => ['bull head emblem (stylized), strong curves', 'subtle concentric rings / grounded wave ripples'],
+            'gemeaux', 'gemini' => ['twin stars or mirrored glyphs (abstract), paired symmetry', 'subtle dual ribbons / mirrored arcs'],
+            'cancer' => ['crab shell emblem (stylized), protective curves', 'subtle moon-tide ripples'],
+            'lion', 'leo' => ['lion head emblem (stylized), radiant mane rays', 'subtle sunburst rays'],
+            'vierge', 'virgo' => ['wheat sheaf emblem (stylized), clean vertical rhythm', 'subtle fine-grain dotted field'],
+            'balance', 'libra' => ['balanced scales emblem (minimal), precise geometry', 'subtle symmetrical lattice'],
+            'scorpion', 'scorpio' => ['scorpion emblem (stylized), sharp tail curve', 'subtle smoky curl / shadow spirals'],
+            'sagittaire', 'sagittarius' => ['bow and arrow emblem (no archer), dynamic diagonal', 'subtle star-trail streaks'],
+            'capricorne', 'capricorn' => ['sea-goat emblem (stylized), horn + wave fusion', 'subtle mountain-and-sea gradient bands'],
+            'verseau', 'aquarius' => ['water waves emblem (abstract), flowing bands', 'subtle cascading lines / droplets'],
+            'poissons', 'pisces' => ['two fish emblem (stylized), circular flow', 'subtle spiral currents'],
+            default => ['abstract solar emblem (heraldic charge), clean geometry', 'subtle halo sigils'],
+        };
     }
 
     /**
