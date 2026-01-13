@@ -9,7 +9,7 @@ class AstroCardPromptBuilder
 {
     /**
      * @param array<string,mixed> $signature
-     * @return array{prompt:string, negative_prompt:string, seed:string, title:string, signature_line:string, tag1:string, tag2:string, tag3:string, rpg_class:string}
+    * @return array{prompt:string, negative_prompt:string, seed:string, title:string, signature_line:string, tag1:string, tag2:string, tag3:string, rpg_class:string, card_number:int}
      */
     public function build(User $user, array $signature): array
     {
@@ -43,11 +43,12 @@ class AstroCardPromptBuilder
             $lifePath,
         );
 
-        $title = 'LE ' . mb_strtoupper($archetype, 'UTF-8');
+        $title = 'BLASON • ' . mb_strtoupper($archetype, 'UTF-8');
 
         $seedHint = (string) $user->id . '|' . $this->canonicalJson($signature);
 
-        [$rpgClass, $weapon, $secondaryGear] = $this->mapArchetypeToLoadout($archetype);
+        // Keep the old key for backward compatibility; meaning is now "heraldic theme".
+        $rpgClass = 'Heraldry';
 
         [$sunSilhouette, $sunMotif] = $this->mapSunSignToSilhouetteAndMotif($sun);
         $ascEmblem = $this->mapAscendantToEmblem($asc);
@@ -59,7 +60,7 @@ class AstroCardPromptBuilder
         $chinesePattern = $this->mapChineseElementPolarityToPattern($polarity, $element);
 
         $lifePathSigil = $this->mapLifePathToSigil($lifePath);
-        [$poseCue, $expressionCue, $vigilanceFlawCue] = $this->mapVigilanceToPoseExpressionAndFlaw($vigilance, $seedHint);
+        $vigilanceFlawCue = $this->mapVigilanceToFlawCue($vigilance, $seedHint);
 
         // Talents -> 3 concrete gear details/badges (NOT text).
         [$talent1, $talent2, $talent3] = $this->pickThreeTalents($talents);
@@ -72,12 +73,6 @@ class AstroCardPromptBuilder
         [$prompt, $negativePrompt] = $this->buildPrompt([
             'RPG_CLASS' => $rpgClass,
             'ARCHETYPE' => $archetype,
-            'WEAPON' => $weapon,
-            'SECONDARY_GEAR' => $secondaryGear,
-
-            'POSE_CUE' => $poseCue,
-            'EXPRESSION_CUE' => $expressionCue,
-            'VIGILANCE_FLAW_CUE' => $vigilanceFlawCue,
 
             'SUN_SIGN' => $sun,
             'SUN_SILHOUETTE' => $sunSilhouette,
@@ -96,12 +91,14 @@ class AstroCardPromptBuilder
             'SHAPE_LANGUAGE' => $shapeLanguage,
             'LIFE_PATH' => (string) $lifePath,
             'LIFE_PATH_SIGIL' => $lifePathSigil,
+            'LIFE_PATH_PIPS' => (string) $this->clampLifePathPips($lifePath),
             'TALENT_1' => $talent1,
             'TALENT_2' => $talent2,
             'TALENT_3' => $talent3,
             'TALENT_1_GEAR' => $t1Gear,
             'TALENT_2_GEAR' => $t2Gear,
             'TALENT_3_GEAR' => $t3Gear,
+            'VIGILANCE_FLAW_CUE' => $vigilanceFlawCue,
         ]);
 
         return [
@@ -114,6 +111,7 @@ class AstroCardPromptBuilder
             'tag2' => $tag2,
             'tag3' => $tag3,
             'rpg_class' => $rpgClass,
+            'card_number' => $this->clampLifePathPips($lifePath),
         ];
     }
 
@@ -121,7 +119,7 @@ class AstroCardPromptBuilder
      * Convenience for UI overlays.
      *
      * @param array<string,mixed> $signature
-     * @return array{title:string, signature_line:string, tags:list<string>}
+        * @return array{title:string, signature_line:string, card_number:mixed, tags:list<string>}
      */
     public function overlay(User $user, array $signature): array
     {
@@ -129,6 +127,7 @@ class AstroCardPromptBuilder
         return [
             'title' => $built['title'],
             'signature_line' => $built['signature_line'],
+            'card_number' => $built['card_number'] ?? null,
             'tags' => array_values(array_filter([$built['tag1'], $built['tag2'], $built['tag3']], fn ($t) => is_string($t) && trim($t) !== '' && trim($t) !== '—')),
         ];
     }
@@ -167,43 +166,43 @@ class AstroCardPromptBuilder
     }
 
     /**
-      * @param array{RPG_CLASS:string,ARCHETYPE:string,POSE_CUE:string,EXPRESSION_CUE:string,WEAPON:string,SECONDARY_GEAR:string,MATERIALS_PALETTE:string,SHAPE_LANGUAGE:string,SUN_SIGN:string,SUN_SILHOUETTE:string,SUN_MOTIF:string,ASC_SIGN:string,ASC_EMBLEM:string,CHINESE_SIGN:string,CHINESE_ELEMENT_POLARITY:string,CHINESE_TOTEM:string,CHINESE_PATTERN:string,LIFE_PATH:string,LIFE_PATH_SIGIL:string,TALENT_1:string,TALENT_2:string,TALENT_3:string,TALENT_1_GEAR:string,TALENT_2_GEAR:string,TALENT_3_GEAR:string,VIGILANCE_FLAW_CUE:string} $vars
+      * @param array{RPG_CLASS:string,ARCHETYPE:string,MATERIALS_PALETTE:string,SHAPE_LANGUAGE:string,SUN_SIGN:string,SUN_SILHOUETTE:string,SUN_MOTIF:string,ASC_SIGN:string,ASC_EMBLEM:string,CHINESE_SIGN:string,CHINESE_ELEMENT_POLARITY:string,CHINESE_TOTEM:string,CHINESE_PATTERN:string,LIFE_PATH:string,LIFE_PATH_SIGIL:string,LIFE_PATH_PIPS:string,TALENT_1:string,TALENT_2:string,TALENT_3:string,TALENT_1_GEAR:string,TALENT_2_GEAR:string,TALENT_3_GEAR:string,VIGILANCE_FLAW_CUE:string} $vars
      * @return array{0:string,1:string}
      */
     private function buildPrompt(array $vars): array
     {
         $template = <<<PROMPT
-Premium RPG character card, 2:3 portrait, full-body single character centered, cinematic AAA game key art. NO TEXT.
+Premium modern family coat-of-arms (blazon), 2:3 card composition. NO TEXT.
 
-Include a clean modern RPG trading-card frame integrated into the artwork:
-- Thin beveled border, subtle corner notches/rivets, premium materials (no ornate filigree).
-- Frame must NOT contain any letters or symbols that look like text.
+Composition:
+- Central shield/escutcheon with clean modern bevel frame (premium materials, minimal, no ornate filigree).
+- Above: crest. Around: subtle halo motifs and small heraldic badges.
+- Optional two subtle supporters (abstract animals/guardians), non-violent, family-friendly.
 
-Character core:
-- Class: {{RPG_CLASS}} (from archetype: {{ARCHETYPE}})
-- Pose: {{POSE_CUE}}. Expression: {{EXPRESSION_CUE}}.
-- Primary weapon: {{WEAPON}}. Secondary gear: {{SECONDARY_GEAR}}.
-- Outfit materials/palette: {{MATERIALS_PALETTE}}. Shape language: {{SHAPE_LANGUAGE}}.
+Style:
+- High-end emblem design, crisp vector-like shapes with a touch of painterly depth.
+- Materials/palette: {{MATERIALS_PALETTE}}. Shape language: {{SHAPE_LANGUAGE}}.
 
-Astro synthesis (MUST be visible, not text):
-1) Sun sign {{SUN_SIGN}} => silhouette cue + subtle aura motif:
-    - silhouette: {{SUN_SILHOUETTE}}
-    - background motif (very subtle): {{SUN_MOTIF}}
-2) Ascendant {{ASC_SIGN}} => MUST be clearly readable on helmet/shoulders:
-    - emblem: {{ASC_EMBLEM}} (recognizable)
-3) Chinese sign {{CHINESE_SIGN}} + element/polarity {{CHINESE_ELEMENT_POLARITY}} =>
-    - totem: {{CHINESE_TOTEM}} (wax seal emblem or serious spirit companion, NOT cute)
-    - micro-pattern: {{CHINESE_PATTERN}}
-4) Life path {{LIFE_PATH}} =>
-    - geometric sigil integrated as engraving on armor/cloak/shield: {{LIFE_PATH_SIGIL}}
-5) Talents (3) => 3 gear details (badges/tools/amulets), no text:
+Astro signature (MUST be visible as symbols, NOT words):
+1) Sun sign {{SUN_SIGN}} at the CENTER of the shield:
+    - silhouette cue: {{SUN_SILHOUETTE}}
+    - background halo motif (very subtle): {{SUN_MOTIF}}
+2) Ascendant {{ASC_SIGN}} as a clear heraldic emblem on the crest:
+    - emblem: {{ASC_EMBLEM}} (recognizable, icon-like)
+3) Chinese sign {{CHINESE_SIGN}} + {{CHINESE_ELEMENT_POLARITY}}:
+    - totem: {{CHINESE_TOTEM}} rendered as a wax seal emblem or carved relief (serious, not cute)
+    - micro-pattern: {{CHINESE_PATTERN}} integrated into the shield field
+4) Life path {{LIFE_PATH}} as the "card number":
+    - represent it as exactly {{LIFE_PATH_PIPS}} small pips/dots (constellation) in a corner cartouche (NO digits)
+    - also include a geometric sigil engraving: {{LIFE_PATH_SIGIL}}
+5) Talents (3) as three small badges/tools around the shield, no text:
     - {{TALENT_1}} => {{TALENT_1_GEAR}}
     - {{TALENT_2}} => {{TALENT_2_GEAR}}
     - {{TALENT_3}} => {{TALENT_3_GEAR}}
-6) Vigilance point => subtle flaw cue: {{VIGILANCE_FLAW_CUE}}
+6) Vigilance point => subtle imperfection cue: {{VIGILANCE_FLAW_CUE}}
 
 Background:
-Clean atmospheric gradient + faint sigils only. High readability.
+Clean gradient + faint sigils. High readability.
 
 NO TEXT inside the image.
 PROMPT;
@@ -217,20 +216,23 @@ PROMPT;
             'signature',
             'caption',
             'typography',
-            'ornate frame',
+            'weapon',
+            'sword',
+            'gun',
+            'blood',
+            'war',
+            'battle',
+            'armor',
+            'soldier',
+            'violent',
+            'rpg character',
+            'ornate filigree overload',
             'tarot poster',
             'art nouveau',
-            'art nouveau frame',
             'symmetrical decorative poster',
-            'abstract drapery-only',
             'messy clutter',
             'blurry',
             'low detail',
-            'blurred face',
-            'extra limbs',
-            'extra fingers',
-            'duplicate person',
-            'two characters',
             'childish cute mascot',
             'chibi',
             'cartoon',
@@ -242,6 +244,32 @@ PROMPT;
         }
 
         return [$out, $negative];
+    }
+
+    private function clampLifePathPips(int $lifePath): int
+    {
+        // Keep it drawable as pips (1..9). If input drifts beyond, reduce by digital root.
+        $n = abs($lifePath);
+        if ($n <= 9) {
+            return max(1, $n);
+        }
+
+        while ($n > 9) {
+            $sum = 0;
+            foreach (str_split((string) $n) as $ch) {
+                $sum += (int) $ch;
+            }
+            $n = $sum;
+        }
+
+        return max(1, min(9, $n));
+    }
+
+    private function mapVigilanceToFlawCue(string $vigilance, string $seedHint): string
+    {
+        // Reuse the existing mapping without carrying pose/expression into the prompt.
+        [, , $flaw] = $this->mapVigilanceToPoseExpressionAndFlaw($vigilance, $seedHint);
+        return $flaw;
     }
 
     /**

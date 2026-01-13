@@ -33,6 +33,8 @@
     $tarotGenerateUrl = $isSelf
         ? route('astro.card.generate')
         : ($isAdmin ? route('astro.card.generateForUser', $user) : null);
+
+    $useAsIconUrl = $isSelf ? route('profile.avatar.useAstroIcon') : null;
 @endphp
 
 <div class="rounded-2xl border border-slate-200 bg-white p-5">
@@ -87,32 +89,40 @@
         </div>
     </div>
 
-    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5" id="astro-tarot-card" data-status-url="{{ $tarotStatusUrl }}" data-generate-url="{{ $tarotGenerateUrl }}">
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5" id="astro-blason-card" data-status-url="{{ $tarotStatusUrl }}" data-generate-url="{{ $tarotGenerateUrl }}" data-use-as-icon-url="{{ $useAsIconUrl }}">
         <div class="flex items-start justify-between gap-4">
             <div>
-                <div class="mt-1 text-lg font-semibold text-slate-900">Carte RPG</div>
+                <div class="mt-1 text-lg font-semibold text-slate-900">Blason</div>
             </div>
         </div>
 
         @php
             $status = (string) ($user->astro_card_status ?? '');
             $imageUrl = trim((string) ($user->astro_card_image_url ?? ''));
+            $iconUrl = trim((string) ($user->astro_card_icon_url ?? ''));
             $displayUrl = '';
             if ($imageUrl !== '') {
                 $displayUrl = $isSelf
                     ? route('astro.card.image')
                     : route('astro.card.imagePublic', $user);
             }
+
+            $iconDisplayUrl = '';
+            if ($iconUrl !== '') {
+                $iconDisplayUrl = $isSelf
+                    ? route('astro.card.icon')
+                    : route('astro.card.iconPublic', $user);
+            }
             $error = trim((string) ($user->astro_card_error ?? ''));
 
         @endphp
 
         <div class="mt-4" data-state>
-            @if($status === 'ready' && $imageUrl !== '')
+            @if($status === 'ready' && $imageUrl !== '' && $iconUrl !== '')
                 <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                         <div class="relative w-full" style="padding-bottom:150%;">
-                            <img src="{{ $displayUrl }}" data-external-src="{{ $imageUrl }}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
+                            <img src="{{ $displayUrl }}" data-external-src="{{ $imageUrl }}" alt="Blason (carte)" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
 
                             <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
                                 <div class="rounded-xl border border-red-200 bg-red-50 p-3">
@@ -123,12 +133,34 @@
                         </div>
                     </div>
                     <div class="text-sm text-slate-600">
+                        <div class="flex items-center gap-3">
+                            <div class="h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+                                <img src="{{ $iconDisplayUrl }}" data-external-src="{{ $iconUrl }}" alt="Blason (icône)" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none';} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none';}}">
+                            </div>
+                            <div>
+                                <div class="text-xs text-slate-500">Icône</div>
+                                <div class="text-sm font-semibold text-slate-900">1:1</div>
+                            </div>
+                        </div>
                         @if($canGenerateTarot)
                             <div class="mt-4 flex flex-wrap gap-2">
                                 <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
+                                @if($isSelf)
+                                    <button type="button" data-action="use-icon" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Utiliser comme icône</button>
+                                @endif
                             </div>
                         @endif
                     </div>
+                </div>
+            @elseif($status === 'ready' && $imageUrl !== '' && $iconUrl === '')
+                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <div class="text-sm font-semibold text-amber-900">Mise à jour requise</div>
+                    <div class="mt-1 text-xs text-amber-800">Ton blason a été généré avant l’ajout de l’icône 1:1. Regénère pour l’obtenir.</div>
+                    @if($canGenerateTarot)
+                        <div class="mt-3">
+                            <button type="button" data-action="regen" class="rounded-xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800">Regénérer</button>
+                        </div>
+                    @endif
                 </div>
             @elseif($status === 'pending')
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -151,10 +183,10 @@
             @else
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <div class="text-sm font-semibold text-slate-900">Pas encore générée</div>
-                    <div class="mt-1 text-xs text-slate-500">Une carte premium « Tarot-RPG » basée sur ta fiche astrale.</div>
+                    <div class="mt-1 text-xs text-slate-500">Un blason premium basé sur ta fiche astrale (carte 2:3 + icône 1:1).</div>
                     @if($canGenerateTarot)
                         <div class="mt-3">
-                            <button type="button" data-action="generate" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Générer ma carte (RPG)</button>
+                            <button type="button" data-action="generate" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Générer mon blason</button>
                         </div>
                     @else
                         <div class="mt-2 text-xs text-slate-500">(disponible sur le profil du membre)</div>
@@ -168,7 +200,7 @@
 
 <script>
 (() => {
-    const root = document.getElementById('astro-tarot-card');
+    const root = document.getElementById('astro-blason-card');
     if (!root) return;
 
     const canGenerate = @json($canGenerateTarot);
@@ -176,6 +208,7 @@
 
     const statusUrl = root.getAttribute('data-status-url');
     const generateUrl = root.getAttribute('data-generate-url');
+    const useAsIconUrl = root.getAttribute('data-use-as-icon-url');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     const stateEl = root.querySelector('[data-state]');
@@ -230,13 +263,13 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 
-    const renderReady = (imageUrl, externalUrl = null) => {
+    const renderReady = (imageUrl, externalUrl = null, iconUrl = null, iconExternalUrl = null) => {
 
         stateEl.innerHTML = `
             <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     <div class="relative w-full" style="padding-bottom:150%;">
-                        <img src="${escapeHtml(imageUrl)}" data-external-src="${escapeHtml(externalUrl || '')}" alt="Carte RPG" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
+                        <img src="${escapeHtml(imageUrl)}" data-external-src="${escapeHtml(externalUrl || '')}" alt="Blason (carte)" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
                         <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
                             <div class="rounded-xl border border-red-200 bg-red-50 p-3">
                                 Impossible de charger l’image.
@@ -245,6 +278,17 @@
                     </div>
                 </div>
                 <div class="text-sm text-slate-600">
+                    ${iconUrl ? `
+                        <div class="flex items-center gap-3">
+                            <div class="h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+                                <img src="${escapeHtml(iconUrl)}" data-external-src="${escapeHtml(iconExternalUrl || '')}" alt="Blason (icône)" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none';} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none';}}">
+                            </div>
+                            <div>
+                                <div class="text-xs text-slate-500">Icône</div>
+                                <div class="text-sm font-semibold text-slate-900">1:1</div>
+                            </div>
+                        </div>
+                    ` : ''}
                     <div class="mt-4 flex flex-wrap gap-2">
                         <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
                     </div>
@@ -271,15 +315,18 @@
             const displayUrl = data?.image_display_url || data?.image_url;
             const externalUrl = data?.image_url;
 
-            if (data.status === 'ready' && displayUrl) {
+            const iconDisplayUrl = data?.icon_display_url || data?.icon_url;
+            const iconExternalUrl = data?.icon_url;
+
+            if (data.status === 'ready' && displayUrl && iconDisplayUrl) {
                 stopPolling();
-                renderReady(displayUrl, externalUrl);
+                renderReady(displayUrl, externalUrl, iconDisplayUrl, iconExternalUrl);
                 return;
             }
 
-            if (data.status === 'ready' && !displayUrl) {
+            if (data.status === 'ready' && (!displayUrl || !iconDisplayUrl)) {
                 stopPolling();
-                renderError('Carte générée, mais URL publique manquante. Vérifie R2_PUBLIC_BASE_URL (et que le bucket est bien servi en public).');
+                renderError("Blason généré, mais URL publique manquante. Vérifie R2_PUBLIC_BASE_URL (et que le bucket est bien servi en public).");
                 return;
             }
 
@@ -319,6 +366,27 @@
         }
         if (action === 'regen') {
             generate(true);
+        }
+        if (action === 'use-icon') {
+            if (!useAsIconUrl) return;
+            btn.disabled = true;
+            btn.textContent = '…';
+            fetchJson(useAsIconUrl, { method: 'POST', body: JSON.stringify({}) })
+                .then(({ ok, data }) => {
+                    if (!ok) {
+                        btn.disabled = false;
+                        btn.textContent = 'Utiliser comme icône';
+                        const msg = data?.error || "Impossible d'activer l'icône.";
+                        renderError(msg);
+                        return;
+                    }
+                    window.location.reload();
+                })
+                .catch(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Utiliser comme icône';
+                    renderError("Impossible d'activer l'icône.");
+                });
         }
     });
 

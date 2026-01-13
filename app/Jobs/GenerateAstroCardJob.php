@@ -51,28 +51,48 @@ class GenerateAstroCardJob implements ShouldQueue
                 throw new \RuntimeException('Image provider: bytes vides.');
             }
 
-            $key = sprintf('astro/cards/%d/tarot_modern-%s.%s', (int) $user->id, now()->format('YmdHis'), $ext);
+            $iconPngBytes = $this->makeSquareIconPng($bytes, 1024);
+
+            $ts = now()->format('YmdHis');
+            $cardKey = sprintf('astro/cards/%d/blason-card-%s.%s', (int) $user->id, $ts, $ext);
+            $iconKey = sprintf('astro/cards/%d/blason-icon-%s.png', (int) $user->id, $ts);
 
             $disk = Storage::disk('r2');
-            $disk->put($key, $bytes, [
+
+            $disk->put($cardKey, $bytes, [
                 'visibility' => 'public',
                 'ContentType' => $mime,
                 'CacheControl' => 'public, max-age=31536000, immutable',
             ]);
 
-            $url = trim((string) $disk->url($key));
+            $disk->put($iconKey, $iconPngBytes, [
+                'visibility' => 'public',
+                'ContentType' => 'image/png',
+                'CacheControl' => 'public, max-age=31536000, immutable',
+            ]);
+
+            $cardUrl = trim((string) $disk->url($cardKey));
+            $iconUrl = trim((string) $disk->url($iconKey));
 
             // Prefer the disk URL if it's already absolute.
-            if ($url === '' || !preg_match('#^https?://#i', $url)) {
+            if ($cardUrl === '' || !preg_match('#^https?://#i', $cardUrl)) {
                 $base = trim((string) (config('filesystems.disks.r2.url') ?: config('uploads.r2_public_base_url')));
                 if ($base !== '') {
-                    $url = rtrim($base, '/') . '/' . ltrim($key, '/');
+                    $cardUrl = rtrim($base, '/') . '/' . ltrim($cardKey, '/');
+                }
+            }
+
+            if ($iconUrl === '' || !preg_match('#^https?://#i', $iconUrl)) {
+                $base = trim((string) (config('filesystems.disks.r2.url') ?: config('uploads.r2_public_base_url')));
+                if ($base !== '') {
+                    $iconUrl = rtrim($base, '/') . '/' . ltrim($iconKey, '/');
                 }
             }
 
             $user->forceFill([
                 'astro_card_status' => 'ready',
-                'astro_card_image_url' => $url,
+                'astro_card_image_url' => $cardUrl,
+                'astro_card_icon_url' => $iconUrl,
                 'astro_card_prompt' => $built['prompt'],
                 'astro_card_seed' => $built['seed'],
                 'astro_card_generated_at' => now(),
@@ -94,5 +114,70 @@ class GenerateAstroCardJob implements ShouldQueue
                 'astro_card_error' => $msg,
             ])->save();
         }
+    }
+
+    private function makeSquareIconPng(string $imageBytes, int $targetSize): string
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            throw new \RuntimeException('Serveur: GD manquant (imagecreatefromstring indisponible).');
+        }
+
+        $src = @imagecreatefromstring($imageBytes);
+        if (!$src) {
+            throw new \RuntimeException("Impossible de décoder l'image pour créer l'icône.");
+        }
+
+        $w = (int) imagesx($src);
+        $h = (int) imagesy($src);
+        if ($w <= 0 || $h <= 0) {
+            imagedestroy($src);
+            throw new \RuntimeException("Image invalide pour créer l'icône.");
+        }
+
+        $side = min($w, $h);
+        $srcX = (int) floor(($w - $side) / 2);
+        $srcY = (int) floor(($h - $side) / 2);
+
+        $dst = imagecreatetruecolor($targetSize, $targetSize);
+        if (!$dst) {
+            imagedestroy($src);
+            throw new \RuntimeException("Impossible de créer le canvas de l'icône.");
+        }
+
+        // Preserve alpha for PNG.
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
+        $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+        imagefilledrectangle($dst, 0, 0, $targetSize, $targetSize, $transparent);
+
+        $ok = imagecopyresampled(
+            $dst,
+            $src,
+            0,
+            0,
+            $srcX,
+            $srcY,
+            $targetSize,
+            $targetSize,
+            $side,
+            $side
+        );
+        imagedestroy($src);
+
+        if (!$ok) {
+            imagedestroy($dst);
+            throw new \RuntimeException("Impossible de redimensionner l'icône.");
+        }
+
+        ob_start();
+        imagepng($dst, null, 8);
+        imagedestroy($dst);
+        $png = ob_get_clean();
+
+        if (!is_string($png) || $png === '') {
+            throw new \RuntimeException("Impossible d'encoder l'icône en PNG.");
+        }
+
+        return $png;
     }
 }

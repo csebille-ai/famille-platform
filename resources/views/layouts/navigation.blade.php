@@ -29,6 +29,9 @@
     $userName = Auth::user()->name ?? '';
     $userInitial = strtoupper(substr(trim($userName), 0, 1));
 
+    $useAstroIcon = (bool) (Auth::user()->avatar_use_astro_icon ?? false);
+    $hasAstroIcon = trim((string) (Auth::user()->astro_card_icon_url ?? '')) !== '';
+
     $showHomeActions = $isHome;
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
@@ -90,8 +93,12 @@
 
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
-                                    <button class="ui-chip h-8 w-8 text-xs font-semibold">
-                                        {{ $userInitial }}
+                                    <button class="ui-chip h-8 w-8 text-xs font-semibold overflow-hidden">
+                                        @if($useAstroIcon && $hasAstroIcon)
+                                            <img src="{{ route('astro.card.icon') }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
+                                        @else
+                                            {{ $userInitial }}
+                                        @endif
                                     </button>
                                 </x-slot>
 

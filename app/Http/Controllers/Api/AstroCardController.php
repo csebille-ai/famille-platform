@@ -48,7 +48,9 @@ class AstroCardController
     private function doGenerate(Request $request, User $target): JsonResponse
     {
         // If the DB isn't migrated yet, fail fast with a helpful error.
-        if (!Schema::hasColumn('users', 'astro_signature_json') || !Schema::hasColumn('users', 'astro_card_status')) {
+        if (!Schema::hasColumn('users', 'astro_signature_json')
+            || !Schema::hasColumn('users', 'astro_card_status')
+            || !Schema::hasColumn('users', 'astro_card_icon_url')) {
             return response()->json([
                 'status' => 'error',
                 'error' => 'Serveur non à jour (migration Astro Card manquante).',
@@ -90,7 +92,7 @@ class AstroCardController
         }
 
         $target->forceFill([
-            'astro_card_style' => $target->astro_card_style ?: 'tarot_modern',
+            'astro_card_style' => 'blason',
             'astro_card_status' => 'pending',
             'astro_card_error' => null,
         ])->save();
@@ -145,7 +147,7 @@ class AstroCardController
     }
 
     /**
-     * @return array{status:mixed,image_url:mixed,generated_at:?string,error:mixed}
+     * @return array{status:mixed,image_url:mixed,icon_url:mixed,generated_at:?string,error:mixed}
      */
     private function statusPayload(User $user, bool $forAdminUser): array
     {
@@ -158,6 +160,17 @@ class AstroCardController
             }
         } catch (\Throwable) {
             $displayUrl = null;
+        }
+
+        $iconDisplayUrl = null;
+        try {
+            if (!empty($user->astro_card_icon_url)) {
+                $iconDisplayUrl = $forAdminUser
+                    ? route('astro.card.iconForUser', $user)
+                    : route('astro.card.icon');
+            }
+        } catch (\Throwable) {
+            $iconDisplayUrl = null;
         }
 
         $overlay = null;
@@ -174,6 +187,8 @@ class AstroCardController
             'status' => $user->astro_card_status,
             'image_url' => $user->astro_card_image_url,
             'image_display_url' => $displayUrl,
+            'icon_url' => $user->astro_card_icon_url,
+            'icon_display_url' => $iconDisplayUrl,
             'generated_at' => optional($user->astro_card_generated_at)->toISOString(),
             'error' => $user->astro_card_error,
             'overlay' => $overlay,

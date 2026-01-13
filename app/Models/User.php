@@ -40,6 +40,8 @@ class User extends Authenticatable
         'astro_card_style',
         'astro_card_status',
         'astro_card_image_url',
+        'astro_card_icon_url',
+        'avatar_use_astro_icon',
         'astro_card_prompt',
         'astro_card_seed',
         'astro_card_generated_at',
@@ -71,6 +73,7 @@ class User extends Authenticatable
 
             'astro_signature_json' => 'array',
             'astro_card_generated_at' => 'datetime',
+            'avatar_use_astro_icon' => 'boolean',
         ];
     }
 

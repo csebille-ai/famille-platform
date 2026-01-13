@@ -37,6 +37,27 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
+    public function useAstroIconAsAvatar(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+
+        if (empty($user->astro_card_icon_url)) {
+            return response()->json([
+                'ok' => false,
+                'error' => "Blason non prêt (icône manquante).",
+            ], 400);
+        }
+
+        $user->forceFill([
+            'avatar_use_astro_icon' => true,
+        ])->save();
+
+        return response()->json([
+            'ok' => true,
+        ]);
+    }
+
     /**
      * Delete the user's account.
      */

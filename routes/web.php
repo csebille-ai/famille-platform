@@ -1251,13 +1251,36 @@ Route::middleware('auth')->group(function () {
     Route::get('/astro-card/image', [AstroCardImageController::class, 'show'])
         ->name('astro.card.image');
 
+    Route::get('/astro-card/icon', [AstroCardImageController::class, 'showIcon'])
+        ->name('astro.card.icon');
+
+    Route::get('/astro-card/icon', [AstroCardImageController::class, 'showIcon'])
+        ->name('astro.card.icon');
+
     // Authenticated users can view another member's card image (used on profile pages).
     Route::get('/users/{user}/astro-card/image', [AstroCardImageController::class, 'showForUserPublic'])
         ->name('astro.card.imagePublic');
 
+    Route::get('/users/{user}/astro-card/icon', [AstroCardImageController::class, 'showIconForUserPublic'])
+        ->name('astro.card.iconPublic');
+
+    Route::get('/users/{user}/astro-card/icon', [AstroCardImageController::class, 'showIconForUserPublic'])
+        ->name('astro.card.iconPublic');
+
     Route::get('/admin/users/{user}/astro-card/image', [AstroCardImageController::class, 'showForUser'])
         ->middleware(['can:manage-users'])
         ->name('astro.card.imageForUser');
+
+    Route::get('/admin/users/{user}/astro-card/icon', [AstroCardImageController::class, 'showIconForUser'])
+        ->middleware(['can:manage-users'])
+        ->name('astro.card.iconForUser');
+
+    Route::post('/api/profile/avatar/use-astro-icon', [ProfileController::class, 'useAstroIconAsAvatar'])
+        ->name('profile.avatar.useAstroIcon');
+
+    Route::get('/admin/users/{user}/astro-card/icon', [AstroCardImageController::class, 'showIconForUser'])
+        ->middleware(['can:manage-users'])
+        ->name('astro.card.iconForUser');
 
     // Admin override: generate/check astro cards for any user.
     Route::post('/api/admin/users/{user}/astro-card/generate', [\App\Http\Controllers\Api\AstroCardController::class, 'generateForUser'])

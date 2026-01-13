@@ -18,7 +18,15 @@ class AstroCardImageController
         $user = $request->user();
         abort_unless($user !== null, 401);
 
-        return $this->streamUserCard($user);
+        return $this->streamUserImage($user, 'astro_card_image_url');
+    }
+
+    public function showIcon(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user !== null, 401);
+
+        return $this->streamUserImage($user, 'astro_card_icon_url');
     }
 
     public function showForUser(Request $request, User $user)
@@ -26,7 +34,15 @@ class AstroCardImageController
         abort_unless($request->user() !== null, 401);
         abort_unless($request->user()?->can('manage-users') === true, 403);
 
-        return $this->streamUserCard($user);
+        return $this->streamUserImage($user, 'astro_card_image_url');
+    }
+
+    public function showIconForUser(Request $request, User $user)
+    {
+        abort_unless($request->user() !== null, 401);
+        abort_unless($request->user()?->can('manage-users') === true, 403);
+
+        return $this->streamUserImage($user, 'astro_card_icon_url');
     }
 
     public function showForUserPublic(Request $request, User $user)
@@ -34,12 +50,20 @@ class AstroCardImageController
         // Auth is enforced by the route group; this is a double-safety.
         abort_unless($request->user() !== null, 401);
 
-        return $this->streamUserCard($user);
+        return $this->streamUserImage($user, 'astro_card_image_url');
     }
 
-    private function streamUserCard(User $user)
+    public function showIconForUserPublic(Request $request, User $user)
     {
-        $url = trim((string) ($user->astro_card_image_url ?? ''));
+        // Auth is enforced by the route group; this is a double-safety.
+        abort_unless($request->user() !== null, 401);
+
+        return $this->streamUserImage($user, 'astro_card_icon_url');
+    }
+
+    private function streamUserImage(User $user, string $urlField)
+    {
+        $url = trim((string) ($user->{$urlField} ?? ''));
         abort_if($url === '', 404);
 
         $key = $this->extractR2KeyFromUrl($url);
