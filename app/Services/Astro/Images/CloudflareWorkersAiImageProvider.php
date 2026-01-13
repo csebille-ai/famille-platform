@@ -60,6 +60,7 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
 
         $request = Http::timeout(120)
             ->retry(1, 250)
+            ->asJson()
             ->withHeaders([
                 'Authorization' => 'Bearer ' . $token,
                 'Accept' => 'application/json, image/*',
@@ -216,7 +217,7 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             return $request->post($url, [
                 'multipart' => [
                     'body' => $body,
-                    'contentType' => 'multipart/form-data',
+                    'contentType' => 'application/json',
                 ],
             ])->throw();
         } catch (RequestException $e) {
@@ -239,7 +240,7 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             return $request->post($url, [
                 'multipart' => [
                     'body' => ['prompt' => $prompt],
-                    'contentType' => 'multipart/form-data',
+                    'contentType' => 'application/json',
                 ],
             ])->throw();
         }
