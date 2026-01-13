@@ -37,10 +37,18 @@ class GenerateAstroCardJob implements ShouldQueue
 
             $built = $builder->build($user, $signature);
 
-            $generated = $images->generateImage($built['prompt'], [
+            // Workers AI flux-1-schnell can be effectively deterministic for identical inputs.
+            // Add a small, safe variation block (no text rendering) + a unique seed fragment.
+            $variationNonce = bin2hex(random_bytes(4));
+            $prompt = rtrim($built['prompt']) . "\n\n" . $this->variationBlock($variationNonce);
+            $seed = (string) $built['seed'] . '|' . $variationNonce;
+            $steps = random_int(4, 7);
+
+            $generated = $images->generateImage($prompt, [
                 'aspect_ratio' => '2:3',
                 'size' => '1024x1536',
-                'seed' => $built['seed'],
+                'seed' => $seed,
+                'steps' => $steps,
                 'negative_prompt' => $built['negative_prompt'] ?? null,
             ]);
 
@@ -94,8 +102,8 @@ class GenerateAstroCardJob implements ShouldQueue
                 'astro_card_status' => 'ready',
                 'astro_card_image_url' => $cardUrl,
                 'astro_card_icon_url' => $iconUrl,
-                'astro_card_prompt' => $built['prompt'],
-                'astro_card_seed' => $built['seed'],
+                'astro_card_prompt' => $prompt,
+                'astro_card_seed' => $seed,
                 'astro_card_generated_at' => now(),
                 'astro_card_error' => null,
             ])->save();
@@ -180,5 +188,40 @@ class GenerateAstroCardJob implements ShouldQueue
         }
 
         return $png;
+    }
+
+    private function variationBlock(string $nonce): string
+    {
+        // Keep this short to avoid prompt clamping (flux-1-schnell max 2048).
+        $crowns = [
+            'simple laurel crown',
+            'fleur-de-lys crown',
+            'rounded jewel crown',
+            'minimal modern crown',
+        ];
+        $borders = [
+            'thin double outline border',
+            'subtle dotted border',
+            'clean beveled border',
+            'soft ribbon frame border',
+        ];
+        $palettes = [
+            'warm gold + teal accents',
+            'soft pastel enamel accents',
+            'royal blue + gold accents',
+            'coral + mint accents',
+        ];
+
+        $crown = $crowns[array_rand($crowns)];
+        $border = $borders[array_rand($borders)];
+        $palette = $palettes[array_rand($palettes)];
+
+        return implode("\n", [
+            'VARIATION (must NOT appear as text in the image):',
+            "- crown style: {$crown}",
+            "- border style: {$border}",
+            "- accent palette: {$palette}",
+            "- variation id: {$nonce} (internal, do NOT render)",
+        ]);
     }
 }
