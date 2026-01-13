@@ -19,9 +19,24 @@ class NoStoreForAuthenticated
 
         try {
             if (auth()->check()) {
-                $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-                $response->headers->set('Pragma', 'no-cache');
-                $response->headers->set('Expires', '0');
+                // If the controller already set explicit caching (e.g. posters, images),
+                // do not override it.
+                $cacheControl = (string) $response->headers->get('Cache-Control', '');
+                if ($cacheControl !== '' && stripos($cacheControl, 'max-age=') !== false) {
+                    return $response;
+                }
+
+                // Only force no-store on HTML/JSON-like responses (private pages).
+                $contentType = (string) $response->headers->get('Content-Type', '');
+                $isHtml = stripos($contentType, 'text/html') !== false;
+                $isJson = stripos($contentType, 'application/json') !== false;
+                $isText = stripos($contentType, 'text/plain') !== false;
+
+                if ($isHtml || $isJson || $isText || $contentType === '') {
+                    $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+                    $response->headers->set('Pragma', 'no-cache');
+                    $response->headers->set('Expires', '0');
+                }
             }
         } catch (\Throwable $e) {
             // If auth isn't available for a specific request, don't block the response.
