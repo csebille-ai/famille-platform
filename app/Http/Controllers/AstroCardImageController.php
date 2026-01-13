@@ -47,6 +47,44 @@ class AstroCardImageController
 
         $disk = Storage::disk('r2');
 
+        // Best-effort conditional caching based on object metadata.
+        $etag = null;
+        $lastModified = null;
+        try {
+            $mtime = $disk->lastModified($key);
+            $size = $disk->size($key);
+            if (is_int($mtime) && $mtime > 0) {
+                $lastModified = gmdate('D, d M Y H:i:s', $mtime) . ' GMT';
+            }
+            if (is_int($mtime) && $mtime > 0 && is_int($size) && $size >= 0) {
+                $etag = '"' . sha1($key . '|' . (string) $mtime . '|' . (string) $size) . '"';
+            }
+        } catch (\Throwable) {
+            // best-effort
+        }
+
+        $req = request();
+        if ($etag !== null) {
+            $ifNoneMatch = (string) $req->headers->get('If-None-Match', '');
+            if ($ifNoneMatch !== '' && trim($ifNoneMatch) === $etag) {
+                return response('', 304, array_filter([
+                    'ETag' => $etag,
+                    'Last-Modified' => $lastModified,
+                    'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+                ]));
+            }
+        }
+        if ($lastModified !== null) {
+            $ifModifiedSince = (string) $req->headers->get('If-Modified-Since', '');
+            if ($ifModifiedSince !== '' && trim($ifModifiedSince) === $lastModified) {
+                return response('', 304, array_filter([
+                    'ETag' => $etag,
+                    'Last-Modified' => $lastModified,
+                    'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+                ]));
+            }
+        }
+
         try {
             $stream = $disk->readStream($key);
         } catch (\Throwable) {
@@ -78,7 +116,9 @@ class AstroCardImageController
             }
         }, 200, [
             'Content-Type' => $mime,
-            'Cache-Control' => 'private, max-age=3600',
+            'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+            'ETag' => $etag,
+            'Last-Modified' => $lastModified,
         ]);
     }
 

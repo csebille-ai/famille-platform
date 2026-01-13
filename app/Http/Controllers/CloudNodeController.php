@@ -411,14 +411,59 @@ class CloudNodeController extends Controller
             return Storage::disk('local')->download($node->stored_path, $node->name);
         }
 
-        return Storage::disk('local')->response(
-            $node->stored_path,
-            $node->name,
-            [
-                'Content-Type' => $mime,
-                'Content-Disposition' => 'inline; filename="' . addslashes($node->name) . '"',
-            ]
-        );
+        // Strong caching (private) + conditional requests for inline previews.
+        $etag = null;
+        $lastModified = null;
+        $abs = null;
+        try {
+            $abs = Storage::disk('local')->path($node->stored_path);
+            if (is_file($abs)) {
+                $mtime = @filemtime($abs) ?: null;
+                $size = @filesize($abs) ?: null;
+                if ($mtime) {
+                    $lastModified = gmdate('D, d M Y H:i:s', (int) $mtime) . ' GMT';
+                }
+                if ($mtime && $size !== null) {
+                    $etag = '"' . sha1((string) $node->id . '|' . (string) $mtime . '|' . (string) $size) . '"';
+                }
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+
+        $req = request();
+        if ($etag !== null) {
+            $ifNoneMatch = (string) $req->headers->get('If-None-Match', '');
+            if ($ifNoneMatch !== '' && trim($ifNoneMatch) === $etag) {
+                return response('', 304, array_filter([
+                    'ETag' => $etag,
+                    'Last-Modified' => $lastModified,
+                    'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+                ]));
+            }
+        }
+        if ($lastModified !== null) {
+            $ifModifiedSince = (string) $req->headers->get('If-Modified-Since', '');
+            if ($ifModifiedSince !== '' && trim($ifModifiedSince) === $lastModified) {
+                return response('', 304, array_filter([
+                    'ETag' => $etag,
+                    'Last-Modified' => $lastModified,
+                    'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+                ]));
+            }
+        }
+
+        if (!is_string($abs) || $abs === '' || !is_file($abs)) {
+            abort(404);
+        }
+
+        return response()->file($abs, array_filter([
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . addslashes($node->name) . '"',
+            'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+            'ETag' => $etag,
+            'Last-Modified' => $lastModified,
+        ]));
     }
 
     public function rename(Request $request, CloudNode $node)
