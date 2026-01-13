@@ -68,7 +68,16 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             if ($this->modelRequiresMultipartWrapper($model)) {
                 $resp = $this->postMultipartWrapper($request, $url, $prompt, $w, $h, $seedInt, $negative);
             } else {
-                $resp = $request->post($url, $jsonPayload)->throw();
+                try {
+                    $resp = $request->post($url, $jsonPayload)->throw();
+                } catch (RequestException $e) {
+                    // Some models (e.g. flux-2-dev) require a multipart wrapper; retry automatically.
+                    if ($this->isMultipartRequiredError($e)) {
+                        $resp = $this->postMultipartWrapper($request, $url, $prompt, $w, $h, $seedInt, $negative);
+                    } else {
+                        throw $e;
+                    }
+                }
             }
         } catch (RequestException $e) {
             $msg = $e->response?->json('errors.0.message')
@@ -216,5 +225,25 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
                 ],
             ])->throw();
         }
+    }
+
+    private function isMultipartRequiredError(RequestException $e): bool
+    {
+        $code = $e->response?->status();
+        if ($code !== 400) {
+            return false;
+        }
+
+        $msg = $e->response?->json('errors.0.message')
+            ?? $e->response?->json('error.message')
+            ?? '';
+        $msg = strtolower((string) $msg);
+
+        if ($msg !== '' && str_contains($msg, 'required properties') && str_contains($msg, 'multipart')) {
+            return true;
+        }
+
+        $body = strtolower((string) $e->response?->body());
+        return $body !== '' && str_contains($body, 'required properties') && str_contains($body, 'multipart');
     }
 }
