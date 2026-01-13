@@ -104,9 +104,9 @@
                             @error('video_file')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
-                            <p class="text-xs text-gray-500 mt-1">Formats acceptés : mp4, webm, avi, mov, mkv (max {{ $maxVideoLabel }})</p>
+                            <p class="microcopy text-xs text-gray-500 mt-1">Formats acceptés : mp4, webm, avi, mov, mkv (max {{ $maxVideoLabel }})</p>
 
-                            <div id="poster_status" class="text-xs text-slate-500 mt-2">Miniature : génération automatique…</div>
+                            <div id="poster_status" class="microcopy text-xs text-slate-500 mt-2">Miniature : génération automatique…</div>
                             <img id="poster_preview" alt="" class="mt-2 hidden w-40 aspect-video rounded-lg object-cover" />
                         </div>
 

@@ -53,7 +53,7 @@
 
                         <div class="rounded-md border border-gray-200 bg-gray-50 p-4">
                             <div class="text-sm font-semibold text-gray-800">Naissance (astro fun)</div>
-                            <div class="mt-1 text-xs text-gray-600">Optionnel — sert à calculer la fiche astrale.</div>
+                            <div class="microcopy mt-1 text-xs text-gray-600">Optionnel — sert à calculer la fiche astrale.</div>
 
                             <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>

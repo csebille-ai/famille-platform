@@ -110,9 +110,9 @@
         @if(($images ?? collect())->count() === 0)
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="text-base font-semibold text-gray-900">Aucune image pour l’instant</div>
-                <div class="text-sm text-slate-500 mt-1">Importe une première photo pour démarrer.</div>
+                <div class="microcopy text-sm text-slate-500 mt-1">Importe une première photo pour démarrer.</div>
                 @can('images-upload')
-                    <div class="text-sm text-slate-500 mt-1">Utilise le bouton + en bas à droite.</div>
+                    <div class="microcopy text-sm text-slate-500 mt-1">Utilise le bouton + en bas à droite.</div>
                 @endcan
             </div>
         @else
@@ -229,7 +229,7 @@
                 <div class="absolute inset-0 bg-black/40" x-on:click="confirmOpen = false"></div>
                 <div class="relative w-full max-w-md bg-white rounded-2xl shadow-sm p-6">
                     <div class="text-base font-semibold text-gray-900">Supprimer l’image ?</div>
-                    <div class="text-sm text-slate-500 mt-2">Cette action est irréversible.</div>
+                    <div class="microcopy text-sm text-slate-500 mt-2">Cette action est irréversible.</div>
 
                     <form method="POST" x-bind:action="confirmAction" class="mt-6 flex items-center justify-end gap-2">
                         @csrf

@@ -30,7 +30,7 @@
 
         <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div class="text-sm font-semibold text-slate-900">Naissance (pour l’astro)</div>
-            <div class="mt-1 text-xs text-slate-500">Optionnel — tu peux aussi le remplir plus tard dans ton profil.</div>
+            <div class="microcopy mt-1 text-xs text-slate-500">Optionnel — tu peux aussi le remplir plus tard dans ton profil.</div>
 
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
@@ -56,7 +56,7 @@
                 <x-input-label for="birth_timezone" :value="__('Fuseau horaire (IANA)')" />
                 <x-text-input id="birth_timezone" class="block mt-1 w-full" type="text" name="birth_timezone" :value="old('birth_timezone')" placeholder="ex: Europe/Paris" autocomplete="off" />
                 <x-input-error :messages="$errors->get('birth_timezone')" class="mt-2" />
-                <div class="mt-1 text-xs text-slate-500">Si tu laisses vide, l’app essaie de le deviner via le lieu.</div>
+                <div class="microcopy mt-1 text-xs text-slate-500">Si tu laisses vide, l’app essaie de le deviner via le lieu.</div>
             </div>
 
             <details class="mt-4">

@@ -6,7 +6,7 @@
     <div class="max-w-3xl mx-auto px-6 py-6 space-y-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Tarot</h1>
-            <div class="text-sm text-slate-500 mt-1">Tirage fun et bienveillant (aide à la réflexion).</div>
+            <div class="microcopy text-sm text-slate-500 mt-1">Tirage fun et bienveillant (aide à la réflexion).</div>
         </div>
 
         @if ($errors->any())
@@ -28,7 +28,7 @@
                 <div>
                     <label for="question" class="block text-sm font-semibold text-gray-900">Ta question</label>
                     <textarea id="question" name="question" rows="3" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
-                    <div class="mt-1 text-xs text-slate-500">Max 500 caractères.</div>
+                    <div class="microcopy mt-1 text-xs text-slate-500">Max 500 caractères.</div>
 
                     <div class="mt-2 flex items-center gap-3">
                         <x-secondary-button type="button" id="tarot-stt-start">Dicter</x-secondary-button>

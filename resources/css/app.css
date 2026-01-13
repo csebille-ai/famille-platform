@@ -8,3 +8,8 @@
 	display: inline-block;
 	vertical-align: middle;
 }
+
+/* Optional UI microcopy (small helper texts). */
+.microcopy {
+	display: none !important;
+}

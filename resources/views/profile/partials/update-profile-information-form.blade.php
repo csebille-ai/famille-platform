@@ -4,7 +4,7 @@
             {{ __('Profile Information') }}
         </h2>
 
-        <p class="mt-1 text-sm text-gray-600">
+        <p class="microcopy mt-1 text-sm text-gray-600">
             {{ __("Update your account's profile information and email address.") }}
         </p>
     </header>
@@ -49,7 +49,7 @@
 
         <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div class="text-sm font-semibold text-slate-900">Naissance (pour l’astro)</div>
-            <div class="mt-1 text-xs text-slate-500">Ces champs servent uniquement à générer la fiche astrale “fun”.</div>
+            <div class="microcopy mt-1 text-xs text-slate-500">Ces champs servent uniquement à générer la fiche astrale “fun”.</div>
 
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
@@ -91,7 +91,7 @@
                         <x-input-error class="mt-2" :messages="$errors->get('birth_longitude')" />
                     </div>
                 </div>
-                <div class="mt-2 text-xs text-slate-500">Astuce: Google Maps → clic droit → “Plus d’infos sur cet endroit” pour copier les coordonnées.</div>
+                <div class="microcopy mt-2 text-xs text-slate-500">Astuce: Google Maps → clic droit → “Plus d’infos sur cet endroit” pour copier les coordonnées.</div>
             </details>
         </div>
 

@@ -216,7 +216,7 @@
             <template x-if="(films || []).length === 0">
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <div class="text-base font-semibold text-gray-900">Aucun film pour l’instant</div>
-                    <div class="text-sm text-slate-500 mt-1">Ajoutez un premier film avec “+ Ajouter”.</div>
+                    <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez un premier film avec “+ Ajouter”.</div>
                 </div>
             </template>
 
@@ -282,7 +282,7 @@
             <template x-if="(series || []).length === 0">
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <div class="text-base font-semibold text-gray-900">Aucune série pour l’instant</div>
-                    <div class="text-sm text-slate-500 mt-1">Ajoutez une première série avec “+ Ajouter”.</div>
+                    <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première série avec “+ Ajouter”.</div>
                 </div>
             </template>
 

@@ -12,7 +12,7 @@
 
                 $c1 = $cards[0] ?? null;
             <h1 class="text-2xl font-bold text-gray-900">Bienvenue, {{ $firstName }}</h1>
-            <div class="text-sm text-slate-500 mt-1">Accès rapide aux contenus de la famille</div>
+            <div class="microcopy text-sm text-slate-500 mt-1">Accès rapide aux contenus de la famille</div>
             <div class="mt-4">
                 @if(!empty($c1))
                     @php
@@ -156,7 +156,7 @@
 
         <div class="bg-white rounded-2xl shadow-sm p-6">
             <div class="text-base font-semibold text-gray-900">Le petit moment de la famille</div>
-            <div class="text-sm text-slate-500 mt-1">Un mini clin d’œil du jour, rien de plus.</div>
+            <div class="microcopy text-sm text-slate-500 mt-1">Un mini clin d’œil du jour, rien de plus.</div>
 
             @php
                 $cards = (array) ($familyMoments ?? []);

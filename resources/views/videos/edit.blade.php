@@ -69,7 +69,7 @@
                             @error('video_file')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
-                            <p class="text-xs text-gray-500 mt-1">Laissez vide pour conserver la vidéo actuelle. Formats acceptés : mp4, webm, avi, mov, mkv (max {{ $maxVideoLabel }})</p>
+                            <p class="microcopy text-xs text-gray-500 mt-1">Laissez vide pour conserver la vidéo actuelle. Formats acceptés : mp4, webm, avi, mov, mkv (max {{ $maxVideoLabel }})</p>
                         </div>
 
                         <div>

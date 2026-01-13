@@ -33,7 +33,7 @@
         <div class="flex items-center justify-between gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Importer une image</h1>
-                <div class="text-sm text-slate-500 mt-1">Taille max : {{ $maxUploadMb > 0 ? $maxUploadMb : 100 }} MB</div>
+                <div class="microcopy text-sm text-slate-500 mt-1">Taille max : {{ $maxUploadMb > 0 ? $maxUploadMb : 100 }} MB</div>
             </div>
 
             <a href="{{ route('images.index') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
@@ -88,7 +88,7 @@
                 >
                     <div class="text-center">
                         <div class="text-sm font-medium text-gray-900">Glissez-déposez une image ici</div>
-                        <div class="text-sm text-slate-500 mt-1">ou</div>
+                        <div class="microcopy text-sm text-slate-500 mt-1">ou</div>
                         <div class="mt-3">
                             <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900" x-on:click.stop="$refs.uploadInput?.click()">
                                 Choisir un fichier

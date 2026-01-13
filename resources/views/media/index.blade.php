@@ -276,7 +276,7 @@
             <template x-if="(photos || []).length === 0">
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <div class="text-base font-semibold text-gray-900">Aucune photo pour l’instant</div>
-                    <div class="text-sm text-slate-500 mt-1">Ajoutez une première photo avec “+ Ajouter”.</div>
+                    <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première photo avec “+ Ajouter”.</div>
                 </div>
             </template>
 
@@ -332,7 +332,7 @@
             <template x-if="(videos || []).length === 0">
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <div class="text-base font-semibold text-gray-900">Aucune vidéo pour l’instant</div>
-                    <div class="text-sm text-slate-500 mt-1">Ajoutez une première vidéo avec “+ Ajouter”.</div>
+                    <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première vidéo avec “+ Ajouter”.</div>
                 </div>
             </template>
 
