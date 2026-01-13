@@ -441,15 +441,113 @@
                             });
                         }
 
-                        input.addEventListener('change', function () {
-                            if (!input.files || input.files.length === 0) return;
-                            if (!form) return;
+                        const postFormData = (url, formData) => new Promise((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            currentXhr = xhr;
 
+                            xhr.open('POST', url, true);
+                            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+
+                            xhr.onload = function () {
+                                if (xhr.status >= 200 && xhr.status < 300) {
+                                    try {
+                                        const json = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+                                        resolve({ xhr, json });
+                                    } catch (e) {
+                                        resolve({ xhr, json: {} });
+                                    }
+                                    return;
+                                }
+
+                                let message = 'Erreur upload.';
+                                try {
+                                    const json = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+                                    if (json && json.message) message = json.message;
+                                } catch (e) {}
+                                reject(new Error(message));
+                            };
+
+                            xhr.onerror = function () {
+                                reject(new Error('Erreur réseau pendant l\'upload.'));
+                            };
+
+                            xhr.onabort = function () {
+                                reject(new Error('Annulé.'));
+                            };
+
+                            try {
+                                xhr.send(formData);
+                            } catch (e) {
+                                reject(new Error('Impossible de démarrer l\'upload.'));
+                            }
+                        });
+
+                        const chunkedUpload = async (file) => {
+                            const token = (form.querySelector('input[name="_token"]') || {}).value;
+                            const parentId = (form.querySelector('input[name="parent_id"]') || {}).value;
+                            const returnPath = (form.querySelector('input[name="return"]') || {}).value;
+
+                            const initFd = new FormData();
+                            if (token) initFd.append('_token', token);
+                            initFd.append('name', file.name);
+                            initFd.append('size', String(file.size));
+                            initFd.append('mime', file.type || '');
+                            if (parentId) initFd.append('parent_id', parentId);
+                            if (returnPath) initFd.append('return', returnPath);
+
+                            setProgress(0, 'Préparation…');
+                            const { json: initJson } = await postFormData('{{ route('cloud.uploads.init') }}', initFd);
+                            const uploadId = initJson.upload_id;
+                            const chunkSize = Number(initJson.chunk_size || 0) || (5 * 1024 * 1024);
+                            const totalChunks = Number(initJson.total_chunks || 0) || Math.max(1, Math.ceil(file.size / chunkSize));
+                            const received = Array.isArray(initJson.received) ? new Set(initJson.received) : new Set();
+
+                            let uploadedBytes = 0;
+                            for (let i = 0; i < totalChunks; i++) {
+                                const start = i * chunkSize;
+                                const end = Math.min(file.size, start + chunkSize);
+                                if (received.has(i)) {
+                                    uploadedBytes = end;
+                                    continue;
+                                }
+
+                                const blob = file.slice(start, end);
+                                const fd = new FormData();
+                                if (token) fd.append('_token', token);
+                                fd.append('upload_id', uploadId);
+                                fd.append('index', String(i));
+                                fd.append('chunk', blob, file.name + '.part' + i);
+
+                                const pct = Math.round((uploadedBytes / file.size) * 100);
+                                setProgress(pct, `Upload… ${pct}% (${formatBytes(uploadedBytes)} / ${formatBytes(file.size)})`);
+
+                                await postFormData('{{ route('cloud.uploads.chunk') }}', fd);
+
+                                uploadedBytes = end;
+                                const pct2 = Math.round((uploadedBytes / file.size) * 100);
+                                setProgress(pct2, `Upload… ${pct2}% (${formatBytes(uploadedBytes)} / ${formatBytes(file.size)})`);
+                            }
+
+                            const completeFd = new FormData();
+                            if (token) completeFd.append('_token', token);
+                            completeFd.append('upload_id', uploadId);
+                            setProgress(100, 'Finalisation…');
+                            const { json: completeJson } = await postFormData('{{ route('cloud.uploads.complete') }}', completeFd);
+                            const redirectUrl = completeJson.redirect_url || null;
+                            if (redirectUrl) {
+                                window.location.href = redirectUrl;
+                                return;
+                            }
+                            window.location.reload();
+                        };
+
+                        const directUpload = async (file) => {
                             const fd = new FormData(form);
-                            const file = input.files[0];
-
                             showOverlay();
                             setProgress(0, 'Démarrage…');
+
+                            // Replace file in the formdata with current selection.
+                            fd.set('file', file, file.name);
 
                             const xhr = new XMLHttpRequest();
                             currentXhr = xhr;
@@ -469,14 +567,10 @@
                             xhr.onload = function () {
                                 const finalUrl = xhr.responseURL || null;
                                 setProgress(100, 'Finalisation…');
-
-                                // Ensure we re-navigate so session flashes/errors display properly.
                                 if (finalUrl) {
                                     window.location.href = finalUrl;
                                     return;
                                 }
-
-                                // Fallback: reload.
                                 window.location.reload();
                             };
 
@@ -490,13 +584,31 @@
                                 currentXhr = null;
                             };
 
-                            // Send
                             try {
                                 xhr.send(fd);
                             } catch (e) {
                                 setProgress(0, 'Impossible de démarrer l\'upload.');
                                 currentXhr = null;
                             }
+                        };
+
+                        input.addEventListener('change', function () {
+                            if (!input.files || input.files.length === 0) return;
+                            if (!form) return;
+
+                            const file = input.files[0];
+                            showOverlay();
+
+                            // Use chunked mode for large files (o2switch-friendly).
+                            const chunkThreshold = 25 * 1024 * 1024; // 25MB
+                            const useChunked = file.size >= chunkThreshold;
+
+                            (useChunked ? chunkedUpload(file) : directUpload(file))
+                                .catch((err) => {
+                                    const msg = (err && err.message) ? err.message : 'Erreur upload.';
+                                    setProgress(0, msg);
+                                    currentXhr = null;
+                                });
                         });
                     })();
                 </script>

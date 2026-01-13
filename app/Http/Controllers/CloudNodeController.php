@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class CloudNodeController extends Controller
 {
@@ -33,6 +34,96 @@ class CloudNodeController extends Controller
         }
 
         return $path;
+    }
+
+    private function chunkUploadBaseDir(): string
+    {
+        return storage_path('app/private/chunk-uploads');
+    }
+
+    private function chunkUploadDir(string $uploadId): string
+    {
+        return $this->chunkUploadBaseDir() . DIRECTORY_SEPARATOR . $uploadId;
+    }
+
+    private function chunkUploadMetaPath(string $uploadId): string
+    {
+        return $this->chunkUploadDir($uploadId) . DIRECTORY_SEPARATOR . 'meta.json';
+    }
+
+    private function chunkUploadChunkPath(string $uploadId, int $index): string
+    {
+        return $this->chunkUploadDir($uploadId) . DIRECTORY_SEPARATOR . 'chunk_' . $index . '.bin';
+    }
+
+    private function ensureChunkDir(string $uploadId): void
+    {
+        $dir = $this->chunkUploadDir($uploadId);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+    }
+
+    private function readChunkMeta(string $uploadId): array
+    {
+        $path = $this->chunkUploadMetaPath($uploadId);
+        if (!is_file($path)) {
+            throw ValidationException::withMessages([
+                'upload_id' => __('Unknown upload session.'),
+            ]);
+        }
+
+        $raw = @file_get_contents($path);
+        $data = is_string($raw) ? json_decode($raw, true) : null;
+        if (!is_array($data)) {
+            throw ValidationException::withMessages([
+                'upload_id' => __('Invalid upload session.'),
+            ]);
+        }
+
+        return $data;
+    }
+
+    private function writeChunkMeta(string $uploadId, array $meta): void
+    {
+        $this->ensureChunkDir($uploadId);
+        @file_put_contents($this->chunkUploadMetaPath($uploadId), json_encode($meta, JSON_UNESCAPED_SLASHES));
+    }
+
+    private function listReceivedChunks(string $uploadId, int $totalChunks): array
+    {
+        $received = [];
+        for ($i = 0; $i < $totalChunks; $i++) {
+            if (is_file($this->chunkUploadChunkPath($uploadId, $i))) {
+                $received[] = $i;
+            }
+        }
+        return $received;
+    }
+
+    private function detectMimeForPath(string $absolutePath): ?string
+    {
+        try {
+            if (!is_file($absolutePath)) {
+                return null;
+            }
+            if (!function_exists('finfo_open')) {
+                return null;
+            }
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo === false) {
+                return null;
+            }
+            try {
+                $mime = finfo_file($finfo, $absolutePath);
+                $mime = is_string($mime) ? trim($mime) : '';
+                return $mime !== '' ? $mime : null;
+            } finally {
+                finfo_close($finfo);
+            }
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     private function audit(string $action, ?CloudNode $node = null, array $meta = []): void
@@ -414,6 +505,304 @@ class CloudNodeController extends Controller
 
         return redirect()->route('cloud.index', ['folder' => $parent->id])
             ->with('status', __('File uploaded.'));
+    }
+
+    public function uploadInit(Request $request)
+    {
+        Gate::authorize('cloud-write');
+
+        $configMaxKb = (int) config('cloud.max_upload_kb', 10240);
+        $iniMaxKb = $this->phpIniMaxUploadKb();
+        $maxKb = $iniMaxKb > 0 ? min($configMaxKb, $iniMaxKb) : $configMaxKb;
+        $maxBytes = max(1, $maxKb) * 1024;
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'size' => ['required', 'integer', 'min:1', 'max:' . $maxBytes],
+            'mime' => ['nullable', 'string', 'max:255'],
+            'parent_id' => ['nullable', 'integer', 'exists:cloud_nodes,id'],
+            'return' => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        $size = (int) $validated['size'];
+
+        $quotaBytes = $this->cloudQuotaBytes();
+        if ($quotaBytes > 0) {
+            $usedBytes = $this->cloudUsedBytes();
+            if ($size > 0 && ($usedBytes + $size) > $quotaBytes) {
+                $quotaHuman = $this->formatBytes($quotaBytes);
+                $message = "Quota atteint ({$quotaHuman}). Supprime des fichiers ou contacte un admin.";
+                return response()->json([
+                    'message' => $message,
+                    'errors' => ['file' => [$message]],
+                ], 422);
+            }
+        }
+
+        $mime = trim((string) ($validated['mime'] ?? ''));
+        if (str_starts_with($mime, 'video/')) {
+            $allowedVideoMimes = ['video/mp4', 'video/webm', 'video/quicktime'];
+            if (!in_array($mime, $allowedVideoMimes, true)) {
+                return response()->json([
+                    'message' => __('Unsupported video format. Allowed: MP4, WebM, MOV.'),
+                    'errors' => ['mime' => [__('Unsupported video format. Allowed: MP4, WebM, MOV.')]],
+                ], 422);
+            }
+        }
+
+        $parentId = $validated['parent_id'] ?? null;
+        if ($parentId === null) {
+            $parent = $this->rootFolder();
+        } else {
+            $parent = CloudNode::query()->findOrFail($parentId);
+            if (!$parent->isFolder()) {
+                throw ValidationException::withMessages([
+                    'parent_id' => __('Invalid destination folder.'),
+                ]);
+            }
+        }
+
+        // Choose a conservative chunk size to stay under host limits.
+        $chunkSize = 5 * 1024 * 1024; // 5MB
+        $totalChunks = (int) max(1, (int) ceil($size / $chunkSize));
+
+        $uploadId = (string) Str::uuid();
+        $returnPath = $this->safeReturnPath($validated['return'] ?? null);
+
+        $meta = [
+            'upload_id' => $uploadId,
+            'user_id' => (int) (Auth::id() ?? 0),
+            'parent_id' => (int) $parent->id,
+            'name' => (string) $validated['name'],
+            'size' => $size,
+            'mime' => $mime,
+            'chunk_size' => $chunkSize,
+            'total_chunks' => $totalChunks,
+            'return' => $returnPath,
+            'created_at' => now()->toIso8601String(),
+        ];
+
+        $this->writeChunkMeta($uploadId, $meta);
+
+        return response()->json([
+            'upload_id' => $uploadId,
+            'chunk_size' => $chunkSize,
+            'total_chunks' => $totalChunks,
+            'received' => [],
+        ], 201);
+    }
+
+    public function uploadChunk(Request $request)
+    {
+        Gate::authorize('cloud-write');
+
+        $validated = $request->validate([
+            'upload_id' => ['required', 'string', 'max:64'],
+            'index' => ['required', 'integer', 'min:0'],
+            'chunk' => ['required', 'file'],
+        ]);
+
+        $uploadId = (string) $validated['upload_id'];
+        $index = (int) $validated['index'];
+
+        $meta = $this->readChunkMeta($uploadId);
+        if ((int) ($meta['user_id'] ?? 0) !== (int) (Auth::id() ?? 0)) {
+            abort(403);
+        }
+
+        $total = (int) ($meta['total_chunks'] ?? 0);
+        if ($total <= 0 || $index >= $total) {
+            throw ValidationException::withMessages([
+                'index' => __('Invalid chunk index.'),
+            ]);
+        }
+
+        $file = $request->file('chunk');
+        if (!$file instanceof \Illuminate\Http\UploadedFile || !$file->isValid()) {
+            throw ValidationException::withMessages([
+                'chunk' => __('Upload failed. Please try again.'),
+            ]);
+        }
+
+        $target = $this->chunkUploadChunkPath($uploadId, $index);
+        $this->ensureChunkDir($uploadId);
+
+        // Move chunk to temp dir.
+        @rename($file->getRealPath(), $target);
+        if (!is_file($target)) {
+            // Fallback copy.
+            @copy($file->getRealPath(), $target);
+        }
+
+        if (!is_file($target)) {
+            return response()->json([
+                'message' => __('Failed to store chunk.'),
+            ], 500);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'index' => $index,
+        ]);
+    }
+
+    public function uploadComplete(Request $request)
+    {
+        Gate::authorize('cloud-write');
+
+        $validated = $request->validate([
+            'upload_id' => ['required', 'string', 'max:64'],
+        ]);
+
+        $uploadId = (string) $validated['upload_id'];
+        $meta = $this->readChunkMeta($uploadId);
+        if ((int) ($meta['user_id'] ?? 0) !== (int) (Auth::id() ?? 0)) {
+            abort(403);
+        }
+
+        $total = (int) ($meta['total_chunks'] ?? 0);
+        $expectedSize = (int) ($meta['size'] ?? 0);
+        $parentId = (int) ($meta['parent_id'] ?? 0);
+        $name = (string) ($meta['name'] ?? '');
+        $hintMime = (string) ($meta['mime'] ?? '');
+        $returnPath = $this->safeReturnPath($meta['return'] ?? null);
+
+        if ($total <= 0 || $expectedSize <= 0 || $parentId <= 0 || $name === '') {
+            throw ValidationException::withMessages([
+                'upload_id' => __('Invalid upload session.'),
+            ]);
+        }
+
+        $received = $this->listReceivedChunks($uploadId, $total);
+        if (count($received) !== $total) {
+            return response()->json([
+                'message' => __('Missing chunks.'),
+                'received' => $received,
+                'total' => $total,
+            ], 409);
+        }
+
+        $parent = CloudNode::query()->findOrFail($parentId);
+        if (!$parent->isFolder()) {
+            throw ValidationException::withMessages([
+                'parent_id' => __('Invalid destination folder.'),
+            ]);
+        }
+
+        // Assemble into a final local stored path.
+        $dir = 'private/cloud/' . now()->format('Y') . '/' . now()->format('m');
+        $storedPath = $dir . '/' . $uploadId . '_' . basename($name);
+        $absoluteTarget = Storage::disk('local')->path($storedPath);
+        $targetDir = dirname($absoluteTarget);
+        if (!is_dir($targetDir)) {
+            @mkdir($targetDir, 0775, true);
+        }
+
+        $out = @fopen($absoluteTarget, 'wb');
+        if ($out === false) {
+            return response()->json([
+                'message' => __('Failed to create file.'),
+            ], 500);
+        }
+
+        try {
+            for ($i = 0; $i < $total; $i++) {
+                $chunkPath = $this->chunkUploadChunkPath($uploadId, $i);
+                $in = @fopen($chunkPath, 'rb');
+                if ($in === false) {
+                    throw new \RuntimeException('missing_chunk:' . $i);
+                }
+                try {
+                    stream_copy_to_stream($in, $out);
+                } finally {
+                    fclose($in);
+                }
+            }
+        } catch (\Throwable $e) {
+            fclose($out);
+            @unlink($absoluteTarget);
+            return response()->json([
+                'message' => __('Failed to assemble upload.'),
+            ], 500);
+        }
+
+        fclose($out);
+
+        $actualSize = @filesize($absoluteTarget);
+        $actualSize = is_int($actualSize) ? $actualSize : null;
+        if ($actualSize === null || $actualSize <= 0) {
+            @unlink($absoluteTarget);
+            return response()->json([
+                'message' => __('Invalid assembled file.'),
+            ], 500);
+        }
+
+        // Enforce max upload size from config/ini (defense-in-depth).
+        $configMaxKb = (int) config('cloud.max_upload_kb', 10240);
+        $iniMaxKb = $this->phpIniMaxUploadKb();
+        $maxKb = $iniMaxKb > 0 ? min($configMaxKb, $iniMaxKb) : $configMaxKb;
+        if ($actualSize > ($maxKb * 1024)) {
+            @unlink($absoluteTarget);
+            return response()->json([
+                'message' => __('The file may not be greater than :max kilobytes.', ['max' => $maxKb]),
+            ], 422);
+        }
+
+        // Detect mime from assembled file if possible.
+        $detectedMime = $this->detectMimeForPath($absoluteTarget) ?: $hintMime;
+
+        if (str_starts_with((string) $detectedMime, 'video/')) {
+            $allowedVideoMimes = ['video/mp4', 'video/webm', 'video/quicktime'];
+            if (!in_array((string) $detectedMime, $allowedVideoMimes, true)) {
+                @unlink($absoluteTarget);
+                return response()->json([
+                    'message' => __('Unsupported video format. Allowed: MP4, WebM, MOV.'),
+                ], 422);
+            }
+        }
+
+        $node = CloudNode::create([
+            'parent_id' => $parent->id,
+            'type' => 'file',
+            'name' => $name,
+            'stored_path' => $storedPath,
+            'mime' => $detectedMime,
+            'size' => (int) $actualSize,
+            'uploaded_by' => Auth::id(),
+        ]);
+
+        $this->audit('upload_file', $node, ['parent_id' => $parent->id, 'chunked' => true]);
+
+        // Cleanup temp chunks.
+        try {
+            $dir = $this->chunkUploadDir($uploadId);
+            if (is_dir($dir)) {
+                $files = glob($dir . DIRECTORY_SEPARATOR . '*');
+                if (is_array($files)) {
+                    foreach ($files as $f) {
+                        @unlink($f);
+                    }
+                }
+                @rmdir($dir);
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+
+        $redirectUrl = null;
+        if (str_starts_with((string) $detectedMime, 'video/')) {
+            $redirectUrl = route('videos.classify', ['node' => $node->id]);
+        } elseif ($returnPath !== null) {
+            $redirectUrl = $returnPath;
+        } else {
+            $redirectUrl = route('cloud.index', ['folder' => $parent->id]);
+        }
+
+        return response()->json([
+            'message' => __('File uploaded.'),
+            'node_id' => (int) $node->id,
+            'redirect_url' => $redirectUrl,
+        ], 201);
     }
 
     public function download(CloudNode $node)

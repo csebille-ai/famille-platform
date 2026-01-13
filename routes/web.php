@@ -1306,6 +1306,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/cloud', [CloudNodeController::class, 'index'])->name('cloud.index');
     Route::post('/cloud/folders', [CloudNodeController::class, 'storeFolder'])->name('cloud.folders.store');
     Route::post('/cloud/files', [CloudNodeController::class, 'storeFile'])->name('cloud.files.store');
+
+    Route::post('/cloud/uploads/init', [CloudNodeController::class, 'uploadInit'])->name('cloud.uploads.init');
+    Route::post('/cloud/uploads/chunk', [CloudNodeController::class, 'uploadChunk'])->name('cloud.uploads.chunk');
+    Route::post('/cloud/uploads/complete', [CloudNodeController::class, 'uploadComplete'])->name('cloud.uploads.complete');
+
     Route::get('/cloud/files/{node}/download', [CloudNodeController::class, 'download'])->name('cloud.files.download');
     Route::get('/cloud/files/{node}/preview', [CloudNodeController::class, 'preview'])->name('cloud.files.preview');
     Route::get('/cloud/files/{node}/view', [CloudNodeController::class, 'view'])->name('cloud.files.view');
