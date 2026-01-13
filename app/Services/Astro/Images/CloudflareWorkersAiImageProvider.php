@@ -27,6 +27,8 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             throw new \InvalidArgumentException('Prompt vide.');
         }
 
+        $prompt = $this->clampPromptForModel($model, $prompt);
+
         // Workers AI models are identified like @cf/... and are part of the URL path.
         // IMPORTANT: do NOT URL-encode slashes, otherwise Cloudflare may not match the route.
         $modelEncoded = $this->encodeModelForPath($model);
@@ -211,6 +213,48 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
         // Cloudflare docs: flux-2-dev uses a multipart wrapper input schema.
         // See: https://developers.cloudflare.com/workers-ai/models/flux-2-dev
         return str_contains($model, 'flux-2-dev');
+    }
+
+    private function clampPromptForModel(string $model, string $prompt): string
+    {
+        $max = $this->promptMaxLengthForModel($model);
+        if ($max === null) {
+            return $prompt;
+        }
+
+        $len = function_exists('mb_strlen') ? mb_strlen($prompt, 'UTF-8') : strlen($prompt);
+        if ($len <= $max) {
+            return $prompt;
+        }
+
+        $clamped = function_exists('mb_substr') ? mb_substr($prompt, 0, $max, 'UTF-8') : substr($prompt, 0, $max);
+        $clamped = rtrim($clamped);
+
+        Log::warning('Workers AI image generation: prompt was clamped to model max length.', [
+            'model' => $model,
+            'original_length' => $len,
+            'max_length' => $max,
+        ]);
+
+        return $clamped;
+    }
+
+    private function promptMaxLengthForModel(string $model): ?int
+    {
+        $model = strtolower(trim($model));
+
+        // Cloudflare docs: flux-1-schnell prompt max 2048.
+        // See: https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/
+        if (str_contains($model, 'flux-1-schnell')) {
+            return 2048;
+        }
+
+        // flux-2-dev also documents prompt constraints; keep conservative.
+        if (str_contains($model, 'flux-2-dev')) {
+            return 2048;
+        }
+
+        return null;
     }
 
     /**
