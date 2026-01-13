@@ -42,7 +42,7 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
             $seedInt = hexdec(substr(sha1($seed), 0, 8));
         }
 
-        $payload = [
+        $jsonPayload = [
             'prompt' => $prompt,
             'width' => $w,
             'height' => $h,
@@ -50,22 +50,26 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
 
         $negative = $opts['negative_prompt'] ?? null;
         if (is_string($negative) && trim($negative) !== '') {
-            $payload['negative_prompt'] = trim($negative);
+            $jsonPayload['negative_prompt'] = trim($negative);
         }
 
         if ($seedInt !== null) {
-            $payload['seed'] = $seedInt;
+            $jsonPayload['seed'] = $seedInt;
         }
 
+        $request = Http::timeout(120)
+            ->retry(1, 250)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $token,
+                'Accept' => 'application/json, image/*',
+            ]);
+
         try {
-            $resp = Http::timeout(120)
-                ->retry(1, 250)
-                ->withHeaders([
-                    'Authorization' => 'Bearer ' . $token,
-                    'Accept' => 'application/json, image/*',
-                ])
-                ->post($url, $payload)
-                ->throw();
+            if ($this->modelRequiresMultipartWrapper($model)) {
+                $resp = $this->postMultipartWrapper($request, $url, $prompt, $w, $h, $seedInt, $negative);
+            } else {
+                $resp = $request->post($url, $jsonPayload)->throw();
+            }
         } catch (RequestException $e) {
             $msg = $e->response?->json('errors.0.message')
                 ?? $e->response?->json('error.message')
@@ -156,5 +160,61 @@ class CloudflareWorkersAiImageProvider implements ImageProvider
         $leadingSlash = str_starts_with($model, '/') ? '/' : '';
 
         return $leadingSlash . implode('/', $encoded);
+    }
+
+    private function modelRequiresMultipartWrapper(string $model): bool
+    {
+        $model = strtolower(trim($model));
+
+        // Cloudflare docs: flux-2-dev uses a multipart wrapper input schema.
+        // See: https://developers.cloudflare.com/workers-ai/models/flux-2-dev
+        return str_contains($model, 'flux-2-dev');
+    }
+
+    /**
+     * Cloudflare Workers AI: some models (e.g. flux-2-dev) require a `multipart` wrapper
+     * rather than the usual JSON payload.
+     */
+    private function postMultipartWrapper($request, string $url, string $prompt, int $w, int $h, ?int $seedInt, $negative)
+    {
+        $body = [
+            'prompt' => $prompt,
+            'width' => $w,
+            'height' => $h,
+        ];
+
+        if ($seedInt !== null) {
+            $body['seed'] = $seedInt;
+        }
+        if (is_string($negative) && trim($negative) !== '') {
+            $body['negative_prompt'] = trim($negative);
+        }
+
+        try {
+            return $request->post($url, [
+                'multipart' => [
+                    'body' => $body,
+                    'contentType' => 'multipart/form-data',
+                ],
+            ])->throw();
+        } catch (RequestException $e) {
+            // If the model rejects extra fields, retry with prompt-only.
+            $code = $e->response?->status();
+            $msg = $e->response?->json('errors.0.message')
+                ?? $e->response?->json('error.message')
+                ?? '';
+
+            $canRetry = $code === 400 && (array_key_exists('width', $body) || array_key_exists('height', $body) || array_key_exists('seed', $body) || array_key_exists('negative_prompt', $body));
+            if (!$canRetry) {
+                throw $e;
+            }
+
+            return $request->post($url, [
+                'multipart' => [
+                    'body' => ['prompt' => $prompt],
+                    'contentType' => 'multipart/form-data',
+                ],
+            ])->throw();
+        }
     }
 }
