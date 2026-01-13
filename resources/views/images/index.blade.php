@@ -248,7 +248,7 @@
 
         @can('images-upload')
             <a
-                href="{{ route('images.create') }}"
+                href="{{ route('cloud.index') }}"
                 class="fixed bottom-6 right-6 z-40 bg-slate-900 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-sm"
                 aria-label="Importer une image"
             >

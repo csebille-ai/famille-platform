@@ -176,11 +176,27 @@
                                         @else
                                             @php
                                                 $mime = $node->mime ?? '';
+                                                $isVideo = str_starts_with($mime, 'video/');
+                                                $videoId = $isVideo ? (int) ($classifiedVideosByNodeId[$node->id] ?? 0) : 0;
                                                 $canView = str_starts_with($mime, 'image/') || $mime === 'application/pdf';
                                                 $copyLink = $canView
                                                     ? route('cloud.files.preview', $node)
                                                     : route('cloud.files.download', $node);
                                             @endphp
+
+                                            @if ($isVideo)
+                                                @if ($videoId > 0)
+                                                    <a href="{{ route('videos.show', ['video' => $videoId]) }}" class="text-sm text-gray-700 hover:underline">
+                                                        Ouvrir
+                                                    </a>
+                                                @else
+                                                    @can('cloud-write')
+                                                        <a href="{{ route('videos.classify', ['node' => $node->id]) }}" class="text-sm text-gray-700 hover:underline">
+                                                            Classer
+                                                        </a>
+                                                    @endcan
+                                                @endif
+                                            @endif
 
                                             @if ($canView)
                                                 <a href="{{ route('cloud.files.preview', $node) }}" class="text-sm text-gray-700 hover:underline">

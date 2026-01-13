@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CloudAuditLog;
 use App\Models\CloudNode;
+use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
@@ -207,6 +208,20 @@ class CloudNodeController extends Controller
 
         $nodes = $nodesQuery->paginate(20)->withQueryString();
 
+        $classifiedVideosByNodeId = [];
+        try {
+            $nodeIds = $nodes->getCollection()->pluck('id')->map(fn ($v) => (int) $v)->all();
+            if (!empty($nodeIds) && \Illuminate\Support\Facades\Schema::hasTable('videos') && \Illuminate\Support\Facades\Schema::hasColumn('videos', 'cloud_node_id')) {
+                $classifiedVideosByNodeId = Video::query()
+                    ->whereIn('cloud_node_id', $nodeIds)
+                    ->pluck('id', 'cloud_node_id')
+                    ->map(fn ($v) => (int) $v)
+                    ->all();
+            }
+        } catch (\Throwable $e) {
+            $classifiedVideosByNodeId = [];
+        }
+
         $configMaxKb = (int) config('cloud.max_upload_kb', 10240);
         $iniMaxKb = $this->phpIniMaxUploadKb();
         $effectiveMaxKb = $iniMaxKb > 0 ? min($configMaxKb, $iniMaxKb) : $configMaxKb;
@@ -222,6 +237,7 @@ class CloudNodeController extends Controller
             'nodes' => $nodes,
             'search' => $search,
             'folderOptions' => $this->folderOptions(),
+            'classifiedVideosByNodeId' => $classifiedVideosByNodeId,
             'maxUploadMb' => $effectiveMaxMb,
             'quotaBytes' => $quotaBytes,
             'usedBytes' => $usedBytes,
@@ -357,6 +373,11 @@ class CloudNodeController extends Controller
                 'message' => __('File uploaded.'),
                 'node' => $node,
             ], 201);
+        }
+
+        $mime = (string) ($node->mime ?? '');
+        if (str_starts_with($mime, 'video/')) {
+            return redirect()->route('videos.classify', ['node' => $node->id]);
         }
 
         return redirect()->route('cloud.index', ['folder' => $parent->id])

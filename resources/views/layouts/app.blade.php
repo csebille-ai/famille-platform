@@ -351,9 +351,8 @@
                                 <button type="button" @click="addOpen = false" class="text-sm font-medium text-gray-600 hover:text-gray-900">Fermer</button>
                             </div>
 
-                            <div class="mt-4 grid grid-cols-2 gap-2">
-                                <a href="{{ route('images.create') }}" class="rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Photo</a>
-                                <a href="{{ route('videos.create') }}" class="rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Vidéo</a>
+                            <div class="mt-4">
+                                <a href="{{ route('cloud.index') }}" class="block rounded-xl border border-gray-200 px-3 py-3 text-center text-sm font-medium text-gray-900 hover:bg-gray-50">Uploader</a>
                             </div>
                         </div>
                     </div>

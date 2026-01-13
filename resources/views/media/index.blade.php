@@ -252,14 +252,14 @@
                                 class="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white shadow-lg p-1"
                             >
                                 <a
-                                    href="{{ route('images.create', ['return' => route('media.index', ['tab' => 'photos'])]) }}"
+                                    href="{{ route('cloud.index') }}"
                                     class="block w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
                                     @click="open = false"
                                 >
                                     Ajouter une photo
                                 </a>
                                 <a
-                                    href="{{ route('videos.create', ['mode' => 'personal', 'return' => route('media.index', ['tab' => 'videos'])]) }}"
+                                    href="{{ route('cloud.index') }}"
                                     class="block w-full rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
                                     @click="open = false"
                                 >

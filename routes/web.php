@@ -1197,9 +1197,18 @@ Route::middleware('auth')->group(function () {
     Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->name('videos.stream');
     Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->name('videos.poster');
 
+    Route::get('videos/classify/{node}', [VideoController::class, 'classifyFromCloud'])->name('videos.classify');
+    Route::post('videos/classify/{node}', [VideoController::class, 'storeFromCloudClassification'])->name('videos.classify.store');
+
     // Backward-compat: some older cached views referenced route('videos.import')
     Route::post('videos/import', [VideoController::class, 'store'])->name('videos.import');
-    Route::resource('videos', VideoController::class);
+
+    // The dedicated video upload page is deprecated; uploads happen in Cloud.
+    Route::get('videos/create', function () {
+        return redirect()->route('cloud.index');
+    })->name('videos.create');
+
+    Route::resource('videos', VideoController::class)->except(['create']);
 
     Route::get('/cloud/create', function () {
         return redirect()
@@ -1208,7 +1217,10 @@ Route::middleware('auth')->group(function () {
     })->name('cloud.create.legacy');
 
     Route::get('/galerie', [ImageController::class, 'index'])->name('images.index');
-    Route::get('/galerie/importer', [ImageController::class, 'create'])->name('images.create');
+    // The dedicated image upload page is deprecated; uploads happen in Cloud.
+    Route::get('/galerie/importer', function () {
+        return redirect()->route('cloud.index');
+    })->name('images.create');
     Route::post('/galerie', [ImageController::class, 'store'])->name('images.store');
     Route::get('/galerie/{node}/ouvrir', [ImageController::class, 'show'])->name('images.open');
     Route::get('/galerie/{node}', [ImageController::class, 'view'])->name('images.view');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Video;
+use App\Models\CloudNode;
 use App\Models\UploadAsset;
 use App\Services\Uploads\R2UploadService;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,16 @@ use Symfony\Component\Process\Process;
 
 class VideoController extends Controller
 {
+    private function titleFromFilename(string $name): string
+    {
+        $base = pathinfo($name, PATHINFO_FILENAME);
+        $base = str_replace(['_', '-'], ' ', $base);
+        $base = preg_replace('/\s+/', ' ', $base) ?? $base;
+        $base = trim($base);
+
+        return $base !== '' ? $base : 'Vidéo';
+    }
+
     private function safeReturnPath(?string $path): ?string
     {
         if ($path === null) {
@@ -46,7 +57,7 @@ class VideoController extends Controller
     private function generatePosterForVideo(Video $video): void
     {
         $diskName = (string) ($video->storage_disk ?? 'public');
-        if ($diskName !== 'public') {
+        if (!in_array($diskName, ['public', 'local'], true)) {
             return;
         }
 
@@ -58,7 +69,7 @@ class VideoController extends Controller
             return;
         }
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk($diskName);
         if (!$disk->exists($video->video_path)) {
             return;
         }
@@ -248,6 +259,68 @@ class VideoController extends Controller
         return view('videos.create');
     }
 
+    public function classifyFromCloud(CloudNode $node)
+    {
+        Gate::authorize('cloud-write');
+
+        if (!$node->isFile() || $node->stored_path === null) {
+            abort(404);
+        }
+
+        $mime = (string) ($node->mime ?? '');
+        if (!str_starts_with($mime, 'video/')) {
+            abort(404);
+        }
+
+        $existing = Video::query()->where('cloud_node_id', $node->id)->first();
+        if ($existing) {
+            return redirect()->route('videos.show', $existing);
+        }
+
+        return view('videos.classify', [
+            'node' => $node,
+            'suggestedTitle' => $this->titleFromFilename((string) $node->name),
+        ]);
+    }
+
+    public function storeFromCloudClassification(Request $request, CloudNode $node)
+    {
+        Gate::authorize('cloud-write');
+
+        if (!$node->isFile() || $node->stored_path === null) {
+            abort(404);
+        }
+
+        $mime = (string) ($node->mime ?? '');
+        if (!str_starts_with($mime, 'video/')) {
+            abort(404);
+        }
+
+        $existing = Video::query()->where('cloud_node_id', $node->id)->first();
+        if ($existing) {
+            return redirect()->route('videos.show', $existing);
+        }
+
+        $validated = $request->validate([
+            'kind' => ['required', 'string', 'in:film,serie'],
+        ]);
+
+        $category = $validated['kind'] === 'serie' ? 'series' : 'films';
+
+        $video = Video::create([
+            'cloud_node_id' => $node->id,
+            'title' => $this->titleFromFilename((string) $node->name),
+            'category' => $category,
+            'video_path' => (string) $node->stored_path,
+            'storage_disk' => 'local',
+            'created_by' => Auth::id(),
+        ]);
+
+        $this->generatePosterForVideo($video);
+
+        return redirect()->route('videos.show', $video)->with('status', 'Vidéo ajoutée');
+    }
+
     /**
      * Store a newly created resource in storage.
      */
@@ -400,7 +473,7 @@ class VideoController extends Controller
         }
 
         $diskName = (string) ($video->storage_disk ?? 'public');
-        if ($diskName !== 'public') {
+        if (!in_array($diskName, ['public', 'local'], true)) {
             $url = '';
             if ($diskName === 'r2') {
                 $url = trim((string) $r2->publicUrlForKey((string) $video->video_path));
@@ -415,7 +488,7 @@ class VideoController extends Controller
             return redirect()->away($url);
         }
 
-        $disk = Storage::disk('public');
+        $disk = Storage::disk($diskName);
         if (!$disk->exists($video->video_path)) {
             abort(404);
         }
@@ -507,7 +580,7 @@ class VideoController extends Controller
 
     public function poster(Video $video): \Symfony\Component\HttpFoundation\Response
     {
-            if ((string) ($video->storage_disk ?? 'public') === 'public' && !$video->poster_path) {
+            if (in_array((string) ($video->storage_disk ?? 'public'), ['public', 'local'], true) && !$video->poster_path) {
                 // Best-effort lazy generation for older uploads or servers where
                 // synchronous generation may fail intermittently.
                 $this->generatePosterForVideo($video);
