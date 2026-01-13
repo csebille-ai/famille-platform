@@ -18,6 +18,34 @@
             return $data;
         };
 
+        $parseLinkCard = function (?string $body): ?array {
+            $b = trim((string) $body);
+            if ($b === '') return null;
+
+            $url = null;
+            if (preg_match('/^📹\s*Visio:\s*(https?:\/\/\S+)\s*$/u', $b, $m)) {
+                $url = $m[1] ?? null;
+            } elseif (preg_match('/^(https?:\/\/\S+)\s*$/u', $b, $m)) {
+                $url = $m[1] ?? null;
+            }
+            $url = $url ? trim((string) $url) : null;
+            if (!$url) return null;
+
+            $host = (string) (parse_url($url, PHP_URL_HOST) ?? '');
+            $domain = $host !== '' ? $host : preg_replace('/^https?:\/\//i', '', $url);
+
+            $title = 'Lien';
+            if (str_contains($b, 'Visio') || str_contains($domain, 'jit.si')) {
+                $title = 'Appel vidéo';
+            }
+
+            return [
+                'url' => $url,
+                'domain' => $domain,
+                'title' => $title,
+            ];
+        };
+
         $palette = [
             ['chip' => 'bg-indigo-50 text-indigo-700 border-indigo-200', 'avatar' => 'bg-indigo-600 text-white'],
             ['chip' => 'bg-emerald-50 text-emerald-700 border-emerald-200', 'avatar' => 'bg-emerald-600 text-white'],
@@ -71,7 +99,7 @@
         $onlineList = $onlineList->unique('id')->values();
     @endphp
 
-    <div class="max-w-6xl mx-auto px-6 py-6 space-y-6">
+    <div class="max-w-6xl mx-auto px-0 sm:px-6 py-0 sm:py-6 space-y-4 sm:space-y-6">
         @if (session('status'))
             <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-gray-900">
                 {{ session('status') }}
@@ -89,53 +117,110 @@
             </div>
         @endif
 
-        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
-                <div>
-                    <div class="text-base font-semibold text-gray-900">💬 Chat familial</div>
-                    <div class="text-sm text-slate-500">
-                        <span class="text-emerald-600">●</span>
-                        <span id="chatOnlineCount" class="font-semibold text-gray-900">{{ $onlineList->count() }}</span>
-                        connectés
-                    </div>
-                    <div id="chatPushStatus" class="mt-1 text-xs text-slate-500"></div>
-                </div>
-                <div class="flex items-center gap-2">
+        <div class="bg-white sm:rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-10rem)]">
+            @php
+                $visioDomain = trim((string) (config('visio.jitsi_domain') ?? 'meet.jit.si'));
+                $visioProvider = (string) (config('visio.provider') ?? 'link');
+                $visioUrl = trim((string) (config('visio.url') ?? ''));
+                $visioAvailable = $visioProvider === 'jitsi'
+                    ? ($visioDomain !== '')
+                    : ($visioUrl !== '' || $visioDomain !== '');
+            @endphp
+            <div class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-100">
+                <div class="h-16 px-4 sm:px-6 flex items-center justify-between gap-3">
                     <button
                         type="button"
-                        id="chatVisioBtn"
-                        class="inline-flex items-center gap-2 border border-slate-200 bg-white text-slate-700 rounded-2xl px-3 py-2 text-xs font-semibold hover:bg-slate-50"
-                        data-jitsi-domain="{{ (string) (config('visio.jitsi_domain') ?? 'meet.jit.si') }}"
+                        id="chatBackBtn"
+                        class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        aria-label="Retour"
+                        title="Retour"
                     >
-                        <i class="ph ph-video-camera" aria-hidden="true"></i>
-                        Visio
+                        <i class="ph ph-arrow-left" aria-hidden="true"></i>
                     </button>
 
-                    <button
-                        type="button"
-                        id="chatPushToggle"
-                        class="border border-slate-200 bg-white text-slate-700 rounded-2xl px-3 py-2 text-xs font-semibold"
-                    >
-                        🔔 Notifications
-                    </button>
-
-                    <div id="chatOnlineAvatars" class="flex items-center -space-x-2">
-                    @foreach($onlineList->take(6) as $u)
-                        @php
-                            $uid = (int) ($u['id'] ?? 0);
-                            $uname = (string) ($u['name'] ?? '—');
-                            $colors = $paletteFor($uid);
-                        @endphp
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-white {{ $colors['avatar'] }}" title="{{ $uname }}">
-                            {{ $initialsFor($uname) }}
+                    <div class="min-w-0 flex-1 text-center">
+                        <div class="text-sm sm:text-base font-semibold text-gray-900 leading-tight">Famille</div>
+                        <div class="text-xs text-slate-500 leading-tight">
+                            <span class="text-emerald-600">●</span>
+                            <span id="chatOnlineCount" class="font-semibold text-gray-900">{{ $onlineList->count() }}</span>
+                            <span id="chatPresenceLabel">en ligne</span>
                         </div>
-                    @endforeach
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            id="chatVisioBtn"
+                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label="Appel vidéo"
+                            title="{{ $visioAvailable ? 'Appel vidéo' : 'Indisponible' }}"
+                            {{ $visioAvailable ? '' : 'disabled' }}
+                            data-jitsi-domain="{{ $visioDomain }}"
+                        >
+                            <i class="ph ph-video-camera" aria-hidden="true"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            id="chatSearchBtn"
+                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            aria-label="Rechercher"
+                            title="Rechercher"
+                        >
+                            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            id="chatInfoBtn"
+                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            aria-label="Infos"
+                            title="Infos"
+                        >
+                            <i class="ph ph-info" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="chatSearchBar" class="hidden px-4 sm:px-6 pb-3">
+                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-2">
+                        <input
+                            type="search"
+                            id="chatSearchInput"
+                            class="w-full border-0 p-0 focus:ring-0 text-sm"
+                            placeholder="Rechercher dans la conversation…"
+                        />
                     </div>
                 </div>
             </div>
 
-            <div id="chatScroll" class="max-h-[70vh] md:max-h-[60vh] overflow-y-auto">
-                <div id="chatMessages" class="flex flex-col gap-3 p-4">
+            <div id="chatScroll" class="flex-1 overflow-y-auto">
+                <div class="relative">
+                    <button
+                        type="button"
+                        id="chatScrollToBottom"
+                        class="hidden absolute right-4 bottom-4 z-10 w-11 h-11 rounded-full bg-slate-900 text-white shadow-lg items-center justify-center"
+                        aria-label="Aller en bas"
+                        title="Aller en bas"
+                    >
+                        <i class="ph ph-arrow-down" aria-hidden="true"></i>
+                    </button>
+
+                    <div id="chatMessages" class="flex flex-col gap-3 p-4 sm:p-6">
+                        <div id="chatNotifBanner" class="hidden rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold text-gray-900">Activer les notifications</div>
+                                    <div id="chatNotifBody" class="mt-1 text-sm text-slate-600">Recevez un push quand un message arrive.</div>
+                                    <div id="chatNotifHelp" class="mt-2 text-xs text-slate-500"></div>
+                                </div>
+                                <button type="button" id="chatNotifClose" class="w-8 h-8 rounded-full inline-flex items-center justify-center text-slate-500 hover:bg-white" aria-label="Fermer" title="Fermer">✕</button>
+                            </div>
+                            <div class="mt-3 flex items-center gap-2">
+                                <button type="button" id="chatNotifPrimary" class="inline-flex items-center justify-center rounded-full bg-slate-900 text-white px-4 py-2 text-sm font-semibold">Activer</button>
+                                <button type="button" id="chatNotifLater" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 px-4 py-2 text-sm font-semibold">Plus tard</button>
+                            </div>
+                        </div>
                     @if(($messages ?? collect())->count() === 0)
                         <div id="chatEmptyState" class="py-12 text-center">
                             <div class="text-base font-semibold text-gray-900">👋 Aucun message pour l’instant</div>
@@ -177,10 +262,10 @@
                             @endif
 
                             <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }}" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}">
-                                <div class="max-w-[85%] sm:max-w-[75%]">
+                                <div class="max-w-[90%] sm:max-w-[80%]">
                                     @if($isGroupStart)
                                         <div class="mb-1 text-xs text-slate-500 {{ $isMe ? 'text-right' : '' }}">
-                                            {{ $firstName }} · {{ $m->created_at?->format('d/m') }}
+                                            {{ $firstName }} · {{ $m->created_at?->format('H:i') }}
                                         </div>
                                     @endif
 
@@ -192,7 +277,10 @@
                                         </div>
 
                                         <div class="px-4 py-3 border {{ $isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md' }}" data-bubble>
-                                            @php $att = $parseAttachment($m->body); @endphp
+                                            @php
+                                                $att = $parseAttachment($m->body);
+                                                $link = $att ? null : $parseLinkCard($m->body);
+                                            @endphp
                                             @if ($att)
                                                 @php
                                                     $attType = (string) ($att['media_type'] ?? '');
@@ -215,10 +303,18 @@
                                                     </div>
                                                     <div class="mt-2 text-xs opacity-80">{{ $attName }}</div>
                                                 </a>
+                                            @elseif ($link)
+                                                <div class="rounded-xl border border-slate-200 {{ $isMe ? 'bg-white/10' : 'bg-slate-50' }} p-3">
+                                                    <div class="text-sm font-semibold {{ $isMe ? 'text-white' : 'text-gray-900' }}">{{ $link['title'] }}</div>
+                                                    <div class="mt-0.5 text-xs {{ $isMe ? 'text-white/80' : 'text-slate-500' }}">{{ $link['domain'] }}</div>
+                                                    <div class="mt-3 flex items-center gap-2">
+                                                        <a href="{{ $link['url'] }}" target="_blank" rel="noopener" class="inline-flex items-center justify-center rounded-full bg-slate-900 text-white px-3 py-1.5 text-xs font-semibold">Rejoindre</a>
+                                                        <button type="button" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700" data-copy-link="{{ $link['url'] }}">Copier le lien</button>
+                                                    </div>
+                                                </div>
                                             @else
                                                 <div class="text-sm whitespace-pre-wrap">{{ $m->body }}</div>
                                             @endif
-                                            <div class="mt-1 text-right text-xs opacity-60">{{ $m->created_at?->format('H:i') }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -228,60 +324,44 @@
                 </div>
             </div>
 
-            <div class="border-t border-slate-100 bg-white sticky bottom-0">
-                <div class="px-4 py-3">
-                    <form id="chatForm" method="POST" action="{{ route('chat.store') }}">
+            <div class="border-t border-slate-100 bg-white sticky bottom-0 pb-[env(safe-area-inset-bottom)]">
+                <div class="px-4 sm:px-6 py-3">
+                    <div id="chatSoloHint" class="hidden mb-2 text-xs text-slate-500"></div>
+                    <form id="chatForm" method="POST" action="{{ route('chat.store') }}" class="flex items-end gap-2">
                         @csrf
-                        <div id="chatGate" class="hidden mb-2 text-sm text-slate-600"></div>
-                        <div id="chatVoiceStatus" class="hidden mb-2 text-sm text-slate-600"></div>
+                        <button
+                            type="button"
+                            id="chatAttachBtn"
+                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            aria-label="Ajouter"
+                            title="Ajouter"
+                        >
+                            ＋
+                        </button>
 
-                        <div class="flex items-end gap-2">
-                            <div class="flex-1 rounded-2xl border border-slate-200 bg-white px-3 py-2">
-                                <textarea
-                                    id="body"
-                                    name="body"
-                                    rows="1"
-                                    class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm"
-                                    placeholder="Écris ton message…"
-                                    required
-                                >{{ old('body') }}</textarea>
-                            </div>
-
-                            <input
-                                type="file"
-                                id="chatAttachInput"
-                                class="hidden"
-                                accept="image/*,video/*"
-                            />
-
-                            <button
-                                type="button"
-                                id="chatAttachBtn"
-                                class="border border-slate-200 bg-white text-slate-700 rounded-2xl px-4 py-3 text-sm font-semibold"
-                                aria-label="Ajouter une pièce jointe"
-                                title="Ajouter une pièce jointe"
-                            >
-                                ＋
-                            </button>
-
-                            <button
-                                type="button"
-                                id="chatVoiceBtn"
-                                class="border border-slate-200 bg-white text-slate-700 rounded-2xl px-4 py-3 text-sm font-semibold"
-                                aria-label="Dicter le message"
-                                title="Dicter le message"
-                            >
-                                🎙️
-                            </button>
-
-                            <button
-                                type="submit"
-                                class="bg-slate-900 text-white rounded-2xl px-4 py-3 text-sm font-semibold"
-                                aria-label="Envoyer"
-                            >
-                                ➤
-                            </button>
+                        <div class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2">
+                            <textarea
+                                id="body"
+                                name="body"
+                                rows="1"
+                                class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm leading-6"
+                                placeholder="Écrire un message…"
+                                required
+                            >{{ old('body') }}</textarea>
                         </div>
+
+                        <input type="file" id="chatAttachInput" class="hidden" accept="image/*,video/*" />
+
+                        <button
+                            type="submit"
+                            id="chatSendBtn"
+                            class="w-11 h-11 rounded-full inline-flex items-center justify-center bg-slate-900 text-white font-semibold disabled:opacity-50"
+                            aria-label="Envoyer"
+                            title="Envoyer"
+                            disabled
+                        >
+                            <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>
+                        </button>
 
                         <x-input-error class="mt-2" :messages="$errors->get('body')" />
                     </form>
@@ -303,8 +383,41 @@
                         <span>Photo / Vidéo</span>
                         <i class="ph ph-image" aria-hidden="true"></i>
                     </button>
+
+                    <button
+                        type="button"
+                        id="chatAttachPickFile"
+                        class="w-full inline-flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 opacity-50 cursor-not-allowed"
+                        disabled
+                        title="Indisponible"
+                        aria-label="Fichier (indisponible)"
+                    >
+                        <span>Fichier</span>
+                        <i class="ph ph-file" aria-hidden="true"></i>
+                    </button>
+
+                    <button
+                        type="button"
+                        id="chatAttachPickVoice"
+                        class="w-full inline-flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900"
+                    >
+                        <span>Dicter</span>
+                        <i class="ph ph-microphone" aria-hidden="true"></i>
+                    </button>
                 </div>
                 <button type="button" id="chatAttachCancel" class="mt-3 w-full text-sm text-slate-600 py-2">Annuler</button>
+            </div>
+        </div>
+
+        <div id="chatInfoModal" class="fixed inset-0 z-50 hidden">
+            <div id="chatInfoBackdrop" class="absolute inset-0 bg-black/40"></div>
+            <div class="absolute inset-x-0 bottom-0 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:top-24 sm:bottom-auto w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl p-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm font-semibold text-gray-900">Participants</div>
+                    <button type="button" id="chatInfoClose" class="w-9 h-9 rounded-full inline-flex items-center justify-center text-slate-600 hover:bg-slate-50" aria-label="Fermer" title="Fermer">✕</button>
+                </div>
+                <div class="mt-1 text-xs text-slate-500"><span id="chatInfoCount">0</span> en ligne</div>
+                <div id="chatInfoList" class="mt-3 space-y-2"></div>
             </div>
         </div>
     </div>
@@ -315,7 +428,7 @@
             const messagesEl = document.getElementById('chatMessages');
             const emptyEl = document.getElementById('chatEmptyState');
             const onlineCountEl = document.getElementById('chatOnlineCount');
-            const onlineAvatarsEl = document.getElementById('chatOnlineAvatars');
+            const presenceLabelEl = document.getElementById('chatPresenceLabel');
             const formEl = document.getElementById('chatForm');
             const textareaEl = document.getElementById('body');
             const attachBtn = document.getElementById('chatAttachBtn');
@@ -324,6 +437,20 @@
             const attachBackdrop = document.getElementById('chatAttachBackdrop');
             const attachCancel = document.getElementById('chatAttachCancel');
             const attachPickMedia = document.getElementById('chatAttachPickMedia');
+            const attachPickVoice = document.getElementById('chatAttachPickVoice');
+            const scrollToBottomBtn = document.getElementById('chatScrollToBottom');
+            const soloHintEl = document.getElementById('chatSoloHint');
+            const sendBtn = document.getElementById('chatSendBtn');
+            const backBtn = document.getElementById('chatBackBtn');
+            const searchBtn = document.getElementById('chatSearchBtn');
+            const searchBar = document.getElementById('chatSearchBar');
+            const searchInput = document.getElementById('chatSearchInput');
+            const infoBtn = document.getElementById('chatInfoBtn');
+            const infoModal = document.getElementById('chatInfoModal');
+            const infoBackdrop = document.getElementById('chatInfoBackdrop');
+            const infoClose = document.getElementById('chatInfoClose');
+            const infoList = document.getElementById('chatInfoList');
+            const infoCount = document.getElementById('chatInfoCount');
             const currentUserId = @json(auth()->id());
             const currentUserName = @json(auth()->user()?->name);
             const pollUrl = @json(route('chat.poll'));
@@ -342,35 +469,22 @@
 
             const visioBtn = document.getElementById('chatVisioBtn');
 
-            const gateEl = document.getElementById('chatGate');
-            const voiceStatusEl = document.getElementById('chatVoiceStatus');
-            const voiceBtn = document.getElementById('chatVoiceBtn');
             const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
             let recognition = null;
             let dictationActive = false;
             let dictationBase = '';
             let dictationInterim = '';
 
-            function setVoiceStatus(message, options) {
-                if (!voiceStatusEl) return;
-                const msg = String(message || '').trim();
-                if (!msg) {
-                    voiceStatusEl.textContent = '';
-                    voiceStatusEl.className = 'hidden mb-2 text-sm text-slate-600';
-                    return;
-                }
-                voiceStatusEl.textContent = msg;
-                voiceStatusEl.className = 'mb-2 text-sm text-slate-600';
+            const notifBanner = document.getElementById('chatNotifBanner');
+            const notifBody = document.getElementById('chatNotifBody');
+            const notifHelp = document.getElementById('chatNotifHelp');
+            const notifPrimary = document.getElementById('chatNotifPrimary');
+            const notifLater = document.getElementById('chatNotifLater');
+            const notifClose = document.getElementById('chatNotifClose');
 
-                const autoHideMs = Number(options?.autoHideMs ?? 0);
-                if (autoHideMs > 0) {
-                    setTimeout(() => {
-                        if (voiceStatusEl.textContent === msg) {
-                            setVoiceStatus('');
-                        }
-                    }, autoHideMs);
-                }
-            }
+            const NOTIF_DISMISS_KEY = 'famille:chat:notif_dismissed_at';
+
+            function setVoiceStatus() {}
 
             function parseAttachmentBody(body) {
                 const prefix = '[[ATTACHMENT]]';
@@ -387,34 +501,43 @@
                 }
             }
 
-            function setDictationUi(active) {
-                dictationActive = !!active;
-                if (!voiceBtn) return;
-                voiceBtn.setAttribute('aria-pressed', dictationActive ? 'true' : 'false');
-                voiceBtn.classList.toggle('bg-slate-900', dictationActive);
-                voiceBtn.classList.toggle('text-white', dictationActive);
-                voiceBtn.classList.toggle('border-slate-900', dictationActive);
-                voiceBtn.classList.toggle('bg-white', !dictationActive);
-                voiceBtn.classList.toggle('text-slate-700', !dictationActive);
-                voiceBtn.classList.toggle('border-slate-200', !dictationActive);
-                setVoiceStatus(dictationActive ? '🎙️ Dictée en cours…' : '');
+            function parseLinkCardBody(body) {
+                const b = String(body || '').trim();
+                if (!b) return null;
+
+                let url = null;
+                const m1 = b.match(/^📹\s*Visio:\s*(https?:\/\/\S+)\s*$/u);
+                if (m1) url = m1[1];
+                if (!url) {
+                    const m2 = b.match(/^(https?:\/\/\S+)\s*$/u);
+                    if (m2) url = m2[1];
+                }
+                if (!url) return null;
+                url = String(url).trim();
+
+                let domain = '';
+                try {
+                    domain = (new URL(url)).host || '';
+                } catch {
+                    domain = url.replace(/^https?:\/\//i, '').replace(/\/+$/g, '');
+                }
+                const title = (b.includes('Visio') || domain.includes('jit.si')) ? 'Appel vidéo' : 'Lien';
+                return { url, domain, title };
             }
 
+            function setDictationUi(active) {
+                dictationActive = !!active;
+                if (!attachPickVoice) return;
+                attachPickVoice.setAttribute('aria-pressed', dictationActive ? 'true' : 'false');
+                attachPickVoice.classList.toggle('border-slate-900', dictationActive);
+            }
             function syncVoiceAvailability() {
-                if (!voiceBtn) return;
+                if (!attachPickVoice) return;
                 const supported = !!SpeechRecognitionCtor;
-                const allowedByGate = !textareaEl?.disabled;
-
-                voiceBtn.disabled = !supported || !allowedByGate;
-                voiceBtn.classList.toggle('opacity-50', voiceBtn.disabled);
-                voiceBtn.classList.toggle('cursor-not-allowed', voiceBtn.disabled);
-                voiceBtn.title = !supported
-                    ? 'Dictée vocale non supportée par ce navigateur'
-                    : (allowedByGate ? 'Dicter le message' : 'Chat désactivé (dictée indisponible)');
-
-                if (!supported) {
-                    setVoiceStatus('');
-                }
+                attachPickVoice.disabled = !supported;
+                attachPickVoice.classList.toggle('opacity-50', attachPickVoice.disabled);
+                attachPickVoice.classList.toggle('cursor-not-allowed', attachPickVoice.disabled);
+                attachPickVoice.title = supported ? 'Dicter' : 'Dictée vocale non supportée par ce navigateur';
             }
 
             function sanitizeDomain(raw) {
@@ -498,7 +621,7 @@
                 return ini.toUpperCase();
             }
 
-            function focusLastMessage() {
+            function scrollToBottom() {
                 const lastRow = messagesEl?.querySelector('[data-message-row]:last-child');
                 if (!lastRow) return;
 
@@ -518,11 +641,43 @@
                 setTimeout(run, 80);
             }
 
-            focusLastMessage();
+            function isNearBottom() {
+                if (!scrollEl) return true;
+                const threshold = 120;
+                const distance = scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
+                return distance <= threshold;
+            }
+
+            function syncScrollToBottomButton() {
+                if (!scrollToBottomBtn || !scrollEl) return;
+                const show = !isNearBottom();
+                scrollToBottomBtn.classList.toggle('hidden', !show);
+                scrollToBottomBtn.classList.toggle('flex', show);
+            }
+
+            scrollToBottom();
+            syncScrollToBottomButton();
 
             function hideEmptyState() {
                 if (!emptyEl) return;
                 emptyEl.classList.add('hidden');
+            }
+
+            function updatePresenceUi(count) {
+                const c = Number(count || 0);
+                if (presenceLabelEl) {
+                    presenceLabelEl.textContent = c <= 1 ? 'en ligne' : 'en ligne';
+                }
+
+                if (soloHintEl) {
+                    if (c <= 1) {
+                        soloHintEl.textContent = 'Personne en ligne — votre message sera notifié.';
+                        soloHintEl.classList.remove('hidden');
+                    } else {
+                        soloHintEl.textContent = '';
+                        soloHintEl.classList.add('hidden');
+                    }
+                }
             }
 
             function renderOnline(users) {
@@ -545,50 +700,40 @@
                     onlineCountEl.textContent = String(count);
                 }
 
-                if (!onlineAvatarsEl) return;
-                onlineAvatarsEl.innerHTML = '';
-                if (count === 0) {
-                    return;
+                if (infoCount) {
+                    infoCount.textContent = String(count);
                 }
 
-                list.slice(0, 6).forEach(u => {
-                    const id = userId(u);
-                    const name = userName(u);
-                    const colors = paletteFor(id);
+                if (infoList) {
+                    infoList.innerHTML = '';
+                    list
+                        .slice(0, 24)
+                        .forEach(u => {
+                            const id = userId(u);
+                            const name = userName(u);
+                            const colors = paletteFor(id);
 
-                    const dot = document.createElement('div');
-                    dot.className = `w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 border-white ${colors.avatar}`;
-                    dot.title = name;
-                    dot.textContent = initialsFor(name);
-                    onlineAvatarsEl.appendChild(dot);
-                });
+                            const row = document.createElement('div');
+                            row.className = 'flex items-center gap-3';
+
+                            const av = document.createElement('div');
+                            av.className = `w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold ${colors.avatar}`;
+                            av.textContent = initialsFor(name);
+
+                            const label = document.createElement('div');
+                            label.className = 'text-sm text-gray-900';
+                            label.textContent = name;
+
+                            row.appendChild(av);
+                            row.appendChild(label);
+                            infoList.appendChild(row);
+                        });
+                }
+
+                updatePresenceUi(count);
             }
 
-            function updateGate(onlineCount) {
-                const count = Number(onlineCount ?? 0);
-                const ok = count >= 2;
-
-                if (textareaEl) {
-                    textareaEl.disabled = !ok;
-                    textareaEl.placeholder = ok
-                        ? 'Écris ton message…'
-                        : 'Attends qu’au moins 2 personnes soient connectées…';
-                }
-
-                const btn = formEl?.querySelector('button[type="submit"]');
-                if (btn) {
-                    btn.disabled = !ok;
-                    btn.classList.toggle('opacity-50', !ok);
-                    btn.classList.toggle('cursor-not-allowed', !ok);
-                }
-
-                if (gateEl) {
-                    gateEl.textContent = ok ? '' : 'Chat désactivé : il faut au moins 2 connectés.';
-                    gateEl.className = ok ? 'hidden mb-2 text-sm text-slate-600' : 'mb-2 text-sm text-slate-600';
-                }
-
-                syncVoiceAvailability();
-            }
+            syncVoiceAvailability();
 
             function dayKeyFromISO(iso) {
                 if (!iso) return '';
@@ -651,6 +796,8 @@
                 if (id != null && messagesEl.querySelector(`[data-message-id="${id}"]`)) {
                     return false;
                 }
+
+                const wasAtBottom = isNearBottom();
                 const uid = payload?.user?.id ?? payload?.user_id ?? null;
                 const name = payload?.user?.name ?? '—';
                 const body = payload?.body ?? '';
@@ -688,12 +835,12 @@
                 if (id != null) outer.dataset.messageId = String(id);
 
                 const width = document.createElement('div');
-                width.className = 'max-w-[85%] sm:max-w-[75%]';
+                width.className = 'max-w-[90%] sm:max-w-[80%]';
 
                 if (!sameAuthorAsPrev) {
                     const meta = document.createElement('div');
                     meta.className = `mb-1 text-xs text-slate-500 ${isMe ? 'text-right' : ''}`;
-                    meta.textContent = `${firstName(name)} · ${createdISO ? shortDay(createdISO) : ''}`;
+                    meta.textContent = `${firstName(name)} · ${whenTime}`;
                     width.appendChild(meta);
                 }
 
@@ -710,6 +857,7 @@
 
                 const wrapper = document.createElement('div');
                 wrapper.className = `px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
+                wrapper.dataset.bubble = '1';
 
                 const att = parseAttachmentBody(body);
                 const bodyEl = document.createElement('div');
@@ -760,24 +908,123 @@
                     a.appendChild(caption);
                     bodyEl.appendChild(a);
                 } else {
-                    bodyEl.className = 'text-sm whitespace-pre-wrap';
-                    bodyEl.textContent = body;
+                    const link = parseLinkCardBody(body);
+                    if (link) {
+                        const card = document.createElement('div');
+                        card.className = `rounded-xl border border-slate-200 ${isMe ? 'bg-white/10' : 'bg-slate-50'} p-3`;
+
+                        const t = document.createElement('div');
+                        t.className = `text-sm font-semibold ${isMe ? 'text-white' : 'text-gray-900'}`;
+                        t.textContent = String(link.title || 'Lien');
+
+                        const d = document.createElement('div');
+                        d.className = `mt-0.5 text-xs ${isMe ? 'text-white/80' : 'text-slate-500'}`;
+                        d.textContent = String(link.domain || '');
+
+                        const actions = document.createElement('div');
+                        actions.className = 'mt-3 flex items-center gap-2';
+
+                        const join = document.createElement('a');
+                        join.href = String(link.url || '#');
+                        join.target = '_blank';
+                        join.rel = 'noopener';
+                        join.className = 'inline-flex items-center justify-center rounded-full bg-slate-900 text-white px-3 py-1.5 text-xs font-semibold';
+                        join.textContent = 'Rejoindre';
+
+                        const copy = document.createElement('button');
+                        copy.type = 'button';
+                        copy.className = 'inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700';
+                        copy.textContent = 'Copier le lien';
+                        copy.dataset.copyLink = String(link.url || '');
+
+                        actions.appendChild(join);
+                        actions.appendChild(copy);
+                        card.appendChild(t);
+                        card.appendChild(d);
+                        card.appendChild(actions);
+
+                        bodyEl.appendChild(card);
+                    } else {
+                        bodyEl.className = 'text-sm whitespace-pre-wrap';
+                        bodyEl.textContent = body;
+                    }
                 }
-
-                const timeEl = document.createElement('div');
-                timeEl.className = 'mt-1 text-right text-xs opacity-60';
-                timeEl.textContent = whenTime;
-
                 wrapper.appendChild(bodyEl);
-                wrapper.appendChild(timeEl);
 
                 row.appendChild(avatarWrap);
                 row.appendChild(wrapper);
                 width.appendChild(row);
                 outer.appendChild(width);
                 messagesEl.appendChild(outer);
-                focusLastMessage();
+
+                if (wasAtBottom) {
+                    scrollToBottom();
+                }
+                syncScrollToBottomButton();
                 return true;
+            }
+
+            function appendLocalMessage(tempId, body) {
+                const payload = {
+                    id: tempId,
+                    body,
+                    created_at: new Date().toISOString(),
+                    user: { id: currentUserId, name: currentUserName || 'Vous' },
+                };
+                const ok = appendMessage(payload);
+                if (!ok) return;
+                const row = messagesEl?.querySelector(`[data-message-id="${tempId}"]`);
+                if (row) {
+                    row.dataset.localBody = String(body || '');
+                }
+                const bubble = row?.querySelector('[data-bubble]');
+                if (bubble) {
+                    const status = document.createElement('div');
+                    status.className = 'mt-1 text-right text-xs opacity-70';
+                    status.dataset.localStatus = '1';
+                    status.textContent = 'Envoi…';
+                    bubble.appendChild(status);
+                }
+            }
+
+            function markLocalFailed(tempId, errorMessage) {
+                const row = messagesEl?.querySelector(`[data-message-id="${tempId}"]`);
+                const bubble = row?.querySelector('[data-bubble]');
+                if (!bubble) return;
+
+                bubble.classList.add('border-red-300');
+
+                const status = bubble.querySelector('[data-local-status]');
+                if (status) {
+                    status.textContent = 'Échec';
+                    status.classList.add('text-red-200');
+                }
+
+                const actions = document.createElement('div');
+                actions.className = 'mt-2 flex items-center justify-end gap-2';
+
+                const retry = document.createElement('button');
+                retry.type = 'button';
+                retry.className = 'inline-flex items-center justify-center rounded-full bg-white text-slate-900 px-3 py-1.5 text-xs font-semibold';
+                retry.textContent = 'Réessayer';
+                retry.dataset.retryTempId = tempId;
+
+                const copy = document.createElement('button');
+                copy.type = 'button';
+                copy.className = 'inline-flex items-center justify-center rounded-full border border-white/30 bg-transparent text-white px-3 py-1.5 text-xs font-semibold';
+                copy.textContent = 'Copier';
+                copy.dataset.copyText = String(row?.dataset?.localBody || '');
+
+                actions.appendChild(retry);
+                actions.appendChild(copy);
+                bubble.appendChild(actions);
+
+                if (errorMessage) {
+                    const hint = document.createElement('div');
+                    hint.className = 'mt-1 text-right text-xs text-red-200/80';
+                    hint.textContent = String(errorMessage);
+                    bubble.appendChild(hint);
+                }
             }
 
             function setAttachSheetOpen(open) {
@@ -1107,21 +1354,18 @@
                             }
                         });
                         renderOnline(Array.from(online.values()));
-                        updateGate(online.size);
                     })
                     .joining((user) => {
                         console.log('[chat] joining(user)=', user);
                         const id = userId(user);
                         if (id != null) online.set(id, { id, name: userName(user) });
                         renderOnline(Array.from(online.values()));
-                        updateGate(online.size);
                     })
                     .leaving((user) => {
                         console.log('[chat] leaving(user)=', user);
                         const id = userId(user);
                         if (id != null) online.delete(id);
                         renderOnline(Array.from(online.values()));
-                        updateGate(online.size);
                     })
                     .listen('.message.sent', (e) => {
                         console.log('[chat] message.sent', e);
@@ -1217,7 +1461,6 @@
                 const useInitial = options?.useInitial !== false;
                 if (useInitial) {
                     renderOnline(initialOnline);
-                    updateGate((initialOnline || []).length);
                 }
 
                 pollOnce();
@@ -1264,16 +1507,27 @@
             if (formEl && textareaEl) {
                 let isSending = false;
 
+                function syncSendButton() {
+                    if (!sendBtn) return;
+                    const body = String(textareaEl.value || '').trim();
+                    sendBtn.disabled = body.length === 0 || isSending;
+                }
+
                 function autoGrow() {
                     textareaEl.style.height = 'auto';
                     const styles = window.getComputedStyle(textareaEl);
                     const lineHeight = parseFloat(styles.lineHeight || '20') || 20;
-                    const max = Math.round(lineHeight * 3);
+                    const max = Math.round(lineHeight * 4);
                     textareaEl.style.height = Math.min(textareaEl.scrollHeight, max) + 'px';
                 }
 
                 autoGrow();
-                textareaEl.addEventListener('input', autoGrow);
+                textareaEl.addEventListener('input', () => {
+                    autoGrow();
+                    syncSendButton();
+                });
+
+                syncSendButton();
 
                 textareaEl.addEventListener('keydown', (ev) => {
                     if (ev.key === 'Enter' && !ev.shiftKey) {
@@ -1283,9 +1537,8 @@
                 });
 
                 // Voice dictation (Web Speech API)
-                if (voiceBtn) {
+                if (attachPickVoice) {
                     syncVoiceAvailability();
-
                     if (SpeechRecognitionCtor) {
                         recognition = new SpeechRecognitionCtor();
                         recognition.lang = 'fr-FR';
@@ -1321,11 +1574,11 @@
                             textareaEl.value = composed;
                             textareaEl.selectionStart = textareaEl.selectionEnd = textareaEl.value.length;
                             autoGrow();
+                            syncSendButton();
                         };
 
                         recognition.onerror = (event) => {
                             const code = event?.error ? String(event.error) : 'unknown';
-                            setVoiceStatus(`Dictée vocale indisponible (${code}).`, { autoHideMs: 5000 });
                             setDictationUi(false);
                         };
 
@@ -1338,9 +1591,11 @@
                         };
                     }
 
-                    voiceBtn.addEventListener('click', () => {
+                    attachPickVoice.addEventListener('click', () => {
                         if (!SpeechRecognitionCtor || !recognition) return;
-                        if (textareaEl?.disabled) return;
+
+                        setAttachSheetOpen(false);
+                        textareaEl?.focus();
 
                         if (dictationActive) {
                             try {
@@ -1360,21 +1615,11 @@
                             recognition.start();
                         } catch (e) {
                             setDictationUi(false);
-                            setVoiceStatus('Impossible de démarrer la dictée vocale.', { autoHideMs: 5000 });
                         }
                     });
                 }
 
                 formEl.addEventListener('submit', async (ev) => {
-                    // Progressive enhancement: if Echo isn't loaded, let the normal POST+redirect happen.
-                    if (!window.Echo) {
-                        // When polling mode is active, prevent submit if chat is gated.
-                        if (textareaEl?.disabled) {
-                            ev.preventDefault();
-                        }
-                        return;
-                    }
-
                     ev.preventDefault();
 
                     if (isSending) return;
@@ -1383,38 +1628,227 @@
                     if (!body) return;
 
                     isSending = true;
-                    const btn = formEl.querySelector('button[type="submit"]');
-                    if (btn) btn.disabled = true;
+                    syncSendButton();
+
+                    const tempId = `temp-${Date.now()}`;
+                    appendLocalMessage(tempId, body);
 
                     const token = formEl.querySelector('input[name="_token"]')?.value;
                     const socketId = typeof window.Echo.socketId === 'function' ? window.Echo.socketId() : null;
 
-                    const res = await fetch(formEl.action, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            ...(token ? { 'X-CSRF-TOKEN': token } : {}),
-                            ...(socketId ? { 'X-Socket-Id': socketId } : {}),
-                        },
-                        credentials: 'same-origin',
-                        body: JSON.stringify({ body }),
-                    });
-
                     try {
-                        if (!res.ok) return;
+                        const res = await fetch(formEl.action, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                                ...(socketId ? { 'X-Socket-Id': socketId } : {}),
+                            },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({ body }),
+                        });
 
-                        const json = await res.json();
-                        appendMessage(json);
-                        if (json?.id) lastMessageId = Math.max(lastMessageId, Number(json.id));
+                        const ct = (res.headers.get('content-type') || '').toLowerCase();
+                        if (!res.ok) {
+                            const errMsg = ct.includes('application/json') ? (await res.json())?.message : 'Envoi impossible.';
+                            markLocalFailed(tempId, errMsg);
+                            return;
+                        }
+
+                        const json = ct.includes('application/json') ? await res.json() : null;
+                        const tempRow = messagesEl?.querySelector(`[data-message-id="${tempId}"]`);
+                        if (tempRow) tempRow.remove();
+
+                        if (json) {
+                            appendMessage(json);
+                            if (json?.id) lastMessageId = Math.max(lastMessageId, Number(json.id));
+                        }
+
                         textareaEl.value = '';
                         autoGrow();
+                        syncSendButton();
                         textareaEl.focus();
+                    } catch (e) {
+                        markLocalFailed(tempId, e?.message || 'Envoi impossible.');
                     } finally {
                         isSending = false;
-                        if (btn) btn.disabled = textareaEl.disabled;
+                        syncSendButton();
                     }
                 });
+            }
+
+            if (scrollEl) {
+                scrollEl.addEventListener('scroll', () => {
+                    syncScrollToBottomButton();
+                });
+            }
+            if (scrollToBottomBtn) {
+                scrollToBottomBtn.addEventListener('click', () => {
+                    scrollToBottom();
+                    syncScrollToBottomButton();
+                });
+            }
+
+            if (messagesEl) {
+                messagesEl.addEventListener('click', async (ev) => {
+                    const target = ev.target;
+                    if (!(target instanceof HTMLElement)) return;
+
+                    const copyLink = target.closest('[data-copy-link]');
+                    if (copyLink instanceof HTMLElement) {
+                        const url = String(copyLink.dataset.copyLink || '').trim();
+                        if (!url) return;
+                        try {
+                            await navigator.clipboard.writeText(url);
+                            copyLink.textContent = 'Copié';
+                            setTimeout(() => { copyLink.textContent = 'Copier le lien'; }, 1200);
+                        } catch {
+                            alert(url);
+                        }
+                        return;
+                    }
+
+                    const retryBtn = target.closest('[data-retry-temp-id]');
+                    if (retryBtn instanceof HTMLElement) {
+                        const tempId = String(retryBtn.dataset.retryTempId || '');
+                        if (!tempId) return;
+                        const row = messagesEl.querySelector(`[data-message-id="${tempId}"]`);
+                        const body = String(row?.dataset?.localBody || '').trim();
+                        if (textareaEl && body) {
+                            textareaEl.value = body;
+                            textareaEl.focus();
+                            if (formEl) formEl.requestSubmit?.();
+                        }
+                        return;
+                    }
+
+                    const copyTextBtn = target.closest('[data-copy-text]');
+                    if (copyTextBtn instanceof HTMLElement) {
+                        const txt = String(copyTextBtn.dataset.copyText || '').trim();
+                        if (!txt) return;
+                        try {
+                            await navigator.clipboard.writeText(txt);
+                            copyTextBtn.textContent = 'Copié';
+                            setTimeout(() => { copyTextBtn.textContent = 'Copier'; }, 1200);
+                        } catch {
+                            alert(txt);
+                        }
+                        return;
+                    }
+                });
+            }
+
+            if (backBtn) {
+                backBtn.addEventListener('click', () => {
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = @json(route('dashboard'));
+                    }
+                });
+            }
+
+            if (searchBtn && searchBar && searchInput) {
+                searchBtn.addEventListener('click', () => {
+                    const open = searchBar.classList.contains('hidden');
+                    searchBar.classList.toggle('hidden', !open);
+                    if (open) {
+                        searchInput.focus();
+                    } else {
+                        searchInput.value = '';
+                        // reset
+                        messagesEl?.querySelectorAll('[data-message-row]').forEach(el => el.classList.remove('hidden'));
+                    }
+                });
+                searchInput.addEventListener('input', () => {
+                    const q = String(searchInput.value || '').trim().toLowerCase();
+                    const rows = messagesEl?.querySelectorAll('[data-message-row]') || [];
+                    rows.forEach((row) => {
+                        const txt = String(row.textContent || '').toLowerCase();
+                        row.classList.toggle('hidden', q !== '' && !txt.includes(q));
+                    });
+                });
+            }
+
+            function notifDismissedRecently() {
+                try {
+                    const raw = localStorage.getItem(NOTIF_DISMISS_KEY);
+                    const ts = raw ? Number(raw) : 0;
+                    if (!ts) return false;
+                    const ageMs = Date.now() - ts;
+                    return ageMs < 1000 * 60 * 60 * 24 * 7; // 7 days
+                } catch {
+                    return false;
+                }
+            }
+
+            function dismissNotifBanner() {
+                try { localStorage.setItem(NOTIF_DISMISS_KEY, String(Date.now())); } catch {}
+                if (notifBanner) notifBanner.classList.add('hidden');
+            }
+
+            async function refreshNotifBanner() {
+                if (!notifBanner || !notifPrimary || !notifLater || !notifClose) return;
+                if (!('Notification' in window) || !window.famillePush) return;
+                if (notifDismissedRecently()) return;
+
+                const perm = Notification.permission;
+                const active = await window.famillePush.hasActive();
+                if (active && perm === 'granted') {
+                    notifBanner.classList.add('hidden');
+                    return;
+                }
+
+                notifBanner.classList.remove('hidden');
+                notifHelp.textContent = '';
+
+                if (perm === 'denied') {
+                    if (notifBody) notifBody.textContent = 'Les notifications sont désactivées pour ce site dans le navigateur.';
+                    notifPrimary.textContent = 'Ouvrir les réglages';
+                } else {
+                    if (notifBody) notifBody.textContent = 'Recevez un push quand un message arrive.';
+                    notifPrimary.textContent = 'Activer';
+                }
+
+                notifClose.addEventListener('click', dismissNotifBanner);
+                notifLater.addEventListener('click', dismissNotifBanner);
+                notifPrimary.addEventListener('click', async () => {
+                    if (Notification.permission === 'denied') {
+                        if (notifHelp) {
+                            notifHelp.textContent = 'Ouvre les autorisations du site (icône cadenas) et autorise les notifications.';
+                        }
+                        return;
+                    }
+                    notifPrimary.disabled = true;
+                    try {
+                        const res = await window.famillePush.enable();
+                        if (!res?.ok) {
+                            if (notifHelp) notifHelp.textContent = 'Impossible d’activer les notifications.';
+                        } else {
+                            dismissNotifBanner();
+                        }
+                    } finally {
+                        notifPrimary.disabled = false;
+                    }
+                });
+            }
+
+            refreshNotifBanner().catch(() => {});
+
+            function setInfoOpen(open) {
+                if (!infoModal) return;
+                infoModal.classList.toggle('hidden', !open);
+            }
+
+            if (infoBtn) {
+                infoBtn.addEventListener('click', () => setInfoOpen(true));
+            }
+            if (infoBackdrop) {
+                infoBackdrop.addEventListener('click', () => setInfoOpen(false));
+            }
+            if (infoClose) {
+                infoClose.addEventListener('click', () => setInfoOpen(false));
             }
         })();
     </script>
