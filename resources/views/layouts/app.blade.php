@@ -402,6 +402,35 @@
                         const cancelBtn = document.getElementById('global-cloud-upload-cancel');
 
                         let currentXhr = null;
+                        let aborted = false;
+
+                        const LS_KEY = 'cloudUploadSession:v1';
+
+                        const loadSession = () => {
+                            try {
+                                const raw = window.localStorage ? localStorage.getItem(LS_KEY) : null;
+                                if (!raw) return null;
+                                const j = JSON.parse(raw);
+                                if (!j || typeof j !== 'object') return null;
+                                return j;
+                            } catch (e) {
+                                return null;
+                            }
+                        };
+
+                        const saveSession = (data) => {
+                            try {
+                                if (!window.localStorage) return;
+                                localStorage.setItem(LS_KEY, JSON.stringify(data));
+                            } catch (e) {}
+                        };
+
+                        const clearSession = () => {
+                            try {
+                                if (!window.localStorage) return;
+                                localStorage.removeItem(LS_KEY);
+                            } catch (e) {}
+                        };
 
                         const showOverlay = () => {
                             if (!overlay) return;
@@ -433,6 +462,7 @@
 
                         if (cancelBtn) {
                             cancelBtn.addEventListener('click', function () {
+                                aborted = true;
                                 if (currentXhr) {
                                     try { currentXhr.abort(); } catch (e) {}
                                     currentXhr = null;
@@ -440,6 +470,30 @@
                                 hideOverlay();
                             });
                         }
+
+                        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+                        const isRetryableStatus = (status) => {
+                            return status === 0 || status === 408 || status === 425 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+                        };
+
+                        const postWithRetry = async (labelForUi, attemptFn, maxRetries = 4) => {
+                            let attempt = 0;
+                            while (true) {
+                                if (aborted) throw new Error('Annulé.');
+                                try {
+                                    return await attemptFn();
+                                } catch (err) {
+                                    const status = Number(err && err.status ? err.status : 0) || 0;
+                                    const retryable = isRetryableStatus(status);
+                                    if (!retryable || attempt >= maxRetries) throw err;
+                                    attempt++;
+                                    const backoff = Math.round(400 * Math.pow(2, attempt - 1) + (Math.random() * 250));
+                                    setProgress(Math.max(0, (bar && bar.style && bar.style.width) ? parseInt(bar.style.width, 10) || 0 : 0), `${labelForUi} (réseau) — reprise… (${attempt}/${maxRetries})`);
+                                    await sleep(backoff);
+                                }
+                            }
+                        };
 
                         const postFormData = (url, formData) => new Promise((resolve, reject) => {
                             const xhr = new XMLHttpRequest();
@@ -460,25 +514,38 @@
                                 }
 
                                 let message = 'Erreur upload.';
+                                let json = null;
                                 try {
-                                    const json = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+                                    json = xhr.responseText ? JSON.parse(xhr.responseText) : null;
                                     if (json && json.message) message = json.message;
                                 } catch (e) {}
-                                reject(new Error(message));
+                                const error = new Error(message);
+                                error.status = xhr.status;
+                                error.json = json;
+                                reject(error);
                             };
 
                             xhr.onerror = function () {
-                                reject(new Error('Erreur réseau pendant l\'upload.'));
+                                const error = new Error('Erreur réseau pendant l\'upload.');
+                                error.status = 0;
+                                error.json = null;
+                                reject(error);
                             };
 
                             xhr.onabort = function () {
-                                reject(new Error('Annulé.'));
+                                const error = new Error('Annulé.');
+                                error.status = 0;
+                                error.json = null;
+                                reject(error);
                             };
 
                             try {
                                 xhr.send(formData);
                             } catch (e) {
-                                reject(new Error('Impossible de démarrer l\'upload.'));
+                                const error = new Error('Impossible de démarrer l\'upload.');
+                                error.status = 0;
+                                error.json = null;
+                                reject(error);
                             }
                         });
 
@@ -487,8 +554,18 @@
                             const parentId = (form.querySelector('input[name="parent_id"]') || {}).value;
                             const returnPath = (form.querySelector('input[name="return"]') || {}).value;
 
+                            // Attempt resume if a previous session exists for the same file+destination.
+                            const previous = loadSession();
+                            const canResume = previous
+                                && previous.uploadId
+                                && String(previous.name) === String(file.name)
+                                && Number(previous.size) === Number(file.size)
+                                && Number(previous.lastModified) === Number(file.lastModified)
+                                && String(previous.parentId || '') === String(parentId || '');
+
                             const initFd = new FormData();
                             if (token) initFd.append('_token', token);
+                            if (canResume) initFd.append('upload_id', String(previous.uploadId));
                             initFd.append('name', file.name);
                             initFd.append('size', String(file.size));
                             initFd.append('mime', file.type || '');
@@ -496,11 +573,24 @@
                             if (returnPath) initFd.append('return', returnPath);
 
                             setProgress(0, 'Préparation…');
-                            const { json: initJson } = await postFormData('{{ route('cloud.uploads.init') }}', initFd);
+                            const { json: initJson } = await postWithRetry('Préparation', () => postFormData('{{ route('cloud.uploads.init') }}', initFd));
                             const uploadId = initJson.upload_id;
                             const chunkSize = Number(initJson.chunk_size || 0) || (5 * 1024 * 1024);
                             const totalChunks = Number(initJson.total_chunks || 0) || Math.max(1, Math.ceil(file.size / chunkSize));
                             const received = Array.isArray(initJson.received) ? new Set(initJson.received) : new Set();
+
+                            saveSession({
+                                uploadId,
+                                name: file.name,
+                                size: file.size,
+                                lastModified: file.lastModified,
+                                parentId: parentId || '',
+                                startedAt: Date.now(),
+                            });
+
+                            if (initJson && initJson.resumed === true && received.size > 0) {
+                                setProgress(0, `Reprise… (${received.size}/${totalChunks} morceaux déjà envoyés)`);
+                            }
 
                             let uploadedBytes = 0;
                             for (let i = 0; i < totalChunks; i++) {
@@ -521,7 +611,7 @@
                                 const pct = Math.round((uploadedBytes / file.size) * 100);
                                 setProgress(pct, `Upload… ${pct}% (${formatBytes(uploadedBytes)} / ${formatBytes(file.size)})`);
 
-                                await postFormData('{{ route('cloud.uploads.chunk') }}', fd);
+                                await postWithRetry('Upload', () => postFormData('{{ route('cloud.uploads.chunk') }}', fd));
 
                                 uploadedBytes = end;
                                 const pct2 = Math.round((uploadedBytes / file.size) * 100);
@@ -532,8 +622,9 @@
                             if (token) completeFd.append('_token', token);
                             completeFd.append('upload_id', uploadId);
                             setProgress(100, 'Finalisation…');
-                            const { json: completeJson } = await postFormData('{{ route('cloud.uploads.complete') }}', completeFd);
+                            const { json: completeJson } = await postWithRetry('Finalisation', () => postFormData('{{ route('cloud.uploads.complete') }}', completeFd));
                             const redirectUrl = completeJson.redirect_url || null;
+                            clearSession();
                             if (redirectUrl) {
                                 window.location.href = redirectUrl;
                                 return;
@@ -597,7 +688,9 @@
                             if (!form) return;
 
                             const file = input.files[0];
+                            aborted = false;
                             showOverlay();
+                            setProgress(0, `Préparation… (${file.name})`);
 
                             // Use chunked mode for large files (o2switch-friendly).
                             const chunkThreshold = 25 * 1024 * 1024; // 25MB

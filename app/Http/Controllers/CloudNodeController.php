@@ -527,6 +527,7 @@ class CloudNodeController extends Controller
         }
 
         $validated = $request->validate([
+            'upload_id' => ['nullable', 'string', 'max:64'],
             'name' => ['required', 'string', 'max:255'],
             'size' => $sizeRules,
             'mime' => ['nullable', 'string', 'max:255'],
@@ -572,6 +573,42 @@ class CloudNodeController extends Controller
             }
         }
 
+        // Resume support: if the client provides an existing upload_id and it matches the same
+        // user/file/destination, return already-received chunk indexes.
+        $resumeId = trim((string) ($validated['upload_id'] ?? ''));
+        if ($resumeId !== '') {
+            try {
+                $meta = $this->readChunkMeta($resumeId);
+                $metaUserId = (int) ($meta['user_id'] ?? 0);
+                $metaParentId = (int) ($meta['parent_id'] ?? 0);
+                $metaName = (string) ($meta['name'] ?? '');
+                $metaSize = (int) ($meta['size'] ?? 0);
+                $metaChunkSize = (int) ($meta['chunk_size'] ?? 0);
+                $metaTotalChunks = (int) ($meta['total_chunks'] ?? 0);
+
+                $createdAtRaw = (string) ($meta['created_at'] ?? '');
+                $createdAt = $createdAtRaw !== '' ? \Carbon\Carbon::parse($createdAtRaw) : null;
+                $isFresh = $createdAt ? $createdAt->greaterThanOrEqualTo(now()->subDays(2)) : false;
+
+                $sameUser = $metaUserId > 0 && $metaUserId === (int) (Auth::id() ?? 0);
+                $sameFile = $metaName !== '' && $metaName === (string) $validated['name'] && $metaSize === $size;
+                $sameDest = $metaParentId > 0 && $metaParentId === (int) $parent->id;
+
+                if ($sameUser && $sameFile && $sameDest && $isFresh && $metaChunkSize > 0 && $metaTotalChunks > 0) {
+                    $received = $this->listReceivedChunks($resumeId, $metaTotalChunks);
+                    return response()->json([
+                        'upload_id' => $resumeId,
+                        'chunk_size' => $metaChunkSize,
+                        'total_chunks' => $metaTotalChunks,
+                        'received' => $received,
+                        'resumed' => true,
+                    ], 200);
+                }
+            } catch (\Throwable $e) {
+                // Ignore invalid resume attempts and create a new session.
+            }
+        }
+
         // Choose a conservative chunk size to stay under host limits.
         // Keep it safely under the per-request max (if known) to avoid 413/POST size errors.
         $chunkSize = 5 * 1024 * 1024; // 5MB default
@@ -605,6 +642,7 @@ class CloudNodeController extends Controller
             'chunk_size' => $chunkSize,
             'total_chunks' => $totalChunks,
             'received' => [],
+            'resumed' => false,
         ], 201);
     }
 
