@@ -32,6 +32,7 @@
 
     $useAstroIcon = (bool) (Auth::user()->avatar_use_astro_icon ?? false);
     $hasAstroIcon = trim((string) (Auth::user()->astro_card_icon_url ?? '')) !== '';
+    $astroIconV = optional(Auth::user()->astro_card_generated_at)->getTimestamp() ?? time();
 
     $showHomeActions = $isHome;
     $hasTarotDraft = (bool) session()->has('tarot.draft');
@@ -96,7 +97,7 @@
                                 <x-slot name="trigger">
                                     <button class="ui-chip h-8 w-8 text-xs font-semibold overflow-hidden">
                                         @if($useAstroIcon && $hasAstroIcon)
-                                            <img src="{{ route('astro.card.icon') }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
+                                            <img src="{{ route('astro.card.icon', ['v' => $astroIconV]) }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
                                         @else
                                             {{ $userInitial }}
                                         @endif

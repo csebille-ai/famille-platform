@@ -94,7 +94,8 @@ class AstroCardImageController
                 return response('', 304, array_filter([
                     'ETag' => $etag,
                     'Last-Modified' => $lastModified,
-                    'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+                    'Cache-Control' => 'private, no-cache, max-age=0, must-revalidate',
+                    'Pragma' => 'no-cache',
                 ]));
             }
         }
@@ -104,7 +105,8 @@ class AstroCardImageController
                 return response('', 304, array_filter([
                     'ETag' => $etag,
                     'Last-Modified' => $lastModified,
-                    'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+                    'Cache-Control' => 'private, no-cache, max-age=0, must-revalidate',
+                    'Pragma' => 'no-cache',
                 ]));
             }
         }
@@ -140,7 +142,8 @@ class AstroCardImageController
             }
         }, 200, [
             'Content-Type' => $mime,
-            'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+            'Cache-Control' => 'private, no-cache, max-age=0, must-revalidate',
+            'Pragma' => 'no-cache',
             'ETag' => $etag,
             'Last-Modified' => $lastModified,
         ]);

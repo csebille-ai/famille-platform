@@ -40,8 +40,11 @@ class GenerateAstroCardJob implements ShouldQueue
             // Workers AI flux-1-schnell can be effectively deterministic for identical inputs.
             // Add a small, safe variation block (no text rendering) + a unique seed fragment.
             $variationNonce = bin2hex(random_bytes(4));
-            $promptCard = rtrim((string) ($built['prompt_card'] ?? $built['prompt'])) . "\n\n" . $this->variationBlock($variationNonce);
-            $promptIcon = rtrim((string) ($built['prompt_icon'] ?? $built['prompt'])) . "\n\n" . $this->variationBlock($variationNonce);
+            // IMPORTANT: flux-1-schnell clamps prompt to 2048 chars.
+            // Put variation at the top so it is never truncated away.
+            $variation = $this->variationBlock($variationNonce);
+            $promptCard = $variation . "\n\n" . ltrim((string) ($built['prompt_card'] ?? $built['prompt']));
+            $promptIcon = $variation . "\n\n" . ltrim((string) ($built['prompt_icon'] ?? $built['prompt']));
 
             $seed = (string) $built['seed'] . '|' . $variationNonce;
             $steps = random_int(4, 7);

@@ -112,6 +112,15 @@
                     ? route('astro.card.icon')
                     : route('astro.card.iconPublic', $user);
             }
+
+            // Cache-bust stable image endpoints so regeneration always shows the latest.
+            $v = optional($user->astro_card_generated_at)->getTimestamp() ?? time();
+            if ($displayUrl !== '') {
+                $displayUrl .= (str_contains($displayUrl, '?') ? '&' : '?') . 'v=' . $v;
+            }
+            if ($iconDisplayUrl !== '') {
+                $iconDisplayUrl .= (str_contains($iconDisplayUrl, '?') ? '&' : '?') . 'v=' . $v;
+            }
             $error = trim((string) ($user->astro_card_error ?? ''));
 
         @endphp
@@ -317,9 +326,16 @@
             const iconDisplayUrl = data?.icon_display_url || data?.icon_url;
             const iconExternalUrl = data?.icon_url;
 
+            const v = encodeURIComponent(String(data?.generated_at || Date.now()));
+            const bust = (url) => {
+                if (!url) return url;
+                const s = String(url);
+                return s + (s.includes('?') ? '&' : '?') + 'v=' + v;
+            };
+
             if (data.status === 'ready' && displayUrl && iconDisplayUrl) {
                 stopPolling();
-                renderReady(displayUrl, externalUrl, iconDisplayUrl, iconExternalUrl);
+                renderReady(bust(displayUrl), bust(externalUrl), bust(iconDisplayUrl), bust(iconExternalUrl));
                 return;
             }
 
