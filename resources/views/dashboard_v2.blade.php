@@ -12,9 +12,9 @@
     @endphp
 
     <style>
-        @media (prefers-reduced-motion: no-preference) {
+        @@media (prefers-reduced-motion: no-preference) {
             .dash-fade { animation: dashFadeIn 180ms ease-out both; }
-            @keyframes dashFadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+            @@keyframes dashFadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
         }
 
         [data-skel="img"][data-loaded="0"] { position: relative; overflow: hidden; }
@@ -26,7 +26,7 @@
             background-size: 200% 100%;
             animation: dashShimmer 900ms linear infinite;
         }
-        @keyframes dashShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+        @@keyframes dashShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
     </style>
 
     <div class="max-w-2xl md:max-w-6xl mx-auto px-4 md:px-6 py-4 space-y-3">
