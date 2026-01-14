@@ -146,31 +146,7 @@ Route::get('/home', function () {
         $cutoff = now()->subHours(36);
         $items = collect();
 
-        // 1) New media signal (no filenames).
-        $recentImages = ($latestImages ?? collect())
-            ->filter(fn ($img) => $img?->created_at && $img->created_at->greaterThanOrEqualTo($cutoff));
-        $recentVideos = ($latestVideos ?? collect())
-            ->filter(fn ($v) => $v?->created_at && $v->created_at->greaterThanOrEqualTo($cutoff));
-
-        $mediaCount = $recentImages->count() + $recentVideos->count();
-        $mediaLastAt = $recentImages
-            ->merge($recentVideos)
-            ->map(fn ($m) => $m->created_at)
-            ->filter()
-            ->sortDesc()
-            ->first();
-
-        if ($mediaCount > 0) {
-            $items->push([
-                'kind' => 'media',
-                'at' => $mediaLastAt ?: now(),
-                'title' => 'Nouveaux médias',
-                'text' => 'Des ajouts récents depuis hier',
-                'href' => route('media.index', ['tab' => 'photos']),
-            ]);
-        }
-
-        // 2) Recent chat messages.
+        // 1) Recent chat messages.
         try {
             if (Schema::hasTable('chat_messages')) {
                 $recentCount = (int) ChatMessage::query()
@@ -197,7 +173,7 @@ Route::get('/home', function () {
             // ignore
         }
 
-        // 3) Upcoming event/announcement.
+        // 2) Upcoming event/announcement.
         try {
             if (Schema::hasTable('events')) {
                 $today = now();
@@ -224,7 +200,7 @@ Route::get('/home', function () {
             // ignore
         }
 
-        // 4) Actu refresh signal (if we have something fresh).
+        // 3) Actu refresh signal (if we have something fresh).
         if ($freshNewsAt && $freshNewsAt->greaterThanOrEqualTo(now()->subDays(3))) {
             $items->push([
                 'kind' => 'actu',

@@ -27,21 +27,21 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div class="md:col-span-1 md:col-start-3 md:row-span-3">
-                <div class="rounded-2xl border border-[#EEF0F4] bg-white p-4 md:sticky md:top-4">
+                <div class="rounded-2xl border border-[#EEF0F4] bg-white p-3 md:sticky md:top-4">
                     <div class="flex items-center justify-between gap-3">
                         <div class="text-sm font-semibold text-[#0F172A]">Prochain anniversaire</div>
                         <a href="{{ route('birthdays.index') }}" class="text-xs font-semibold text-[#0F172A] hover:underline">Voir tout</a>
                     </div>
 
                     @if(is_array($nextBirthday) && $bdDays >= 0 && $bdName !== '')
-                        <div class="mt-3 flex items-start gap-3">
-                            <div class="h-11 w-11 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-sm font-bold">
+                        <div class="mt-2 flex items-start gap-2">
+                            <div class="h-9 w-9 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-xs font-bold">
                                 {{ $bdInitials }}
                             </div>
 
                             <div class="min-w-0 flex-1">
-                                <div class="text-base font-semibold text-[#0F172A] truncate">{{ $bdName }}</div>
-                                <div class="mt-0.5 text-sm text-[#64748B]">
+                                <div class="text-sm font-semibold text-[#0F172A] truncate">{{ $bdName }}</div>
+                                <div class="mt-0.5 text-xs text-[#64748B]">
                                     @if($bdDays === 0)
                                         Aujourd’hui
                                     @else
@@ -54,29 +54,30 @@
                             </div>
                         </div>
 
-                        <div class="mt-3 rounded-2xl bg-[#F8FAFC] border border-[#EEF0F4] p-3">
-                            <div class="text-[11px] font-semibold text-[#64748B]">Compteur</div>
-                            <div class="mt-1 text-2xl font-extrabold tracking-tight text-[#0F172A]">
+                        <div class="mt-2 rounded-2xl bg-[#F8FAFC] border border-[#EEF0F4] p-2">
+                            <div class="flex items-baseline justify-between gap-3">
+                                <div class="text-[10px] font-semibold text-[#64748B]">Compteur</div>
+                                @if($bdDays > 0)
+                                    <div class="text-[10px] font-semibold text-[#94A3B8]">dans {{ $bdDays }} jour{{ $bdDays > 1 ? 's' : '' }}</div>
+                                @endif
+                            </div>
+                            <div class="mt-1 text-xl font-extrabold tracking-tight text-[#0F172A]">
                                 @if($bdDays === 0)
                                     Aujourd’hui
                                 @else
                                     J-{{ $bdDays }}
                                 @endif
                             </div>
-                            @if($bdDays > 0)
-                                <div class="mt-0.5 text-sm text-[#64748B]">dans {{ $bdDays }} jour{{ $bdDays > 1 ? 's' : '' }}</div>
-                            @endif
                         </div>
 
-                        <div class="mt-3 flex items-center gap-2">
-                            <a href="{{ route('birthdays.index') }}" class="inline-flex items-center justify-center rounded-xl border border-[#EEF0F4] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A]">Voir les anniversaires</a>
-                            @if($bdDays === 0)
+                        @if($bdDays === 0)
+                            <div class="mt-2">
                                 <a href="{{ route('chat.index') }}" class="inline-flex items-center justify-center rounded-xl bg-[#0F172A] px-3 py-2 text-sm font-semibold text-white">Envoyer un message</a>
-                            @endif
-                        </div>
+                            </div>
+                        @endif
                     @else
                         <div class="mt-2 text-sm text-[#64748B]">Ajoute les dates de naissance pour afficher le prochain anniversaire.</div>
-                        <div class="mt-3">
+                        <div class="mt-2">
                             <a href="{{ route('birthdays.index') }}" class="inline-flex items-center justify-center rounded-xl border border-[#EEF0F4] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A]">Voir les anniversaires</a>
                         </div>
                     @endif
