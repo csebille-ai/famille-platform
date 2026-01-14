@@ -9,7 +9,7 @@ class AstroCardPromptBuilder
 {
     /**
      * @param array<string,mixed> $signature
-    * @return array{prompt:string, negative_prompt:string, seed:string, title:string, signature_line:string, tag1:string, tag2:string, tag3:string, rpg_class:string, card_number:int}
+    * @return array{prompt:string, prompt_card:string, prompt_icon:string, negative_prompt:string, seed:string, title:string, signature_line:string, tag1:string, tag2:string, tag3:string, rpg_class:string, card_number:int, life_path:int, banner_text:string}
      */
     public function build(User $user, array $signature): array
     {
@@ -71,7 +71,7 @@ class AstroCardPromptBuilder
 
         $seed = sha1((string) $user->id . '|' . $this->canonicalJson($signature));
 
-        [$prompt, $negativePrompt] = $this->buildPrompt([
+        $vars = [
             'RPG_CLASS' => $rpgClass,
             'ARCHETYPE' => $archetype,
 
@@ -102,10 +102,25 @@ class AstroCardPromptBuilder
             'TALENT_2_GEAR' => $t2Gear,
             'TALENT_3_GEAR' => $t3Gear,
             'VIGILANCE_FLAW_CUE' => $vigilanceFlawCue,
-        ]);
+        ];
+
+        [$promptCard, $negativePrompt] = $this->buildPrompt(array_merge($vars, [
+            'FORMAT' => '2:3 vertical card',
+            'FORMAT_HINTS' => 'Reserve a clear bottom ribbon banner + small circular medallion under the shield (both blank, no letters).',
+        ]));
+
+        [$promptIcon] = $this->buildPrompt(array_merge($vars, [
+            'FORMAT' => '1:1 square icon',
+            'FORMAT_HINTS' => 'Square crop-safe layout: everything must fit with generous margins; ribbon/medallion can be smaller but must remain fully visible; no letters.',
+        ]));
+
+        // Backward-compatible key.
+        $prompt = $promptCard;
 
         return [
             'prompt' => $prompt,
+            'prompt_card' => $promptCard,
+            'prompt_icon' => $promptIcon,
             'negative_prompt' => $negativePrompt,
             'seed' => $seed,
             'title' => $title,
@@ -114,7 +129,9 @@ class AstroCardPromptBuilder
             'tag2' => $tag2,
             'tag3' => $tag3,
             'rpg_class' => $rpgClass,
-            'card_number' => $this->clampLifePathPips($lifePath),
+            'card_number' => $lifePath,
+            'life_path' => $lifePath,
+            'banner_text' => $talent1,
         ];
     }
 
@@ -169,15 +186,17 @@ class AstroCardPromptBuilder
     }
 
         /**
-             * @param array{RPG_CLASS:string,ARCHETYPE:string,MATERIALS_PALETTE:string,SHAPE_LANGUAGE:string,SUN_SIGN:string,SUN_CHARGE:string,SUN_MOTIF:string,ASC_SIGN:string,ASC_EMBLEM:string,CHINESE_SIGN:string,CHINESE_ELEMENT_POLARITY:string,CHINESE_TOTEM:string,CHINESE_PATTERN:string,CHINESE_SUPPORTERS:string,LIFE_PATH:string,LIFE_PATH_SIGIL:string,LIFE_PATH_PIPS:string,LIFE_PATH_DIGIT:string,TALENT_1:string,TALENT_2:string,TALENT_3:string,TALENT_1_GEAR:string,TALENT_2_GEAR:string,TALENT_3_GEAR:string,VIGILANCE_FLAW_CUE:string} $vars
+         * @param array{FORMAT:string,FORMAT_HINTS:string,RPG_CLASS:string,ARCHETYPE:string,MATERIALS_PALETTE:string,SHAPE_LANGUAGE:string,SUN_SIGN:string,SUN_CHARGE:string,SUN_MOTIF:string,ASC_SIGN:string,ASC_EMBLEM:string,CHINESE_SIGN:string,CHINESE_ELEMENT_POLARITY:string,CHINESE_TOTEM:string,CHINESE_PATTERN:string,CHINESE_SUPPORTERS:string,LIFE_PATH:string,LIFE_PATH_SIGIL:string,LIFE_PATH_PIPS:string,TALENT_1:string,TALENT_2:string,TALENT_3:string,TALENT_1_GEAR:string,TALENT_2_GEAR:string,TALENT_3_GEAR:string,VIGILANCE_FLAW_CUE:string} $vars
          * @return array{0:string,1:string}
          */
     private function buildPrompt(array $vars): array
     {
         $template = <<<PROMPT
-        Premium modern family coat-of-arms (blazon), 2:3 card composition.
+        Premium modern family coat-of-arms (blazon), {{FORMAT}} composition.
 
-        NO WORDS. The ONLY allowed character is the single digit "{{LIFE_PATH_DIGIT}}" (no other letters or numbers).
+        NO TEXT (no words, no letters, no numbers). Keep banners/medallions BLANK.
+
+        FIT RULE (critical): the ENTIRE coat-of-arms must be fully visible inside the frame with generous margins. Nothing can touch or be cropped by the image borders.
 
 ABSOLUTE RULES:
 - Emblem-only / heraldic design ONLY.
@@ -192,6 +211,12 @@ Composition:
 - Side supporters MUST be: {{CHINESE_SUPPORTERS}} (stylized, friendly, premium, not cartoonish).
 - Do NOT use generic wings/feathers as side ornaments unless the chinese animal is a bird.
 
+Layout constraints (must follow):
+- The shield must be centered.
+- Under the shield: a SMALL circular medallion (red or warm enamel) centered below the shield (blank).
+- Bottom: a ribbon/banner with a flat center panel reserved for text (blank). Place it entirely inside the frame.
+- {{FORMAT_HINTS}}
+
         Mood (IMPORTANT):
         - Family-friendly, playful, warm, a bit whimsical.
 - Use a colorful enamel palette (2–4 accent colors) + soft gradients and gentle highlights.
@@ -205,7 +230,7 @@ Astro signature (MUST be visible as symbols, NOT words):
 1) Sun sign {{SUN_SIGN}} at the CENTER of the shield:
     - central heraldic charge MUST be unmistakably {{SUN_SIGN}}: {{SUN_CHARGE}}
     - MUST be the dominant element on the shield (occupy ~60% of shield area)
-    - MUST be the ONLY central charge (no other zodiac glyphs)
+    - MUST be the ONLY central charge (no other western zodiac glyphs anywhere)
     - background halo motif (very subtle): {{SUN_MOTIF}}
 2) Ascendant {{ASC_SIGN}} as a clear heraldic emblem on the crest:
     - emblem: {{ASC_EMBLEM}} (recognizable, icon-like)
@@ -213,9 +238,7 @@ Astro signature (MUST be visible as symbols, NOT words):
     - totem: {{CHINESE_TOTEM}} rendered as a wax seal emblem or carved relief (serious, not cute)
     - micro-pattern: {{CHINESE_PATTERN}} integrated into the shield field
 4) Life path {{LIFE_PATH}} as the "card number":
-    - place the digit "{{LIFE_PATH_DIGIT}}" directly UNDER the sun emblem, inside a SMALL friendly cartouche/badge (this is the ONLY allowed character)
-    - IMPORTANT: the digit must be small and secondary (do NOT dominate the image)
-    - also represent it as exactly {{LIFE_PATH_PIPS}} small pips/dots (constellation) nearby (no other digits)
+    - represent it as exactly {{LIFE_PATH_PIPS}} small pips/dots (constellation) nearby (no digits)
     - also include a geometric sigil engraving: {{LIFE_PATH_SIGIL}}
 5) Talents (3) as three small badges/tools around the shield, no text:
     - {{TALENT_1}} => {{TALENT_1_GEAR}}
@@ -596,9 +619,9 @@ PROMPT;
 
         while (count($t) < 3) {
             $t[] = match (count($t)) {
-                0 => 'Protects and secures',
-                1 => 'Structures and stabilizes',
-                default => 'Reassures naturally',
+                0 => 'Protège et sécurise',
+                1 => 'Structure et stabilise',
+                default => 'Rassure naturellement',
             };
         }
 
