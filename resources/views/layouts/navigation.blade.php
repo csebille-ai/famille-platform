@@ -13,11 +13,15 @@
         || request()->routeIs('media.index')
         || request()->routeIs('mediatheque.index')
         || request()->routeIs('videos.index')
-        || request()->routeIs('chat.index');
+        || request()->routeIs('chat.index')
+        || request()->routeIs('tarot.index')
+        || request()->routeIs('actu.index');
 
     $mobileTitle = '—';
     if ($isHome) $mobileTitle = 'Accueil';
     elseif (request()->routeIs('profile.*')) $mobileTitle = 'Profile';
+    elseif (request()->routeIs('tarot.*')) $mobileTitle = 'Tarot';
+    elseif (request()->routeIs('actu.*')) $mobileTitle = 'Actu locale';
     elseif (request()->routeIs('mediatheque.index') || request()->routeIs('videos.index')) $mobileTitle = 'Médiathèque';
     elseif (request()->routeIs('images.*')) $mobileTitle = 'Photo';
     elseif (request()->routeIs('videos.*')) $mobileTitle = 'Vidéo';
@@ -34,15 +38,14 @@
     $hasAstroIcon = trim((string) (Auth::user()->astro_card_icon_url ?? '')) !== '';
     $astroIconV = optional(Auth::user()->astro_card_generated_at)->getTimestamp() ?? time();
 
-    $showHomeActions = $isHome;
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
 @endphp
 
 <nav class="bg-white border-b border-gray-100 sticky top-0 z-50">
-    <!-- Mobile: 2-row sticky header -->
+    <!-- Mobile: single sticky top bar -->
     <div class="sm:hidden">
-        <!-- Row 1: app bar (iOS-clean) -->
+        <!-- App bar (iOS-clean) -->
         <div class="bg-white/95 backdrop-blur border-b border-[#EEF0F4]" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem)">
             <div class="px-4 pb-1">
                 <div class="flex items-center justify-between gap-3">
@@ -69,30 +72,6 @@
 
                     <div class="shrink-0 flex items-center gap-2">
                         <div class="inline-flex items-center gap-2">
-                            @if($showHomeActions)
-                                <a
-                                    href="{{ route('tarot.index') }}"
-                                    class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
-                                    aria-label="Tarot"
-                                >
-                                    <img src="{{ asset('images/tirage.png') }}" alt="" class="h-6 w-6" aria-hidden="true" loading="lazy" />
-                                    @if($hasTarotDraft)
-                                        <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white"></span>
-                                    @endif
-                                </a>
-
-                                <a
-                                    href="{{ route('actu.index') }}"
-                                    class="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
-                                    aria-label="Actu"
-                                >
-                                    <i class="ph ph-newspaper-clipping" aria-hidden="true"></i>
-                                    @if($hasNewActu)
-                                        <span class="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white"></span>
-                                    @endif
-                                </a>
-                            @endif
-
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
                                     <button class="ui-chip h-8 w-8 text-xs font-semibold overflow-hidden">
@@ -129,9 +108,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Row 2: primary nav (component, 4 equal tap areas) -->
-            <x-mobile-primary-nav />
         </div>
     </div>
 
@@ -237,3 +213,6 @@
         </div>
     </div>
 </nav>
+
+<!-- Mobile: single primary navigation (bottom) -->
+<x-mobile-primary-nav />

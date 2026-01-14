@@ -335,7 +335,7 @@
             @endisset
 
             <!-- Page Content -->
-            <main class="@unless($attributes->get('hideNavigation')) pb-8 @endunless">
+            <main class="@unless($attributes->get('hideNavigation')) pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8 @endunless">
                 {{ $slot }}
             </main>
 
