@@ -47,7 +47,7 @@
             @if($photos->count())
                 <div class="mt-2 grid grid-cols-3 gap-2">
                     @foreach($photos as $img)
-                        <a href="{{ route('images.open', $img) }}" class="block" aria-label="Ouvrir photo">
+                        <a href="{{ route('images.open', ['node' => $img, 'return' => request()->getRequestUri()]) }}" class="block" aria-label="Ouvrir photo">
                             <div class="aspect-square overflow-hidden rounded-2xl bg-[#F6F7F9]">
                                 <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover" style="object-position: 50% 35%;" loading="lazy" />
                             </div>

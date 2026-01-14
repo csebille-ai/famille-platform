@@ -322,6 +322,9 @@ class ImageController extends Controller
 
         $selectedUserId = (int) $request->query('user', 0);
         $returnUrl = $this->normalizeInternalReturnUrl($request, $request->query('return'));
+        if ($returnUrl === null) {
+            $returnUrl = $this->normalizeInternalReturnUrl($request, (string) $request->headers->get('referer'));
+        }
 
         $node->loadMissing('uploader');
 

@@ -169,7 +169,7 @@ Route::get('/home', function () {
                 'title' => $prettyTitle((string) ($model->name ?? ''), 'Photo'),
                 'by' => (string) ($model->uploader?->name ?? 'Quelqu’un'),
                 'at' => $model->created_at,
-                'href' => route('images.open', $model),
+                'href' => route('images.open', ['node' => $model, 'return' => request()->getRequestUri()]),
                 'preview_url' => route('images.view', $model),
             ];
         } elseif ($type === 'video') {
@@ -198,7 +198,7 @@ Route::get('/home', function () {
             'title' => $prettyTitle((string) ($img->name ?? ''), 'Photo'),
             'by' => $img->uploader?->name ?? 'Quelqu’un',
             'at' => $img->created_at,
-            'href' => route('images.open', $img),
+            'href' => route('images.open', ['node' => $img, 'return' => request()->getRequestUri()]),
             'thumb_url' => route('images.view', $img),
         ]))
         ->merge($latestVideos->map(function ($v) use ($prettyTitle) {
@@ -350,7 +350,7 @@ Route::get('/home', function () {
                 'title' => 'Petit moment du ' . $today->translatedFormat('EEEE'),
                 'text' => $msg . ' (' . $season . ')',
                 'image_url' => $photo ? route('images.view', $photo) : null,
-                'href' => $photo ? route('images.open', $photo) : route('chat.index'),
+                'href' => $photo ? route('images.open', ['node' => $photo, 'return' => request()->getRequestUri()]) : route('chat.index'),
                 'cta' => $photo ? 'Voir' : 'Écrire un mot',
             ]];
         }
@@ -391,7 +391,7 @@ Route::get('/home', function () {
                 'title' => 'Souvenir du jour',
                 'text' => $subtitle,
                 'image_url' => route('images.view', $memoryPhoto),
-                'href' => route('images.open', $memoryPhoto),
+                'href' => route('images.open', ['node' => $memoryPhoto, 'return' => request()->getRequestUri()]),
                 'cta' => 'Voir le souvenir',
             ]];
         }
@@ -431,7 +431,7 @@ Route::get('/home', function () {
                 'title' => 'Photo surprise',
                 'text' => 'Un petit clin d’œil au hasard.',
                 'image_url' => route('images.view', $photo),
-                'href' => route('images.open', $photo),
+                'href' => route('images.open', ['node' => $photo, 'return' => request()->getRequestUri()]),
                 'cta' => 'Voir',
             ]];
         }

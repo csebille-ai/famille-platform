@@ -69,14 +69,14 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Dernières photos</div>
-                    <a href="{{ route('images.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
+                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
                 </div>
 
                 <div class="mt-4">
                     @if(($latestImages ?? collect())->count())
                         <div class="grid grid-cols-3 gap-3">
                             @foreach(($latestImages ?? collect())->take(3) as $img)
-                                <a href="{{ route('images.open', $img) }}" class="block" aria-label="Ouvrir photo">
+                                <a href="{{ route('images.open', ['node' => $img, 'return' => request()->getRequestUri()]) }}" class="block" aria-label="Ouvrir photo">
                                     <div class="rounded-xl overflow-hidden aspect-video bg-slate-100">
                                         <img
                                             src="{{ route('images.view', $img) }}"
