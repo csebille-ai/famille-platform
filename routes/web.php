@@ -282,12 +282,6 @@ Route::get('/home', function () {
         ->sortByDesc('at')
         ->values();
 
-    if ($heroKey !== null) {
-        $latestAdds = $latestAdds
-            ->reject(fn ($x) => (string) ($x['key'] ?? '') === $heroKey)
-            ->values();
-    }
-
     if ($feed === 'photos') {
         $latestAdds = $latestAdds->where('type', 'image')->values();
     } elseif ($feed === 'videos') {
