@@ -99,6 +99,50 @@
         $onlineList = $onlineList->unique('id')->values();
     @endphp
 
+    <x-slot name="bottomDock">
+        <div class="px-4 py-2">
+            <div id="chatSoloHint" class="hidden mb-2 text-xs text-slate-500"></div>
+            <form id="chatForm" method="POST" action="{{ route('chat.store') }}" class="flex items-end gap-2">
+                @csrf
+                <button
+                    type="button"
+                    id="chatAttachBtn"
+                    class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    aria-label="Ajouter"
+                    title="Ajouter"
+                >
+                    ＋
+                </button>
+
+                <div class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2">
+                    <textarea
+                        id="body"
+                        name="body"
+                        rows="1"
+                        class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm leading-6 max-h-28"
+                        placeholder="Écrire un message…"
+                        required
+                    >{{ old('body') }}</textarea>
+                </div>
+
+                <input type="file" id="chatAttachInput" class="hidden" accept="image/*,video/*" />
+
+                <button
+                    type="submit"
+                    id="chatSendBtn"
+                    class="w-11 h-11 rounded-full inline-flex items-center justify-center bg-slate-900 text-white font-semibold disabled:opacity-50"
+                    aria-label="Envoyer"
+                    title="Envoyer"
+                    disabled
+                >
+                    <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i>
+                </button>
+
+                <x-input-error class="mt-2" :messages="$errors->get('body')" />
+            </form>
+        </div>
+    </x-slot>
+
     <div class="max-w-6xl mx-auto px-0 sm:px-6 py-0 sm:py-6 space-y-4 sm:space-y-6">
         @if (session('status'))
             <div class="bg-white rounded-2xl shadow-sm p-4 text-sm text-gray-900">
@@ -117,7 +161,7 @@
             </div>
         @endif
 
-        <div class="bg-white sm:rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-10rem)]">
+        <div class="bg-white sm:rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-7rem-var(--mobile-bottom-nav-h,4rem)-env(safe-area-inset-bottom)-5rem)] sm:h-[calc(100vh-10rem)]">
             @php
                 $visioDomain = trim((string) (config('visio.jitsi_domain') ?? 'meet.jit.si'));
                 $visioProvider = (string) (config('visio.provider') ?? 'link');
@@ -194,7 +238,7 @@
                 </div>
             </div>
 
-            <div id="chatScroll" class="flex-1 overflow-y-auto pb-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom)+7rem)] sm:pb-0">
+            <div id="chatScroll" class="flex-1 overflow-y-auto pb-6 sm:pb-0">
                 <div class="relative">
                     <button
                         type="button"
@@ -324,7 +368,7 @@
                 </div>
             </div>
 
-            <div class="border-t border-slate-100 bg-white sticky bottom-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))] sm:bottom-0 z-40">
+            <div class="hidden sm:block border-t border-slate-100 bg-white sticky bottom-0 z-40">
                 <div class="px-4 sm:px-6 py-3">
                     <div id="chatSoloHint" class="hidden mb-2 text-xs text-slate-500"></div>
                     <form id="chatForm" method="POST" action="{{ route('chat.store') }}" class="flex items-end gap-2">

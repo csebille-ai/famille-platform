@@ -213,6 +213,3 @@
         </div>
     </div>
 </nav>
-
-<!-- Mobile: single primary navigation (bottom) -->
-<x-mobile-primary-nav />

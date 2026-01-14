@@ -1,3 +1,7 @@
+@props([
+    'fixed' => true,
+])
+
 @php
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
@@ -52,7 +56,11 @@
     ];
 @endphp
 
-<nav class="sm:hidden fixed inset-x-0 bottom-0 z-50 border-t border-[#EEF0F4] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]" aria-label="Navigation principale">
+<nav
+    class="sm:hidden {{ $fixed ? 'fixed inset-x-0 bottom-0 z-40' : 'w-full' }} border-t border-[#EEF0F4] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+    style="--mobile-bottom-nav-h: 4rem;"
+    aria-label="Navigation principale"
+>
     <div class="px-2">
         <div class="flex items-stretch">
             @foreach($items as $item)

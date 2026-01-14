@@ -340,6 +340,21 @@
             </main>
 
             @unless($attributes->get('hideNavigation'))
+                @isset($bottomDock)
+                    <!-- Mobile: single bottom dock (composer + nav) -->
+                    <div class="sm:hidden fixed inset-x-0 bottom-0 z-40">
+                        <div class="bg-white/95 backdrop-blur border-t border-slate-100">
+                            {{ $bottomDock }}
+                        </div>
+                        <x-mobile-primary-nav :fixed="false" />
+                    </div>
+                @else
+                    <!-- Mobile: single primary navigation (bottom) -->
+                    <x-mobile-primary-nav />
+                @endisset
+            @endunless
+
+            @unless($attributes->get('hideNavigation'))
                 <!-- Add sheet (mobile) -->
                 <div class="sm:hidden">
                     <div x-show="addOpen" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
