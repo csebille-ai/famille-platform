@@ -17,29 +17,8 @@
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <h1 class="text-xl font-bold text-gray-900">Actu locale</h1>
-                        <div class="mt-1 text-sm text-slate-500">Zone: Local</div>
-                        <div id="actu-last" class="mt-1 text-xs text-slate-500"></div>
-                        <div id="actu-stale" class="hidden mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                            Actu possiblement bloquée (pas de synchro récente).
-                        </div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
-                        <button
-                            type="button"
-                            id="actu-refresh"
-                            class="inline-flex items-center h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-gray-900 hover:bg-slate-50"
-                        >
-                            Actualiser
-                        </button>
-                        @if(auth()->check() && auth()->user()?->can('manage-users') === true)
-                            <button
-                                type="button"
-                                id="actu-sync"
-                                class="inline-flex items-center h-10 px-3 rounded-xl border border-indigo-200 bg-indigo-50 text-sm font-semibold text-indigo-900 hover:bg-indigo-100"
-                            >
-                                Synchroniser
-                            </button>
-                        @endif
                         <button
                             type="button"
                             id="actu-filters"
@@ -50,7 +29,7 @@
                     </div>
                 </div>
 
-                <div id="actu-chips" class="mt-3 -mx-6 px-6 pb-1 overflow-x-auto">
+                <div id="actu-chips" class="hidden mt-3 -mx-6 px-6 pb-1 overflow-x-auto">
                     <div class="flex items-center gap-2 min-w-max">
                         @foreach ($chips as $c)
                             <button
@@ -61,6 +40,19 @@
                                 {{ $c['label'] }}
                             </button>
                         @endforeach
+                    </div>
+                </div>
+
+                <div id="actu-new" class="hidden mt-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="font-semibold">Nouvelles actus disponibles</div>
+                        <button
+                            type="button"
+                            id="actu-new-btn"
+                            class="shrink-0 inline-flex items-center h-9 px-3 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700"
+                        >
+                            Afficher
+                        </button>
                     </div>
                 </div>
 
@@ -98,20 +90,21 @@
             const elMoreWrap = document.getElementById('actu-more-wrap');
             const elMoreBtn = document.getElementById('actu-more');
             const elMoreSkeleton = document.getElementById('actu-more-skeleton');
-            const elRefresh = document.getElementById('actu-refresh');
             const elFilters = document.getElementById('actu-filters');
             const elChips = document.getElementById('actu-chips');
-            const elLast = document.getElementById('actu-last');
-            const elStale = document.getElementById('actu-stale');
-            const elSync = document.getElementById('actu-sync');
-            const isAdmin = @json(auth()->check() && auth()->user()?->can('manage-users') === true);
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const elNew = document.getElementById('actu-new');
+            const elNewBtn = document.getElementById('actu-new-btn');
             const chips = Array.from(document.querySelectorAll('.actu-chip'));
 
             let selectedTag = '';
             let nextCursor = null;
             let heroItem = null;
             let loading = false;
+            let pendingFirstPage = null;
+            let autoTimer = null;
+
+            const AUTO_REFRESH_MS = 90_000;
+            const AT_TOP_PX = 140;
 
             const setError = (on) => {
                 if (!elError) return;
@@ -146,6 +139,11 @@
 
                 if (s === "à l’instant") return s;
                 return future ? `dans ${s}` : `il y a ${s}`;
+            };
+
+            const itemKey = (it) => {
+                if (!it) return '';
+                return `${it.published_at || ''}|${it.url || ''}|${it.title || ''}`;
             };
 
             const chipClasses = (active) => {
@@ -292,6 +290,42 @@
                 return u.toString();
             };
 
+            const fetchFirstPageData = async () => {
+                const url = buildUrl(null);
+                const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                if (!data || data.ok !== true || !Array.isArray(data.items)) throw new Error('Bad payload');
+                return data;
+            };
+
+            const applyResetData = (data) => {
+                const items = data.items || [];
+                nextCursor = data.next_cursor ?? null;
+
+                if (items.length > 0) {
+                    heroItem = items[0];
+                    renderHero(heroItem);
+                    renderListItems(items.slice(1), false);
+                } else {
+                    heroItem = null;
+                    renderHero(null);
+                    elList.innerHTML = `
+                        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-500">
+                            Aucune actu pour l’instant.
+                        </div>
+                    `;
+                }
+
+                hideMoreSkeleton();
+                setMoreVisible(!!nextCursor);
+            };
+
+            const setNewBannerVisible = (visible) => {
+                if (!elNew) return;
+                elNew.classList.toggle('hidden', !visible);
+            };
+
             const fetchPage = async ({ reset = false } = {}) => {
                 if (loading) return;
                 loading = true;
@@ -316,21 +350,6 @@
                     const data = await resp.json();
                     if (!data || data.ok !== true || !Array.isArray(data.items)) throw new Error('Bad payload');
 
-                    // Last update (fetched_at) hint
-                    if (elLast) {
-                        const lf = data.latest_fetched_at || null;
-                        elLast.textContent = lf ? `Dernière synchro: ${timeAgo(lf)}` : '';
-                        if (elStale) {
-                            if (lf) {
-                                const d = new Date(lf);
-                                const ageHours = isNaN(d.getTime()) ? 0 : ((Date.now() - d.getTime()) / 3600000);
-                                elStale.classList.toggle('hidden', !(ageHours >= 24));
-                            } else {
-                                elStale.classList.remove('hidden');
-                            }
-                        }
-                    }
-
                     const items = data.items;
                     nextCursor = data.next_cursor ?? null;
 
@@ -353,6 +372,8 @@
 
                     hideMoreSkeleton();
                     setMoreVisible(!!nextCursor);
+                    setNewBannerVisible(false);
+                    pendingFirstPage = null;
                 } catch (e) {
                     hideMoreSkeleton();
                     setMoreVisible(false);
@@ -374,12 +395,48 @@
             const setTag = (tag) => {
                 selectedTag = tag || '';
                 renderChips();
+                setNewBannerVisible(false);
+                pendingFirstPage = null;
                 fetchPage({ reset: true });
+            };
+
+            const scheduleAutoRefresh = () => {
+                if (autoTimer) {
+                    clearInterval(autoTimer);
+                    autoTimer = null;
+                }
+                autoTimer = setInterval(async () => {
+                    if (document.visibilityState !== 'visible') return;
+                    if (loading) return;
+
+                    loading = true;
+                    try {
+                        const data = await fetchFirstPageData();
+                        const newTop = data.items?.[0] ?? null;
+                        const currentTop = heroItem;
+                        const changed = itemKey(newTop) !== '' && itemKey(newTop) !== itemKey(currentTop);
+                        if (!changed) return;
+
+                        if (window.scrollY <= AT_TOP_PX) {
+                            applyResetData(data);
+                            setNewBannerVisible(false);
+                            pendingFirstPage = null;
+                        } else {
+                            pendingFirstPage = data;
+                            setNewBannerVisible(true);
+                        }
+                    } catch (e) {
+                        // ignore background refresh errors
+                    } finally {
+                        loading = false;
+                    }
+                }, AUTO_REFRESH_MS);
             };
 
             // Wiring
             renderChips();
             fetchPage({ reset: true });
+            scheduleAutoRefresh();
 
             chips.forEach((b) => {
                 b.addEventListener('click', () => setTag(b.getAttribute('data-tag') || ''));
@@ -393,39 +450,26 @@
                 });
             }
 
-            if (elRefresh) {
-                elRefresh.addEventListener('click', () => fetchPage({ reset: true }));
-            }
-
-            if (elSync && isAdmin) {
-                elSync.addEventListener('click', async () => {
-                    if (loading) return;
-                    loading = true;
-                    setError(false);
-                    elSync.disabled = true;
-
-                    try {
-                        const resp = await fetch('/api/news/import', {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                                ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
-                            },
-                            credentials: 'same-origin',
-                        });
-                        const data = await resp.json().catch(() => ({}));
-                        if (!resp.ok || data?.ok !== true) {
-                            throw new Error(data?.output || `Import failed (HTTP ${resp.status})`);
-                        }
-                        await fetchPage({ reset: true });
-                    } catch (e) {
-                        setError(true);
-                    } finally {
-                        loading = false;
-                        elSync.disabled = false;
+            if (elNewBtn) {
+                elNewBtn.addEventListener('click', () => {
+                    if (pendingFirstPage) {
+                        applyResetData(pendingFirstPage);
+                        pendingFirstPage = null;
+                        setNewBannerVisible(false);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        return;
                     }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    fetchPage({ reset: true });
                 });
             }
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    // quick catch-up when user comes back
+                    fetchPage({ reset: true });
+                }
+            });
 
             if (elFilters && elChips) {
                 elFilters.addEventListener('click', () => {
