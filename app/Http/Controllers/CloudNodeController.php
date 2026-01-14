@@ -487,9 +487,22 @@ class CloudNodeController extends Controller
         $this->audit('upload_file', $node, ['parent_id' => $parent->id]);
 
         if ($request->expectsJson()) {
+            $mime = (string) ($node->mime ?? '');
+            $returnPath = $this->safeReturnPath($request->input('return') ?: $request->query('return'));
+
+            $redirectUrl = null;
+            if (str_starts_with($mime, 'video/')) {
+                $redirectUrl = route('videos.classify', ['node' => $node->id]);
+            } elseif ($returnPath !== null) {
+                $redirectUrl = $returnPath;
+            } else {
+                $redirectUrl = route('cloud.index', ['folder' => $parent->id]);
+            }
+
             return response()->json([
                 'message' => __('File uploaded.'),
                 'node' => $node,
+                'redirect_url' => $redirectUrl,
             ], 201);
         }
 

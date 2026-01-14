@@ -637,6 +637,8 @@
                             showOverlay();
                             setProgress(0, 'Démarrage…');
 
+                            const returnPath = (form.querySelector('input[name="return"]') || {}).value || null;
+
                             // Replace file in the formdata with current selection.
                             fd.set('file', file, file.name);
 
@@ -656,12 +658,28 @@
                             };
 
                             xhr.onload = function () {
-                                const finalUrl = xhr.responseURL || null;
                                 setProgress(100, 'Finalisation…');
-                                if (finalUrl) {
-                                    window.location.href = finalUrl;
+
+                                // For XHR uploads, Laravel often returns JSON (expectsJson=true).
+                                // Never navigate to xhr.responseURL (it can be a POST-only endpoint like /cloud/files => 405 on GET).
+                                let json = null;
+                                try {
+                                    json = xhr.responseText ? JSON.parse(xhr.responseText) : null;
+                                } catch (e) {
+                                    json = null;
+                                }
+
+                                const redirectUrl = (json && json.redirect_url) ? String(json.redirect_url) : null;
+                                if (redirectUrl) {
+                                    window.location.href = redirectUrl;
                                     return;
                                 }
+
+                                if (returnPath) {
+                                    window.location.href = returnPath;
+                                    return;
+                                }
+
                                 window.location.reload();
                             };
 
