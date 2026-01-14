@@ -160,11 +160,16 @@ Route::get('/home', function () {
                         ->first(['id', 'user_id', 'body', 'created_at']);
 
                     $who = $last?->user?->name ? (string) $last->user->name : 'Quelqu’un';
+
+                    $sentence = $who . ' a envoyé un message';
+                    if ($recentCount > 1) {
+                        $sentence .= ' (+' . ($recentCount - 1) . ')';
+                    }
+
                     $items->push([
                         'kind' => 'chat',
                         'at' => $last?->created_at ?: now(),
-                        'title' => 'Messages récents',
-                        'text' => $recentCount . ' message' . ($recentCount > 1 ? 's' : '') . ' · dernier par ' . $who,
+                        'sentence' => $sentence,
                         'href' => route('chat.index'),
                     ]);
                 }
@@ -183,15 +188,12 @@ Route::get('/home', function () {
                     ->first();
 
                 if ($next) {
-                    $days = (int) $today->copy()->startOfDay()->diffInDays($next->starts_on, false);
-                    $when = $days === 0 ? 'aujourd’hui' : ('dans ' . $days . ' jour' . ($days > 1 ? 's' : ''));
                     $label = $next->type ?: 'Événement';
 
                     $items->push([
                         'kind' => 'event',
                         'at' => $next->starts_on,
-                        'title' => $label,
-                        'text' => (string) $next->title . ' · ' . $when,
+                        'sentence' => $label . ' : ' . (string) $next->title,
                         'href' => route('moments.index'),
                     ]);
                 }
@@ -202,23 +204,33 @@ Route::get('/home', function () {
 
         // 3) Actu refresh signal (if we have something fresh).
         if ($freshNewsAt && $freshNewsAt->greaterThanOrEqualTo(now()->subDays(3))) {
+            $headline = null;
+            try {
+                $headline = $todayNewsItem?->title ? (string) $todayNewsItem->title : null;
+                if (is_string($headline)) {
+                    $headline = trim($headline);
+                    if ($headline === '') $headline = null;
+                }
+            } catch (Throwable $e) {
+                $headline = null;
+            }
+
             $items->push([
                 'kind' => 'actu',
                 'at' => $freshNewsAt,
-                'title' => 'Actu famille',
-                'text' => 'Mise à jour récente',
+                'sentence' => $headline ? ('Actu : ' . $headline) : 'Actu famille : mise à jour récente',
                 'href' => route('actu.index'),
             ]);
         }
 
         $familyActivity = $items
             ->sortByDesc('at')
-            ->take(5)
+            ->take(3)
             ->values()
             ->map(fn ($i) => [
                 'kind' => (string) ($i['kind'] ?? 'item'),
-                'title' => (string) ($i['title'] ?? ''),
-                'text' => (string) ($i['text'] ?? ''),
+                'at' => $i['at'] ?? null,
+                'sentence' => (string) ($i['sentence'] ?? ''),
                 'href' => (string) ($i['href'] ?? '#'),
             ])
             ->all();
