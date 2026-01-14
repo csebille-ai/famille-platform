@@ -3,7 +3,14 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
 $root = (Get-Location).Path
-$src = Join-Path $root 'public\images\logo1.png'
+$srcMaison = Join-Path $root 'public\images\brand\maison.png'
+$srcDefault = Join-Path $root 'public\images\logo1.png'
+
+$src = $srcDefault
+if (Test-Path $srcMaison) {
+    $src = $srcMaison
+}
+
 if (!(Test-Path $src)) {
     throw "Missing source image: $src"
 }
