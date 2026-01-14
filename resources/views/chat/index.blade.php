@@ -161,7 +161,7 @@
             </div>
         @endif
 
-        <div class="bg-white sm:rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100dvh-7rem-var(--mobile-bottom-nav-h,4rem)-env(safe-area-inset-bottom)-5rem)] sm:h-[calc(100vh-10rem)]">
+        <div class="bg-white sm:rounded-2xl shadow-sm flex flex-col h-[calc(100dvh-7rem-var(--mobile-bottom-nav-h,4rem)-env(safe-area-inset-bottom)-5rem)] sm:h-[calc(100vh-10rem)] sm:overflow-hidden">
             @php
                 $visioDomain = trim((string) (config('visio.jitsi_domain') ?? 'meet.jit.si'));
                 $visioProvider = (string) (config('visio.provider') ?? 'link');
@@ -240,7 +240,7 @@
                 </div>
             </div>
 
-            <div id="chatScroll" class="flex-1 overflow-y-auto pb-6 sm:pb-0">
+            <div id="chatScroll" class="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 sm:pb-0">
                 <div class="relative">
                     <button
                         type="button"
