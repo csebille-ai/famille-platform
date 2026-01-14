@@ -9,7 +9,7 @@ class AstroCardPromptBuilder
 {
     /**
      * @param array<string,mixed> $signature
-    * @return array{prompt:string, prompt_card:string, prompt_icon:string, negative_prompt:string, seed:string, title:string, signature_line:string, tag1:string, tag2:string, tag3:string, rpg_class:string, card_number:int, life_path:int, banner_text:string}
+    * @return array{prompt:string, prompt_card:string, prompt_icon:string, negative_prompt:string, seed:string, title:string, signature_line:string, tag1:string, tag2:string, tag3:string, rpg_class:string, card_number:int, life_path:int, banner_text:string, sun_sign:string}
      */
     public function build(User $user, array $signature): array
     {
@@ -132,6 +132,7 @@ class AstroCardPromptBuilder
             'card_number' => $lifePath,
             'life_path' => $lifePath,
             'banner_text' => $talent1,
+            'sun_sign' => $sun,
         ];
     }
 
@@ -227,10 +228,11 @@ Style:
 - Materials/palette: {{MATERIALS_PALETTE}}. Shape language: {{SHAPE_LANGUAGE}}.
 
 Astro signature (MUST be visible as symbols, NOT words):
-1) Sun sign {{SUN_SIGN}} at the CENTER of the shield:
-    - central heraldic charge MUST be unmistakably {{SUN_SIGN}}: {{SUN_CHARGE}}
-    - MUST be the dominant element on the shield (occupy ~60% of shield area)
-    - MUST be the ONLY central charge (no other western zodiac glyphs anywhere)
+1) Shield interior (CRITICAL):
+    - the shield field must be clean, flat enamel with a soft gradient
+    - DO NOT draw any zodiac symbol inside the shield (leave a large blank centered area)
+    - this blank area is RESERVED for the Sun sign overlay "{{SUN_SIGN}}" added later
+    - you may add ONLY a very subtle micro-pattern in the shield field: {{CHINESE_PATTERN}} (must not obscure the blank center)
     - background halo motif (very subtle): {{SUN_MOTIF}}
 2) Ascendant {{ASC_SIGN}} as a clear heraldic emblem on the crest:
     - emblem: {{ASC_EMBLEM}} (recognizable, icon-like)

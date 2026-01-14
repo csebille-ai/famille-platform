@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\User;
 use App\Services\Astro\Images\ImageProvider;
 use App\Services\AstroCardPromptBuilder;
+use Illuminate\Support\Str;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -78,9 +79,10 @@ class GenerateAstroCardJob implements ShouldQueue
 
             $lifePath = (int) ($built['life_path'] ?? 0);
             $bannerText = (string) ($built['banner_text'] ?? '');
+            $sunSign = (string) ($built['sun_sign'] ?? '');
 
-            $cardPngBytes = $this->postProcessCardPng($cardBytes, $lifePath, $bannerText);
-            $iconPngBytes = $this->postProcessIconPng($iconBytes);
+            $cardPngBytes = $this->postProcessCardPng($cardBytes, $sunSign, $lifePath, $bannerText);
+            $iconPngBytes = $this->postProcessIconPng($iconBytes, $sunSign);
 
             $ts = now()->format('YmdHis');
             $uniq = $ts . '-' . bin2hex(random_bytes(3));
@@ -146,7 +148,7 @@ class GenerateAstroCardJob implements ShouldQueue
         }
     }
 
-    private function postProcessCardPng(string $imageBytes, int $lifePath, string $bannerText): string
+    private function postProcessCardPng(string $imageBytes, string $sunSign, int $lifePath, string $bannerText): string
     {
         if (!function_exists('imagecreatefromstring')) {
             throw new \RuntimeException('Serveur: GD manquant (imagecreatefromstring indisponible).');
@@ -167,10 +169,15 @@ class GenerateAstroCardJob implements ShouldQueue
         $padded = $this->safePadImage($src, $w, $h, 0.92);
         imagedestroy($src);
 
-        // Overlay: life path number (medallion) + banner text.
+        // Overlay: sun sign pictogram (shield) + life path number (medallion) + banner text.
         $font = $this->findTtfFontPath();
         $lifeText = trim((string) $lifePath);
         $bannerText = trim(preg_replace('/\s+/u', ' ', $bannerText) ?? '');
+
+        $sunKey = $this->key($sunSign);
+        if ($sunKey !== '') {
+            $this->overlaySunSignOnShield($padded, $w, $h, $sunKey);
+        }
 
         $white = imagecolorallocate($padded, 255, 255, 255);
         $shadow = imagecolorallocatealpha($padded, 0, 0, 0, 70);
@@ -202,7 +209,7 @@ class GenerateAstroCardJob implements ShouldQueue
         return $this->encodePng($padded);
     }
 
-    private function postProcessIconPng(string $imageBytes): string
+    private function postProcessIconPng(string $imageBytes, string $sunSign): string
     {
         if (!function_exists('imagecreatefromstring')) {
             throw new \RuntimeException('Serveur: GD manquant (imagecreatefromstring indisponible).');
@@ -224,7 +231,215 @@ class GenerateAstroCardJob implements ShouldQueue
         $padded = $this->safePadImage($src, $w, $h, 0.90);
         imagedestroy($src);
 
+        $sunKey = $this->key($sunSign);
+        if ($sunKey !== '') {
+            $this->overlaySunSignOnShield($padded, $w, $h, $sunKey);
+        }
+
         return $this->encodePng($padded);
+    }
+
+    private function overlaySunSignOnShield($img, int $w, int $h, string $sunKey): void
+    {
+        // Approximate shield box (works with our constrained composition).
+        $left = (int) round($w * 0.34);
+        $right = (int) round($w * 0.66);
+        $top = (int) round($h * 0.24);
+        $bottom = (int) round($h * 0.66);
+
+        $cx = (int) round(($left + $right) / 2);
+        $cy = (int) round(($top + $bottom) / 2);
+        $bw = max(1, $right - $left);
+        $bh = max(1, $bottom - $top);
+
+        // Draw a subtle white wash behind glyph to cover model drift.
+        $wash = imagecolorallocatealpha($img, 255, 255, 255, 55);
+        imagefilledellipse($img, $cx, $cy, (int) round($bw * 0.78), (int) round($bh * 0.62), $wash);
+
+        $stroke = imagecolorallocate($img, 10, 15, 25);
+        $shadow = imagecolorallocatealpha($img, 0, 0, 0, 95);
+
+        $thickness = (int) max(3, round(min($bw, $bh) * 0.035));
+        $this->drawZodiacGlyph($img, $sunKey, $cx, $cy, (int) round($bw * 0.70), (int) round($bh * 0.55), $stroke, $shadow, $thickness);
+    }
+
+    private function drawZodiacGlyph($img, string $sunKey, int $cx, int $cy, int $gw, int $gh, int $stroke, int $shadow, int $thickness): void
+    {
+        $gw = max(40, $gw);
+        $gh = max(40, $gh);
+
+        $draw = function (callable $fn) use ($img, $shadow, $stroke, $thickness) {
+            imagesetthickness($img, $thickness);
+            // shadow pass
+            $fn(2, 2, $shadow);
+            // stroke pass
+            $fn(0, 0, $stroke);
+            imagesetthickness($img, 1);
+        };
+
+        $k = $sunKey;
+
+        // Normalize common french keys.
+        if ($k === 'belier') $k = 'aries';
+        if ($k === 'taureau') $k = 'taurus';
+        if ($k === 'gemeaux') $k = 'gemini';
+        if ($k === 'vierge') $k = 'virgo';
+        if ($k === 'balance') $k = 'libra';
+        if ($k === 'scorpion') $k = 'scorpio';
+        if ($k === 'sagittaire') $k = 'sagittarius';
+        if ($k === 'capricorne') $k = 'capricorn';
+        if ($k === 'verseau') $k = 'aquarius';
+        if ($k === 'poissons') $k = 'pisces';
+
+        // Fallback: try mapping via prompt's expected set.
+        $allowed = ['aries','taurus','gemini','cancer','leo','virgo','libra','scorpio','sagittarius','capricorn','aquarius','pisces'];
+        if (!in_array($k, $allowed, true)) {
+            $k = 'taurus';
+        }
+
+        $x0 = (int) round($cx - ($gw / 2));
+        $x1 = (int) round($cx + ($gw / 2));
+        $y0 = (int) round($cy - ($gh / 2));
+        $y1 = (int) round($cy + ($gh / 2));
+
+        $draw(function (int $dx, int $dy, int $col) use ($img, $k, $gw, $gh, $x0, $x1, $y0, $y1) {
+            // Avoid PHP capture warnings by recomputing center.
+            $cxx = (int) round(($x0 + $x1) / 2) + $dx;
+            $cyy = (int) round(($y0 + $y1) / 2) + $dy;
+            $x0d = $x0 + $dx;
+            $x1d = $x1 + $dx;
+            $y0d = $y0 + $dy;
+            $y1d = $y1 + $dy;
+
+            switch ($k) {
+                case 'taurus':
+                    // Bull head + horns.
+                    imageellipse($img, $cxx, (int) round($cyy + $gh * 0.10), (int) round($gw * 0.48), (int) round($gh * 0.42), $col);
+                    imagearc($img, (int) round($cxx - $gw * 0.18), (int) round($cyy - $gh * 0.05), (int) round($gw * 0.34), (int) round($gh * 0.34), 210, 360, $col);
+                    imagearc($img, (int) round($cxx + $gw * 0.18), (int) round($cyy - $gh * 0.05), (int) round($gw * 0.34), (int) round($gh * 0.34), 180, 330, $col);
+                    break;
+
+                case 'capricorn':
+                    // Stylized sea-goat: horn + spine + tail.
+                    $hx = (int) round($cxx - $gw * 0.10);
+                    $hy = (int) round($cyy - $gh * 0.18);
+                    imagearc($img, $hx, $hy, (int) round($gw * 0.40), (int) round($gh * 0.55), 230, 40, $col);
+                    imageline($img, (int) round($cxx - $gw * 0.10), (int) round($cyy - $gh * 0.05), (int) round($cxx - $gw * 0.10), (int) round($cyy + $gh * 0.20), $col);
+                    imageline($img, (int) round($cxx - $gw * 0.10), (int) round($cyy + $gh * 0.20), (int) round($cxx + $gw * 0.12), (int) round($cyy + $gh * 0.05), $col);
+                    imagearc($img, (int) round($cxx + $gw * 0.18), (int) round($cyy + $gh * 0.05), (int) round($gw * 0.35), (int) round($gh * 0.35), 20, 250, $col);
+                    imagearc($img, (int) round($cxx + $gw * 0.28), (int) round($cyy + $gh * 0.15), (int) round($gw * 0.30), (int) round($gh * 0.30), 200, 20, $col);
+                    break;
+
+                case 'pisces':
+                    // Two fish arcs + connecting line.
+                    imagearc($img, (int) round($cxx - $gw * 0.18), $cyy, (int) round($gw * 0.45), (int) round($gh * 0.75), 300, 60, $col);
+                    imagearc($img, (int) round($cxx + $gw * 0.18), $cyy, (int) round($gw * 0.45), (int) round($gh * 0.75), 120, 240, $col);
+                    imageline($img, (int) round($cxx - $gw * 0.10), $cyy, (int) round($cxx + $gw * 0.10), $cyy, $col);
+                    break;
+
+                case 'virgo':
+                    // Virgo: simplified wheat + loop.
+                    imageline($img, (int) round($cxx - $gw * 0.20), (int) round($cyy - $gh * 0.20), (int) round($cxx - $gw * 0.20), (int) round($cyy + $gh * 0.22), $col);
+                    imageline($img, (int) round($cxx - $gw * 0.02), (int) round($cyy - $gh * 0.20), (int) round($cxx - $gw * 0.02), (int) round($cyy + $gh * 0.22), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.16), (int) round($cyy - $gh * 0.10), (int) round($cxx + $gw * 0.16), (int) round($cyy + $gh * 0.22), $col);
+                    imagearc($img, (int) round($cxx + $gw * 0.20), (int) round($cyy + $gh * 0.10), (int) round($gw * 0.30), (int) round($gh * 0.35), 220, 20, $col);
+                    // small wheat ticks
+                    for ($i = -2; $i <= 2; $i++) {
+                        $yy = (int) round($cyy - $gh * 0.10 + ($i * $gh * 0.06));
+                        imageline($img, (int) round($cxx - $gw * 0.20), $yy, (int) round($cxx - $gw * 0.28), (int) round($yy - $gh * 0.03), $col);
+                    }
+                    break;
+
+                case 'aries':
+                    // Ram horns.
+                    imagearc($img, (int) round($cxx - $gw * 0.16), (int) round($cyy - $gh * 0.02), (int) round($gw * 0.40), (int) round($gh * 0.55), 230, 30, $col);
+                    imagearc($img, (int) round($cxx + $gw * 0.16), (int) round($cyy - $gh * 0.02), (int) round($gw * 0.40), (int) round($gh * 0.55), 150, 310, $col);
+                    imageline($img, (int) round($cxx - $gw * 0.02), (int) round($cyy - $gh * 0.05), (int) round($cxx - $gw * 0.02), (int) round($cyy + $gh * 0.18), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.02), (int) round($cyy - $gh * 0.05), (int) round($cxx + $gw * 0.02), (int) round($cyy + $gh * 0.18), $col);
+                    break;
+
+                case 'gemini':
+                    // Two pillars + caps.
+                    imageline($img, (int) round($cxx - $gw * 0.14), (int) round($cyy - $gh * 0.25), (int) round($cxx - $gw * 0.14), (int) round($cyy + $gh * 0.25), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.14), (int) round($cyy - $gh * 0.25), (int) round($cxx + $gw * 0.14), (int) round($cyy + $gh * 0.25), $col);
+                    imagearc($img, $cxx, (int) round($cyy - $gh * 0.25), (int) round($gw * 0.55), (int) round($gh * 0.20), 0, 180, $col);
+                    imagearc($img, $cxx, (int) round($cyy + $gh * 0.25), (int) round($gw * 0.55), (int) round($gh * 0.20), 180, 360, $col);
+                    break;
+
+                case 'cancer':
+                    // Two opposing crescents.
+                    imagearc($img, (int) round($cxx - $gw * 0.10), (int) round($cyy - $gh * 0.05), (int) round($gw * 0.50), (int) round($gh * 0.50), 40, 220, $col);
+                    imagearc($img, (int) round($cxx + $gw * 0.10), (int) round($cyy + $gh * 0.05), (int) round($gw * 0.50), (int) round($gh * 0.50), 220, 40, $col);
+                    break;
+
+                case 'leo':
+                    // Mane-like loop + tail.
+                    imagearc($img, (int) round($cxx - $gw * 0.05), (int) round($cyy - $gh * 0.05), (int) round($gw * 0.55), (int) round($gh * 0.55), 40, 360, $col);
+                    imageline($img, (int) round($cxx + $gw * 0.20), (int) round($cyy + $gh * 0.05), (int) round($cxx + $gw * 0.28), (int) round($cyy + $gh * 0.18), $col);
+                    imagearc($img, (int) round($cxx + $gw * 0.32), (int) round($cyy + $gh * 0.22), (int) round($gw * 0.25), (int) round($gh * 0.25), 180, 360, $col);
+                    break;
+
+                case 'libra':
+                    // Horizon + arch.
+                    imageline($img, (int) round($cxx - $gw * 0.28), (int) round($cyy + $gh * 0.12), (int) round($cxx + $gw * 0.28), (int) round($cyy + $gh * 0.12), $col);
+                    imagearc($img, $cxx, (int) round($cyy + $gh * 0.12), (int) round($gw * 0.60), (int) round($gh * 0.45), 180, 360, $col);
+                    imageline($img, (int) round($cxx - $gw * 0.28), (int) round($cyy - $gh * 0.02), (int) round($cxx + $gw * 0.28), (int) round($cyy - $gh * 0.02), $col);
+                    break;
+
+                case 'scorpio':
+                    // M-like with stinger.
+                    imageline($img, (int) round($cxx - $gw * 0.22), (int) round($cyy - $gh * 0.22), (int) round($cxx - $gw * 0.22), (int) round($cyy + $gh * 0.22), $col);
+                    imageline($img, (int) round($cxx - $gw * 0.22), (int) round($cyy + $gh * 0.05), (int) round($cxx - $gw * 0.02), (int) round($cyy + $gh * 0.22), $col);
+                    imageline($img, (int) round($cxx - $gw * 0.02), (int) round($cyy + $gh * 0.22), (int) round($cxx + $gw * 0.12), (int) round($cyy + $gh * 0.05), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.12), (int) round($cyy - $gh * 0.22), (int) round($cxx + $gw * 0.12), (int) round($cyy + $gh * 0.12), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.12), (int) round($cyy + $gh * 0.12), (int) round($cxx + $gw * 0.22), (int) round($cyy + $gh * 0.22), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.22), (int) round($cyy + $gh * 0.22), (int) round($cxx + $gw * 0.22), (int) round($cyy + $gh * 0.10), $col);
+                    // arrow head
+                    imageline($img, (int) round($cxx + $gw * 0.22), (int) round($cyy + $gh * 0.10), (int) round($cxx + $gw * 0.30), (int) round($cyy + $gh * 0.12), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.22), (int) round($cyy + $gh * 0.10), (int) round($cxx + $gw * 0.26), (int) round($cyy + $gh * 0.02), $col);
+                    break;
+
+                case 'sagittarius':
+                    // Arrow.
+                    imageline($img, (int) round($cxx - $gw * 0.25), (int) round($cyy + $gh * 0.20), (int) round($cxx + $gw * 0.25), (int) round($cyy - $gh * 0.20), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.16), (int) round($cyy - $gh * 0.26), (int) round($cxx + $gw * 0.25), (int) round($cyy - $gh * 0.20), $col);
+                    imageline($img, (int) round($cxx + $gw * 0.25), (int) round($cyy - $gh * 0.20), (int) round($cxx + $gw * 0.19), (int) round($cyy - $gh * 0.12), $col);
+                    imageline($img, (int) round($cxx - $gw * 0.08), (int) round($cyy - $gh * 0.02), (int) round($cxx - $gw * 0.08), (int) round($cyy - $gh * 0.22), $col);
+                    imageline($img, (int) round($cxx - $gw * 0.18), (int) round($cyy - $gh * 0.02), (int) round($cxx + $gw * 0.02), (int) round($cyy - $gh * 0.02), $col);
+                    break;
+
+                case 'aquarius':
+                    // Two waves.
+                    for ($row = 0; $row < 2; $row++) {
+                        $yy = (int) round($cyy - $gh * 0.10 + ($row * $gh * 0.20));
+                        $step = (int) max(6, round($gw / 6));
+                        $amp = (int) round($gh * 0.06);
+                        $px = (int) round($cxx - $gw * 0.30);
+                        $py = $yy;
+                        for ($x = (int) round($cxx - $gw * 0.30); $x <= (int) round($cxx + $gw * 0.30); $x += $step) {
+                            $phase = ($x - (int) round($cxx - $gw * 0.30)) / max(1, (int) ($gw * 0.60));
+                            $y = (int) round($yy + sin($phase * M_PI * 2) * $amp);
+                            imageline($img, $px, $py, $x, $y, $col);
+                            $px = $x;
+                            $py = $y;
+                        }
+                    }
+                    break;
+            }
+        });
+    }
+
+    private function key(string $value): string
+    {
+        $v = trim($value);
+        if ($v === '') {
+            return '';
+        }
+
+        $v = (string) Str::of($v)->lower()->ascii();
+        $v = (string) preg_replace('/[^a-z0-9]+/', '', $v);
+
+        return $v;
     }
 
     /**
