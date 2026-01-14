@@ -20,7 +20,9 @@ use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Event;
 use App\Models\NewsItem;
+use App\Models\User;
 use App\Models\Video;
+use App\Services\NextBirthday;
 use App\Services\Uploads\R2UploadService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -248,6 +250,20 @@ Route::get('/home', function () {
         $chatOnlineCount = 0;
     }
 
+    $nextBirthday = null;
+    try {
+        if (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
+            $usersWithDob = User::query()
+                ->whereNotNull('date_of_birth')
+                ->orderBy('name')
+                ->get(['id', 'name', 'date_of_birth']);
+
+            $nextBirthday = app(NextBirthday::class)->forUsers($usersWithDob);
+        }
+    } catch (Throwable $e) {
+        $nextBirthday = null;
+    }
+
     $buildFamilyMoments = function (): array {
         $today = now();
 
@@ -461,6 +477,7 @@ Route::get('/home', function () {
         'familyMoments' => $familyMoments,
         'latestAdds' => $latestAdds,
         'feed' => $feed,
+        'nextBirthday' => $nextBirthday,
     ]);
 
     // Avoid stale HTML being served by proxies (LiteSpeed) after deploy.
@@ -470,6 +487,25 @@ Route::get('/home', function () {
         ->header('Expires', '0')
         ->header('X-LiteSpeed-Cache-Control', 'no-cache');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/anniversaires', function () {
+    $birthdays = [];
+
+    try {
+        if (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
+            $usersWithDob = User::query()
+                ->whereNotNull('date_of_birth')
+                ->orderBy('name')
+                ->get(['id', 'name', 'date_of_birth']);
+
+            $birthdays = app(NextBirthday::class)->upcomingForUsers($usersWithDob);
+        }
+    } catch (Throwable $e) {
+        $birthdays = [];
+    }
+
+    return view('birthdays.index', ['birthdays' => $birthdays]);
+})->middleware(['auth', 'verified'])->name('birthdays.index');
 
 Route::get('/dashboard', fn () => redirect()->route('dashboard'))
     ->middleware(['auth', 'verified']);

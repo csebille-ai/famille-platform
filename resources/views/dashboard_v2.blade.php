@@ -11,7 +11,7 @@
         };
     @endphp
 
-    <div class="max-w-2xl mx-auto px-4 py-4 space-y-3">
+    <div class="max-w-2xl md:max-w-6xl mx-auto px-4 md:px-6 py-4 space-y-3">
         @if(!empty($heroMedia))
             <a href="{{ $heroMedia['href'] }}" class="block overflow-hidden rounded-2xl border border-[#EEF0F4] bg-white">
                 <div class="aspect-video bg-[#F6F7F9] overflow-hidden relative">
@@ -42,21 +42,88 @@
                 <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="text-sm font-semibold text-[#0F172A] hover:underline">Voir tout</a>
             </div>
 
-            @php $photos = ($latestImages ?? collect())->take(6); @endphp
+            @php
+                $photos = ($latestImages ?? collect())->take(6);
+                $nextBirthday = $nextBirthday ?? null;
+                $bdDays = is_array($nextBirthday) ? (int) ($nextBirthday['days_remaining'] ?? -1) : -1;
+                $bdDate = is_array($nextBirthday) ? ($nextBirthday['next_date'] ?? null) : null;
+                $bdDateLabel = $bdDate ? $bdDate->locale(app()->getLocale())->translatedFormat('d M') : '';
+                $bdName = is_array($nextBirthday) ? (string) ($nextBirthday['name'] ?? '') : '';
+                $bdInitials = is_array($nextBirthday) ? (string) ($nextBirthday['initials'] ?? '?') : '?';
+                $bdAge = is_array($nextBirthday) ? ($nextBirthday['turning_age'] ?? null) : null;
+            @endphp
 
-            @if($photos->count())
-                <div class="mt-2 grid grid-cols-3 gap-2">
-                    @foreach($photos as $img)
-                        <a href="{{ route('media.photos.show', ['node' => $img, 'return' => request()->getRequestUri()]) }}" class="block" aria-label="Ouvrir photo">
-                            <div class="aspect-square overflow-hidden rounded-2xl bg-[#F6F7F9]">
-                                <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover" style="object-position: 50% 35%;" loading="lazy" />
-                            </div>
-                        </a>
-                    @endforeach
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="md:col-span-2">
+                    @if($photos->count())
+                        <div class="grid grid-cols-2 gap-2">
+                            @foreach($photos as $img)
+                                <a href="{{ route('media.photos.show', ['node' => $img, 'return' => request()->getRequestUri()]) }}" class="block" aria-label="Ouvrir photo">
+                                    <div class="aspect-square overflow-hidden rounded-2xl bg-[#F6F7F9]">
+                                        <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover" style="object-position: 50% 35%;" loading="lazy" />
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-sm text-[#64748B]">Aucune photo pour l’instant.</div>
+                    @endif
                 </div>
-            @else
-                <div class="mt-2 text-sm text-[#64748B]">Aucune photo pour l’instant.</div>
-            @endif
+
+                <div class="md:col-span-1">
+                    <div class="rounded-2xl border border-[#EEF0F4] bg-[#F8FAFC] p-4 md:sticky md:top-4">
+                        <div class="text-sm font-semibold text-[#0F172A]">Prochain anniversaire</div>
+
+                        @if(is_array($nextBirthday) && $bdDays >= 0 && $bdName !== '')
+                            <div class="mt-3 flex items-start gap-3">
+                                <div class="h-11 w-11 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-sm font-bold">
+                                    {{ $bdInitials }}
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-base font-semibold text-[#0F172A] truncate">{{ $bdName }}</div>
+                                    <div class="mt-0.5 text-sm text-[#64748B]">
+                                        @if($bdDays === 0)
+                                            🎉 Aujourd’hui !
+                                        @else
+                                            {{ $bdDateLabel }}
+                                        @endif
+                                        @if(is_int($bdAge))
+                                            <span class="text-[#94A3B8]">·</span> {{ $bdAge }} ans
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 rounded-2xl bg-white border border-[#EEF0F4] p-3">
+                                <div class="text-[11px] font-semibold text-[#64748B]">Compteur</div>
+                                <div class="mt-1 text-2xl font-extrabold tracking-tight text-[#0F172A]">
+                                    @if($bdDays === 0)
+                                        Aujourd’hui
+                                    @else
+                                        J-{{ $bdDays }}
+                                    @endif
+                                </div>
+                                @if($bdDays > 0)
+                                    <div class="mt-0.5 text-sm text-[#64748B]">dans {{ $bdDays }} jour{{ $bdDays > 1 ? 's' : '' }}</div>
+                                @endif
+                            </div>
+
+                            <div class="mt-3 flex items-center gap-2">
+                                <a href="{{ route('birthdays.index') }}" class="inline-flex items-center justify-center rounded-xl border border-[#EEF0F4] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A]">Voir les anniversaires</a>
+                                @if($bdDays === 0)
+                                    <a href="{{ route('chat.index') }}" class="inline-flex items-center justify-center rounded-xl bg-[#0F172A] px-3 py-2 text-sm font-semibold text-white">Envoyer un message</a>
+                                @endif
+                            </div>
+                        @else
+                            <div class="mt-2 text-sm text-[#64748B]">Ajoute les dates de naissance pour afficher le prochain anniversaire.</div>
+                            <div class="mt-3">
+                                <a href="{{ route('birthdays.index') }}" class="inline-flex items-center justify-center rounded-xl border border-[#EEF0F4] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A]">Voir les anniversaires</a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="rounded-2xl border border-[#EEF0F4] bg-white p-3">
