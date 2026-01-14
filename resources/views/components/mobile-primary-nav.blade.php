@@ -54,11 +54,11 @@
 
 <nav class="sm:hidden fixed inset-x-0 bottom-0 z-50 border-t border-[#EEF0F4] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]" aria-label="Navigation principale">
     <div class="px-2">
-        <div class="grid grid-cols-5">
+        <div class="flex items-stretch">
             @foreach($items as $item)
                 <a
                     href="{{ $item['href'] }}"
-                    class="relative flex h-16 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold {{ $item['active'] ? 'text-[#0B1220]' : 'text-[#64748B]' }}"
+                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold {{ $item['active'] ? 'text-[#0B1220]' : 'text-[#64748B]' }}"
                     aria-label="{{ $item['label'] }}"
                     aria-current="{{ $item['active'] ? 'page' : 'false' }}"
                 >
