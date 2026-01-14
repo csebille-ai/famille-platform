@@ -146,6 +146,16 @@ Route::get('/home', function () {
         $cutoff = now()->subHours(36);
         $items = collect();
 
+        $titleCase = function (string $name): string {
+            $name = trim($name);
+            if ($name === '') return '';
+            if (function_exists('mb_convert_case')) {
+                return (string) mb_convert_case($name, MB_CASE_TITLE, 'UTF-8');
+            }
+            $lower = strtolower($name);
+            return ucfirst($lower);
+        };
+
         // 1) Recent chat messages.
         try {
             if (Schema::hasTable('chat_messages')) {
@@ -160,6 +170,10 @@ Route::get('/home', function () {
                         ->first(['id', 'user_id', 'body', 'created_at']);
 
                     $who = $last?->user?->name ? (string) $last->user->name : 'Quelqu’un';
+                    $who = trim(explode(' ', trim($who))[0] ?? $who);
+                    if ($who !== '' && $who !== 'Quelqu’un') {
+                        $who = $titleCase($who);
+                    }
 
                     $sentence = $who . ' a envoyé un message';
                     if ($recentCount > 1) {

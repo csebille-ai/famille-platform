@@ -9,6 +9,48 @@
             if ($h > 0) return sprintf('%d:%02d:%02d', $h, $m, $sec);
             return sprintf('%d:%02d', $m, $sec);
         };
+
+        $fmtRelative = function ($at): string {
+            if (!($at instanceof \Carbon\CarbonInterface)) {
+                return '';
+            }
+
+            try {
+                $at = $at->copy()->locale(app()->getLocale());
+            } catch (\Throwable $e) {
+                // ignore
+            }
+
+            $now = now();
+            $isFuture = $at->greaterThan($now);
+
+            $diffMinutes = $isFuture ? $now->diffInMinutes($at) : $at->diffInMinutes($now);
+            $diffHours = $isFuture ? $now->diffInHours($at) : $at->diffInHours($now);
+            $diffDays = $isFuture ? $now->diffInDays($at) : $at->diffInDays($now);
+
+            $prefix = $isFuture ? 'dans ' : 'il y a ';
+
+            if ($diffMinutes < 60) {
+                $n = max(1, (int) $diffMinutes);
+                return $prefix . $n . ' min';
+            }
+
+            if ($diffHours < 48) {
+                $n = max(1, (int) $diffHours);
+                return $prefix . $n . ' h';
+            }
+
+            if ($diffDays < 14) {
+                $n = max(1, (int) $diffDays);
+                return $prefix . $n . ' j';
+            }
+
+            try {
+                return $at->translatedFormat('d M');
+            } catch (\Throwable $e) {
+                return '';
+            }
+        };
     @endphp
 
     @verbatim
@@ -102,7 +144,7 @@
                 </div>
             </div>
 
-            <div class="rounded-2xl border border-[#EEF0F4] bg-white p-3 md:col-span-2">
+            <div class="rounded-2xl bg-white p-3 md:col-span-2 ring-1 ring-black/5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[#0F172A]">Actu famille</div>
                     <a href="{{ route('moments.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[#0F172A]/70 hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
@@ -116,14 +158,7 @@
                                 $href = (string) ($it['href'] ?? '#');
                                 $sentence = (string) ($it['sentence'] ?? '');
                                 $at = $it['at'] ?? null;
-                                $when = '';
-                                try {
-                                    if ($at instanceof \Carbon\CarbonInterface) {
-                                        $when = $at->copy()->locale(app()->getLocale())->diffForHumans();
-                                    }
-                                } catch (\Throwable $e) {
-                                    $when = '';
-                                }
+                                $when = $fmtRelative($at);
 
                                 $dot = match ($kind) {
                                     'chat' => 'bg-[#0F172A]',
@@ -134,7 +169,7 @@
                             @endphp
 
                             <a href="{{ $href }}" class="block">
-                                <div class="group rounded-2xl bg-[#F8FAFC] p-3 ring-1 ring-black/5 hover:bg-white hover:shadow-sm transition active:scale-[0.995]">
+                                <div class="group rounded-2xl bg-[#F8FAFC] px-3 py-2.5 ring-1 ring-black/5 hover:bg-white hover:shadow-sm transition active:scale-[0.995]">
                                     <div class="flex items-start gap-3">
                                         <div class="mt-2 h-2.5 w-2.5 rounded-full {{ $dot }}"></div>
 
@@ -151,16 +186,12 @@
                             </a>
                         @endforeach
                     </div>
-
-                    <div class="mt-3">
-                        <a href="{{ route('moments.index') }}" class="inline-flex w-full items-center justify-center rounded-xl border border-[#EEF0F4] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A] hover:bg-[#F8FAFC] active:scale-[0.99] transition">Voir tout</a>
-                    </div>
                 @else
                     <div class="mt-2 text-sm text-[#64748B]">Rien de neuf pour l’instant.</div>
                 @endif
             </div>
 
-            <div class="rounded-2xl border border-[#EEF0F4] bg-white p-3 md:col-span-2">
+            <div class="rounded-2xl bg-white p-3 md:col-span-2 ring-1 ring-black/5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[#0F172A]">Photos récentes</div>
                     <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[#0F172A]/70 hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
@@ -183,7 +214,7 @@
                 @endif
             </div>
 
-            <div class="rounded-2xl border border-[#EEF0F4] bg-white p-3 md:col-span-2">
+            <div class="rounded-2xl bg-white p-3 md:col-span-2 ring-1 ring-black/5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[#0F172A]">Vidéos récentes</div>
                     <a href="{{ route('mediatheque.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[#0F172A]/70 hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
