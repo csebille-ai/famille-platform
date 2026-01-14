@@ -60,10 +60,8 @@
                                 <i class="ph ph-caret-left" aria-hidden="true"></i>
                             </button>
                         @else
-                            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2" aria-label="Accueil">
-                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white">
-                                    <x-application-logo class="block h-6" />
-                                </span>
+                            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2" aria-label="Accueil">
+                                <x-application-logo class="h-6 w-6" />
                                 <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="mobile-brand-wordmark h-5 w-auto" loading="lazy" />
                             </a>
                         @endif
@@ -77,7 +75,7 @@
                         <div class="inline-flex items-center gap-2">
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
-                                    <button class="ui-chip h-8 w-8 text-xs font-semibold overflow-hidden">
+                                    <button class="ui-chip h-8 w-8 text-xs font-semibold overflow-hidden border-transparent shadow-none bg-white/80">
                                         @if($useAstroIcon && $hasAstroIcon)
                                             <img src="{{ route('astro.card.icon', ['v' => $astroIconV]) }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
                                         @else
@@ -134,8 +132,10 @@
 
                     <div class="shrink-0 flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2" aria-label="Accueil">
-                            <img src="{{ asset('images/brand/icon.svg') }}" alt="" class="h-7 w-7" loading="lazy" />
-                            <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="hidden lg:block h-5 w-auto" loading="lazy" />
+                            <span class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
+                                <img src="{{ asset('images/brand/icon.svg') }}" alt="" class="h-7 w-7" loading="lazy" />
+                                <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="hidden lg:block h-5 w-auto" loading="lazy" />
+                            </span>
                         </a>
                     </div>
 
