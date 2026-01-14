@@ -4,8 +4,16 @@
  * - Navigation requests are network-first with offline fallback.
  */
 
-const CACHE_NAME = 'famille-assets-v3';
+const CACHE_NAME = 'famille-assets-v4';
 const OFFLINE_URL = '/offline.html';
+
+function isNoCachePath(pathname) {
+  if (pathname.startsWith('/images/brand/')) return true;
+  if (pathname === '/favicon.ico') return true;
+  if (pathname === '/favicon-32.png') return true;
+  if (pathname === '/manifest.webmanifest') return true;
+  return false;
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -30,6 +38,9 @@ self.addEventListener('activate', (event) => {
 function isAssetRequest(request, url) {
   if (request.method !== 'GET') return false;
   if (url.origin !== self.location.origin) return false;
+
+  // Never cache branding assets: these change rarely but are very cache-sensitive in PWAs.
+  if (isNoCachePath(url.pathname)) return false;
 
   // Explicit allowlist: built assets + static images/icons.
   if (url.pathname.startsWith('/build/')) return true;
@@ -66,6 +77,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Never cache brand/manifest/favicon assets (avoid stale logos after navigation).
+  if (request.method === 'GET' && url.origin === self.location.origin && isNoCachePath(url.pathname)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Assets: cache-first.
   if (isAssetRequest(request, url)) {
     event.respondWith(
@@ -96,8 +113,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Famille';
   const options = {
     body: data.body || '',
-    icon: data.icon || '/images/logo1.png',
-    badge: data.badge || '/images/logo1.png',
+    icon: data.icon || '/images/brand/icon-192.png',
+    badge: data.badge || '/images/brand/icon-192.png',
     data: {
       url: data.url || '/',
     },
