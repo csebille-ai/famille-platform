@@ -170,8 +170,9 @@
                     ? ($visioDomain !== '')
                     : ($visioUrl !== '' || $visioDomain !== '');
             @endphp
-            <div class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-100">
-                <div class="h-16 px-4 sm:px-6 flex items-center justify-between gap-3">
+            <div class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-100">
+                <div style="padding-top: calc(env(safe-area-inset-top) + 0.5rem)">
+                    <div class="h-14 px-4 sm:px-6 pb-2 flex items-center justify-between gap-3">
                     <button
                         type="button"
                         id="chatBackBtn"
@@ -224,6 +225,7 @@
                             <i class="ph ph-info" aria-hidden="true"></i>
                         </button>
                     </div>
+                    </div>
                 </div>
 
                 <div id="chatSearchBar" class="hidden px-4 sm:px-6 pb-3">
@@ -243,11 +245,12 @@
                     <button
                         type="button"
                         id="chatScrollToBottom"
-                        class="hidden absolute right-4 bottom-4 z-10 w-11 h-11 rounded-full bg-slate-900 text-white shadow-lg items-center justify-center"
-                        aria-label="Aller en bas"
-                        title="Aller en bas"
+                        class="hidden absolute right-4 bottom-4 z-10 items-center gap-2 rounded-full bg-slate-900 text-white shadow-lg px-4 py-2 text-sm font-semibold"
+                        aria-label="Nouveau message"
+                        title="Nouveau message"
                     >
                         <i class="ph ph-arrow-down" aria-hidden="true"></i>
+                        <span>Nouveau</span>
                     </button>
 
                     <div id="chatMessages" class="flex flex-col gap-3 p-4 sm:p-6">

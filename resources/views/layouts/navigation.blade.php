@@ -42,6 +42,9 @@
     $hasNewActu = (bool) session()->get('news.has_new', false);
 @endphp
 
+@if(request()->routeIs('chat.*'))
+    {{-- Chat is conversation-first and provides its own sticky header. --}}
+@else
 <nav class="bg-white border-b border-gray-100 sticky top-0 z-50">
     <!-- Mobile: single sticky top bar -->
     <div class="sm:hidden">
@@ -217,3 +220,4 @@
         </div>
     </div>
 </nav>
+@endif
