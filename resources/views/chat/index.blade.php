@@ -117,7 +117,7 @@
             </div>
         @endif
 
-        <div class="bg-white sm:rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-7rem-var(--mobile-bottom-nav-h,4rem)-env(safe-area-inset-bottom))] sm:h-[calc(100vh-10rem)]">
+        <div class="bg-white sm:rounded-2xl shadow-sm overflow-hidden flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-10rem)]">
             @php
                 $visioDomain = trim((string) (config('visio.jitsi_domain') ?? 'meet.jit.si'));
                 $visioProvider = (string) (config('visio.provider') ?? 'link');
@@ -194,7 +194,7 @@
                 </div>
             </div>
 
-            <div id="chatScroll" class="flex-1 overflow-y-auto">
+            <div id="chatScroll" class="flex-1 overflow-y-auto pb-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom)+7rem)] sm:pb-0">
                 <div class="relative">
                     <button
                         type="button"
@@ -324,7 +324,7 @@
                 </div>
             </div>
 
-            <div class="border-t border-slate-100 bg-white sticky bottom-0">
+            <div class="border-t border-slate-100 bg-white sticky bottom-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))] sm:bottom-0 z-40">
                 <div class="px-4 sm:px-6 py-3">
                     <div id="chatSoloHint" class="hidden mb-2 text-xs text-slate-500"></div>
                     <form id="chatForm" method="POST" action="{{ route('chat.store') }}" class="flex items-end gap-2">
