@@ -67,7 +67,9 @@
                     </div>
 
                     <div class="min-w-0 flex-1 text-center">
-                        <div class="text-[0.95rem] font-semibold text-[#0F172A] truncate">{{ $mobileTitle }}</div>
+                        @unless($isHome)
+                            <div class="text-[0.95rem] font-semibold text-[#0F172A] truncate">{{ $mobileTitle }}</div>
+                        @endunless
                     </div>
 
                     <div class="shrink-0 flex items-center gap-2">
@@ -130,14 +132,9 @@
                     @endunless
 
                     <div class="shrink-0 flex items-center">
-                        <a href="{{ route('dashboard') }}">
-                            <span class="hidden sm:inline-flex items-center gap-3">
-                                <img src="{{ asset('images/brand/icon.svg') }}" alt="" class="h-9 w-9" loading="lazy" />
-                                <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="h-9 w-auto" loading="lazy" />
-                            </span>
-                            <span class="sm:hidden inline-flex items-center">
-                                <x-application-logo class="block h-9" />
-                            </span>
+                        <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2" aria-label="Accueil">
+                            <img src="{{ asset('images/brand/icon.svg') }}" alt="" class="h-7 w-7" loading="lazy" />
+                            <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="hidden lg:block h-5 w-auto" loading="lazy" />
                         </a>
                     </div>
 
