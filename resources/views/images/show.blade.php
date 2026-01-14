@@ -3,7 +3,7 @@
     $returnUrl = trim((string) ($returnUrl ?? ''));
 
     $backParams = $selectedUserId !== 0 ? ['user' => $selectedUserId] : [];
-    $backUrl = $returnUrl !== '' ? $returnUrl : route('images.index', $backParams);
+    $backUrl = $returnUrl !== '' ? $returnUrl : route('media.index', ['tab' => 'photos']);
 
     $viewerParams = $backParams;
     if ($returnUrl !== '') {
@@ -11,11 +11,11 @@
     }
 
     $prevUrl = !empty($prevNode)
-        ? route('images.open', array_merge(['node' => $prevNode], $viewerParams))
+        ? route('media.photos.show', array_merge(['node' => $prevNode], $viewerParams))
         : '';
 
     $nextUrl = !empty($nextNode)
-        ? route('images.open', array_merge(['node' => $nextNode], $viewerParams))
+        ? route('media.photos.show', array_merge(['node' => $nextNode], $viewerParams))
         : '';
 @endphp
 

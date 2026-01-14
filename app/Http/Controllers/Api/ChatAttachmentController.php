@@ -70,7 +70,7 @@ class ChatAttachmentController extends Controller
 
             $mediaType = 'image';
             $mediaId = (int) $node->id;
-            $openUrl = route('images.open', $node);
+            $openUrl = route('media.photos.show', $node);
             $thumbUrl = route('images.view', $node);
         } else {
             // Treat as video if extension is supported; mime sniffing can be unreliable.

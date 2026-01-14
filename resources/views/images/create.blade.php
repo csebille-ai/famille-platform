@@ -36,7 +36,7 @@
                 <div class="microcopy text-sm text-slate-500 mt-1">Taille max : {{ $maxUploadMb > 0 ? $maxUploadMb : 100 }} MB</div>
             </div>
 
-            <a href="{{ route('images.index') }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
+            <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
                 Retour
             </a>
         </div>

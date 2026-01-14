@@ -169,7 +169,7 @@ Route::get('/home', function () {
                 'title' => $prettyTitle((string) ($model->name ?? ''), 'Photo'),
                 'by' => (string) ($model->uploader?->name ?? 'Quelqu’un'),
                 'at' => $model->created_at,
-                'href' => route('images.open', ['node' => $model, 'return' => request()->getRequestUri()]),
+                'href' => route('media.photos.show', ['node' => $model, 'return' => request()->getRequestUri()]),
                 'preview_url' => route('images.view', $model),
             ];
         } elseif ($type === 'video') {
@@ -198,7 +198,7 @@ Route::get('/home', function () {
             'title' => $prettyTitle((string) ($img->name ?? ''), 'Photo'),
             'by' => $img->uploader?->name ?? 'Quelqu’un',
             'at' => $img->created_at,
-            'href' => route('images.open', ['node' => $img, 'return' => request()->getRequestUri()]),
+            'href' => route('media.photos.show', ['node' => $img, 'return' => request()->getRequestUri()]),
             'thumb_url' => route('images.view', $img),
         ]))
         ->merge($latestVideos->map(function ($v) use ($prettyTitle) {
@@ -350,7 +350,7 @@ Route::get('/home', function () {
                 'title' => 'Petit moment du ' . $today->translatedFormat('EEEE'),
                 'text' => $msg . ' (' . $season . ')',
                 'image_url' => $photo ? route('images.view', $photo) : null,
-                'href' => $photo ? route('images.open', ['node' => $photo, 'return' => request()->getRequestUri()]) : route('chat.index'),
+                'href' => $photo ? route('media.photos.show', ['node' => $photo, 'return' => request()->getRequestUri()]) : route('chat.index'),
                 'cta' => $photo ? 'Voir' : 'Écrire un mot',
             ]];
         }
@@ -391,7 +391,7 @@ Route::get('/home', function () {
                 'title' => 'Souvenir du jour',
                 'text' => $subtitle,
                 'image_url' => route('images.view', $memoryPhoto),
-                'href' => route('images.open', ['node' => $memoryPhoto, 'return' => request()->getRequestUri()]),
+                'href' => route('media.photos.show', ['node' => $memoryPhoto, 'return' => request()->getRequestUri()]),
                 'cta' => 'Voir le souvenir',
             ]];
         }
@@ -431,7 +431,7 @@ Route::get('/home', function () {
                 'title' => 'Photo surprise',
                 'text' => 'Un petit clin d’œil au hasard.',
                 'image_url' => route('images.view', $photo),
-                'href' => route('images.open', ['node' => $photo, 'return' => request()->getRequestUri()]),
+                'href' => route('media.photos.show', ['node' => $photo, 'return' => request()->getRequestUri()]),
                 'cta' => 'Voir',
             ]];
         }
@@ -515,7 +515,7 @@ Route::get('/media', function () {
                 'at' => $img->created_at?->toIso8601String(),
                 'at_human' => $img->created_at?->diffForHumans(),
                 'thumb_url' => route('images.view', $img),
-                'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'photos'])]),
+                'open_url' => route('media.photos.show', ['node' => $img, 'return' => route('media.index', ['tab' => 'photos'])]),
                 'focal_x' => $hasImageFocal ? (is_null($img->focal_x) ? null : (float) $img->focal_x) : null,
                 'focal_y' => $hasImageFocal ? (is_null($img->focal_y) ? null : (float) $img->focal_y) : null,
             ])->values()->all();
@@ -594,6 +594,11 @@ Route::get('/media', function () {
         ->header('X-LiteSpeed-Cache-Control', 'no-cache');
 })->middleware(['auth', 'verified'])
     ->name('media.index');
+
+// Unified photo viewer destination (replaces legacy /galerie/{node}/ouvrir)
+Route::get('/media/photos/{node}', [ImageController::class, 'show'])
+    ->middleware(['auth', 'verified'])
+    ->name('media.photos.show');
 
 Route::get('/mediatheque', function () {
     $tab = strtolower(trim((string) request()->query('tab', '')));
@@ -744,7 +749,7 @@ Route::get('/api/media', function () {
             'at' => $img->created_at?->toIso8601String(),
             'at_human' => $img->created_at?->diffForHumans(),
             'thumb_url' => route('images.view', $img),
-            'open_url' => route('images.open', ['node' => $img, 'return' => route('media.index', ['tab' => 'photos'])]),
+            'open_url' => route('media.photos.show', ['node' => $img, 'return' => route('media.index', ['tab' => 'photos'])]),
             'focal_x' => $hasImageFocal ? (is_null($img->focal_x) ? null : (float) $img->focal_x) : null,
             'focal_y' => $hasImageFocal ? (is_null($img->focal_y) ? null : (float) $img->focal_y) : null,
         ])->values();
@@ -1212,17 +1217,33 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/cloud/create', function () {
         return redirect()
-            ->route('images.index')
+            ->route('cloud.index')
             ->with('status', 'Déplacé vers le nouveau Cloud.');
     })->name('cloud.create.legacy');
 
-    Route::get('/galerie', [ImageController::class, 'index'])->name('images.index');
+    // Legacy gallery entry points: redirect to /media (single destination)
+    Route::get('/galerie', function () {
+        return redirect()->route('media.index', ['tab' => 'photos']);
+    })->name('images.index');
     // The dedicated image upload page is deprecated; uploads happen in Cloud.
     Route::get('/galerie/importer', function () {
         return redirect()->route('cloud.index');
     })->name('images.create');
     Route::post('/galerie', [ImageController::class, 'store'])->name('images.store');
-    Route::get('/galerie/{node}/ouvrir', [ImageController::class, 'show'])->name('images.open');
+    Route::get('/galerie/{node}/ouvrir', function (CloudNode $node) {
+        $return = request()->query('return');
+        $selectedUser = request()->query('user');
+
+        $params = ['node' => $node];
+        if (is_string($return) && trim($return) !== '') {
+            $params['return'] = $return;
+        }
+        if (is_numeric($selectedUser) && (int) $selectedUser !== 0) {
+            $params['user'] = (int) $selectedUser;
+        }
+
+        return redirect()->route('media.photos.show', $params, 301);
+    })->name('images.open');
     Route::get('/galerie/{node}', [ImageController::class, 'view'])->name('images.view');
     Route::post('/galerie/{node}/like', [ImageController::class, 'toggleLike'])->name('images.like');
     Route::delete('/galerie/{node}', [ImageController::class, 'destroy'])->name('images.destroy');

@@ -207,13 +207,13 @@ class ImageController extends Controller
             app(WebPushNotifier::class)->notifyAll([
                 'title' => 'Nouvelle photo',
                 'body' => $actorName . ' a ajouté une photo',
-                'url' => route('images.open', $node),
+                'url' => route('media.photos.show', $node),
             ]);
         } catch (\Throwable $e) {
             // Never block uploads on push issues.
         }
 
-        return redirect()->route('images.index')->with('status', __('Image uploaded.'));
+        return redirect()->route('media.index', ['tab' => 'photos'])->with('status', __('Image uploaded.'));
     }
 
     public function view(CloudNode $node): Response
@@ -415,6 +415,6 @@ class ImageController extends Controller
             ->where('cloud_node_id', $node->id)
             ->delete();
 
-        return redirect()->route('images.index')->with('status', __('Image deleted.'));
+        return redirect()->route('media.index', ['tab' => 'photos'])->with('status', __('Image deleted.'));
     }
 }

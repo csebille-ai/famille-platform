@@ -35,7 +35,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('images.index') }}" class="hidden md:inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
+                <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="hidden md:inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
                     Voir tout
                 </a>
             </div>
@@ -60,7 +60,7 @@
 
         <div class="bg-white rounded-2xl shadow-sm p-3 md:p-6 md:static sticky top-16 z-30">
             <div class="flex items-center justify-between gap-3">
-                <form method="GET" action="{{ route('images.index') }}" class="flex items-center gap-3 min-w-0">
+                <form method="GET" action="{{ route('media.index', ['tab' => 'photos']) }}" class="flex items-center gap-3 min-w-0">
                     <div class="text-sm font-semibold text-gray-900 shrink-0">Personne</div>
                     <select id="user" name="user" class="block w-full md:w-auto rounded-xl border-slate-200" onchange="this.form.submit()">
                         <option value="0" {{ $selectedUserId === 0 ? 'selected' : '' }}>Tous</option>
@@ -77,7 +77,7 @@
                 </form>
 
                 @if($selectedUserId !== 0)
-                    <a href="{{ route('images.index') }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900">
+                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900">
                         Effacer
                     </a>
                 @endif
@@ -86,19 +86,19 @@
             <div class="hidden md:block">
                 <div class="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
                     @php
-                        $baseUrl = route('images.index');
+                        $baseUrl = route('media.index', ['tab' => 'photos']);
                     @endphp
                     <a href="{{ $baseUrl }}" class="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold border {{ $selectedUserId === 0 ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-gray-900 border-slate-200' }}">
                         Tous
                     </a>
-                    <a href="{{ route('images.index', ['user' => -1]) }}" class="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold border {{ $selectedUserId === -1 ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-gray-900 border-slate-200' }}">
+                    <a href="{{ route('media.index', ['tab' => 'photos', 'user' => -1]) }}" class="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold border {{ $selectedUserId === -1 ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-gray-900 border-slate-200' }}">
                         Commun
                     </a>
                     @foreach (($users ?? collect()) as $u)
                         @php
                             $count = (int) (($userImageCounts ?? [])[$u->id] ?? 0);
                         @endphp
-                        <a href="{{ route('images.index', ['user' => $u->id]) }}" class="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold border {{ $selectedUserId === (int)$u->id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-gray-900 border-slate-200' }}">
+                        <a href="{{ route('media.index', ['tab' => 'photos', 'user' => $u->id]) }}" class="shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold border {{ $selectedUserId === (int)$u->id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-gray-900 border-slate-200' }}">
                             {{ $u->name }}
                             <span class="ml-1 text-xs {{ $selectedUserId === (int)$u->id ? 'text-white/80' : 'text-slate-500' }}">{{ $count }}</span>
                         </a>
@@ -137,7 +137,7 @@
                     @endphp
 
                     <div class="group relative rounded-2xl overflow-hidden bg-white shadow-sm" x-data="{menuOpen:false, broken:false}">
-                        <a href="{{ route('images.open', $openParams) }}" class="block">
+                        <a href="{{ route('media.photos.show', $openParams) }}" class="block">
                             <div class="relative">
                                 <div class="w-full aspect-[4/3] bg-slate-100" x-show="!broken">
                                     <img
@@ -197,7 +197,7 @@
                             x-show="menuOpen"
                             x-cloak
                         >
-                            <a href="{{ route('images.open', $openParams) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-slate-50">Ouvrir</a>
+                            <a href="{{ route('media.photos.show', $openParams) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-slate-50">Ouvrir</a>
                             <a href="{{ route('cloud.files.download', $image) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-slate-50">Télécharger</a>
                             @can('images-delete')
                                 <button

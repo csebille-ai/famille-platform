@@ -390,7 +390,7 @@ class UploadsController extends Controller
             $asset->forceFill(['cloud_node_id' => $node->id])->save();
 
             $mediaId = (int) $node->id;
-            $openUrl = route('images.open', $node);
+            $openUrl = route('media.photos.show', $node);
             $thumbUrl = route('images.view', $node);
 
             if ((string) $validated['context'] === 'chat') {
