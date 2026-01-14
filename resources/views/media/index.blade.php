@@ -27,10 +27,6 @@
             loadingPhotos: false,
             loadingVideos: false,
             skeletonCount: 12,
-            viewerOpen: false,
-            viewerIndex: 0,
-            touchStartX: null,
-            touchStartY: null,
             readJson(id) {
                 try {
                     const el = document.getElementById(id);
@@ -103,36 +99,6 @@
                 if (!url) return;
                 window.location.href = url;
             },
-            closeViewer() {
-                this.viewerOpen = false;
-                try { document.body.style.overflow = ''; } catch (e) {}
-            },
-            nextPhoto() {
-                if (!Array.isArray(this.photos) || this.photos.length === 0) return;
-                this.viewerIndex = (this.viewerIndex + 1) % this.photos.length;
-            },
-            prevPhoto() {
-                if (!Array.isArray(this.photos) || this.photos.length === 0) return;
-                this.viewerIndex = (this.viewerIndex - 1 + this.photos.length) % this.photos.length;
-            },
-            onTouchStart(e) {
-                const t = e?.touches?.[0];
-                if (!t) return;
-                this.touchStartX = t.clientX;
-                this.touchStartY = t.clientY;
-            },
-            onTouchEnd(e) {
-                const t = e?.changedTouches?.[0];
-                if (!t || this.touchStartX === null || this.touchStartY === null) return;
-                const dx = t.clientX - this.touchStartX;
-                const dy = t.clientY - this.touchStartY;
-                this.touchStartX = null;
-                this.touchStartY = null;
-                if (Math.abs(dx) < 50) return;
-                if (Math.abs(dx) <= Math.abs(dy)) return;
-                if (dx < 0) this.nextPhoto();
-                else this.prevPhoto();
-            },
             async loadMore(type) {
                 const isPhotos = (type === 'photos');
                 if (isPhotos) {
@@ -197,13 +163,6 @@
                 });
                 window.addEventListener('hashchange', () => {
                     this.tab = this.readFromUrl();
-                });
-
-                window.addEventListener('keydown', (e) => {
-                    if (!this.viewerOpen) return;
-                    if (e.key === 'Escape') this.closeViewer();
-                    if (e.key === 'ArrowRight') this.nextPhoto();
-                    if (e.key === 'ArrowLeft') this.prevPhoto();
                 });
             }
         }"
@@ -387,50 +346,5 @@
             </template>
         </div>
 
-        <!-- Fullscreen photo viewer -->
-        <div x-show="viewerOpen" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
-            <button type="button" class="absolute inset-0 bg-black" @click="closeViewer()" aria-label="Fermer"></button>
-
-            <div
-                class="absolute inset-0 flex items-center justify-center"
-                @touchstart.passive="onTouchStart($event)"
-                @touchend.passive="onTouchEnd($event)"
-            >
-                <template x-if="(photos || []).length">
-                    <img
-                        :src="(photos[viewerIndex] || {}).thumb_url"
-                        alt=""
-                        class="max-h-full max-w-full object-contain"
-                        @click.stop
-                    />
-                </template>
-
-                <button
-                    type="button"
-                    class="absolute top-4 right-4 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white"
-                    @click.stop="closeViewer()"
-                    aria-label="Fermer"
-                >
-                    <i class="ph ph-x" aria-hidden="true"></i>
-                </button>
-
-                <button
-                    type="button"
-                    class="absolute left-2 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white"
-                    @click.stop="prevPhoto()"
-                    aria-label="Précédent"
-                >
-                    <i class="ph ph-caret-left" aria-hidden="true"></i>
-                </button>
-                <button
-                    type="button"
-                    class="absolute right-2 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white"
-                    @click.stop="nextPhoto()"
-                    aria-label="Suivant"
-                >
-                    <i class="ph ph-caret-right" aria-hidden="true"></i>
-                </button>
-            </div>
-        </div>
     </div>
 </x-app-layout>
