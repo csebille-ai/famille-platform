@@ -70,9 +70,7 @@
                     </div>
 
                     <div class="min-w-0 flex-1 text-center">
-                        @unless($isHome)
-                            <div class="text-[0.95rem] font-semibold text-[#0F172A] truncate">{{ $mobileTitle }}</div>
-                        @endunless
+                        <div class="text-[0.95rem] font-semibold text-[#0F172A] truncate">{{ $mobileTitle }}</div>
                     </div>
 
                     <div class="shrink-0 flex items-center gap-2">
