@@ -69,7 +69,12 @@
 
                             <div class="min-w-0 flex-1">
                                 <div class="text-base font-semibold text-[#0F172A] truncate">{{ $bdName }}</div>
-                                <div class="mt-0.5 text-sm text-[#64748B]">{{ $bdDateLabel }}@if(is_int($bdAge)) <span class="text-[#94A3B8]">·</span> {{ $bdAge }} ans@endif</div>
+                                <div class="mt-0.5 text-sm text-[#64748B]">
+                                    {{ $bdDateLabel }}
+                                    @if(is_int($bdAge))
+                                        <span class="text-[#94A3B8]">·</span> {{ $bdAge }} ans
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
