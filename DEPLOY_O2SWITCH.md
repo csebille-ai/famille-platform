@@ -134,6 +134,9 @@ git pull
 composer install --no-dev --optimize-autoloader
 php artisan migrate --force
 
+php artisan optimize:clear
+rm -f storage/framework/views/*.php
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache

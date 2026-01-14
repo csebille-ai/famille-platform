@@ -26,6 +26,11 @@ composer install --no-dev --optimize-autoloader
 echo "==> Running migrations"
 php artisan migrate --force
 
+echo "==> Clearing caches (safe)"
+php artisan optimize:clear || true
+rm -f bootstrap/cache/*.php || true
+rm -f storage/framework/views/*.php || true
+
 echo "==> Caching config/routes/views"
 php artisan config:cache
 php artisan route:cache
