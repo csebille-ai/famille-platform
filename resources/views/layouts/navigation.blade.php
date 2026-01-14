@@ -60,8 +60,11 @@
                                 <i class="ph ph-caret-left" aria-hidden="true"></i>
                             </button>
                         @else
-                            <a href="{{ route('dashboard') }}" class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white" aria-label="Accueil">
-                                <x-application-logo class="block h-6" />
+                            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2" aria-label="Accueil">
+                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white">
+                                    <x-application-logo class="block h-6" />
+                                </span>
+                                <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="hidden min-[380px]:block h-5 w-auto" loading="lazy" />
                             </a>
                         @endif
                     </div>
