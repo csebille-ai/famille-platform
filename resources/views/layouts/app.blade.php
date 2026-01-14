@@ -44,6 +44,18 @@
                 --ui-warning: #d97706;
             }
 
+            /* Mobile header brand: show wordmark only when there's room (never truncate/crop). */
+            .mobile-brand-wordmark {
+                display: none;
+                flex-shrink: 0;
+            }
+
+            @media (min-width: 380px) {
+                .mobile-brand-wordmark {
+                    display: block;
+                }
+            }
+
             .ui-btn {
                 display: inline-flex;
                 align-items: center;

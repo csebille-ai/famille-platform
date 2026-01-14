@@ -64,7 +64,7 @@
                                 <span class="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white">
                                     <x-application-logo class="block h-6" />
                                 </span>
-                                <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="hidden min-[380px]:block h-5 w-auto" loading="lazy" />
+                                <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="mobile-brand-wordmark h-5 w-auto" loading="lazy" />
                             </a>
                         @endif
                     </div>
