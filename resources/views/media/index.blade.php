@@ -93,12 +93,15 @@
                 this.writeToUrl(true);
             },
             openViewer(index) {
+                // Unified behavior: navigate to the dedicated viewer route
+                // so the URL/destination is consistent across the app.
                 const i = Number(index);
                 if (!Number.isFinite(i)) return;
                 if (!Array.isArray(this.photos) || this.photos.length === 0) return;
-                this.viewerIndex = Math.max(0, Math.min(this.photos.length - 1, i));
-                this.viewerOpen = true;
-                try { document.body.style.overflow = 'hidden'; } catch (e) {}
+                const item = this.photos[Math.max(0, Math.min(this.photos.length - 1, i))] || {};
+                const url = String(item?.open_url || '').trim();
+                if (!url) return;
+                window.location.href = url;
             },
             closeViewer() {
                 this.viewerOpen = false;
