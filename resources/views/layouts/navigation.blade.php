@@ -48,8 +48,8 @@
         <!-- App bar (iOS-clean) -->
         <div class="bg-white/95 backdrop-blur border-b border-[#EEF0F4]" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem)">
             <div class="px-4 pb-1">
-                <div class="flex items-center justify-between gap-3">
-                    <div class="shrink-0">
+                <div class="relative flex items-center justify-between gap-3">
+                    <div class="shrink-0 z-10">
                         @if($showBack)
                             <button
                                 type="button"
@@ -69,11 +69,11 @@
                         @endif
                     </div>
 
-                    <div class="min-w-0 flex-1 text-center">
-                        <div class="text-[0.95rem] font-semibold text-[#0F172A] truncate">{{ $mobileTitle }}</div>
+                    <div class="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-center px-24">
+                        <div class="text-[0.95rem] font-semibold text-[#0F172A] truncate max-w-[55vw]">{{ $mobileTitle }}</div>
                     </div>
 
-                    <div class="shrink-0 flex items-center gap-2">
+                    <div class="shrink-0 flex items-center gap-2 z-10">
                         <div class="inline-flex items-center gap-2">
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
