@@ -139,58 +139,115 @@ Route::get('/home', function () {
     }
     session()->put('news.has_new', $hasNewActu);
 
-    $heroMedia = null;
-    $heroCandidates = collect([
-        [
-            'type' => 'image',
-            'model' => $latestImages->first(),
-            'at' => $latestImages->first()?->created_at,
-        ],
-        [
-            'type' => 'video',
-            'model' => $latestVideos->first(),
-            'at' => $latestVideos->first()?->created_at,
-        ],
-    ])
-        ->filter(fn ($c) => !empty($c['model']) && !empty($c['at']))
-        ->sortByDesc('at')
-        ->values();
+    // Home is now “useful-first”: upcoming birthday + family activity + recent photos/videos.
+    // Keep this scope minimal and cheap to compute.
+    $familyActivity = [];
+    try {
+        $cutoff = now()->subHours(36);
+        $items = collect();
 
-    $heroPick = $heroCandidates->first();
-    $heroKey = null;
-    if ($heroPick && !empty($heroPick['model'])) {
-        $model = $heroPick['model'];
-        $type = (string) ($heroPick['type'] ?? '');
-        $id = (int) ($model->id ?? 0);
-        $heroKey = $type . ':' . $id;
+        // 1) New media signal (no filenames).
+        $recentImages = ($latestImages ?? collect())
+            ->filter(fn ($img) => $img?->created_at && $img->created_at->greaterThanOrEqualTo($cutoff));
+        $recentVideos = ($latestVideos ?? collect())
+            ->filter(fn ($v) => $v?->created_at && $v->created_at->greaterThanOrEqualTo($cutoff));
 
-        if ($type === 'image') {
-            $heroMedia = [
-                'key' => $heroKey,
-                'type' => 'image',
-                'title' => $prettyTitle((string) ($model->name ?? ''), 'Photo'),
-                'by' => (string) ($model->uploader?->name ?? 'Quelqu’un'),
-                'at' => $model->created_at,
-                'href' => route('media.photos.show', ['node' => $model, 'return' => request()->getRequestUri()]),
-                'preview_url' => route('images.view', $model),
-            ];
-        } elseif ($type === 'video') {
-            $durationSeconds = null;
-            if (Schema::hasColumn('videos', 'duration_seconds')) {
-                $durationSeconds = (int) ($model->duration_seconds ?? 0);
-                if ($durationSeconds <= 0) $durationSeconds = null;
-            }
-            $heroMedia = [
-                'key' => $heroKey,
-                'type' => 'video',
-                'title' => $prettyTitle((string) ($model->title ?? ''), 'Vidéo'),
-                'by' => (string) ($model->creator?->name ?? 'Quelqu’un'),
-                'at' => $model->created_at,
-                'href' => route('videos.show', $model),
-                'preview_url' => $model->video_path ? route('videos.poster', $model) : null,
-                'duration_seconds' => $durationSeconds,
-            ];
+        $mediaCount = $recentImages->count() + $recentVideos->count();
+        $mediaLastAt = $recentImages
+            ->merge($recentVideos)
+            ->map(fn ($m) => $m->created_at)
+            ->filter()
+            ->sortDesc()
+            ->first();
+
+        if ($mediaCount > 0) {
+            $items->push([
+                'kind' => 'media',
+                'at' => $mediaLastAt ?: now(),
+                'title' => 'Nouveaux médias',
+                'text' => 'Des ajouts récents depuis hier',
+                'href' => route('media.index', ['tab' => 'photos']),
+            ]);
         }
+
+        // 2) Recent chat messages.
+        try {
+            if (Schema::hasTable('chat_messages')) {
+                $recentCount = (int) ChatMessage::query()
+                    ->where('created_at', '>=', $cutoff)
+                    ->count();
+
+                if ($recentCount > 0) {
+                    $last = ChatMessage::query()
+                        ->with('user:id,name')
+                        ->latest('created_at')
+                        ->first(['id', 'user_id', 'body', 'created_at']);
+
+                    $who = $last?->user?->name ? (string) $last->user->name : 'Quelqu’un';
+                    $items->push([
+                        'kind' => 'chat',
+                        'at' => $last?->created_at ?: now(),
+                        'title' => 'Messages récents',
+                        'text' => $recentCount . ' message' . ($recentCount > 1 ? 's' : '') . ' · dernier par ' . $who,
+                        'href' => route('chat.index'),
+                    ]);
+                }
+            }
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        // 3) Upcoming event/announcement.
+        try {
+            if (Schema::hasTable('events')) {
+                $today = now();
+                $next = Event::query()
+                    ->whereDate('starts_on', '>=', $today->toDateString())
+                    ->orderBy('starts_on')
+                    ->first();
+
+                if ($next) {
+                    $days = (int) $today->copy()->startOfDay()->diffInDays($next->starts_on, false);
+                    $when = $days === 0 ? 'aujourd’hui' : ('dans ' . $days . ' jour' . ($days > 1 ? 's' : ''));
+                    $label = $next->type ?: 'Événement';
+
+                    $items->push([
+                        'kind' => 'event',
+                        'at' => $next->starts_on,
+                        'title' => $label,
+                        'text' => (string) $next->title . ' · ' . $when,
+                        'href' => route('moments.index'),
+                    ]);
+                }
+            }
+        } catch (Throwable $e) {
+            // ignore
+        }
+
+        // 4) Actu refresh signal (if we have something fresh).
+        if ($freshNewsAt && $freshNewsAt->greaterThanOrEqualTo(now()->subDays(3))) {
+            $items->push([
+                'kind' => 'actu',
+                'at' => $freshNewsAt,
+                'title' => 'Actu famille',
+                'text' => 'Mise à jour récente',
+                'href' => route('actu.index'),
+            ]);
+        }
+
+        $familyActivity = $items
+            ->sortByDesc('at')
+            ->take(5)
+            ->values()
+            ->map(fn ($i) => [
+                'kind' => (string) ($i['kind'] ?? 'item'),
+                'title' => (string) ($i['title'] ?? ''),
+                'text' => (string) ($i['text'] ?? ''),
+                'href' => (string) ($i['href'] ?? '#'),
+            ])
+            ->all();
+    } catch (Throwable $e) {
+        $familyActivity = [];
     }
 
     $latestAdds = collect()
@@ -472,12 +529,12 @@ Route::get('/home', function () {
         'latestImages' => $latestImages,
         'latestVideos' => $latestVideos,
         'todayNewsItem' => $todayNewsItem,
-        'heroMedia' => $heroMedia,
         'chatOnlineCount' => $chatOnlineCount,
         'familyMoments' => $familyMoments,
         'latestAdds' => $latestAdds,
         'feed' => $feed,
         'nextBirthday' => $nextBirthday,
+        'familyActivity' => $familyActivity,
     ]);
 
     // Avoid stale HTML being served by proxies (LiteSpeed) after deploy.
