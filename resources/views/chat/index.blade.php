@@ -335,21 +335,37 @@
                                                     $attThumb = (string) ($att['thumb_url'] ?? '');
                                                     $attName = (string) ($att['name'] ?? ($attType === 'video' ? 'Vidéo' : 'Photo'));
                                                 @endphp
-                                                <a href="{{ $attUrl }}" class="block" target="_blank" rel="noopener">
-                                                    <div class="relative overflow-hidden rounded-xl border border-slate-200 bg-black/5">
+                                                <button
+                                                    type="button"
+                                                    class="block text-left"
+                                                    aria-label="Ouvrir {{ $attName }}"
+                                                    data-chat-media-open="1"
+                                                    data-url="{{ $attUrl }}"
+                                                    data-type="{{ $attType }}"
+                                                    data-name="{{ $attName }}"
+                                                    data-thumb="{{ $attThumb }}"
+                                                >
+                                                    <div class="relative overflow-hidden rounded-xl border shadow-sm w-64 max-w-full h-40 sm:w-72 sm:h-44 {{ $isMe ? 'border-white/20 bg-white/5' : 'border-slate-200 bg-slate-50' }}">
                                                         @if ($attThumb !== '')
-                                                            <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-56 max-w-full h-auto" loading="lazy" />
+                                                            <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-cover" loading="lazy" />
                                                         @else
-                                                            <div class="w-56 h-36 flex items-center justify-center text-xs text-slate-500">{{ $attName }}</div>
+                                                            <div class="w-full h-full flex items-center justify-center text-xs {{ $isMe ? 'text-white/80' : 'text-slate-500' }}">{{ $attName }}</div>
                                                         @endif
+
+                                                        <div class="absolute top-2 right-2 pointer-events-none">
+                                                            <div class="w-9 h-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white">
+                                                                <i class="ph ph-arrows-out" aria-hidden="true"></i>
+                                                            </div>
+                                                        </div>
+
                                                         @if ($attType === 'video')
-                                                            <div class="absolute inset-0 flex items-center justify-center">
+                                                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                                                                 <div class="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white text-xl">▶</div>
                                                             </div>
                                                         @endif
                                                     </div>
                                                     <div class="mt-2 text-xs opacity-80">{{ $attName }}</div>
-                                                </a>
+                                                </button>
                                             @elseif ($link)
                                                 <div class="rounded-xl border border-slate-200 {{ $isMe ? 'bg-white/10' : 'bg-slate-50' }} p-3">
                                                     <div class="text-sm font-semibold {{ $isMe ? 'text-white' : 'text-gray-900' }}">{{ $link['title'] }}</div>
@@ -467,6 +483,24 @@
                 <div id="chatInfoList" class="mt-3 space-y-2"></div>
             </div>
         </div>
+
+        <div id="chatMediaModal" class="fixed inset-0 z-[60] hidden">
+            <div id="chatMediaBackdrop" class="absolute inset-0 bg-black/80"></div>
+            <div class="absolute inset-0 flex flex-col">
+                <div class="shrink-0 flex items-center justify-between gap-3 p-3 sm:p-4 text-white">
+                    <div id="chatMediaTitle" class="text-sm font-semibold truncate"></div>
+                    <div class="flex items-center gap-2">
+                        <a id="chatMediaOpenLink" href="#" target="_blank" rel="noopener" class="inline-flex items-center justify-center rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/15">Ouvrir</a>
+                        <button type="button" id="chatMediaClose" class="w-9 h-9 rounded-full inline-flex items-center justify-center bg-white/10 hover:bg-white/15" aria-label="Fermer" title="Fermer">✕</button>
+                    </div>
+                </div>
+
+                <div class="flex-1 min-h-0 flex items-center justify-center p-3 sm:p-6">
+                    <img id="chatMediaImg" class="hidden max-h-full max-w-full object-contain rounded-2xl bg-black/20" alt="" />
+                    <video id="chatMediaVideo" class="hidden max-h-full max-w-full rounded-2xl bg-black/20" controls playsinline></video>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -498,6 +532,14 @@
             const infoClose = document.getElementById('chatInfoClose');
             const infoList = document.getElementById('chatInfoList');
             const infoCount = document.getElementById('chatInfoCount');
+
+            const mediaModal = document.getElementById('chatMediaModal');
+            const mediaBackdrop = document.getElementById('chatMediaBackdrop');
+            const mediaClose = document.getElementById('chatMediaClose');
+            const mediaTitle = document.getElementById('chatMediaTitle');
+            const mediaImg = document.getElementById('chatMediaImg');
+            const mediaVideo = document.getElementById('chatMediaVideo');
+            const mediaOpenLink = document.getElementById('chatMediaOpenLink');
             const currentUserId = @json(auth()->id());
             const currentUserName = @json(auth()->user()?->name);
             const pollUrl = @json(route('chat.poll'));
@@ -911,35 +953,43 @@
 
                 if (att) {
                     bodyEl.className = 'text-sm';
-                    const a = document.createElement('a');
-                    a.href = String(att.url || '#');
-                    a.target = '_blank';
-                    a.rel = 'noopener';
-                    a.className = 'block';
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'block text-left';
+                    btn.dataset.chatMediaOpen = '1';
+                    btn.dataset.url = String(att.url || '#');
+                    btn.dataset.type = String(att.media_type || '');
 
                     const card = document.createElement('div');
-                    card.className = 'relative overflow-hidden rounded-xl border border-slate-200 bg-black/5';
+                    card.className = `relative overflow-hidden rounded-xl border shadow-sm w-64 max-w-full h-40 sm:w-72 sm:h-44 ${isMe ? 'border-white/20 bg-white/5' : 'border-slate-200 bg-slate-50'}`;
 
                     const thumb = String(att.thumb_url || '');
                     const nameLabel = String(att.name || (att.media_type === 'video' ? 'Vidéo' : 'Photo'));
+                    btn.dataset.name = nameLabel;
+                    btn.dataset.thumb = thumb;
 
                     if (thumb) {
                         const img = document.createElement('img');
                         img.src = thumb;
                         img.alt = nameLabel;
                         img.loading = 'lazy';
-                        img.className = 'block w-56 max-w-full h-auto';
+                        img.className = 'block w-full h-full object-cover';
                         card.appendChild(img);
                     } else {
                         const ph = document.createElement('div');
-                        ph.className = 'w-56 h-36 flex items-center justify-center text-xs text-slate-500';
+                        ph.className = `w-full h-full flex items-center justify-center text-xs ${isMe ? 'text-white/80' : 'text-slate-500'}`;
                         ph.textContent = nameLabel;
                         card.appendChild(ph);
                     }
 
+                    const expand = document.createElement('div');
+                    expand.className = 'absolute top-2 right-2 pointer-events-none';
+                    expand.innerHTML = '<div class="w-9 h-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white"><i class="ph ph-arrows-out" aria-hidden="true"></i></div>';
+                    card.appendChild(expand);
+
                     if (String(att.media_type) === 'video') {
                         const overlay = document.createElement('div');
-                        overlay.className = 'absolute inset-0 flex items-center justify-center';
+                        overlay.className = 'absolute inset-0 flex items-center justify-center pointer-events-none';
                         const pill = document.createElement('div');
                         pill.className = 'w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white text-xl';
                         pill.textContent = '▶';
@@ -951,9 +1001,9 @@
                     caption.className = 'mt-2 text-xs opacity-80';
                     caption.textContent = nameLabel;
 
-                    a.appendChild(card);
-                    a.appendChild(caption);
-                    bodyEl.appendChild(a);
+                    btn.appendChild(card);
+                    btn.appendChild(caption);
+                    bodyEl.appendChild(btn);
                 } else {
                     const link = parseLinkCardBody(body);
                     if (link) {
@@ -1882,6 +1932,70 @@
             }
 
             refreshNotifBanner().catch(() => {});
+
+            function setMediaOpen(open, opts) {
+                if (!mediaModal || !mediaImg || !mediaVideo || !mediaTitle || !mediaOpenLink) return;
+                mediaModal.classList.toggle('hidden', !open);
+
+                if (!open) {
+                    mediaImg.classList.add('hidden');
+                    mediaVideo.classList.add('hidden');
+                    mediaImg.src = '';
+                    mediaImg.alt = '';
+                    try { mediaVideo.pause(); } catch {}
+                    mediaVideo.removeAttribute('src');
+                    mediaVideo.load();
+                    mediaTitle.textContent = '';
+                    mediaOpenLink.href = '#';
+                    return;
+                }
+
+                const type = String(opts?.type || '');
+                const url = String(opts?.url || '');
+                const name = String(opts?.name || (type === 'video' ? 'Vidéo' : 'Photo'));
+
+                mediaTitle.textContent = name;
+                mediaOpenLink.href = url || '#';
+
+                if (type === 'video') {
+                    mediaImg.classList.add('hidden');
+                    mediaVideo.classList.remove('hidden');
+                    mediaVideo.src = url;
+                    mediaVideo.load();
+                } else {
+                    mediaVideo.classList.add('hidden');
+                    try { mediaVideo.pause(); } catch {}
+                    mediaVideo.removeAttribute('src');
+                    mediaVideo.load();
+                    mediaImg.classList.remove('hidden');
+                    mediaImg.src = url;
+                    mediaImg.alt = name;
+                }
+            }
+
+            if (messagesEl) {
+                messagesEl.addEventListener('click', (e) => {
+                    const el = e.target && e.target.closest ? e.target.closest('[data-chat-media-open]') : null;
+                    if (!el) return;
+                    e.preventDefault();
+                    const url = String(el.dataset.url || '');
+                    const type = String(el.dataset.type || '');
+                    const name = String(el.dataset.name || (type === 'video' ? 'Vidéo' : 'Photo'));
+                    setMediaOpen(true, { url, type, name });
+                });
+            }
+
+            if (mediaBackdrop) {
+                mediaBackdrop.addEventListener('click', () => setMediaOpen(false));
+            }
+            if (mediaClose) {
+                mediaClose.addEventListener('click', () => setMediaOpen(false));
+            }
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (!mediaModal || mediaModal.classList.contains('hidden')) return;
+                setMediaOpen(false);
+            });
 
             function setInfoOpen(open) {
                 if (!infoModal) return;
