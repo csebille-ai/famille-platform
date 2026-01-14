@@ -131,7 +131,13 @@
 
                     <div class="shrink-0 flex items-center">
                         <a href="{{ route('dashboard') }}">
-                            <x-application-logo class="block h-9" />
+                            <span class="hidden sm:inline-flex items-center gap-3">
+                                <img src="{{ asset('images/brand/icon.svg') }}" alt="" class="h-9 w-9" loading="lazy" />
+                                <span class="text-lg font-extrabold tracking-tight bg-gradient-to-r from-orange-500 to-green-600 bg-clip-text text-transparent">La Famille</span>
+                            </span>
+                            <span class="sm:hidden inline-flex items-center">
+                                <x-application-logo class="block h-9" />
+                            </span>
                         </a>
                     </div>
 

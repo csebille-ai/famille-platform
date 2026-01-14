@@ -17,8 +17,10 @@
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-        <link rel="icon" type="image/png" href="{{ asset('images/logo1.png') }}">
-        <link rel="apple-touch-icon" href="{{ asset('images/logo1.png') }}">
+        <link rel="icon" href="{{ asset('favicon.ico') }}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/icon.svg') }}">
+        <link rel="apple-touch-icon" sizes="192x192" href="{{ asset('images/brand/icon-192.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

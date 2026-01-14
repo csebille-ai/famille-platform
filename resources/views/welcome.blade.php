@@ -13,8 +13,10 @@
         <title>{{ config('app.name', 'Laravel') }}</title>
 
         <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-        <link rel="icon" type="image/png" href="{{ asset('images/logo1.png') }}">
-        <link rel="apple-touch-icon" href="{{ asset('images/logo1.png') }}">
+        <link rel="icon" href="{{ asset('favicon.ico') }}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/icon.svg') }}">
+        <link rel="apple-touch-icon" sizes="192x192" href="{{ asset('images/brand/icon-192.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -129,7 +131,7 @@
                     </ul>
                 </div>
                 <div class="bg-[#fff2f2] dark:bg-[#1D0002] relative lg:-ml-px -mb-px lg:mb-0 rounded-t-lg lg:rounded-t-none lg:rounded-r-lg aspect-[335/376] lg:aspect-auto w-full lg:w-[438px] shrink-0 overflow-hidden">
-                    <img src="{{ asset('images/logo1.png') }}" alt="Logo" class="w-16 h-16" />
+                    <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="h-10 w-auto" />
 
                     {{-- Light Mode 12 SVG --}}
                     <svg class="w-[448px] max-w-none relative -mt-[4.9rem] -ml-8 lg:ml-0 lg:-mt-[6.6rem] dark:hidden" viewBox="0 0 440 376" fill="none" xmlns="http://www.w3.org/2000/svg">
