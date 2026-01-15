@@ -389,12 +389,12 @@
 
             <div class="hidden sm:block border-t border-slate-100 bg-white sticky bottom-0 z-40">
                 <div class="px-4 sm:px-6 py-3">
-                    <div id="chatSoloHint" class="hidden mb-2 text-xs text-slate-500"></div>
-                    <form id="chatForm" method="POST" action="{{ route('chat.store') }}" class="flex items-end gap-2">
+                    <div id="chatSoloHintDesktop" class="hidden mb-2 text-xs text-slate-500"></div>
+                    <form id="chatFormDesktop" method="POST" action="{{ route('chat.store') }}" class="flex items-end gap-2">
                         @csrf
                         <button
                             type="button"
-                            id="chatAttachBtn"
+                            id="chatAttachBtnDesktop"
                             class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                             aria-label="Ajouter"
                             title="Ajouter"
@@ -404,7 +404,7 @@
 
                         <div class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2">
                             <textarea
-                                id="body"
+                                id="bodyDesktop"
                                 name="body"
                                 rows="1"
                                 class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm leading-6"
@@ -413,11 +413,11 @@
                             >{{ old('body') }}</textarea>
                         </div>
 
-                        <input type="file" id="chatAttachInput" class="hidden" accept="image/*,video/*" />
+                        <input type="file" id="chatAttachInputDesktop" class="hidden" accept="image/*,video/*" />
 
                         <button
                             type="submit"
-                            id="chatSendBtn"
+                            id="chatSendBtnDesktop"
                             class="w-11 h-11 rounded-full inline-flex items-center justify-center bg-slate-900 text-white font-semibold disabled:opacity-50"
                             aria-label="Envoyer"
                             title="Envoyer"
@@ -505,23 +505,85 @@
 
     <script>
         (function () {
+            const start = () => {
+            function firstExisting(...els) {
+                for (const el of els) {
+                    if (el) return el;
+                }
+                return null;
+            }
+
             const scrollEl = document.getElementById('chatScroll');
             const messagesEl = document.getElementById('chatMessages');
             const emptyEl = document.getElementById('chatEmptyState');
             const onlineCountEl = document.getElementById('chatOnlineCount');
             const presenceLabelEl = document.getElementById('chatPresenceLabel');
-            const formEl = document.getElementById('chatForm');
-            const textareaEl = document.getElementById('body');
-            const attachBtn = document.getElementById('chatAttachBtn');
-            const attachInput = document.getElementById('chatAttachInput');
+            const composer = {
+                mobile: {
+                    key: 'mobile',
+                    form: document.getElementById('chatForm'),
+                    textarea: document.getElementById('body'),
+                    attachBtn: document.getElementById('chatAttachBtn'),
+                    attachInput: document.getElementById('chatAttachInput'),
+                    sendBtn: document.getElementById('chatSendBtn'),
+                    soloHint: document.getElementById('chatSoloHint'),
+                },
+                desktop: {
+                    key: 'desktop',
+                    form: document.getElementById('chatFormDesktop'),
+                    textarea: document.getElementById('bodyDesktop'),
+                    attachBtn: document.getElementById('chatAttachBtnDesktop'),
+                    attachInput: document.getElementById('chatAttachInputDesktop'),
+                    sendBtn: document.getElementById('chatSendBtnDesktop'),
+                    soloHint: document.getElementById('chatSoloHintDesktop'),
+                },
+            };
+
+            let activeComposerKey = 'mobile';
+            try {
+                activeComposerKey = window.matchMedia && window.matchMedia('(min-width: 640px)').matches ? 'desktop' : 'mobile';
+            } catch {}
+
+            function setActiveComposerKey(key) {
+                if (key === 'mobile' || key === 'desktop') {
+                    activeComposerKey = key;
+                }
+            }
+
+            function getActiveComposer() {
+                return composer[activeComposerKey] || composer.mobile;
+            }
+
+            function getAnyForm() {
+                return composer.mobile.form || composer.desktop.form || null;
+            }
+
+            function getCsrfToken() {
+                const f = getAnyForm();
+                return f?.querySelector('input[name="_token"]')?.value || null;
+            }
+
+            function getSocketId() {
+                try {
+                    return (window.Echo && typeof window.Echo.socketId === 'function') ? window.Echo.socketId() : null;
+                } catch {
+                    return null;
+                }
+            }
+
+            function syncComposerKeyFromMatchMedia() {
+                try {
+                    const next = window.matchMedia && window.matchMedia('(min-width: 640px)').matches ? 'desktop' : 'mobile';
+                    setActiveComposerKey(next);
+                } catch {}
+            }
+            window.addEventListener('resize', syncComposerKeyFromMatchMedia);
             const attachSheet = document.getElementById('chatAttachSheet');
             const attachBackdrop = document.getElementById('chatAttachBackdrop');
             const attachCancel = document.getElementById('chatAttachCancel');
             const attachPickMedia = document.getElementById('chatAttachPickMedia');
             const attachPickVoice = document.getElementById('chatAttachPickVoice');
             const scrollToBottomBtn = document.getElementById('chatScrollToBottom');
-            const soloHintEl = document.getElementById('chatSoloHint');
-            const sendBtn = document.getElementById('chatSendBtn');
             const backBtn = document.getElementById('chatBackBtn');
             const searchBtn = document.getElementById('chatSearchBtn');
             const searchBar = document.getElementById('chatSearchBar');
@@ -652,8 +714,9 @@
             }
 
             async function postVisioLinkToChat(url) {
-                if (!formEl) return;
-                const token = formEl.querySelector('input[name="_token"]')?.value;
+                const form = getAnyForm();
+                if (!form) return;
+                const token = getCsrfToken();
                 if (!token) return;
 
                 const message = `📹 Visio: ${url}`;
@@ -662,7 +725,7 @@
                 body.set('body', message);
 
                 try {
-                    await fetch(formEl.action, {
+                    await fetch(form.action, {
                         method: 'POST',
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
@@ -758,15 +821,13 @@
                     presenceLabelEl.textContent = c <= 1 ? 'en ligne' : 'en ligne';
                 }
 
-                if (soloHintEl) {
-                    if (c <= 1) {
-                        soloHintEl.textContent = 'Personne en ligne — votre message sera notifié.';
-                        soloHintEl.classList.remove('hidden');
-                    } else {
-                        soloHintEl.textContent = '';
-                        soloHintEl.classList.add('hidden');
-                    }
-                }
+                const hint = c <= 1 ? 'Personne en ligne — votre message sera notifié.' : '';
+                const show = c <= 1;
+                [composer.mobile.soloHint, composer.desktop.soloHint].forEach((el) => {
+                    if (!el) return;
+                    el.textContent = hint;
+                    el.classList.toggle('hidden', !show);
+                });
             }
 
             function renderOnline(users) {
@@ -1147,8 +1208,8 @@
             }
 
             async function refreshQuota() {
-                if (!quotaEl || !formEl) return;
-                const token = formEl.querySelector('input[name="_token"]')?.value;
+                if (!quotaEl) return;
+                const token = getCsrfToken();
                 if (!token) return;
 
                 const res = await fetch(quotaUrl, {
@@ -1166,7 +1227,7 @@
             }
 
             async function postJson(url, payload) {
-                const token = formEl?.querySelector('input[name="_token"]')?.value;
+                const token = getCsrfToken();
                 if (!token) throw new Error('missing_csrf');
                 const res = await fetch(url, {
                     method: 'POST',
@@ -1249,9 +1310,8 @@
 
             function uploadAttachment(file) {
                 if (!file) return;
-                if (!formEl) return;
 
-                const token = formEl.querySelector('input[name="_token"]')?.value;
+                const token = getCsrfToken();
                 if (!token) {
                     alert('Session expirée. Recharge la page.');
                     return;
@@ -1486,13 +1546,37 @@
                 });
             }
 
-            if (attachBtn && attachPickMedia && attachInput) {
-                attachBtn.addEventListener('click', () => setAttachSheetOpen(true));
-                attachPickMedia.addEventListener('click', () => attachInput.click());
-                attachInput.addEventListener('change', () => {
-                    const f = attachInput.files && attachInput.files[0];
-                    attachInput.value = '';
-                    if (f) uploadAttachment(f);
+            function bindAttachFor(key) {
+                const c = composer[key];
+                if (!c) return;
+
+                if (c.attachBtn) {
+                    c.attachBtn.addEventListener('click', () => {
+                        setActiveComposerKey(key);
+                        setAttachSheetOpen(true);
+                    });
+                }
+
+                if (c.textarea) {
+                    c.textarea.addEventListener('focus', () => setActiveComposerKey(key));
+                }
+
+                if (c.attachInput) {
+                    c.attachInput.addEventListener('change', () => {
+                        const f = c.attachInput.files && c.attachInput.files[0];
+                        c.attachInput.value = '';
+                        if (f) uploadAttachment(f);
+                    });
+                }
+            }
+
+            bindAttachFor('mobile');
+            bindAttachFor('desktop');
+
+            if (attachPickMedia) {
+                attachPickMedia.addEventListener('click', () => {
+                    const c = getActiveComposer();
+                    c?.attachInput?.click();
                 });
             }
 
@@ -1601,140 +1685,63 @@
                 }, 100);
             }
 
-            if (formEl && textareaEl) {
-                let isSending = false;
+            let isSending = false;
 
-                function syncSendButton() {
-                    if (!sendBtn) return;
-                    const body = String(textareaEl.value || '').trim();
-                    sendBtn.disabled = body.length === 0 || isSending;
-                }
+            function autoGrowTextarea(ta) {
+                if (!ta) return;
+                ta.style.height = 'auto';
+                const styles = window.getComputedStyle(ta);
+                const lineHeight = parseFloat(styles.lineHeight || '20') || 20;
+                const max = Math.round(lineHeight * 4);
+                ta.style.height = Math.min(ta.scrollHeight, max) + 'px';
+            }
 
-                function autoGrow() {
-                    textareaEl.style.height = 'auto';
-                    const styles = window.getComputedStyle(textareaEl);
-                    const lineHeight = parseFloat(styles.lineHeight || '20') || 20;
-                    const max = Math.round(lineHeight * 4);
-                    textareaEl.style.height = Math.min(textareaEl.scrollHeight, max) + 'px';
-                }
+            function syncSendButtonFor(c) {
+                if (!c?.sendBtn || !c?.textarea) return;
+                const body = String(c.textarea.value || '').trim();
+                c.sendBtn.disabled = body.length === 0 || isSending;
+            }
 
-                autoGrow();
-                textareaEl.addEventListener('input', () => {
-                    autoGrow();
-                    syncSendButton();
+            function bindComposerHandlers(c) {
+                if (!c?.form || !c?.textarea) return;
+
+                autoGrowTextarea(c.textarea);
+                syncSendButtonFor(c);
+
+                c.textarea.addEventListener('input', () => {
+                    setActiveComposerKey(c.key);
+                    autoGrowTextarea(c.textarea);
+                    syncSendButtonFor(c);
                 });
 
-                syncSendButton();
-
-                textareaEl.addEventListener('keydown', (ev) => {
+                c.textarea.addEventListener('keydown', (ev) => {
                     if (ev.key === 'Enter' && !ev.shiftKey) {
                         ev.preventDefault();
-                        formEl.requestSubmit?.();
+                        setActiveComposerKey(c.key);
+                        c.form.requestSubmit?.();
                     }
                 });
 
-                // Voice dictation (Web Speech API)
-                if (attachPickVoice) {
-                    syncVoiceAvailability();
-                    if (SpeechRecognitionCtor) {
-                        recognition = new SpeechRecognitionCtor();
-                        recognition.lang = 'fr-FR';
-                        recognition.interimResults = true;
-                        recognition.continuous = true;
-                        recognition.maxAlternatives = 1;
-
-                        recognition.onresult = (event) => {
-                            if (!textareaEl) return;
-                            let finalText = '';
-                            let interimText = '';
-
-                            for (let i = event.resultIndex; i < event.results.length; i++) {
-                                const res = event.results[i];
-                                const chunk = String(res?.[0]?.transcript ?? '').trim();
-                                if (!chunk) continue;
-                                if (res.isFinal) {
-                                    finalText += (finalText ? ' ' : '') + chunk;
-                                } else {
-                                    interimText += (interimText ? ' ' : '') + chunk;
-                                }
-                            }
-
-                            if (finalText) {
-                                dictationBase = (dictationBase || '').trim();
-                                dictationBase = dictationBase
-                                    ? (dictationBase + ' ' + finalText).trim()
-                                    : finalText;
-                            }
-
-                            dictationInterim = interimText;
-                            const composed = [dictationBase, dictationInterim].filter(Boolean).join(' ').trim();
-                            textareaEl.value = composed;
-                            textareaEl.selectionStart = textareaEl.selectionEnd = textareaEl.value.length;
-                            autoGrow();
-                            syncSendButton();
-                        };
-
-                        recognition.onerror = (event) => {
-                            const code = event?.error ? String(event.error) : 'unknown';
-                            setDictationUi(false);
-                        };
-
-                        recognition.onend = () => {
-                            // If it stopped by itself (silence/permission), reflect it in UI.
-                            if (dictationActive) {
-                                setDictationUi(false);
-                                dictationInterim = '';
-                            }
-                        };
-                    }
-
-                    attachPickVoice.addEventListener('click', () => {
-                        if (!SpeechRecognitionCtor || !recognition) return;
-
-                        setAttachSheetOpen(false);
-                        textareaEl?.focus();
-
-                        if (dictationActive) {
-                            try {
-                                recognition.stop();
-                            } catch {
-                                // ignore
-                            }
-                            setDictationUi(false);
-                            dictationInterim = '';
-                            return;
-                        }
-
-                        dictationBase = String(textareaEl.value || '').trim();
-                        dictationInterim = '';
-                        setDictationUi(true);
-                        try {
-                            recognition.start();
-                        } catch (e) {
-                            setDictationUi(false);
-                        }
-                    });
-                }
-
-                formEl.addEventListener('submit', async (ev) => {
+                c.form.addEventListener('submit', async (ev) => {
                     ev.preventDefault();
 
+                    setActiveComposerKey(c.key);
                     if (isSending) return;
 
-                    const body = textareaEl.value.trim();
+                    const body = c.textarea.value.trim();
                     if (!body) return;
 
                     isSending = true;
-                    syncSendButton();
+                    syncSendButtonFor(c);
 
                     const tempId = `temp-${Date.now()}`;
                     appendLocalMessage(tempId, body);
 
-                    const token = formEl.querySelector('input[name="_token"]')?.value;
-                    const socketId = typeof window.Echo.socketId === 'function' ? window.Echo.socketId() : null;
+                    const token = c.form.querySelector('input[name="_token"]')?.value || getCsrfToken();
+                    const socketId = getSocketId();
 
                     try {
-                        const res = await fetch(formEl.action, {
+                        const res = await fetch(c.form.action, {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
@@ -1762,15 +1769,98 @@
                             if (json?.id) lastMessageId = Math.max(lastMessageId, Number(json.id));
                         }
 
-                        textareaEl.value = '';
-                        autoGrow();
-                        syncSendButton();
-                        textareaEl.focus();
+                        c.textarea.value = '';
+                        autoGrowTextarea(c.textarea);
+                        syncSendButtonFor(c);
+                        c.textarea.focus();
                     } catch (e) {
                         markLocalFailed(tempId, e?.message || 'Envoi impossible.');
                     } finally {
                         isSending = false;
-                        syncSendButton();
+                        syncSendButtonFor(c);
+                    }
+                });
+            }
+
+            bindComposerHandlers(composer.mobile);
+            bindComposerHandlers(composer.desktop);
+
+            // Voice dictation (Web Speech API)
+            if (attachPickVoice) {
+                syncVoiceAvailability();
+                if (SpeechRecognitionCtor) {
+                    recognition = new SpeechRecognitionCtor();
+                    recognition.lang = 'fr-FR';
+                    recognition.interimResults = true;
+                    recognition.continuous = true;
+                    recognition.maxAlternatives = 1;
+
+                    recognition.onresult = (event) => {
+                        const ta = getActiveComposer()?.textarea;
+                        if (!ta) return;
+
+                        let finalText = '';
+                        let interimText = '';
+
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const res = event.results[i];
+                            const chunk = String(res?.[0]?.transcript ?? '').trim();
+                            if (!chunk) continue;
+                            if (res.isFinal) {
+                                finalText += (finalText ? ' ' : '') + chunk;
+                            } else {
+                                interimText += (interimText ? ' ' : '') + chunk;
+                            }
+                        }
+
+                        if (finalText) {
+                            dictationBase = (dictationBase || '').trim();
+                            dictationBase = dictationBase
+                                ? (dictationBase + ' ' + finalText).trim()
+                                : finalText;
+                        }
+
+                        dictationInterim = interimText;
+                        const composed = [dictationBase, dictationInterim].filter(Boolean).join(' ').trim();
+                        ta.value = composed;
+                        ta.selectionStart = ta.selectionEnd = ta.value.length;
+                        autoGrowTextarea(ta);
+                        syncSendButtonFor(getActiveComposer());
+                    };
+
+                    recognition.onerror = () => {
+                        setDictationUi(false);
+                    };
+
+                    recognition.onend = () => {
+                        if (dictationActive) {
+                            setDictationUi(false);
+                            dictationInterim = '';
+                        }
+                    };
+                }
+
+                attachPickVoice.addEventListener('click', () => {
+                    if (!SpeechRecognitionCtor || !recognition) return;
+
+                    const c = getActiveComposer();
+                    setAttachSheetOpen(false);
+                    c?.textarea?.focus();
+
+                    if (dictationActive) {
+                        try { recognition.stop(); } catch {}
+                        setDictationUi(false);
+                        dictationInterim = '';
+                        return;
+                    }
+
+                    dictationBase = String(c?.textarea?.value || '').trim();
+                    dictationInterim = '';
+                    setDictationUi(true);
+                    try {
+                        recognition.start();
+                    } catch {
+                        setDictationUi(false);
                     }
                 });
             }
@@ -2010,6 +2100,14 @@
             }
             if (infoClose) {
                 infoClose.addEventListener('click', () => setInfoOpen(false));
+            }
+
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', start, { once: true });
+            } else {
+                start();
             }
         })();
     </script>
