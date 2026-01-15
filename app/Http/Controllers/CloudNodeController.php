@@ -11,9 +11,100 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\Process\Process;
 
 class CloudNodeController extends Controller
 {
+    private function titleFromFilename(string $name): string
+    {
+        $base = pathinfo($name, PATHINFO_FILENAME);
+        $base = str_replace(['_', '-'], ' ', $base);
+        $base = preg_replace('/\s+/', ' ', $base) ?? $base;
+        $base = trim($base);
+
+        return $base !== '' ? $base : 'Vidéo';
+    }
+
+    private function normalizeVideoKind(?string $kind): ?string
+    {
+        if ($kind === null) {
+            return null;
+        }
+
+        $kind = strtolower(trim($kind));
+        if (!in_array($kind, ['film', 'serie'], true)) {
+            return null;
+        }
+
+        return $kind;
+    }
+
+    private function generatePosterForVideo(Video $video): void
+    {
+        $diskName = (string) ($video->storage_disk ?? 'local');
+        if (!in_array($diskName, ['local', 'public'], true)) {
+            return;
+        }
+
+        if ($video->poster_path) {
+            return;
+        }
+
+        if (!$video->video_path) {
+            return;
+        }
+
+        $disk = Storage::disk($diskName);
+        if (!$disk->exists($video->video_path)) {
+            return;
+        }
+
+        $videoAbsolutePath = $disk->path($video->video_path);
+
+        $posterRelativePath = 'videos/posters/' . $video->id . '.jpg';
+        $posterAbsolutePath = $disk->path($posterRelativePath);
+
+        $posterDir = dirname($posterAbsolutePath);
+        if (!is_dir($posterDir)) {
+            @mkdir($posterDir, 0775, true);
+        }
+
+        $process = new Process([
+            'ffmpeg',
+            '-y',
+            '-hide_banner',
+            '-loglevel', 'error',
+            '-ss', '00:00:01.000',
+            '-i', $videoAbsolutePath,
+            '-vframes', '1',
+            '-q:v', '2',
+            $posterAbsolutePath,
+        ]);
+
+        $process->setTimeout(60);
+
+        try {
+            $process->run();
+        } catch (\Throwable $e) {
+            logger()->warning('videos.poster.failed', [
+                'video_id' => $video->id,
+                'error' => $e->getMessage(),
+            ]);
+            return;
+        }
+
+        if (!$process->isSuccessful() || !is_file($posterAbsolutePath)) {
+            logger()->warning('videos.poster.failed', [
+                'video_id' => $video->id,
+                'exit_code' => $process->getExitCode(),
+                'stderr' => $process->getErrorOutput(),
+            ]);
+            return;
+        }
+
+        $video->forceFill(['poster_path' => $posterRelativePath])->save();
+    }
+
     private function safeReturnPath(?string $path): ?string
     {
         if ($path === null) {
@@ -489,10 +580,29 @@ class CloudNodeController extends Controller
         if ($request->expectsJson()) {
             $mime = (string) ($node->mime ?? '');
             $returnPath = $this->safeReturnPath($request->input('return') ?: $request->query('return'));
+            $videoKind = $this->normalizeVideoKind($request->input('video_kind') ?: $request->query('video_kind'));
 
             $redirectUrl = null;
             if (str_starts_with($mime, 'video/')) {
-                $redirectUrl = route('videos.classify', ['node' => $node->id]);
+                if ($videoKind !== null) {
+                    $existing = Video::query()->where('cloud_node_id', $node->id)->first();
+                    if (!$existing) {
+                        $category = $videoKind === 'serie' ? 'series' : 'films';
+                        $video = Video::create([
+                            'cloud_node_id' => $node->id,
+                            'title' => $this->titleFromFilename((string) $node->name),
+                            'category' => $category,
+                            'video_path' => (string) $node->stored_path,
+                            'storage_disk' => 'local',
+                            'created_by' => Auth::id(),
+                        ]);
+                        $this->generatePosterForVideo($video);
+                    }
+
+                    $redirectUrl = $returnPath ?: route('videos.index', ['tab' => $videoKind === 'serie' ? 'series' : 'films']);
+                } else {
+                    $redirectUrl = route('videos.classify', ['node' => $node->id]);
+                }
             } elseif ($returnPath !== null) {
                 $redirectUrl = $returnPath;
             } else {
@@ -508,6 +618,29 @@ class CloudNodeController extends Controller
 
         $mime = (string) ($node->mime ?? '');
         if (str_starts_with($mime, 'video/')) {
+            $returnPath = $this->safeReturnPath($request->input('return') ?: $request->query('return'));
+            $videoKind = $this->normalizeVideoKind($request->input('video_kind') ?: $request->query('video_kind'));
+
+            if ($videoKind !== null) {
+                $existing = Video::query()->where('cloud_node_id', $node->id)->first();
+                if (!$existing) {
+                    $category = $videoKind === 'serie' ? 'series' : 'films';
+                    $video = Video::create([
+                        'cloud_node_id' => $node->id,
+                        'title' => $this->titleFromFilename((string) $node->name),
+                        'category' => $category,
+                        'video_path' => (string) $node->stored_path,
+                        'storage_disk' => 'local',
+                        'created_by' => Auth::id(),
+                    ]);
+                    $this->generatePosterForVideo($video);
+                }
+
+                return $returnPath !== null
+                    ? redirect($returnPath)->with('status', 'Vidéo ajoutée')
+                    : redirect()->route('videos.index', ['tab' => $videoKind === 'serie' ? 'series' : 'films'])->with('status', 'Vidéo ajoutée');
+            }
+
             return redirect()->route('videos.classify', ['node' => $node->id]);
         }
 
@@ -546,6 +679,7 @@ class CloudNodeController extends Controller
             'mime' => ['nullable', 'string', 'max:255'],
             'parent_id' => ['nullable', 'integer', 'exists:cloud_nodes,id'],
             'return' => ['nullable', 'string', 'max:2048'],
+            'video_kind' => ['nullable', 'string', 'in:film,serie'],
         ]);
 
         $size = (int) $validated['size'];
@@ -634,6 +768,7 @@ class CloudNodeController extends Controller
 
         $uploadId = (string) Str::uuid();
         $returnPath = $this->safeReturnPath($validated['return'] ?? null);
+        $videoKind = $this->normalizeVideoKind($validated['video_kind'] ?? null);
 
         $meta = [
             'upload_id' => $uploadId,
@@ -645,6 +780,7 @@ class CloudNodeController extends Controller
             'chunk_size' => $chunkSize,
             'total_chunks' => $totalChunks,
             'return' => $returnPath,
+            'video_kind' => $videoKind,
             'created_at' => now()->toIso8601String(),
         ];
 
@@ -733,6 +869,7 @@ class CloudNodeController extends Controller
         $name = (string) ($meta['name'] ?? '');
         $hintMime = (string) ($meta['mime'] ?? '');
         $returnPath = $this->safeReturnPath($meta['return'] ?? null);
+        $videoKind = $this->normalizeVideoKind($meta['video_kind'] ?? null);
 
         if ($total <= 0 || $expectedSize <= 0 || $parentId <= 0 || $name === '') {
             throw ValidationException::withMessages([
@@ -858,7 +995,25 @@ class CloudNodeController extends Controller
 
         $redirectUrl = null;
         if (str_starts_with((string) $detectedMime, 'video/')) {
-            $redirectUrl = route('videos.classify', ['node' => $node->id]);
+            if ($videoKind !== null) {
+                $existing = Video::query()->where('cloud_node_id', $node->id)->first();
+                if (!$existing) {
+                    $category = $videoKind === 'serie' ? 'series' : 'films';
+                    $video = Video::create([
+                        'cloud_node_id' => $node->id,
+                        'title' => $this->titleFromFilename((string) $node->name),
+                        'category' => $category,
+                        'video_path' => (string) $node->stored_path,
+                        'storage_disk' => 'local',
+                        'created_by' => Auth::id(),
+                    ]);
+                    $this->generatePosterForVideo($video);
+                }
+
+                $redirectUrl = $returnPath ?: route('videos.index', ['tab' => $videoKind === 'serie' ? 'series' : 'films']);
+            } else {
+                $redirectUrl = route('videos.classify', ['node' => $node->id]);
+            }
         } elseif ($returnPath !== null) {
             $redirectUrl = $returnPath;
         } else {
