@@ -323,11 +323,12 @@
                                             </div>
                                         </div>
 
-                                        <div class="px-4 py-3 border {{ $isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md' }}" data-bubble>
-                                            @php
-                                                $att = $parseAttachment($m->body);
-                                                $link = $att ? null : $parseLinkCard($m->body);
-                                            @endphp
+                                        @php
+                                            $att = $parseAttachment($m->body);
+                                            $link = $att ? null : $parseLinkCard($m->body);
+                                        @endphp
+
+                                        <div class="{{ $att ? 'p-2' : 'px-4 py-3' }} border {{ $isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md' }}" data-bubble>
                                             @if ($att)
                                                 @php
                                                     $attType = (string) ($att['media_type'] ?? '');
@@ -345,9 +346,9 @@
                                                     data-name="{{ $attName }}"
                                                     data-thumb="{{ $attThumb }}"
                                                 >
-                                                    <div class="relative overflow-hidden rounded-xl border shadow-sm w-64 max-w-full h-40 sm:w-72 sm:h-44 {{ $isMe ? 'border-white/20 bg-white/5' : 'border-slate-200 bg-slate-50' }}">
+                                                    <div class="relative overflow-hidden rounded-xl w-60 max-w-full h-32 sm:w-72 sm:h-40 {{ $isMe ? 'bg-white/10 ring-1 ring-white/15' : 'bg-slate-100 ring-1 ring-black/5' }}">
                                                         @if ($attThumb !== '')
-                                                            <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-contain" loading="lazy" />
+                                                            <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-cover" loading="lazy" />
                                                         @else
                                                             <div class="w-full h-full flex items-center justify-center text-xs {{ $isMe ? 'text-white/80' : 'text-slate-500' }}">{{ $attName }}</div>
                                                         @endif
@@ -364,7 +365,6 @@
                                                             </div>
                                                         @endif
                                                     </div>
-                                                    <div class="mt-2 text-xs opacity-80">{{ $attName }}</div>
                                                 </button>
                                             @elseif ($link)
                                                 <div class="rounded-xl border border-slate-200 {{ $isMe ? 'bg-white/10' : 'bg-slate-50' }} p-3">
@@ -1083,7 +1083,8 @@
                 avatarWrap.appendChild(avatar);
 
                 const wrapper = document.createElement('div');
-                wrapper.className = `px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
+                const bubblePad = att ? 'p-2' : 'px-4 py-3';
+                wrapper.className = `${bubblePad} border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
                 wrapper.dataset.bubble = '1';
 
                 const att = parseAttachmentBody(body);
@@ -1099,7 +1100,7 @@
                     btn.dataset.type = String(att.media_type || '');
 
                     const card = document.createElement('div');
-                    card.className = `relative overflow-hidden rounded-xl border shadow-sm w-64 max-w-full h-40 sm:w-72 sm:h-44 ${isMe ? 'border-white/20 bg-white/5' : 'border-slate-200 bg-slate-50'}`;
+                    card.className = `relative overflow-hidden rounded-xl w-60 max-w-full h-32 sm:w-72 sm:h-40 ${isMe ? 'bg-white/10 ring-1 ring-white/15' : 'bg-slate-100 ring-1 ring-black/5'}`;
 
                     const thumb = String(att.thumb_url || '');
                     const nameLabel = String(att.name || (att.media_type === 'video' ? 'Vidéo' : 'Photo'));
@@ -1111,7 +1112,7 @@
                         img.src = thumb;
                         img.alt = nameLabel;
                         img.loading = 'lazy';
-                        img.className = 'block w-full h-full object-contain';
+                        img.className = 'block w-full h-full object-cover';
                         // When the image loads, the bubble height changes; if we're at the bottom,
                         // keep it pinned so the new upload looks "properly placed".
                         img.addEventListener('load', () => {
@@ -1140,12 +1141,7 @@
                         card.appendChild(overlay);
                     }
 
-                    const caption = document.createElement('div');
-                    caption.className = 'mt-2 text-xs opacity-80';
-                    caption.textContent = nameLabel;
-
                     btn.appendChild(card);
-                    btn.appendChild(caption);
                     bodyEl.appendChild(btn);
                 } else {
                     const link = parseLinkCardBody(body);
