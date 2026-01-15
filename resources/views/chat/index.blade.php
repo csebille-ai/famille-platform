@@ -338,7 +338,8 @@
                                                 @endphp
                                                 <button
                                                     type="button"
-                                                    class="block text-left"
+                                                    class="block text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                                                    style="-webkit-tap-highlight-color: transparent;"
                                                     aria-label="Ouvrir {{ $attName }}"
                                                     data-chat-media-open="1"
                                                     data-url="{{ $attUrl }}"
@@ -346,7 +347,7 @@
                                                     data-name="{{ $attName }}"
                                                     data-thumb="{{ $attThumb }}"
                                                 >
-                                                    <div class="relative overflow-hidden rounded-xl {{ $isMe ? 'bg-white/10 ring-1 ring-white/15' : 'bg-slate-100 ring-1 ring-black/5' }}" style="width: min(15rem, 100%); height: 8rem;">
+                                                    <div class="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm" style="width: min(15rem, 100%); height: 8rem;">
                                                         @if ($attThumb !== '')
                                                             <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-cover" loading="lazy" />
                                                         @else
@@ -1121,13 +1122,14 @@
                     bodyEl.className = 'text-sm';
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'block text-left';
+                    btn.className = 'block text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+                    btn.style.webkitTapHighlightColor = 'transparent';
                     btn.dataset.chatMediaOpen = '1';
                     btn.dataset.url = String(att.url || '#');
                     btn.dataset.type = String(att.media_type || '');
 
                     const card = document.createElement('div');
-                    card.className = `relative overflow-hidden rounded-xl ${isMe ? 'bg-white/10 ring-1 ring-white/15' : 'bg-slate-100 ring-1 ring-black/5'}`;
+                    card.className = 'relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm';
                     card.style.width = 'min(15rem, 100%)';
                     card.style.height = '8rem';
 
