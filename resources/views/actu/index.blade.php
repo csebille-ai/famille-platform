@@ -4,16 +4,6 @@
         ['key' => 'sorties', 'label' => 'Sorties'],
         ['key' => 'sport', 'label' => 'Sport'],
     ];
-
-    // Source filter (optional): uses the configured sourceTag stored in DB.
-    $chips = [
-        ['key' => '', 'label' => 'Toutes sources'],
-        ['key' => 'la-rochelle', 'label' => 'La Rochelle'],
-        ['key' => 'ile-de-re', 'label' => 'Île de Ré'],
-        ['key' => 'charente-maritime', 'label' => 'Charente-Maritime'],
-        ['key' => 'habitat', 'label' => 'Habitat'],
-        ['key' => 'sport', 'label' => 'Sport'],
-    ];
 @endphp
 
 <x-app-layout pageBgClass="bg-slate-50">
@@ -23,29 +13,6 @@
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <h1 class="text-xl font-bold text-gray-900">Actu locale</h1>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <button
-                            type="button"
-                            id="actu-filters"
-                            class="inline-flex items-center h-10 px-3 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-gray-900 hover:bg-slate-50"
-                        >
-                            Filtres
-                        </button>
-                    </div>
-                </div>
-
-                <div id="actu-chips" class="hidden mt-3 -mx-6 px-6 pb-1 overflow-x-auto">
-                    <div class="flex items-center gap-2 min-w-max">
-                        @foreach ($chips as $c)
-                            <button
-                                type="button"
-                                class="actu-chip h-9 px-3 rounded-full border text-sm font-semibold"
-                                data-tag="{{ $c['key'] }}"
-                            >
-                                {{ $c['label'] }}
-                            </button>
-                        @endforeach
                     </div>
                 </div>
 
@@ -110,14 +77,10 @@
             const elMoreWrap = document.getElementById('actu-more-wrap');
             const elMoreBtn = document.getElementById('actu-more');
             const elMoreSkeleton = document.getElementById('actu-more-skeleton');
-            const elFilters = document.getElementById('actu-filters');
-            const elChips = document.getElementById('actu-chips');
             const elNew = document.getElementById('actu-new');
             const elNewBtn = document.getElementById('actu-new-btn');
-            const chips = Array.from(document.querySelectorAll('.actu-chip'));
             const bucketButtons = Array.from(document.querySelectorAll('.actu-bucket'));
 
-            let selectedTag = '';
             let selectedBucket = 'infos';
             let nextCursor = null;
             let heroItem = null;
@@ -181,23 +144,10 @@
                 return `${it.published_at || ''}|${it.url || ''}|${it.title || ''}`;
             };
 
-            const chipClasses = (active) => {
-                return active
-                    ? 'border-indigo-200 bg-indigo-50 text-indigo-800'
-                    : 'border-slate-200 bg-white text-gray-900 hover:bg-slate-50';
-            };
-
             const bucketClasses = (active) => {
                 return active
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
                     : 'border-slate-200 bg-white text-gray-900 hover:bg-slate-50';
-            };
-
-            const renderChips = () => {
-                chips.forEach((b) => {
-                    const tag = b.getAttribute('data-tag') || '';
-                    b.className = `actu-chip h-9 px-3 rounded-full border text-sm font-semibold ${chipClasses(tag === selectedTag)}`;
-                });
             };
 
             const renderBuckets = () => {
@@ -341,7 +291,6 @@
                 const u = new URL('/api/news', window.location.origin);
                 u.searchParams.set('limit', String(LIMIT));
                 if (selectedBucket) u.searchParams.set('bucket', selectedBucket);
-                if (selectedTag) u.searchParams.set('tag', selectedTag);
                 if (cursor) u.searchParams.set('cursor', cursor);
                 return u.toString();
             };
@@ -448,14 +397,6 @@
                 }
             };
 
-            const setTag = (tag) => {
-                selectedTag = tag || '';
-                renderChips();
-                setNewBannerVisible(false);
-                pendingFirstPage = null;
-                fetchPage({ reset: true });
-            };
-
             const setBucket = (bucket) => {
                 selectedBucket = (bucket === 'infos' || bucket === 'sorties' || bucket === 'sport') ? bucket : 'infos';
                 saveBucketPref(selectedBucket);
@@ -501,16 +442,11 @@
             // Wiring
             selectedBucket = loadBucketPref();
             renderBuckets();
-            renderChips();
             fetchPage({ reset: true });
             scheduleAutoRefresh();
 
             bucketButtons.forEach((b) => {
                 b.addEventListener('click', () => setBucket(b.getAttribute('data-bucket') || 'infos'));
-            });
-
-            chips.forEach((b) => {
-                b.addEventListener('click', () => setTag(b.getAttribute('data-tag') || ''));
             });
 
             if (elMoreBtn) {
@@ -542,11 +478,6 @@
                 }
             });
 
-            if (elFilters && elChips) {
-                elFilters.addEventListener('click', () => {
-                    elChips.classList.toggle('hidden');
-                });
-            }
         })();
     </script>
 </x-app-layout>
