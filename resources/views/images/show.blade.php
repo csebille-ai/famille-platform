@@ -190,6 +190,31 @@
                     } catch {}
                 }
 
+                // Details menu (must exist before setHeaderVisible(false) runs)
+                const closeDetails = () => {
+                    if (detailsPanel) detailsPanel.classList.add('hidden');
+                };
+
+                const toggleDetails = () => {
+                    if (!detailsPanel) return;
+                    const isOpen = !detailsPanel.classList.contains('hidden');
+                    if (isOpen) detailsPanel.classList.add('hidden');
+                    else detailsPanel.classList.remove('hidden');
+                };
+
+                if (detailsBtn) {
+                    detailsBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleDetails();
+                    });
+                }
+                document.addEventListener('click', (e) => {
+                    if (!detailsPanel || detailsPanel.classList.contains('hidden')) return;
+                    if (detailsPanel.contains(e.target) || (detailsBtn && detailsBtn.contains(e.target))) return;
+                    closeDetails();
+                }, { capture: true });
+
                 const setHeaderVisible = (visible) => {
                     const show = !!visible;
 
@@ -231,29 +256,6 @@
                     });
                 });
 
-                // Details menu
-                const closeDetails = () => {
-                    if (detailsPanel) detailsPanel.classList.add('hidden');
-                };
-                const toggleDetails = () => {
-                    if (!detailsPanel) return;
-                    const isOpen = !detailsPanel.classList.contains('hidden');
-                    if (isOpen) detailsPanel.classList.add('hidden');
-                    else detailsPanel.classList.remove('hidden');
-                };
-                if (detailsBtn) {
-                    detailsBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleDetails();
-                    });
-                }
-                document.addEventListener('click', (e) => {
-                    if (!detailsPanel || detailsPanel.classList.contains('hidden')) return;
-                    if (detailsPanel.contains(e.target) || (detailsBtn && detailsBtn.contains(e.target))) return;
-                    closeDetails();
-                }, { capture: true });
-
                 // --- True zoom (pinch + pan + double tap) ---
                 const zoom = {
                     scale: 1,
@@ -265,18 +267,18 @@
 
                 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
                 const dpr = (() => {
-                    function closeDetails() {
-                        if (detailsPanel) detailsPanel.classList.add('hidden');
-                    }
-
-                    function toggleDetails() {
-                        if (!detailsPanel) return;
-                        const isOpen = !detailsPanel.classList.contains('hidden');
-                        if (isOpen) detailsPanel.classList.add('hidden');
-                        else detailsPanel.classList.remove('hidden');
-                    }
                     try {
                         const v = Number(window.devicePixelRatio || 1);
+                        return Number.isFinite(v) && v > 0 ? v : 1;
+                    } catch {
+                        return 1;
+                    }
+                })();
+
+                const snapToDevicePx = (v) => {
+                    const n = Number(v || 0);
+                    if (!Number.isFinite(n)) return 0;
+                    return Math.round(n * dpr) / dpr;
                 };
 
                 const getStageRect = () => {
