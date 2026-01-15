@@ -392,7 +392,7 @@
             const buildUrl = (cursor = null) => {
                 const u = new URL('/api/news', window.location.origin);
                 u.searchParams.set('limit', String(LIMIT));
-                if (selectedBucket) u.searchParams.set('bucket', selectedBucket);
+                if (selectedBucket && selectedBucket !== 'all') u.searchParams.set('bucket', selectedBucket);
                 if (cursor) u.searchParams.set('cursor', cursor);
                 return u.toString();
             };

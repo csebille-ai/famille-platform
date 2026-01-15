@@ -24,6 +24,10 @@ class NewsIndexController extends Controller
         $bucket = trim((string) $request->query('bucket', ''));
         $cursor = trim((string) $request->query('cursor', ''));
 
+        if ($bucket === 'all') {
+            $bucket = '';
+        }
+
         $bucketIsFiltered = in_array($bucket, ['infos', 'sorties', 'sport'], true);
 
         $query = NewsItem::query();
