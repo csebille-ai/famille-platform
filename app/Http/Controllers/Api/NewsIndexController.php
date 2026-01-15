@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NewsItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class NewsIndexController extends Controller
@@ -42,15 +43,26 @@ class NewsIndexController extends Controller
             $decoded = self::decodeCursor($cursor);
             if ($decoded) {
                 [$ts, $id] = $decoded;
-                $field = $bucketIsFiltered ? 'published_at' : 'fetched_at';
 
-                $query->where(function ($q) use ($field, $ts, $id) {
-                    $q->where($field, '<', $ts)
-                        ->orWhere(function ($q2) use ($field, $ts, $id) {
-                            $q2->where($field, '=', $ts)
-                                ->where('id', '<', $id);
-                        });
-                });
+                if ($bucketIsFiltered) {
+                    $query->where(function ($q) use ($ts, $id) {
+                        $q->where('published_at', '<', $ts)
+                            ->orWhere(function ($q2) use ($ts, $id) {
+                                $q2->where('published_at', '=', $ts)
+                                    ->where('id', '<', $id);
+                            });
+                    });
+                } else {
+                    // "Tout": sort by content recency (published_at when available, else fetched_at).
+                    $expr = 'COALESCE(published_at, fetched_at)';
+                    $query->where(function ($q) use ($expr, $ts, $id) {
+                        $q->whereRaw("$expr < ?", [$ts])
+                            ->orWhere(function ($q2) use ($expr, $ts, $id) {
+                                $q2->whereRaw("$expr = ?", [$ts])
+                                    ->where('id', '<', $id);
+                            });
+                    });
+                }
             }
         }
 
@@ -58,7 +70,7 @@ class NewsIndexController extends Controller
             ->when($bucketIsFiltered, function ($q) {
                 $q->orderByDesc('published_at');
             }, function ($q) {
-                $q->orderByDesc('fetched_at');
+                $q->orderByRaw('COALESCE(published_at, fetched_at) DESC');
             })
             ->orderByDesc('id')
             ->limit($limit)
@@ -79,7 +91,9 @@ class NewsIndexController extends Controller
         $nextCursor = null;
         $last = $items->last();
         if ($last) {
-            $ts = $bucketIsFiltered ? $last->published_at : $last->fetched_at;
+            $ts = $bucketIsFiltered
+                ? $last->published_at
+                : ($last->published_at ?? $last->fetched_at);
             if ($ts) {
                 $nextCursor = self::encodeCursor($ts, (int) $last->id);
             }
