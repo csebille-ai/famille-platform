@@ -42,7 +42,7 @@
             'href' => route('tarot.index'),
             'active' => request()->routeIs('tarot.*') || request()->is('tarot') || request()->is('tarot/*'),
             'label' => 'Tarot',
-            'icon' => 'cards',
+            'icon' => null,
             'badge' => $hasTarotDraft,
         ],
         [
@@ -71,7 +71,11 @@
                     aria-current="{{ $item['active'] ? 'page' : 'false' }}"
                 >
                     <span class="relative inline-flex h-6 w-6 items-center justify-center">
-                        <i class="ph ph-{{ $item['icon'] }} text-[20px]" aria-hidden="true"></i>
+                        @if(($item['key'] ?? '') === 'tarot')
+                            <img src="{{ asset('images/tarot.png') }}" alt="" class="h-6 w-6 object-contain" aria-hidden="true" loading="lazy" />
+                        @else
+                            <i class="ph ph-{{ $item['icon'] }} text-[20px]" aria-hidden="true"></i>
+                        @endif
 
                         @if(!empty($item['badge']))
                             <span class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white" aria-hidden="true"></span>
