@@ -328,7 +328,7 @@
                                             $link = $att ? null : $parseLinkCard($m->body);
                                         @endphp
 
-                                        <div class="{{ $att ? 'p-2' : 'px-4 py-3' }} border {{ $isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md' }}" data-bubble>
+                                        <div class="{{ $att ? 'p-0 border-0 bg-transparent' : 'px-4 py-3 border' }} {{ $att ? '' : ($isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md') }}" data-bubble>
                                             @if ($att)
                                                 @php
                                                     $attType = (string) ($att['media_type'] ?? '');
@@ -1109,8 +1109,11 @@
                 const att = parseAttachmentBody(body);
 
                 const wrapper = document.createElement('div');
-                const bubblePad = att ? 'p-2' : 'px-4 py-3';
-                wrapper.className = `${bubblePad} border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
+                if (att) {
+                    wrapper.className = 'p-0 border-0 bg-transparent';
+                } else {
+                    wrapper.className = `px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
+                }
                 wrapper.dataset.bubble = '1';
                 const bodyEl = document.createElement('div');
 
