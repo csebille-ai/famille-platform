@@ -45,13 +45,16 @@
             /* Viewer UI is an overlay: it must never reflow the image. */
             #image-viewer.viewer-ui-hidden [data-viewer-ui] {
                 opacity: 0;
+                visibility: hidden;
                 pointer-events: none;
+                transition: opacity 180ms ease, visibility 0s linear 180ms;
             }
 
             #image-viewer [data-viewer-ui] {
                 opacity: 1;
+                visibility: visible;
                 pointer-events: auto;
-                transition: opacity 180ms ease;
+                transition: opacity 180ms ease, visibility 0s linear 0s;
             }
         </style>
 
@@ -246,10 +249,14 @@
                         zoom.scale = 1;
                         zoom.tx = 0;
                         zoom.ty = 0;
+                        img.style.transform = 'none';
+                        try { img.style.willChange = ''; } catch {}
+                        return;
                     } else {
                         clampPan();
                     }
                     img.style.transform = `scale(${zoom.scale}) translate(${zoom.tx}px, ${zoom.ty}px)`;
+                    try { img.style.willChange = 'transform'; } catch {}
                 };
 
                 const setScaleAroundPoint = (newScale, focal) => {
