@@ -45,16 +45,13 @@
             /* Viewer UI is an overlay: it must never reflow the image. */
             #image-viewer.viewer-ui-hidden [data-viewer-ui] {
                 opacity: 0;
-                visibility: hidden;
                 pointer-events: none;
-                transition: opacity 180ms ease, visibility 0s linear 180ms;
             }
 
             #image-viewer [data-viewer-ui] {
                 opacity: 1;
-                visibility: visible;
                 pointer-events: auto;
-                transition: opacity 180ms ease, visibility 0s linear 0s;
+                transition: opacity 180ms ease;
 
                 /* Keep the UI overlay on its own composited layer (reduces the chance the image gets promoted and shows tiling seams). */
                 transform: translateZ(0);
@@ -172,7 +169,31 @@
 
                 const setHeaderVisible = (visible) => {
                     const show = !!visible;
-                    root.classList.toggle('viewer-ui-hidden', !show);
+
+                    // Avoid compositor "blink" by controlling visibility outside the opacity transition.
+                    if (!header) {
+                        root.classList.toggle('viewer-ui-hidden', !show);
+                        return;
+                    }
+
+                    if (show) {
+                        try { header.style.visibility = 'visible'; } catch {}
+                        // If we're currently hidden, wait a frame so the browser has a chance to apply visibility
+                        // before starting the opacity transition.
+                        requestAnimationFrame(() => {
+                            root.classList.remove('viewer-ui-hidden');
+                        });
+                        return;
+                    }
+
+                    // Hide: fade out, then set visibility hidden after the transition.
+                    root.classList.add('viewer-ui-hidden');
+                    closeDetails();
+                    window.setTimeout(() => {
+                        // Only hide if we are still hidden.
+                        if (!root.classList.contains('viewer-ui-hidden')) return;
+                        try { header.style.visibility = 'hidden'; } catch {}
+                    }, 200);
                 };
 
                 // On load: show 1s then hide.
