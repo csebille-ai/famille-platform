@@ -51,6 +51,7 @@ class ChatAttachmentController extends Controller
         $mediaId = null;
         $openUrl = null;
         $thumbUrl = null;
+        $mediaUrl = null;
 
         if (str_starts_with($mime, 'image/')) {
             $dir = 'images/' . now()->format('Y') . '/' . now()->format('m');
@@ -72,6 +73,7 @@ class ChatAttachmentController extends Controller
             $mediaId = (int) $node->id;
             $openUrl = route('media.photos.show', $node);
             $thumbUrl = route('images.view', $node);
+            $mediaUrl = $thumbUrl;
         } else {
             // Treat as video if extension is supported; mime sniffing can be unreliable.
             $ext = strtolower((string) ($file->getClientOriginalExtension() ?? ''));
@@ -101,12 +103,14 @@ class ChatAttachmentController extends Controller
             $mediaId = (int) $video->id;
             $openUrl = route('videos.show', $video);
             $thumbUrl = route('videos.poster', $video);
+            $mediaUrl = route('videos.stream', $video);
         }
 
         $attachment = [
             'media_type' => $mediaType,
             'media_id' => $mediaId,
-            'url' => $openUrl,
+            'url' => $mediaUrl ?? $openUrl,
+            'open_url' => $openUrl,
             'thumb_url' => $thumbUrl,
             'name' => $originalName,
             'mime' => $mime,
@@ -123,7 +127,8 @@ class ChatAttachmentController extends Controller
         return response()->json([
             'media_id' => $mediaId,
             'media_type' => $mediaType,
-            'url' => $openUrl,
+            'url' => $mediaUrl ?? $openUrl,
+            'open_url' => $openUrl,
             'thumb_url' => $thumbUrl,
             'chat_message_id' => (int) $message->id,
             'message' => [

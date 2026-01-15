@@ -333,6 +333,7 @@
                                                 @php
                                                     $attType = (string) ($att['media_type'] ?? '');
                                                     $attUrl = (string) ($att['url'] ?? '#');
+                                                    $attOpenUrl = (string) ($att['open_url'] ?? $attUrl);
                                                     $attThumb = (string) ($att['thumb_url'] ?? '');
                                                     $attName = (string) ($att['name'] ?? ($attType === 'video' ? 'Vidéo' : 'Photo'));
                                                 @endphp
@@ -343,6 +344,7 @@
                                                     aria-label="Ouvrir {{ $attName }}"
                                                     data-chat-media-open="1"
                                                     data-url="{{ $attUrl }}"
+                                                    data-open-url="{{ $attOpenUrl }}"
                                                     data-type="{{ $attType }}"
                                                     data-name="{{ $attName }}"
                                                     data-thumb="{{ $attThumb }}"
@@ -1126,6 +1128,7 @@
                     btn.style.webkitTapHighlightColor = 'transparent';
                     btn.dataset.chatMediaOpen = '1';
                     btn.dataset.url = String(att.url || '#');
+                    btn.dataset.openUrl = String(att.open_url || '');
                     btn.dataset.type = String(att.media_type || '');
 
                     const card = document.createElement('div');
@@ -1361,6 +1364,99 @@
                 return json;
             }
 
+            async function postForm(url, formData) {
+                const token = getCsrfToken();
+                if (!token) throw new Error('missing_csrf');
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': token,
+                    },
+                    body: formData,
+                });
+                const txt = await res.text();
+                let json = null;
+                try { json = txt ? JSON.parse(txt) : null; } catch (e) {}
+                if (!res.ok) {
+                    const msg = (json && json.message) ? String(json.message) : `Erreur upload (${res.status})`;
+                    const err = new Error(msg);
+                    err.status = res.status;
+                    err.data = json;
+                    throw err;
+                }
+                return json;
+            }
+
+            function waitMedia(el, eventName, timeoutMs) {
+                return new Promise((resolve, reject) => {
+                    const t = setTimeout(() => {
+                        try { el.removeEventListener(eventName, on); } catch {}
+                        reject(new Error('timeout:' + eventName));
+                    }, timeoutMs);
+                    const on = () => {
+                        clearTimeout(t);
+                        resolve();
+                    };
+                    el.addEventListener(eventName, on, { once: true });
+                });
+            }
+
+            async function buildVideoPosterBlob(file) {
+                try {
+                    if (!file) return null;
+                    if (!('URL' in window) || !('createObjectURL' in URL)) return null;
+
+                    const url = URL.createObjectURL(file);
+                    try {
+                        const video = document.createElement('video');
+                        video.preload = 'metadata';
+                        video.muted = true;
+                        video.playsInline = true;
+                        video.src = url;
+
+                        await waitMedia(video, 'loadedmetadata', 8000);
+
+                        const duration = Number(video.duration || 0);
+                        const target = (Number.isFinite(duration) && duration > 2) ? 1 : 0;
+                        try { video.currentTime = target; } catch (e) { /* ignore */ }
+                        try {
+                            await waitMedia(video, 'seeked', 8000);
+                        } catch {
+                            // Some browsers/devices don't fire seeked reliably for blobs.
+                            try { await waitMedia(video, 'loadeddata', 8000); } catch {}
+                        }
+
+                        const w = video.videoWidth || 0;
+                        const h = video.videoHeight || 0;
+                        if (!w || !h) return null;
+
+                        const maxW = 640;
+                        const scale = Math.min(1, maxW / w);
+                        const cw = Math.max(1, Math.round(w * scale));
+                        const ch = Math.max(1, Math.round(h * scale));
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = cw;
+                        canvas.height = ch;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) return null;
+                        ctx.drawImage(video, 0, 0, cw, ch);
+
+                        const blob = await new Promise((resolve) => {
+                            canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.75);
+                        });
+
+                        return blob || null;
+                    } finally {
+                        try { URL.revokeObjectURL(url); } catch (e) {}
+                    }
+                } catch {
+                    return null;
+                }
+            }
+
             function putWithProgress(url, blobOrFile, contentType, onProgress) {
                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
@@ -1441,6 +1537,7 @@
                 (async () => {
                     try {
                         let finalized = null;
+                        const posterPromise = (kind === 'video') ? buildVideoPosterBlob(file) : Promise.resolve(null);
 
                         if (size > MULTIPART_THRESHOLD_BYTES) {
                             const init = await postJson(mpInitUrl, {
@@ -1536,16 +1633,34 @@
                                 context: 'chat',
                             });
 
-                            finalized = await postJson(finalizeUrl, {
-                                key,
-                                public_url: complete?.public_url || init?.public_url || null,
-                                mime,
-                                size,
-                                kind,
-                                context: 'chat',
-                                filename: file.name || null,
-                                chat_thread_id: 'default',
-                            });
+                            const finPublicUrl = complete?.public_url || init?.public_url || null;
+                            if (kind === 'video') {
+                                const fd = new FormData();
+                                fd.append('key', key);
+                                if (finPublicUrl) fd.append('public_url', String(finPublicUrl));
+                                fd.append('mime', mime);
+                                fd.append('size', String(size));
+                                fd.append('kind', kind);
+                                fd.append('context', 'chat');
+                                if (file.name) fd.append('filename', String(file.name));
+                                fd.append('chat_thread_id', 'default');
+
+                                const posterBlob = await posterPromise;
+                                if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
+
+                                finalized = await postForm(finalizeUrl, fd);
+                            } else {
+                                finalized = await postJson(finalizeUrl, {
+                                    key,
+                                    public_url: finPublicUrl,
+                                    mime,
+                                    size,
+                                    kind,
+                                    context: 'chat',
+                                    filename: file.name || null,
+                                    chat_thread_id: 'default',
+                                });
+                            }
                         } else {
                             const presign = await postJson(presignUrl, {
                                 filename: file.name || 'file',
@@ -1564,16 +1679,34 @@
                                 updateUploadPlaceholder(tempId, pct);
                             });
 
-                            finalized = await postJson(finalizeUrl, {
-                                key,
-                                public_url: presign?.public_url || null,
-                                mime,
-                                size,
-                                kind,
-                                context: 'chat',
-                                filename: file.name || null,
-                                chat_thread_id: 'default',
-                            });
+                            const finPublicUrl = presign?.public_url || null;
+                            if (kind === 'video') {
+                                const fd = new FormData();
+                                fd.append('key', key);
+                                if (finPublicUrl) fd.append('public_url', String(finPublicUrl));
+                                fd.append('mime', mime);
+                                fd.append('size', String(size));
+                                fd.append('kind', kind);
+                                fd.append('context', 'chat');
+                                if (file.name) fd.append('filename', String(file.name));
+                                fd.append('chat_thread_id', 'default');
+
+                                const posterBlob = await posterPromise;
+                                if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
+
+                                finalized = await postForm(finalizeUrl, fd);
+                            } else {
+                                finalized = await postJson(finalizeUrl, {
+                                    key,
+                                    public_url: finPublicUrl,
+                                    mime,
+                                    size,
+                                    kind,
+                                    context: 'chat',
+                                    filename: file.name || null,
+                                    chat_thread_id: 'default',
+                                });
+                            }
                         }
 
                         removeUploadPlaceholder(tempId);
@@ -1582,12 +1715,14 @@
                         // Show attachment immediately in the chat (without waiting for realtime/polling).
                         const chatMessageId = Number(finalized?.chat_message_id || 0);
                         const openUrl = String(finalized?.open_url || '');
-                        if (chatMessageId && openUrl) {
+                        const mediaUrl = String(finalized?.media_url || finalized?.stream_url || '');
+                        if (chatMessageId && (mediaUrl || openUrl)) {
                             const attachment = {
                                 media_type: kind === 'video' ? 'video' : 'image',
                                 media_id: Number(finalized?.media_id || 0) || null,
                                 name: String((kind === 'video' ? (file.name || 'Vidéo') : (file.name || 'Photo'))),
-                                url: openUrl,
+                                url: mediaUrl || openUrl,
+                                open_url: openUrl || undefined,
                                 thumb_url: String(finalized?.thumb_url || ''),
                                 public_url: String(finalized?.public_url || ''),
                             };
@@ -2192,15 +2327,85 @@
                 }
 
                 const type = String(opts?.type || '');
-                const url = String(opts?.url || '');
+                const rawUrl = String(opts?.url || '');
+                const rawOpenUrl = String(opts?.openUrl || opts?.open_url || '');
+                const thumb = String(opts?.thumb || opts?.thumb_url || '');
                 const name = String(opts?.name || (type === 'video' ? 'Vidéo' : 'Photo'));
 
+                const normalize = (() => {
+                    const stripTrailingSlash = (u) => u.endsWith('/') ? u.slice(0, -1) : u;
+
+                    const toSameOriginPath = (u) => {
+                        try {
+                            const x = new URL(u, window.location.origin);
+                            if (x.origin !== window.location.origin) return null;
+                            return x.pathname + x.search + x.hash;
+                        } catch {
+                            return null;
+                        }
+                    };
+
+                    const rewriteVideoShowToStream = (u) => {
+                        const p = toSameOriginPath(u);
+                        if (!p) return null;
+                        const m = p.match(/^\/videos\/(\d+)$/);
+                        if (!m) return null;
+                        return `/videos/${m[1]}/stream`;
+                    };
+
+                    const rewritePhotoViewerToImage = (u) => {
+                        const p = toSameOriginPath(u);
+                        if (!p) return null;
+                        const m = p.match(/^\/media\/photos\/(\d+)$/);
+                        if (!m) return null;
+                        return `/galerie/${m[1]}`;
+                    };
+
+                    const rewriteStreamToShow = (u) => {
+                        const p = toSameOriginPath(u);
+                        if (!p) return null;
+                        const m = p.match(/^\/videos\/(\d+)\/stream$/);
+                        if (!m) return null;
+                        return `/videos/${m[1]}`;
+                    };
+
+                    return { stripTrailingSlash, rewriteVideoShowToStream, rewritePhotoViewerToImage, rewriteStreamToShow };
+                })();
+
+                let url = rawUrl;
+                let openUrl = rawOpenUrl;
+
+                if (!openUrl && type === 'video') {
+                    const show = normalize.rewriteStreamToShow(rawUrl);
+                    if (show) openUrl = show;
+                }
+
+                if (!openUrl && type !== 'video') {
+                    // For legacy image attachments where url was the viewer page, keep it as openUrl.
+                    const maybeViewer = normalize.rewritePhotoViewerToImage(rawUrl);
+                    if (maybeViewer) openUrl = rawUrl;
+                }
+
+                // Backward-compat: some older payloads used a page URL as the media src.
+                if (type === 'video') {
+                    const stream = normalize.rewriteVideoShowToStream(normalize.stripTrailingSlash(url));
+                    if (stream) url = stream;
+                } else {
+                    const img = normalize.rewritePhotoViewerToImage(normalize.stripTrailingSlash(url));
+                    if (img) url = img;
+                }
+
                 mediaTitle.textContent = name;
-                mediaOpenLink.href = url || '#';
+                mediaOpenLink.href = (openUrl || url) || '#';
 
                 if (type === 'video') {
                     mediaImg.classList.add('hidden');
                     mediaVideo.classList.remove('hidden');
+                    if (thumb) {
+                        mediaVideo.setAttribute('poster', thumb);
+                    } else {
+                        mediaVideo.removeAttribute('poster');
+                    }
                     mediaVideo.src = url;
                     mediaVideo.load();
                 } else {
@@ -2220,9 +2425,11 @@
                     if (!el) return;
                     e.preventDefault();
                     const url = String(el.dataset.url || '');
+                    const openUrl = String(el.dataset.openUrl || '');
                     const type = String(el.dataset.type || '');
                     const name = String(el.dataset.name || (type === 'video' ? 'Vidéo' : 'Photo'));
-                    setMediaOpen(true, { url, type, name });
+                    const thumb = String(el.dataset.thumb || '');
+                    setMediaOpen(true, { url, openUrl, type, name, thumb });
                 });
             }
 

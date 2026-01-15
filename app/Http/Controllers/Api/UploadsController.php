@@ -349,6 +349,8 @@ class UploadsController extends Controller
         $chatMessageId = null;
         $openUrl = null;
         $thumbUrl = null;
+        $mediaUrl = null;
+        $streamUrl = null;
 
         try {
         if ((string) $validated['kind'] === 'photo') {
@@ -392,13 +394,15 @@ class UploadsController extends Controller
             $mediaId = (int) $node->id;
             $openUrl = route('media.photos.show', $node);
             $thumbUrl = route('images.view', $node);
+            $mediaUrl = $thumbUrl;
 
             if ((string) $validated['context'] === 'chat') {
                 $attachment = [
                     'media_type' => 'image',
                     'media_id' => $mediaId,
                     'name' => $name,
-                    'url' => $openUrl,
+                    'url' => $mediaUrl,
+                    'open_url' => $openUrl,
                     'thumb_url' => $thumbUrl,
                     'public_url' => $publicUrl,
                 ];
@@ -461,13 +465,16 @@ class UploadsController extends Controller
             $mediaId = (int) $video->id;
             $openUrl = route('videos.show', $video);
             $thumbUrl = route('videos.poster', $video);
+            $streamUrl = route('videos.stream', $video);
+            $mediaUrl = $streamUrl;
 
             if ((string) $validated['context'] === 'chat') {
                 $attachment = [
                     'media_type' => 'video',
                     'media_id' => $mediaId,
                     'name' => $title,
-                    'url' => $openUrl,
+                    'url' => $mediaUrl,
+                    'open_url' => $openUrl,
                     'thumb_url' => $thumbUrl,
                     'public_url' => $publicUrl,
                 ];
@@ -501,6 +508,8 @@ class UploadsController extends Controller
             'public_url' => $publicUrl !== '' ? $publicUrl : null,
             'open_url' => $openUrl,
             'thumb_url' => $thumbUrl,
+            'media_url' => $mediaUrl,
+            'stream_url' => $streamUrl,
         ]);
     }
 }
