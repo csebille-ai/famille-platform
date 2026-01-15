@@ -4,6 +4,8 @@ import '@phosphor-icons/web/regular';
 
 import Alpine from 'alpinejs';
 
+import './transition-manager';
+
 window.Alpine = Alpine;
 
 Alpine.start();

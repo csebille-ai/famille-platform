@@ -27,11 +27,12 @@
         data-next-url="{{ $nextUrl }}"
         data-back-url="{{ $backUrl }}"
     >
-        <div class="absolute top-4 left-4 right-4 z-10 flex items-center justify-between gap-3">
+        <div data-tm-controls class="absolute top-4 left-4 right-4 z-10 flex items-center justify-between gap-3 transition-opacity duration-200">
             <a
                 href="{{ $backUrl }}"
                 class="inline-flex items-center justify-center min-h-[44px] rounded-xl px-3 text-sm font-semibold bg-slate-900/70 text-white"
                 aria-label="Retour"
+                data-tm-back="1"
             >
                 ← Retour
             </a>
@@ -49,8 +50,9 @@
         @if(!empty($prevNode))
             <a
                 href="{{ $prevUrl }}"
-                class="absolute left-3 top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-slate-900/70 text-white"
+                class="absolute left-3 top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-slate-900/70 text-white transition-opacity duration-200"
                 aria-label="Image précédente"
+                data-tm-controls
             >
                 ←
             </a>
@@ -59,8 +61,9 @@
         @if(!empty($nextNode))
             <a
                 href="{{ $nextUrl }}"
-                class="absolute right-3 top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-slate-900/70 text-white"
+                class="absolute right-3 top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-slate-900/70 text-white transition-opacity duration-200"
                 aria-label="Image suivante"
+                data-tm-controls
             >
                 →
             </a>
@@ -72,6 +75,7 @@
                 alt="{{ $node->name }}"
                 class="max-h-[100svh] max-w-full object-contain select-none"
                 draggable="false"
+                data-shared-id="media:{{ (int) $node->id }}"
             />
         </div>
 

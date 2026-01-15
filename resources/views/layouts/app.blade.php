@@ -26,6 +26,55 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+        <style>
+            #tm-overlay-root {
+                position: fixed;
+                inset: 0;
+                z-index: 9999;
+                pointer-events: none;
+                display: none;
+            }
+
+            html.tm-animating #tm-overlay-root {
+                display: block;
+            }
+
+            html.tm-animating body {
+                visibility: hidden;
+            }
+
+            html.tm-animating.tm-reveal body {
+                visibility: visible;
+            }
+
+            /* During transition, keep viewer controls hidden until settle. */
+            html.tm-animating [data-tm-controls] {
+                opacity: 0;
+            }
+        </style>
+
+        <script>
+            (() => {
+                try {
+                    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                    const raw = window.sessionStorage ? window.sessionStorage.getItem('famille_tm_pending') : null;
+                    if (!raw) return;
+                    const st = JSON.parse(raw);
+                    if (!st || !st.id || !st.ts) return;
+                    if (Date.now() - Number(st.ts) > 6000) return;
+
+                    document.documentElement.classList.add('tm-animating');
+                    if (!document.getElementById('tm-overlay-root')) {
+                        const root = document.createElement('div');
+                        root.id = 'tm-overlay-root';
+                        document.documentElement.appendChild(root);
+                    }
+                } catch (e) {
+                    // ignore
+                }
+            })();
+        </script>
+
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 

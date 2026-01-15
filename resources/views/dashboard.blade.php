@@ -76,13 +76,20 @@
                     @if(($latestImages ?? collect())->count())
                         <div class="grid grid-cols-3 gap-3">
                             @foreach(($latestImages ?? collect())->take(3) as $img)
-                                <a href="{{ route('media.photos.show', ['node' => $img, 'return' => request()->getRequestUri()]) }}" class="block" aria-label="Ouvrir photo">
+                                <a
+                                    href="{{ route('media.photos.show', ['node' => $img, 'return' => request()->getRequestUri()]) }}"
+                                    class="block"
+                                    aria-label="Ouvrir photo"
+                                    data-shared-id="media:{{ (int) $img->id }}"
+                                    data-shared-src="{{ route('images.view', $img) }}"
+                                >
                                     <div class="rounded-xl overflow-hidden aspect-video bg-slate-100">
                                         <img
                                             src="{{ route('images.view', $img) }}"
                                             alt="{{ $img->name ?? 'photo' }}"
                                             class="w-full h-full object-cover"
                                             loading="lazy"
+                                            data-shared-id="media:{{ (int) $img->id }}"
                                         />
                                     </div>
                                     <div class="mt-1 text-xs text-slate-500 truncate">
