@@ -202,9 +202,15 @@
                 @if($photos->count())
                     <div class="mt-2 grid grid-cols-3 gap-2">
                         @foreach($photos as $img)
-                            <a href="{{ route('media.photos.show', ['node' => $img, 'return' => request()->getRequestUri()]) }}" class="block active:scale-[0.99] transition-transform" aria-label="Ouvrir photo">
+                            <a
+                                href="{{ route('media.photos.show', ['node' => $img, 'return' => request()->getRequestUri()]) }}"
+                                class="block active:scale-[0.99] transition-transform"
+                                aria-label="Ouvrir photo"
+                                data-shared-id="media:{{ (int) $img->id }}"
+                                data-shared-src="{{ route('images.view', $img) }}"
+                            >
                                 <div class="aspect-square overflow-hidden rounded-2xl bg-[#F6F7F9] ring-1 ring-black/5" data-skel="img" data-loaded="0">
-                                    <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover opacity-0 transition-opacity duration-200" style="object-position: 50% 35%;" loading="lazy" onload="try{const w=this.closest('[data-skel=img]');if(w){w.dataset.loaded='1';this.style.opacity='1';}}catch(e){}" />
+                                    <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover opacity-0 transition-opacity duration-200" style="object-position: 50% 35%;" loading="lazy" onload="try{const w=this.closest('[data-skel=img]');if(w){w.dataset.loaded='1';this.style.opacity='1';}}catch(e){}" data-shared-id="media:{{ (int) $img->id }}" />
                                 </div>
                             </a>
                         @endforeach
