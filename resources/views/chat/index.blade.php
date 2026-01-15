@@ -240,7 +240,7 @@
                 </div>
             </div>
 
-            <div id="chatScroll" class="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-6 sm:pb-0">
+            <div id="chatScroll" class="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-[calc(6rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))] sm:pb-0">
                 <div class="relative">
                     <button
                         type="button"
@@ -347,7 +347,7 @@
                                                 >
                                                     <div class="relative overflow-hidden rounded-xl border shadow-sm w-64 max-w-full h-40 sm:w-72 sm:h-44 {{ $isMe ? 'border-white/20 bg-white/5' : 'border-slate-200 bg-slate-50' }}">
                                                         @if ($attThumb !== '')
-                                                            <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-cover" loading="lazy" />
+                                                            <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-contain" loading="lazy" />
                                                         @else
                                                             <div class="w-full h-full flex items-center justify-center text-xs {{ $isMe ? 'text-white/80' : 'text-slate-500' }}">{{ $attName }}</div>
                                                         @endif
@@ -1022,7 +1022,7 @@
                         img.src = thumb;
                         img.alt = nameLabel;
                         img.loading = 'lazy';
-                        img.className = 'block w-full h-full object-cover';
+                        img.className = 'block w-full h-full object-contain';
                         card.appendChild(img);
                     } else {
                         const ph = document.createElement('div');
