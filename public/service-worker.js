@@ -4,7 +4,8 @@
  * - Navigation requests are network-first with offline fallback.
  */
 
-const CACHE_NAME = 'famille-assets-v4';
+const SW_VERSION = new URL(self.location.href).searchParams.get('v') || 'v4';
+const CACHE_NAME = `famille-assets-${SW_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
 function isNoCachePath(pathname) {

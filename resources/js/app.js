@@ -126,6 +126,18 @@ function isPushSupported() {
 
 async function ensureServiceWorkerRegistered() {
 	if (!('serviceWorker' in navigator)) return null;
+	const swVersion = (import.meta.env.PROD ? (() => {
+		try {
+			const url = new URL(import.meta.url);
+			const file = url.pathname.split('/').pop() || '';
+			const m = file.match(/app-([A-Za-z0-9_-]+)\.(?:js|mjs)$/);
+			return m ? m[1] : 'prod';
+		} catch (e) {
+			return 'prod';
+		}
+	})() : 'dev');
+	const swUrl = `/service-worker.js?v=${encodeURIComponent(swVersion)}`;
+
 	// If already registered, ready will resolve.
 	try {
 		const reg = await navigator.serviceWorker.ready;
@@ -136,7 +148,7 @@ async function ensureServiceWorkerRegistered() {
 
 	// Register on-demand (explicit user action may call this).
 	try {
-		await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+		await navigator.serviceWorker.register(swUrl, { scope: '/' });
 		return await navigator.serviceWorker.ready;
 	} catch (e) {
 		return null;
@@ -234,8 +246,26 @@ window.famillePush = {
 // PWA (production only): register the service worker.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
+		let swVersion = 'prod';
+		try {
+			const url = new URL(import.meta.url);
+			const file = url.pathname.split('/').pop() || '';
+			const m = file.match(/app-([A-Za-z0-9_-]+)\.(?:js|mjs)$/);
+			swVersion = m ? m[1] : 'prod';
+		} catch (e) {
+			// ignore
+		}
+		const swUrl = `/service-worker.js?v=${encodeURIComponent(swVersion)}`;
+
+		// If a new SW takes control, reload once to ensure fresh assets.
+		navigator.serviceWorker.addEventListener('controllerchange', () => {
+			if (window.__familleSwReloaded) return;
+			window.__familleSwReloaded = true;
+			window.location.reload();
+		});
+
 		navigator.serviceWorker
-			.register('/service-worker.js', { scope: '/' })
+			.register(swUrl, { scope: '/' })
 			.then(() => {
 				// If the user already granted permission previously, keep the subscription fresh.
 				ensurePushSubscription().catch(() => {});
