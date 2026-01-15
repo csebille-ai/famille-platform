@@ -10,7 +10,6 @@ use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
-use App\Http\Controllers\AstroCardImageController;
 use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
@@ -1363,55 +1362,32 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:tarot-draw')
         ->name('tarot.tts');
 
-    Route::post('/api/astro-card/generate', [\App\Http\Controllers\Api\AstroCardController::class, 'generate'])
-        ->middleware('throttle:astro-card-generate')
-        ->name('astro.card.generate');
+    Route::post('/api/avatar-astro/generate', [\App\Http\Controllers\Api\AvatarAstroController::class, 'generate'])
+        ->middleware('throttle:avatar-astro-generate')
+        ->name('avatar.astro.generate');
 
-    Route::get('/api/astro-card/status', [\App\Http\Controllers\Api\AstroCardController::class, 'status'])
-        ->name('astro.card.status');
+    Route::get('/api/avatar-astro/status', [\App\Http\Controllers\Api\AvatarAstroController::class, 'status'])
+        ->name('avatar.astro.status');
 
-    Route::get('/astro-card/image', [AstroCardImageController::class, 'show'])
-        ->name('astro.card.image');
+    Route::get('/avatar-astro/image', [\App\Http\Controllers\AvatarAstroImageController::class, 'show'])
+        ->name('avatar.astro.image');
 
-    Route::get('/astro-card/icon', [AstroCardImageController::class, 'showIcon'])
-        ->name('astro.card.icon');
+    // Authenticated users can view another member's avatar (used on profile pages).
+    Route::get('/users/{user}/avatar-astro/image', [\App\Http\Controllers\AvatarAstroImageController::class, 'showForUserPublic'])
+        ->name('avatar.astro.imagePublic');
 
-    Route::get('/astro-card/icon', [AstroCardImageController::class, 'showIcon'])
-        ->name('astro.card.icon');
-
-    // Authenticated users can view another member's card image (used on profile pages).
-    Route::get('/users/{user}/astro-card/image', [AstroCardImageController::class, 'showForUserPublic'])
-        ->name('astro.card.imagePublic');
-
-    Route::get('/users/{user}/astro-card/icon', [AstroCardImageController::class, 'showIconForUserPublic'])
-        ->name('astro.card.iconPublic');
-
-    Route::get('/users/{user}/astro-card/icon', [AstroCardImageController::class, 'showIconForUserPublic'])
-        ->name('astro.card.iconPublic');
-
-    Route::get('/admin/users/{user}/astro-card/image', [AstroCardImageController::class, 'showForUser'])
+    Route::get('/admin/users/{user}/avatar-astro/image', [\App\Http\Controllers\AvatarAstroImageController::class, 'showForUser'])
         ->middleware(['can:manage-users'])
-        ->name('astro.card.imageForUser');
+        ->name('avatar.astro.imageForUser');
 
-    Route::get('/admin/users/{user}/astro-card/icon', [AstroCardImageController::class, 'showIconForUser'])
+    // Admin override: generate/check Avatar Astro for any user.
+    Route::post('/api/admin/users/{user}/avatar-astro/generate', [\App\Http\Controllers\Api\AvatarAstroController::class, 'generateForUser'])
+        ->middleware(['can:manage-users', 'throttle:avatar-astro-generate'])
+        ->name('avatar.astro.generateForUser');
+
+    Route::get('/api/admin/users/{user}/avatar-astro/status', [\App\Http\Controllers\Api\AvatarAstroController::class, 'statusForUser'])
         ->middleware(['can:manage-users'])
-        ->name('astro.card.iconForUser');
-
-    Route::post('/api/profile/avatar/use-astro-icon', [ProfileController::class, 'useAstroIconAsAvatar'])
-        ->name('profile.avatar.useAstroIcon');
-
-    Route::get('/admin/users/{user}/astro-card/icon', [AstroCardImageController::class, 'showIconForUser'])
-        ->middleware(['can:manage-users'])
-        ->name('astro.card.iconForUser');
-
-    // Admin override: generate/check astro cards for any user.
-    Route::post('/api/admin/users/{user}/astro-card/generate', [\App\Http\Controllers\Api\AstroCardController::class, 'generateForUser'])
-        ->middleware(['can:manage-users', 'throttle:astro-card-generate'])
-        ->name('astro.card.generateForUser');
-
-    Route::get('/api/admin/users/{user}/astro-card/status', [\App\Http\Controllers\Api\AstroCardController::class, 'statusForUser'])
-        ->middleware(['can:manage-users'])
-        ->name('astro.card.statusForUser');
+        ->name('avatar.astro.statusForUser');
 
     Route::get('/cloud', [CloudNodeController::class, 'index'])->name('cloud.index');
     Route::post('/cloud/folders', [CloudNodeController::class, 'storeFolder'])->name('cloud.folders.store');

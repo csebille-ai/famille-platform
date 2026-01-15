@@ -37,15 +37,17 @@ class User extends Authenticatable
 
         // Astro (fun) signature + generated card
         'astro_signature_json',
-        'astro_card_style',
-        'astro_card_status',
-        'astro_card_image_url',
-        'astro_card_icon_url',
-        'avatar_use_astro_icon',
-        'astro_card_prompt',
-        'astro_card_seed',
-        'astro_card_generated_at',
-        'astro_card_error',
+
+        // Avatar Astro (portrait)
+        'avatar_image_url',
+        'avatar_spec_json',
+        'avatar_archetype_title',
+        'avatar_traits_canon',
+        'avatar_traits_surannes',
+        'avatar_version',
+        'avatar_updated_at',
+        'avatar_astro_status',
+        'avatar_astro_error',
     ];
 
     /**
@@ -72,8 +74,11 @@ class User extends Authenticatable
             'date_of_birth' => 'date',
 
             'astro_signature_json' => 'array',
-            'astro_card_generated_at' => 'datetime',
-            'avatar_use_astro_icon' => 'boolean',
+
+            'avatar_spec_json' => 'array',
+            'avatar_traits_canon' => 'array',
+            'avatar_traits_surannes' => 'array',
+            'avatar_updated_at' => 'datetime',
         ];
     }
 

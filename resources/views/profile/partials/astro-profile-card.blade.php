@@ -24,17 +24,15 @@
 
     $isSelf = auth()->check() && auth()->id() === $user->id;
     $isAdmin = auth()->check() && (auth()->user()?->can('manage-users') === true);
-    $canGenerateTarot = $isSelf || $isAdmin;
+    $canGenerateAvatarAstro = $isSelf || $isAdmin;
 
-    $tarotStatusUrl = $isSelf
-        ? route('astro.card.status')
-        : ($isAdmin ? route('astro.card.statusForUser', $user) : null);
+    $avatarStatusUrl = $isSelf
+        ? route('avatar.astro.status')
+        : ($isAdmin ? route('avatar.astro.statusForUser', $user) : null);
 
-    $tarotGenerateUrl = $isSelf
-        ? route('astro.card.generate')
-        : ($isAdmin ? route('astro.card.generateForUser', $user) : null);
-
-    $useAsIconUrl = $isSelf ? route('profile.avatar.useAstroIcon') : null;
+    $avatarGenerateUrl = $isSelf
+        ? route('avatar.astro.generate')
+        : ($isAdmin ? route('avatar.astro.generateForUser', $user) : null);
 @endphp
 
 <div class="rounded-2xl border border-slate-200 bg-white p-5">
@@ -92,87 +90,108 @@
         </div>
     </div>
 
-    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5" id="astro-blason-card" data-status-url="{{ $tarotStatusUrl }}" data-generate-url="{{ $tarotGenerateUrl }}" data-use-as-icon-url="{{ $useAsIconUrl }}">
+    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5" id="avatar-astro-card" data-status-url="{{ $avatarStatusUrl }}" data-generate-url="{{ $avatarGenerateUrl }}">
         <div class="flex items-start justify-between gap-4">
             <div>
-                <div class="mt-1 text-lg font-semibold text-slate-900">Blason</div>
+                <div class="mt-1 text-lg font-semibold text-slate-900">Avatar Astro</div>
             </div>
         </div>
 
         @php
-            $status = (string) ($user->astro_card_status ?? '');
-            $imageUrl = trim((string) ($user->astro_card_image_url ?? ''));
-            $iconUrl = trim((string) ($user->astro_card_icon_url ?? ''));
+            $status = (string) ($user->avatar_astro_status ?? '');
+            $imageUrl = trim((string) ($user->avatar_image_url ?? ''));
             $displayUrl = '';
             if ($imageUrl !== '') {
                 $displayUrl = $isSelf
-                    ? route('astro.card.image')
-                    : route('astro.card.imagePublic', $user);
+                    ? route('avatar.astro.image')
+                    : route('avatar.astro.imagePublic', $user);
             }
 
-            $iconDisplayUrl = '';
-            if ($iconUrl !== '') {
-                $iconDisplayUrl = $isSelf
-                    ? route('astro.card.icon')
-                    : route('astro.card.iconPublic', $user);
-            }
-
-            // Cache-bust stable image endpoints so regeneration always shows the latest.
-            $v = optional($user->astro_card_generated_at)->getTimestamp() ?? time();
+            $v = optional($user->avatar_updated_at)->getTimestamp() ?? time();
             if ($displayUrl !== '') {
                 $displayUrl .= (str_contains($displayUrl, '?') ? '&' : '?') . 'v=' . $v;
             }
-            if ($iconDisplayUrl !== '') {
-                $iconDisplayUrl .= (str_contains($iconDisplayUrl, '?') ? '&' : '?') . 'v=' . $v;
-            }
-            $error = trim((string) ($user->astro_card_error ?? ''));
 
+            $error = trim((string) ($user->avatar_astro_error ?? ''));
+            $spec = is_array($user->avatar_spec_json ?? null) ? (array) $user->avatar_spec_json : [];
+            $sunElement = (string) ($spec['sun_element'] ?? '');
+            $chAnimal = (string) ($spec['chinese_animal'] ?? '');
+            $life = (int) ($spec['life_path'] ?? 0);
+
+            $traitsSur = is_array($user->avatar_traits_surannes ?? null) ? (array) $user->avatar_traits_surannes : [];
+            $traitsSurLine = implode(', ', array_values(array_filter(array_map('strval', $traitsSur))));
+
+            $elementIconKey = strtolower(match ($sunElement) {
+                'Terre' => 'earth',
+                'Feu' => 'fire',
+                'Air' => 'air',
+                'Eau' => 'water',
+                default => '',
+            });
+
+            $elementIcon = $elementIconKey !== '' ? asset('icons/astro/elements/' . $elementIconKey . '.svg') : asset('icons/astro/_default.svg');
+
+            $chSlug = strtolower($chAnimal);
+            $chPath = $chSlug !== '' ? public_path('icons/astro/chinese/' . $chSlug . '.svg') : '';
+            $chIcon = ($chPath !== '' && file_exists($chPath))
+                ? asset('icons/astro/chinese/' . $chSlug . '.svg')
+                : asset('icons/astro/_default.svg');
+
+            $totemCanon = $chAnimal !== '' ? \App\Services\AvatarAstro\ArchetypeAndTraits::chineseTrait($chAnimal) : '';
+            $numCanon = $life > 0 ? \App\Services\AvatarAstro\ArchetypeAndTraits::numerologyTrait($life) : '';
+            $surMapper = app(\App\Services\AvatarAstro\TraitsSurannesMapper::class);
+            $totemSur = $totemCanon !== '' ? $surMapper->toSuranne((int) $user->id, $totemCanon) : '';
+            $numSur = $numCanon !== '' ? $surMapper->toSuranne((int) $user->id, $numCanon) : '';
+
+            $archetypeTitle = trim((string) ($user->avatar_archetype_title ?? ''));
         @endphp
 
         <div class="mt-4" data-state>
-            @if($status === 'ready' && $imageUrl !== '' && $iconUrl !== '')
-                <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
+            @if($status === 'ready' && $imageUrl !== '')
+                <div class="grid gap-4 sm:grid-cols-[minmax(0,260px)_1fr]">
                     <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                        <div class="relative w-full" style="padding-bottom:150%;">
-                            <img src="{{ $displayUrl }}" data-external-src="{{ $imageUrl }}" alt="Blason (carte)" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
+                        <div class="relative w-full" style="padding-bottom:100%;">
+                            <img src="{{ $displayUrl }}" data-external-src="{{ $imageUrl }}" alt="Avatar Astro" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
+
+                            <div class="absolute left-3 top-3 flex flex-wrap gap-2">
+                                <span class="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-800 shadow-sm">
+                                    <img src="{{ $chIcon }}" alt="" class="h-4 w-4" loading="lazy" />
+                                    <span>{{ $totemSur !== '' ? $totemSur : ($chAnimal !== '' ? $chAnimal : 'mystère') }}</span>
+                                </span>
+
+                                @if($life > 0)
+                                    <span class="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-800 shadow-sm">
+                                        <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-[10px] font-extrabold text-white">{{ $life }}</span>
+                                        <span>{{ $numSur !== '' ? $numSur : '—' }}</span>
+                                    </span>
+                                @endif
+
+                                @if($sunElement !== '')
+                                    <span class="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-800 shadow-sm">
+                                        <img src="{{ $elementIcon }}" alt="" class="h-4 w-4" loading="lazy" />
+                                        <span>{{ $sunElement }}</span>
+                                    </span>
+                                @endif
+                            </div>
 
                             <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
                                 <div class="rounded-xl border border-red-200 bg-red-50 p-3">
                                     Impossible de charger l’image.
                                 </div>
                             </div>
-
                         </div>
                     </div>
-                    <div class="text-sm text-slate-600">
-                        <div class="flex items-center gap-3">
-                            <div class="h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
-                                <img src="{{ $iconDisplayUrl }}" data-external-src="{{ $iconUrl }}" alt="Blason (icône)" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none';} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none';}}">
-                            </div>
-                            <div>
-                                <div class="text-xs text-slate-500">Icône</div>
-                                <div class="text-sm font-semibold text-slate-900">1:1</div>
-                            </div>
-                        </div>
-                        @if($canGenerateTarot)
+
+                    <div class="text-sm text-slate-700">
+                        <div class="text-base font-semibold text-slate-900">{{ $archetypeTitle !== '' ? $archetypeTitle : '—' }}</div>
+                        <div class="mt-1 text-sm text-slate-600">{{ $traitsSurLine !== '' ? $traitsSurLine : '—' }}</div>
+
+                        @if($canGenerateAvatarAstro)
                             <div class="mt-4 flex flex-wrap gap-2">
                                 <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
-                                @if($isSelf)
-                                    <button type="button" data-action="use-icon" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Utiliser comme icône</button>
-                                @endif
                             </div>
                         @endif
                     </div>
-                </div>
-            @elseif($status === 'ready' && $imageUrl !== '' && $iconUrl === '')
-                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                    <div class="text-sm font-semibold text-amber-900">Mise à jour requise</div>
-                    <div class="mt-1 text-xs text-amber-800">Ton blason a été généré avant l’ajout de l’icône 1:1. Regénère pour l’obtenir.</div>
-                    @if($canGenerateTarot)
-                        <div class="mt-3">
-                            <button type="button" data-action="regen" class="rounded-xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-800">Regénérer</button>
-                        </div>
-                    @endif
                 </div>
             @elseif($status === 'pending')
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -186,7 +205,7 @@
                 <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
                     <div class="text-sm font-semibold text-red-900">Erreur</div>
                     <div class="mt-1 text-xs text-red-800" data-error>{{ $error !== '' ? $error : 'Une erreur est survenue.' }}</div>
-                    @if($canGenerateTarot)
+                    @if($canGenerateAvatarAstro)
                         <div class="mt-3">
                             <button type="button" data-action="retry" class="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Réessayer</button>
                         </div>
@@ -194,11 +213,11 @@
                 </div>
             @else
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <div class="text-sm font-semibold text-slate-900">Pas encore générée</div>
-                    <div class="microcopy mt-1 text-xs text-slate-500">Un blason premium basé sur ta fiche astrale (carte 2:3 + icône 1:1).</div>
-                    @if($canGenerateTarot)
+                    <div class="text-sm font-semibold text-slate-900">Pas encore généré</div>
+                    <div class="microcopy mt-1 text-xs text-slate-500">Portrait 1:1 (tête + épaules), ambiance astro via palette (sans symboles, sans texte).</div>
+                    @if($canGenerateAvatarAstro)
                         <div class="mt-3">
-                            <button type="button" data-action="generate" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Générer mon blason</button>
+                            <button type="button" data-action="generate" class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Générer mon Avatar Astro</button>
                         </div>
                     @else
                         <div class="microcopy mt-2 text-xs text-slate-500">(disponible sur le profil du membre)</div>
@@ -212,15 +231,14 @@
 
 <script>
 (() => {
-    const root = document.getElementById('astro-blason-card');
+    const root = document.getElementById('avatar-astro-card');
     if (!root) return;
 
-    const canGenerate = @json($canGenerateTarot);
+    const canGenerate = @json($canGenerateAvatarAstro);
     if (!canGenerate) return;
 
     const statusUrl = root.getAttribute('data-status-url');
     const generateUrl = root.getAttribute('data-generate-url');
-    const useAsIconUrl = root.getAttribute('data-use-as-icon-url');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     const stateEl = root.querySelector('[data-state]');
@@ -275,13 +293,12 @@
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
 
-    const renderReady = (imageUrl, externalUrl = null, iconUrl = null, iconExternalUrl = null) => {
-
+    const renderReady = (imageUrl, externalUrl = null) => {
         stateEl.innerHTML = `
-            <div class="grid gap-4 sm:grid-cols-[minmax(0,320px)_1fr]">
+            <div class="grid gap-4 sm:grid-cols-[minmax(0,260px)_1fr]">
                 <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                    <div class="relative w-full" style="padding-bottom:150%;">
-                        <img src="${escapeHtml(imageUrl)}" data-external-src="${escapeHtml(externalUrl || '')}" alt="Blason (carte)" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
+                    <div class="relative w-full" style="padding-bottom:100%;">
+                        <img src="${escapeHtml(imageUrl)}" data-external-src="${escapeHtml(externalUrl || '')}" alt="Avatar Astro" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
                         <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
                             <div class="rounded-xl border border-red-200 bg-red-50 p-3">
                                 Impossible de charger l’image.
@@ -290,17 +307,6 @@
                     </div>
                 </div>
                 <div class="text-sm text-slate-600">
-                    ${iconUrl ? `
-                        <div class="flex items-center gap-3">
-                            <div class="h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
-                                <img src="${escapeHtml(iconUrl)}" data-external-src="${escapeHtml(iconExternalUrl || '')}" alt="Blason (icône)" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none';} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none';}}">
-                            </div>
-                            <div>
-                                <div class="text-xs text-slate-500">Icône</div>
-                                <div class="text-sm font-semibold text-slate-900">1:1</div>
-                            </div>
-                        </div>
-                    ` : ''}
                     <div class="mt-4 flex flex-wrap gap-2">
                         <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
                     </div>
@@ -327,25 +333,23 @@
             const displayUrl = data?.image_display_url || data?.image_url;
             const externalUrl = data?.image_url;
 
-            const iconDisplayUrl = data?.icon_display_url || data?.icon_url;
-            const iconExternalUrl = data?.icon_url;
-
-            const v = encodeURIComponent(String(data?.generated_at || Date.now()));
+            const v = encodeURIComponent(String(data?.updated_at || Date.now()));
             const bust = (url) => {
                 if (!url) return url;
                 const s = String(url);
                 return s + (s.includes('?') ? '&' : '?') + 'v=' + v;
             };
 
-            if (data.status === 'ready' && displayUrl && iconDisplayUrl) {
+            if (data.status === 'ready' && displayUrl) {
                 stopPolling();
-                renderReady(bust(displayUrl), bust(externalUrl), bust(iconDisplayUrl), bust(iconExternalUrl));
+                // Reload so we re-render chips + archetype + traits from fresh DB.
+                window.location.reload();
                 return;
             }
 
-            if (data.status === 'ready' && (!displayUrl || !iconDisplayUrl)) {
+            if (data.status === 'ready' && !displayUrl) {
                 stopPolling();
-                renderError("Blason généré, mais URL publique manquante. Vérifie R2_PUBLIC_BASE_URL (et que le bucket est bien servi en public).");
+                renderError("Avatar généré, mais URL publique manquante. Vérifie R2_PUBLIC_BASE_URL (et que le bucket est bien servi en public).");
                 return;
             }
 
@@ -386,31 +390,9 @@
         if (action === 'regen') {
             generate(true);
         }
-        if (action === 'use-icon') {
-            if (!useAsIconUrl) return;
-            btn.disabled = true;
-            btn.textContent = '…';
-            fetchJson(useAsIconUrl, { method: 'POST', body: JSON.stringify({}) })
-                .then(({ ok, data }) => {
-                    if (!ok) {
-                        btn.disabled = false;
-                        btn.textContent = 'Utiliser comme icône';
-                        const msg = data?.error || "Impossible d'activer l'icône.";
-                        renderError(msg);
-                        return;
-                    }
-                    window.location.reload();
-                })
-                .catch(() => {
-                    btn.disabled = false;
-                    btn.textContent = 'Utiliser comme icône';
-                    renderError("Impossible d'activer l'icône.");
-                });
-        }
     });
 
-    // If we land here while pending, start polling.
-    const initialStatus = @json((string) ($user->astro_card_status ?? ''));
+    const initialStatus = @json((string) ($user->avatar_astro_status ?? ''));
     if (initialStatus === 'pending') {
         startPolling();
     }

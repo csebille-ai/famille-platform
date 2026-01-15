@@ -6,27 +6,14 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class AstroCardImageController
+class AvatarAstroImageController
 {
-    public function __invoke(Request $request)
-    {
-        return $this->show($request);
-    }
-
     public function show(Request $request)
     {
         $user = $request->user();
         abort_unless($user !== null, 401);
 
-        return $this->streamUserImage($user, 'astro_card_image_url');
-    }
-
-    public function showIcon(Request $request)
-    {
-        $user = $request->user();
-        abort_unless($user !== null, 401);
-
-        return $this->streamUserImage($user, 'astro_card_icon_url');
+        return $this->streamUserImage($user);
     }
 
     public function showForUser(Request $request, User $user)
@@ -34,15 +21,7 @@ class AstroCardImageController
         abort_unless($request->user() !== null, 401);
         abort_unless($request->user()?->can('manage-users') === true, 403);
 
-        return $this->streamUserImage($user, 'astro_card_image_url');
-    }
-
-    public function showIconForUser(Request $request, User $user)
-    {
-        abort_unless($request->user() !== null, 401);
-        abort_unless($request->user()?->can('manage-users') === true, 403);
-
-        return $this->streamUserImage($user, 'astro_card_icon_url');
+        return $this->streamUserImage($user);
     }
 
     public function showForUserPublic(Request $request, User $user)
@@ -50,20 +29,12 @@ class AstroCardImageController
         // Auth is enforced by the route group; this is a double-safety.
         abort_unless($request->user() !== null, 401);
 
-        return $this->streamUserImage($user, 'astro_card_image_url');
+        return $this->streamUserImage($user);
     }
 
-    public function showIconForUserPublic(Request $request, User $user)
+    private function streamUserImage(User $user)
     {
-        // Auth is enforced by the route group; this is a double-safety.
-        abort_unless($request->user() !== null, 401);
-
-        return $this->streamUserImage($user, 'astro_card_icon_url');
-    }
-
-    private function streamUserImage(User $user, string $urlField)
-    {
-        $url = trim((string) ($user->{$urlField} ?? ''));
+        $url = trim((string) ($user->avatar_image_url ?? ''));
         abort_if($url === '', 404);
 
         $key = $this->extractR2KeyFromUrl($url);
@@ -71,7 +42,6 @@ class AstroCardImageController
 
         $disk = Storage::disk('r2');
 
-        // Best-effort conditional caching based on object metadata.
         $etag = null;
         $lastModified = null;
         try {
@@ -157,7 +127,6 @@ class AstroCardImageController
             return null;
         }
 
-        // Some public base URLs may include the bucket name as the first path segment.
         $bucket = trim((string) config('filesystems.disks.r2.bucket'));
         if ($bucket !== '') {
             $prefix = $bucket . '/';
