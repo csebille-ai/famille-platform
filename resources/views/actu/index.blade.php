@@ -83,6 +83,8 @@
             let pendingFirstPage = null;
             let autoTimer = null;
 
+            const seenUrls = new Set();
+
             const AUTO_REFRESH_MS = 90_000;
             const AT_TOP_PX = 140;
 
@@ -137,6 +139,29 @@
             const itemKey = (it) => {
                 if (!it) return '';
                 return `${it.published_at || ''}|${it.url || ''}|${it.title || ''}`;
+            };
+
+            const isDuplicate = (it) => {
+                const u = String(it?.url || '').trim();
+                if (!u) return false;
+                return seenUrls.has(u);
+            };
+
+            const markSeen = (it) => {
+                const u = String(it?.url || '').trim();
+                if (!u) return;
+                seenUrls.add(u);
+            };
+
+            const dedupeItems = (items) => {
+                const out = [];
+                (items || []).forEach((it) => {
+                    if (!it || !it.url) return;
+                    if (isDuplicate(it)) return;
+                    markSeen(it);
+                    out.push(it);
+                });
+                return out;
             };
 
             const bucketClasses = (active) => {
@@ -300,7 +325,9 @@
             };
 
             const applyResetData = (data) => {
-                const items = data.items || [];
+                seenUrls.clear();
+
+                const items = dedupeItems(data.items || []);
                 nextCursor = data.next_cursor ?? null;
 
                 if (items.length > 0) {
@@ -335,6 +362,7 @@
                 if (reset) {
                     heroItem = null;
                     nextCursor = null;
+                    seenUrls.clear();
                     renderHeroSkeleton();
                     renderListSkeleton();
                     setMoreVisible(false);
@@ -350,7 +378,7 @@
                     const data = await resp.json();
                     if (!data || data.ok !== true || !Array.isArray(data.items)) throw new Error('Bad payload');
 
-                    const items = data.items;
+                    const items = reset ? dedupeItems(data.items) : dedupeItems(data.items);
                     nextCursor = data.next_cursor ?? null;
 
                     if (reset) {
