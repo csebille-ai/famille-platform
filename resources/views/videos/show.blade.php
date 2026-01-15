@@ -98,6 +98,22 @@
             #video-viewer.reduce-motion #video-toast {
                 transition: none;
             }
+
+            #video-skip-hint {
+                opacity: 0;
+                transform: translate3d(0, 6px, 0) scale(0.98);
+                transition: opacity 180ms ease, transform 180ms ease;
+                pointer-events: none;
+            }
+
+            #video-skip-hint.show {
+                opacity: 1;
+                transform: translate3d(0, 0, 0) scale(1);
+            }
+
+            #video-viewer.reduce-motion #video-skip-hint {
+                transition: none;
+            }
         </style>
 
         <!-- TOP BAR -->
@@ -176,6 +192,13 @@
                     >
                         <div class="w-16 h-16 rounded-full bg-black/50 ring-1 ring-white/10 flex items-center justify-center">
                             <span class="text-2xl" aria-hidden="true">▶</span>
+                        </div>
+                    </div>
+
+                    <!-- Double-tap skip hint -->
+                    <div class="absolute inset-0 flex items-center justify-center" style="pointer-events: none">
+                        <div id="video-skip-hint" class="px-4 py-3 rounded-2xl bg-black/55 ring-1 ring-white/10 text-white text-sm font-semibold">
+                            <span id="video-skip-hint-text" aria-hidden="true">+10s</span>
                         </div>
                     </div>
                 </div>
@@ -323,6 +346,8 @@
                 const frame = document.getElementById('video-frame');
                 const tapLayer = document.getElementById('video-tap-layer');
                 const centerIcon = document.getElementById('video-center-icon');
+                const skipHint = document.getElementById('video-skip-hint');
+                const skipHintText = document.getElementById('video-skip-hint-text');
 
                 const playBtn = document.getElementById('video-play-btn');
                 const playIco = document.getElementById('video-play-ico');
@@ -351,6 +376,8 @@
                 let lastTapX = 0;
                 let lastTapY = 0;
 
+                let skipHintTimer = 0;
+
                 const setUiVisible = (visible) => {
                     root.classList.toggle('viewer-ui-hidden', !visible);
                 };
@@ -360,6 +387,28 @@
                     toastText.textContent = String(msg || '');
                     toast.classList.add('show');
                     window.setTimeout(() => toast.classList.remove('show'), Math.max(400, ms));
+                };
+
+                const hapticTick = (ms = 10) => {
+                    try {
+                        if (navigator.vibrate) navigator.vibrate(Math.max(5, Math.min(20, Number(ms) || 10)));
+                    } catch {
+                        // ignore
+                    }
+                };
+
+                const showSkipHint = (dir) => {
+                    if (!skipHint || !skipHintText) return;
+                    if (skipHintTimer) {
+                        clearTimeout(skipHintTimer);
+                        skipHintTimer = 0;
+                    }
+                    const s = (dir === 'back') ? '-10s' : '+10s';
+                    skipHintText.textContent = s;
+                    skipHint.classList.add('show');
+                    skipHintTimer = window.setTimeout(() => {
+                        skipHint.classList.remove('show');
+                    }, prefersReducedMotion ? 250 : 520);
                 };
 
                 const closeSheet = () => root.classList.remove('sheet-open');
@@ -479,7 +528,10 @@
                         lastTapAt = 0;
                         const rect = (tapLayer || video).getBoundingClientRect();
                         const isRight = x > rect.left + rect.width / 2;
+                        const dir = isRight ? 'fwd' : 'back';
                         seekBy(isRight ? 10 : -10);
+                        hapticTick(10);
+                        showSkipHint(dir);
                         setUiVisible(true);
                         scheduleAutoHide();
                         return;
@@ -661,6 +713,37 @@
                 updatePlayUi();
                 updateProgressUi();
                 setTimeout(() => scheduleAutoHide(), 1200);
+
+                // Adapt framing for ultra-vertical videos (9:16): keep the container tall and avoid it becoming too wide.
+                const applyVerticalFraming = () => {
+                    if (!frame) return;
+                    try {
+                        const rect = frame.getBoundingClientRect();
+                        const h = Math.max(1, rect.height);
+                        // 9:16 width = height * 9/16. Clamp for desktop.
+                        const maxW = Math.round(Math.min(520, h * (9 / 16)));
+                        // Only apply when it makes sense (avoid shrinking landscape videos).
+                        if (video && Number(video.videoWidth || 0) > 0 && Number(video.videoHeight || 0) > 0) {
+                            const ar = (video.videoWidth / video.videoHeight);
+                            // Treat anything more vertical than ~3:4 as "vertical".
+                            if (ar < 0.80) {
+                                frame.style.maxWidth = maxW + 'px';
+                            } else {
+                                frame.style.maxWidth = '520px';
+                            }
+                        } else {
+                            frame.style.maxWidth = maxW + 'px';
+                        }
+                    } catch {
+                        // ignore
+                    }
+                };
+                window.addEventListener('resize', () => applyVerticalFraming(), { passive: true });
+                if (video) {
+                    video.addEventListener('loadedmetadata', () => applyVerticalFraming());
+                }
+                // Run once after layout settles.
+                requestAnimationFrame(() => requestAnimationFrame(() => applyVerticalFraming()));
 
                 // If a status flash exists (from server), show it as a toast.
                 const initialStatus = @json(session('status'));
