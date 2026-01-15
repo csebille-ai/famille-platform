@@ -124,6 +124,7 @@
             style="padding: calc(env(safe-area-inset-top) + var(--viewer-header-h, 0px) + 0.75rem) 0.5rem calc(env(safe-area-inset-bottom) + 0.75rem) 0.5rem"
         >
             <img
+                id="image-viewer-img"
                 src="{{ route('images.view', $node) }}"
                 alt="{{ $node->name }}"
                 class="max-w-full object-contain select-none"
@@ -146,6 +147,22 @@
                 const detailsBtn = document.getElementById('image-viewer-details-btn');
                 const detailsPanel = document.getElementById('image-viewer-details');
                 const backLink = root.querySelector('a[data-tm-back="1"]');
+                const stage = document.getElementById('image-viewer-stage');
+                const img = document.getElementById('image-viewer-img') || root.querySelector('img[data-shared-id]');
+
+                if (stage) {
+                    try {
+                        stage.style.touchAction = 'none';
+                        stage.style.overscrollBehavior = 'contain';
+                    } catch {}
+                }
+                if (img) {
+                    try {
+                        img.style.touchAction = 'none';
+                        img.style.transformOrigin = 'center center';
+                        img.style.willChange = 'transform';
+                    } catch {}
+                }
 
                 const setHeaderVisible = (visible) => {
                     const show = !!visible;
@@ -182,35 +199,242 @@
                     closeDetails();
                 }, { capture: true });
 
-                let startX = 0;
-                let startY = 0;
-                let active = false;
-                let moved = false;
-
-                const start = (x, y) => {
-                    startX = x;
-                    startY = y;
-                    moved = false;
-                    active = true;
+                // --- True zoom (pinch + pan + double tap) ---
+                const zoom = {
+                    scale: 1,
+                    tx: 0,
+                    ty: 0,
+                    min: 1,
+                    max: 3.25,
                 };
 
-                const end = (x, y) => {
-                    if (!active) return;
-                    active = false;
+                const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
-                    const dx = x - startX;
-                    const dy = y - startY;
+                const getStageRect = () => {
+                    const r = stage ? stage.getBoundingClientRect() : root.getBoundingClientRect();
+                    return { x: r.left, y: r.top, w: r.width, h: r.height };
+                };
 
-                    // Tap toggles UI (ignore if a details menu is open).
-                    if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && !moved) {
-                        if (detailsPanel && !detailsPanel.classList.contains('hidden')) return;
-                        setHeaderVisible(root.classList.contains('viewer-ui-hidden'));
+                const getContainBaseSize = () => {
+                    const sr = getStageRect();
+                    const sw = Math.max(1, sr.w);
+                    const sh = Math.max(1, sr.h);
+
+                    let ar = 1;
+                    try {
+                        const nw = Number(img?.naturalWidth || 0);
+                        const nh = Number(img?.naturalHeight || 0);
+                        if (nw > 0 && nh > 0) ar = nw / nh;
+                    } catch {}
+                    if (!Number.isFinite(ar) || ar <= 0.05) ar = 1;
+
+                    let w = sw;
+                    let h = w / ar;
+                    if (h > sh) {
+                        h = sh;
+                        w = h * ar;
+                    }
+                    return { w, h, stageW: sw, stageH: sh };
+                };
+
+                const clampPan = () => {
+                    const base = getContainBaseSize();
+                    const scaledW = base.w * zoom.scale;
+                    const scaledH = base.h * zoom.scale;
+                    const maxX = Math.max(0, (scaledW - base.stageW) / 2);
+                    const maxY = Math.max(0, (scaledH - base.stageH) / 2);
+                    zoom.tx = clamp(zoom.tx, -maxX, maxX);
+                    zoom.ty = clamp(zoom.ty, -maxY, maxY);
+                };
+
+                const applyTransform = () => {
+                    if (!img) return;
+                    if (zoom.scale <= 1.001) {
+                        zoom.scale = 1;
+                        zoom.tx = 0;
+                        zoom.ty = 0;
+                    } else {
+                        clampPan();
+                    }
+                    img.style.transform = `scale(${zoom.scale}) translate(${zoom.tx}px, ${zoom.ty}px)`;
+                };
+
+                const setScaleAroundPoint = (newScale, focal) => {
+                    const sr = getStageRect();
+                    const O = { x: sr.x + sr.w / 2, y: sr.y + sr.h / 2 };
+                    const F = { x: Number(focal?.x || O.x), y: Number(focal?.y || O.y) };
+
+                    const oldScale = Math.max(zoom.min, zoom.scale);
+                    const target = clamp(Number(newScale || 1), zoom.min, zoom.max);
+                    if (Math.abs(target - oldScale) < 0.001) return;
+
+                    // Adjust pan so the focal point stays visually anchored.
+                    const ratio = target / oldScale;
+                    zoom.tx = zoom.tx + (1 - ratio) * (F.x - (O.x + zoom.tx));
+                    zoom.ty = zoom.ty + (1 - ratio) * (F.y - (O.y + zoom.ty));
+                    zoom.scale = target;
+                    applyTransform();
+                };
+
+                const resetZoom = () => {
+                    zoom.scale = 1;
+                    zoom.tx = 0;
+                    zoom.ty = 0;
+                    applyTransform();
+                };
+
+                // --- Gestures ---
+                const pointers = new Map();
+                let panPointerId = null;
+                let lastPanX = 0;
+                let lastPanY = 0;
+                let lastPinchDist = 0;
+
+                let tapTimer = 0;
+                let lastTapAt = 0;
+                let lastTapX = 0;
+                let lastTapY = 0;
+
+                const clearTapTimer = () => {
+                    if (tapTimer) {
+                        clearTimeout(tapTimer);
+                        tapTimer = 0;
+                    }
+                };
+
+                const isDoubleTap = (x, y) => {
+                    const t = Date.now();
+                    const dt = t - lastTapAt;
+                    const dx = x - lastTapX;
+                    const dy = y - lastTapY;
+                    return dt > 0 && dt < 280 && (dx * dx + dy * dy) < (28 * 28);
+                };
+
+                const onTap = (x, y) => {
+                    if (detailsPanel && !detailsPanel.classList.contains('hidden')) return;
+                    clearTapTimer();
+
+                    if (isDoubleTap(x, y)) {
+                        // Double tap => true zoom toggle.
+                        lastTapAt = 0;
+                        lastTapX = 0;
+                        lastTapY = 0;
+
+                        if (zoom.scale > 1.01) {
+                            resetZoom();
+                        } else {
+                            setScaleAroundPoint(2.5, { x, y });
+                            setHeaderVisible(false);
+                        }
                         return;
                     }
 
+                    // Single tap is delayed slightly so we can detect double tap without flashing UI.
+                    lastTapAt = Date.now();
+                    lastTapX = x;
+                    lastTapY = y;
+                    tapTimer = setTimeout(() => {
+                        tapTimer = 0;
+                        setHeaderVisible(root.classList.contains('viewer-ui-hidden'));
+                    }, 240);
+                };
+
+                const dist = (a, b) => {
+                    const dx = a.x - b.x;
+                    const dy = a.y - b.y;
+                    return Math.sqrt(dx * dx + dy * dy);
+                };
+
+                const midpoint = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+                const startPinchIfReady = () => {
+                    if (pointers.size !== 2) return;
+                    const pts = Array.from(pointers.values());
+                    lastPinchDist = dist(pts[0], pts[1]);
+                    panPointerId = null;
+                };
+
+                const onPointerDown = (e) => {
+                    if (!e) return;
+                    if (e.target && e.target.closest && e.target.closest('[data-viewer-ui]')) return;
+                    if (!img) return;
+                    clearTapTimer();
+
+                    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+                    if (pointers.size === 1) {
+                        panPointerId = e.pointerId;
+                        lastPanX = e.clientX;
+                        lastPanY = e.clientY;
+                    } else if (pointers.size === 2) {
+                        startPinchIfReady();
+                    }
+
+                    try { img.setPointerCapture && img.setPointerCapture(e.pointerId); } catch {}
+                };
+
+                const onPointerMove = (e) => {
+                    if (!e) return;
+                    if (!pointers.has(e.pointerId)) return;
+
+                    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+                    // Pinch zoom
+                    if (pointers.size === 2) {
+                        const pts = Array.from(pointers.values());
+                        const d = dist(pts[0], pts[1]);
+                        if (lastPinchDist > 0) {
+                            const factor = d / lastPinchDist;
+                            const target = clamp(zoom.scale * factor, zoom.min, zoom.max);
+                            const mid = midpoint(pts[0], pts[1]);
+                            setScaleAroundPoint(target, mid);
+                        }
+                        lastPinchDist = d;
+                        return;
+                    }
+
+                    // Pan when zoomed
+                    if (zoom.scale > 1.01 && panPointerId === e.pointerId) {
+                        const dx = e.clientX - lastPanX;
+                        const dy = e.clientY - lastPanY;
+                        lastPanX = e.clientX;
+                        lastPanY = e.clientY;
+                        zoom.tx += dx;
+                        zoom.ty += dy;
+                        applyTransform();
+                    }
+                };
+
+                const onPointerUp = (e) => {
+                    if (!e) return;
+                    if (!pointers.has(e.pointerId)) return;
+
+                    const start = pointers.get(e.pointerId);
+                    const endPt = { x: e.clientX, y: e.clientY };
+
+                    pointers.delete(e.pointerId);
+                    if (panPointerId === e.pointerId) panPointerId = null;
+                    if (pointers.size < 2) lastPinchDist = 0;
+
+                    const dx = endPt.x - start.x;
+                    const dy = endPt.y - start.y;
+
+                    // If zoomed, we treat gestures as pan/zoom only (no slide navigation).
+                    if (zoom.scale > 1.01) {
+                        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) onTap(endPt.x, endPt.y);
+                        return;
+                    }
+
+                    // Tap / Swipe behaviors when not zoomed.
+                    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+                        onTap(endPt.x, endPt.y);
+                        return;
+                    }
+
+                    closeDetails();
+
                     // Swipe down = close.
                     if (dy > 90 && Math.abs(dy) > Math.abs(dx)) {
-                        closeDetails();
                         if (backLink) backLink.click();
                         else if (backUrl) window.location.href = backUrl;
                         return;
@@ -218,41 +442,24 @@
 
                     // Swipe left/right = prev/next.
                     if (Math.abs(dx) >= 60 && Math.abs(dx) > Math.abs(dy)) {
-                        closeDetails();
                         if (dx < 0 && nextUrl) window.location.href = nextUrl;
                         if (dx > 0 && prevUrl) window.location.href = prevUrl;
                     }
                 };
 
-                const onPointerDown = (e) => {
-                    // Don't start gesture on UI controls.
-                    if (e && e.target && e.target.closest && e.target.closest('[data-viewer-ui]')) return;
-                    start(e.clientX, e.clientY);
+                const onPointerCancel = (e) => {
+                    if (!e) return;
+                    pointers.delete(e.pointerId);
+                    if (pointers.size < 2) lastPinchDist = 0;
+                    if (panPointerId === e.pointerId) panPointerId = null;
                 };
-                const onPointerMove = (e) => {
-                    if (!active) return;
-                    const dx = e.clientX - startX;
-                    const dy = e.clientY - startY;
-                    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
-                };
-                const onPointerUp = (e) => end(e.clientX, e.clientY);
 
-                // Prefer Pointer Events to avoid double-firing on iOS.
-                if (window.PointerEvent) {
-                    root.addEventListener('pointerdown', onPointerDown, { passive: true });
-                    root.addEventListener('pointermove', onPointerMove, { passive: true });
-                    root.addEventListener('pointerup', onPointerUp, { passive: true });
-                } else {
-                    root.addEventListener('touchstart', (e) => {
-                        const t = e.touches && e.touches[0];
-                        if (!t) return;
-                        start(t.clientX, t.clientY);
-                    }, { passive: true });
-                    root.addEventListener('touchend', (e) => {
-                        const t = e.changedTouches && e.changedTouches[0];
-                        if (!t) return;
-                        end(t.clientX, t.clientY);
-                    }, { passive: true });
+                // Pointer Events (pinch/pan/tap/swipe)
+                if (window.PointerEvent && img) {
+                    img.addEventListener('pointerdown', onPointerDown, { passive: true });
+                    img.addEventListener('pointermove', onPointerMove, { passive: true });
+                    img.addEventListener('pointerup', onPointerUp, { passive: true });
+                    img.addEventListener('pointercancel', onPointerCancel, { passive: true });
                 }
 
                 // Desktop keyboard
