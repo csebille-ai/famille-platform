@@ -665,15 +665,17 @@
 		const imageEl = viewer.querySelector('img[data-shared-id]');
 		if (!backLink || !imageEl) return;
 
-		backLink.addEventListener('click', async (e) => {
-			if (prefersReducedMotion()) return;
-			e.preventDefault();
+		backLink.addEventListener('click', (e) => {
+			// UX decision: no reverse morph on close (it feels like a PiP / "big image in background").
+			// Keep navigation reliable by preferring the last captured origin URL, but navigate immediately.
 			const lastOriginHref = sameOriginHrefOrNull(storageGet(KEY_LAST_ORIGIN_URL));
-			const fallbackHref = lastOriginHref || String(backLink.href || '/');
-			const ok = await runOutgoingReturn({ backLink, viewerEl: viewer, imageEl, returnHref: fallbackHref });
-			if (!ok) {
-				window.location.href = fallbackHref;
+			const targetHref = lastOriginHref || String(backLink.href || '/');
+			try {
+				if (targetHref && String(backLink.href || '') !== targetHref) backLink.href = targetHref;
+			} catch {
+				// ignore
 			}
+			// Do not prevent default: let the browser navigate directly.
 		});
 	};
 
