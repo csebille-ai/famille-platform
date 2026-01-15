@@ -132,7 +132,13 @@
                 @endif
 
                 <div class="flex items-center gap-3">
-                    <x-secondary-button type="button" id="tarot-tts-openai">Audio (OpenAI)</x-secondary-button>
+                    <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                        <input type="checkbox" id="tarot-tts-toggle" class="sr-only peer" />
+                        <span class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors peer-checked:bg-indigo-600" aria-hidden="true">
+                            <span class="inline-block h-5 w-5 translate-x-1 rounded-full bg-white transition-transform" id="tarot-tts-toggle-dot"></span>
+                        </span>
+                        <span class="font-semibold">Audio</span>
+                    </label>
                     <div id="tarot-tts-status" class="text-xs text-slate-500"></div>
                 </div>
 
@@ -260,13 +266,25 @@
         if (sttStatusEl) setSttStatus('Dictée non supportée sur ce navigateur.');
     }
 
-    const openAiBtn = document.getElementById('tarot-tts-openai');
+    const toggleEl = document.getElementById('tarot-tts-toggle');
+    const dotEl = document.getElementById('tarot-tts-toggle-dot');
     const statusEl = document.getElementById('tarot-tts-status');
     const textEl = document.getElementById('tarot-tts-text');
 
-    if (!openAiBtn || !textEl) return;
+    if (!toggleEl || !textEl) return;
+
+    const STORAGE_KEY = 'tarot.tts.auto';
+
+    const syncUi = () => {
+        const on = !!toggleEl.checked;
+        if (dotEl) {
+            dotEl.style.transform = on ? 'translateX(1.25rem)' : 'translateX(0.25rem)';
+        }
+    };
 
     let openAiAudio = null;
+    let pendingAutoplayRetry = false;
+    let pendingHandler = null;
 
     const setStatus = (msg) => {
         if (!statusEl) return;
@@ -278,15 +296,18 @@
             try { openAiAudio.pause(); } catch (e) {}
             openAiAudio = null;
         }
+        pendingAutoplayRetry = false;
+        if (pendingHandler) {
+            try { window.removeEventListener('pointerdown', pendingHandler); } catch (e) {}
+            pendingHandler = null;
+        }
         setStatus('');
     };
 
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
     const speakWithOpenAi = async () => {
-        // Toggle
         if (openAiAudio) {
-            stopOpenAi();
             return;
         }
 
@@ -296,7 +317,6 @@
             return;
         }
 
-        openAiBtn.disabled = true;
         setStatus('Génération audio…');
 
         try {
@@ -321,15 +341,62 @@
 
             openAiAudio = new Audio(data.url);
             openAiAudio.onended = () => setStatus('');
-            await openAiAudio.play();
-            setStatus('Lecture OpenAI…');
+            try {
+                await openAiAudio.play();
+                setStatus('Lecture…');
+                pendingAutoplayRetry = false;
+            } catch (e) {
+                pendingAutoplayRetry = true;
+                setStatus('Auto-lecture bloquée. Tape une fois sur l’écran.');
+
+                if (!pendingHandler) {
+                    pendingHandler = async () => {
+                        if (!toggleEl.checked) return;
+                        if (!pendingAutoplayRetry) return;
+                        pendingAutoplayRetry = false;
+                        try { await speakWithOpenAi(); } catch (err) {}
+                    };
+                    window.addEventListener('pointerdown', pendingHandler, { once: true });
+                }
+            }
         } catch (e) {
             setStatus('OpenAI TTS indisponible.');
-        } finally {
-            openAiBtn.disabled = false;
         }
     };
 
-    openAiBtn.addEventListener('click', speakWithOpenAi);
+    // Load preference.
+    try {
+        toggleEl.checked = localStorage.getItem(STORAGE_KEY) === '1';
+    } catch (e) {
+        // ignore
+    }
+    syncUi();
+
+    const setEnabled = async (enabled) => {
+        try {
+            localStorage.setItem(STORAGE_KEY, enabled ? '1' : '0');
+        } catch (e) {
+            // ignore
+        }
+
+        if (!enabled) {
+            stopOpenAi();
+            return;
+        }
+
+        await speakWithOpenAi();
+    };
+
+    toggleEl.addEventListener('change', () => {
+        syncUi();
+        setEnabled(!!toggleEl.checked).catch(() => {});
+    });
+
+    // Auto-start on page load when enabled.
+    if (toggleEl.checked) {
+        setTimeout(() => {
+            speakWithOpenAi().catch(() => {});
+        }, 0);
+    }
 })();
 </script>
