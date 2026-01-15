@@ -309,6 +309,7 @@
                 };
 
                 // --- Gestures ---
+                // Track pointers with start + current position so we can detect swipes correctly.
                 const pointers = new Map();
                 let panPointerId = null;
                 let lastPanX = 0;
@@ -385,7 +386,7 @@
                     if (!img) return;
                     clearTapTimer();
 
-                    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                    pointers.set(e.pointerId, { sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY });
 
                     if (pointers.size === 1) {
                         panPointerId = e.pointerId;
@@ -395,14 +396,16 @@
                         startPinchIfReady();
                     }
 
-                    try { img.setPointerCapture && img.setPointerCapture(e.pointerId); } catch {}
+                    // Capture on the stage so we keep receiving moves even when finger leaves the image.
+                    try { stage?.setPointerCapture && stage.setPointerCapture(e.pointerId); } catch {}
                 };
 
                 const onPointerMove = (e) => {
                     if (!e) return;
                     if (!pointers.has(e.pointerId)) return;
 
-                    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                    const prev = pointers.get(e.pointerId);
+                    pointers.set(e.pointerId, { sx: prev?.sx ?? e.clientX, sy: prev?.sy ?? e.clientY, x: e.clientX, y: e.clientY });
 
                     // Pinch zoom
                     if (pointers.size === 2) {
@@ -441,8 +444,8 @@
                     if (panPointerId === e.pointerId) panPointerId = null;
                     if (pointers.size < 2) lastPinchDist = 0;
 
-                    const dx = endPt.x - start.x;
-                    const dy = endPt.y - start.y;
+                    const dx = endPt.x - Number(start?.sx ?? endPt.x);
+                    const dy = endPt.y - Number(start?.sy ?? endPt.y);
 
                     // If zoomed, we treat gestures as pan/zoom only (no slide navigation).
                     if (zoom.scale > 1.01) {
@@ -460,6 +463,8 @@
 
                     // Swipe down = close.
                     if (dy > 90 && Math.abs(dy) > Math.abs(dx)) {
+                        // Close should be immediate; don't toggle UI.
+                        clearTapTimer();
                         if (backLink) backLink.click();
                         else if (backUrl) window.location.href = backUrl;
                         return;
@@ -480,11 +485,12 @@
                 };
 
                 // Pointer Events (pinch/pan/tap/swipe)
-                if (window.PointerEvent && img) {
-                    img.addEventListener('pointerdown', onPointerDown, { passive: true });
-                    img.addEventListener('pointermove', onPointerMove, { passive: true });
-                    img.addEventListener('pointerup', onPointerUp, { passive: true });
-                    img.addEventListener('pointercancel', onPointerCancel, { passive: true });
+                // Bind on the full stage (covers letterboxing) but ignore interactions starting on the UI overlay.
+                if (window.PointerEvent && stage) {
+                    stage.addEventListener('pointerdown', onPointerDown, { passive: true });
+                    stage.addEventListener('pointermove', onPointerMove, { passive: true });
+                    stage.addEventListener('pointerup', onPointerUp, { passive: true });
+                    stage.addEventListener('pointercancel', onPointerCancel, { passive: true });
                 }
 
                 // Desktop keyboard
