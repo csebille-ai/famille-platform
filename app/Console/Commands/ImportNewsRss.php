@@ -174,7 +174,7 @@ class ImportNewsRss extends Command
                     }
                 }
 
-                $urlHash = hash('sha256', $url);
+                $urlHash = hash('sha256', $this->canonicalizeUrlForDedupe($url));
 
                 $model = NewsItem::query()->where('url_hash', $urlHash)->first();
                 $isNew = $model === null;
@@ -582,6 +582,64 @@ class ImportNewsRss extends Command
             $dir = '/';
         }
         return $scheme . '://' . $host . ($dir === '/' ? '' : $dir) . '/' . $maybeRelative;
+    }
+
+    private function canonicalizeUrlForDedupe(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return '';
+        }
+
+        $parts = parse_url($url);
+        if (!is_array($parts)) {
+            return $url;
+        }
+
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $path = (string) ($parts['path'] ?? '/');
+
+        if ($scheme === '' || $host === '') {
+            return $url;
+        }
+
+        $path = preg_replace('#/+#', '/', $path) ?: '/';
+
+        // Special-case: some agenda systems publish the same item as /slug-5/, /slug-6/, ...
+        if (stripos($path, '/agenda/') !== false) {
+            $trimmed = rtrim($path, '/');
+            $segments = array_values(array_filter(explode('/', $trimmed), fn ($s) => $s !== ''));
+            if (count($segments) > 0) {
+                $last = $segments[count($segments) - 1];
+                if (preg_match('/^(.*?)-(\d+)$/', $last, $m) && isset($m[1]) && $m[1] !== '') {
+                    $segments[count($segments) - 1] = $m[1];
+                    $path = '/' . implode('/', $segments);
+                }
+            }
+        }
+
+        $path = rtrim($path, '/');
+        if ($path === '') {
+            $path = '/';
+        }
+
+        // Drop fragments and remove common tracking params.
+        $query = (string) ($parts['query'] ?? '');
+        if ($query !== '') {
+            parse_str($query, $params);
+            if (is_array($params)) {
+                foreach (array_keys($params) as $k) {
+                    $key = strtolower((string) $k);
+                    if (str_starts_with($key, 'utm_') || in_array($key, ['xtor', 'fbclid', 'gclid', 'mc_cid', 'mc_eid'], true)) {
+                        unset($params[$k]);
+                    }
+                }
+                $query = http_build_query($params);
+            }
+        }
+
+        return $scheme . '://' . $host . $path . ($query !== '' ? ('?' . $query) : '');
     }
 
     private function makeExcerpt(string $htmlOrText): ?string

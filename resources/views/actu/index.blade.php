@@ -141,16 +141,65 @@
                 return `${it.published_at || ''}|${it.url || ''}|${it.title || ''}`;
             };
 
+            const canonicalUrlKey = (rawUrl) => {
+                const s = String(rawUrl || '').trim();
+                if (!s) return '';
+
+                try {
+                    const u = new URL(s, window.location.origin);
+
+                    // Strip fragments.
+                    u.hash = '';
+
+                    // Remove common tracking params.
+                    const toDelete = [];
+                    u.searchParams.forEach((_, k) => {
+                        const key = String(k || '').toLowerCase();
+                        if (key.startsWith('utm_')) toDelete.push(k);
+                        else if (['xtor', 'fbclid', 'gclid', 'mc_cid', 'mc_eid'].includes(key)) toDelete.push(k);
+                    });
+                    toDelete.forEach((k) => u.searchParams.delete(k));
+
+                    // Normalize path.
+                    let path = u.pathname || '/';
+                    path = path.replace(/\/+/g, '/');
+
+                    // Special case: some agenda systems duplicate pages with -N suffix.
+                    // Example: /agenda/foo-5/ => /agenda/foo/
+                    if (path.toLowerCase().includes('/agenda/')) {
+                        const parts = path.split('/').filter(Boolean);
+                        if (parts.length > 0) {
+                            const last = parts[parts.length - 1];
+                            const m = last.match(/^(.*?)-(\d+)$/);
+                            if (m && m[1]) {
+                                parts[parts.length - 1] = m[1];
+                                path = '/' + parts.join('/') + '/';
+                            }
+                        }
+                    }
+
+                    // Trim trailing slash (except root).
+                    if (path.length > 1) path = path.replace(/\/+$/, '');
+
+                    const origin = (u.origin || '').toLowerCase();
+                    const qs = u.searchParams.toString();
+                    return origin + path + (qs ? `?${qs}` : '');
+                } catch {
+                    // Fallback: best-effort normalization.
+                    return s.replace(/#.*$/, '').replace(/[\?&](utm_[^=&]+|fbclid|gclid|xtor|mc_cid|mc_eid)=[^&]*/gi, '').trim();
+                }
+            };
+
             const isDuplicate = (it) => {
-                const u = String(it?.url || '').trim();
-                if (!u) return false;
-                return seenUrls.has(u);
+                const key = canonicalUrlKey(it?.url);
+                if (!key) return false;
+                return seenUrls.has(key);
             };
 
             const markSeen = (it) => {
-                const u = String(it?.url || '').trim();
-                if (!u) return;
-                seenUrls.add(u);
+                const key = canonicalUrlKey(it?.url);
+                if (!key) return;
+                seenUrls.add(key);
             };
 
             const dedupeItems = (items) => {
