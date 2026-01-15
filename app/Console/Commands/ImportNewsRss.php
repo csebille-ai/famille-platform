@@ -63,6 +63,12 @@ class ImportNewsRss extends Command
             $maxPerFeed = 40;
         }
 
+        $fetchArticleImages = (bool) config('news.fetch_article_images', false);
+        $fetchArticleImagesMaxPerFeed = (int) config('news.fetch_article_images_max_per_feed', 0);
+        if ($fetchArticleImagesMaxPerFeed < 0) {
+            $fetchArticleImagesMaxPerFeed = 0;
+        }
+
         $total = 0;
         $anyFeedOk = false;
 
@@ -73,6 +79,9 @@ class ImportNewsRss extends Command
             $feedUrl = (string) $src['url'];
             $sourceName = (string) (($src['name'] ?? null) ?: $this->inferSourceFromUrl($feedUrl));
             $fixedTag = ($src['tag'] ?? null) !== null && (string) $src['tag'] !== '' ? (string) $src['tag'] : null;
+
+            $articleImageBudget = $fetchArticleImages ? $fetchArticleImagesMaxPerFeed : 0;
+            $articleImageCache = [];
 
             $this->info(sprintf('Fetching: %s%s', $feedUrl, $sourceName !== '' ? ' (' . $sourceName . ')' : ''));
 
@@ -146,10 +155,26 @@ class ImportNewsRss extends Command
                 $urlHash = hash('sha256', $url);
 
                 $model = NewsItem::query()->where('url_hash', $urlHash)->first();
-                if (!$model) {
+                $isNew = $model === null;
+                if ($isNew) {
                     $model = new NewsItem();
                     $model->url_hash = $urlHash;
                     $model->url = $url;
+                }
+
+                // Fallback for feeds without images: fetch article HTML to extract og:image.
+                // Runs for new items, and can also backfill a few existing items that still lack an image.
+                $modelHasImage = !$isNew && $model->image_url !== null && trim((string) $model->image_url) !== '';
+                if (($imageUrl === null || trim((string) $imageUrl) === '') && !$modelHasImage && $articleImageBudget > 0) {
+                    $cached = $articleImageCache[$url] ?? null;
+                    if ($cached === null) {
+                        $articleImageBudget--;
+                        $cached = $this->fetchArticleImageUrl($url, $timeout, $ua);
+                        $articleImageCache[$url] = $cached ?: '';
+                    }
+                    if (is_string($cached) && $cached !== '') {
+                        $imageUrl = $cached;
+                    }
                 }
 
                 $model->title = Str::of($title)->squish()->limit(500)->toString();
@@ -377,14 +402,162 @@ class ImportNewsRss extends Command
             return null;
         }
 
-        if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $html, $m)) {
-            $u = trim((string) ($m[1] ?? ''));
-            if ($u !== '') {
-                return $u;
+        // Prefer OG/Twitter cards when present.
+        foreach (['og:image', 'twitter:image', 'twitter:image:src'] as $key) {
+            $pattern = '/<meta\b[^>]*(?:property|name)=["\']' . preg_quote($key, '/') . '["\'][^>]*\bcontent=["\']([^"\']+)["\'][^>]*>/i';
+            if (preg_match($pattern, $html, $m)) {
+                $u = $this->sanitizeImageUrl((string) ($m[1] ?? ''));
+                if ($u !== null) {
+                    return $u;
+                }
+            }
+        }
+
+        // Then try HTML <img> with common lazy-load attributes.
+        if (preg_match_all('/<img\b[^>]*>/i', $html, $matches)) {
+            foreach (($matches[0] ?? []) as $imgTag) {
+                foreach (['data-orig-file', 'data-large-file', 'data-src', 'data-lazy-src', 'srcset', 'src'] as $attr) {
+                    $pattern = '/\b' . preg_quote($attr, '/') . '=["\']([^"\']+)["\']/i';
+                    if (!preg_match($pattern, $imgTag, $m)) {
+                        continue;
+                    }
+
+                    $raw = (string) ($m[1] ?? '');
+                    if ($attr === 'srcset') {
+                        $raw = trim(explode(',', $raw)[0] ?? '');
+                        $raw = trim(preg_split('/\s+/', $raw)[0] ?? '');
+                    }
+
+                    $u = $this->sanitizeImageUrl($raw);
+                    if ($u !== null) {
+                        return $u;
+                    }
+                }
             }
         }
 
         return null;
+    }
+
+    private function fetchArticleImageUrl(string $url, int $timeout, string $ua): ?string
+    {
+        $url = trim($url);
+        if ($url === '' || !preg_match('/^https?:\/\//i', $url)) {
+            return null;
+        }
+
+        try {
+            $resp = Http::retry(1, 500)
+                ->timeout($timeout)
+                ->withHeaders([
+                    'User-Agent' => $ua,
+                    'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.1',
+                ])
+                ->get($url);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        if (!$resp->ok()) {
+            return null;
+        }
+
+        $html = (string) $resp->body();
+        if ($html === '') {
+            return null;
+        }
+
+        // Try meta tags with base URL resolution.
+        foreach (['og:image', 'twitter:image', 'twitter:image:src'] as $key) {
+            $pattern = '/<meta\b[^>]*(?:property|name)=["\']' . preg_quote($key, '/') . '["\'][^>]*\bcontent=["\']([^"\']+)["\'][^>]*>/i';
+            if (preg_match($pattern, $html, $m)) {
+                $raw = (string) ($m[1] ?? '');
+                $raw = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $resolved = $this->resolveUrl($url, $raw);
+                $u = $this->sanitizeImageUrl($resolved);
+                if ($u !== null) {
+                    return $u;
+                }
+            }
+        }
+
+        // Fallback: first image in the article.
+        if (preg_match_all('/<img\b[^>]*>/i', $html, $matches)) {
+            foreach (($matches[0] ?? []) as $imgTag) {
+                foreach (['data-orig-file', 'data-large-file', 'data-src', 'data-lazy-src', 'srcset', 'src'] as $attr) {
+                    $pattern = '/\b' . preg_quote($attr, '/') . '=["\']([^"\']+)["\']/i';
+                    if (!preg_match($pattern, $imgTag, $m)) {
+                        continue;
+                    }
+
+                    $raw = (string) ($m[1] ?? '');
+                    if ($attr === 'srcset') {
+                        $raw = trim(explode(',', $raw)[0] ?? '');
+                        $raw = trim(preg_split('/\s+/', $raw)[0] ?? '');
+                    }
+
+                    $raw = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $resolved = $this->resolveUrl($url, $raw);
+                    $u = $this->sanitizeImageUrl($resolved);
+                    if ($u !== null) {
+                        return $u;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function sanitizeImageUrl(string $raw): ?string
+    {
+        $raw = html_entity_decode(trim($raw), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($raw === '') {
+            return null;
+        }
+        if (str_starts_with($raw, 'data:') || str_starts_with($raw, 'about:')) {
+            return null;
+        }
+        if (str_starts_with($raw, '//')) {
+            $raw = 'https:' . $raw;
+        }
+        if (!preg_match('/^https?:\/\//i', $raw)) {
+            // Without a base URL we can't reliably resolve relative URLs here.
+            return null;
+        }
+        return $raw;
+    }
+
+    private function resolveUrl(string $baseUrl, string $maybeRelative): string
+    {
+        $maybeRelative = trim($maybeRelative);
+        if ($maybeRelative === '') {
+            return '';
+        }
+        if (preg_match('/^https?:\/\//i', $maybeRelative) || str_starts_with($maybeRelative, 'data:')) {
+            return $maybeRelative;
+        }
+        if (str_starts_with($maybeRelative, '//')) {
+            return 'https:' . $maybeRelative;
+        }
+
+        $scheme = parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https';
+        $host = parse_url($baseUrl, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return $maybeRelative;
+        }
+
+        if (str_starts_with($maybeRelative, '/')) {
+            return $scheme . '://' . $host . $maybeRelative;
+        }
+
+        // Relative to directory.
+        $path = (string) (parse_url($baseUrl, PHP_URL_PATH) ?: '/');
+        $dir = rtrim(str_replace('\\', '/', dirname($path)), '/');
+        if ($dir === '') {
+            $dir = '/';
+        }
+        return $scheme . '://' . $host . ($dir === '/' ? '' : $dir) . '/' . $maybeRelative;
     }
 
     private function makeExcerpt(string $htmlOrText): ?string

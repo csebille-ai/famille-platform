@@ -117,15 +117,16 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#039;');
 
+            const cleanSource = (s) => (s || '').replace(/\s*\(rss\)\s*$/i, '').trim();
+
             const timeAgo = (iso) => {
                 if (!iso) return '';
                 const d = new Date(iso);
                 if (isNaN(d.getTime())) return '';
                 const now = new Date();
                 let diff = Math.floor((now.getTime() - d.getTime()) / 1000);
-
-                const future = diff < 0;
-                diff = Math.abs(diff);
+                // Clamp clock skew / future timestamps to “just now”.
+                diff = Math.max(0, diff);
 
                 const min = Math.floor(diff / 60);
                 const h = Math.floor(diff / 3600);
@@ -138,7 +139,7 @@
                 else s = `${j} j`;
 
                 if (s === "à l’instant") return s;
-                return future ? `dans ${s}` : `il y a ${s}`;
+                return `depuis ${s}`;
             };
 
             const itemKey = (it) => {
@@ -230,7 +231,7 @@
                     : '';
 
                 const excerpt = item.excerpt ? escapeHtml(item.excerpt) : '';
-                const meta = `${escapeHtml(item.source || '')}${item.published_at ? ` · ${escapeHtml(timeAgo(item.published_at))}` : ''}`;
+                const meta = `${escapeHtml(cleanSource(item.source || ''))}${item.published_at ? ` · ${escapeHtml(timeAgo(item.published_at))}` : ''}`;
 
                 elHero.innerHTML = `
                     <a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
@@ -254,7 +255,7 @@
                         : `<div class="w-full h-full bg-slate-100"></div>`;
 
                     const tag = it.tag ? `<span class="text-slate-400">·</span> <span class="text-slate-500">${escapeHtml(it.tag)}</span>` : '';
-                    const meta = `${escapeHtml(it.source || '')}${it.published_at ? ` · ${escapeHtml(timeAgo(it.published_at))}` : ''} ${tag}`.trim();
+                    const meta = `${escapeHtml(cleanSource(it.source || ''))}${it.published_at ? ` · ${escapeHtml(timeAgo(it.published_at))}` : ''} ${tag}`.trim();
                     const excerpt = it.excerpt ? escapeHtml(it.excerpt) : '';
 
                     return `
