@@ -24,22 +24,26 @@ class NewsIndexController extends Controller
         $bucket = trim((string) $request->query('bucket', ''));
         $cursor = trim((string) $request->query('cursor', ''));
 
+        $bucketIsFiltered = in_array($bucket, ['infos', 'sorties', 'sport'], true);
+
         $query = NewsItem::query();
         if ($tag !== '') {
             $query->where('tag', $tag);
         }
-        if ($bucket !== '' && in_array($bucket, ['infos', 'sorties', 'sport'], true)) {
+        if ($bucketIsFiltered) {
             $query->where('bucket', $bucket);
         }
 
         if ($cursor !== '') {
             $decoded = self::decodeCursor($cursor);
             if ($decoded) {
-                [$publishedAt, $id] = $decoded;
-                $query->where(function ($q) use ($publishedAt, $id) {
-                    $q->where('published_at', '<', $publishedAt)
-                        ->orWhere(function ($q2) use ($publishedAt, $id) {
-                            $q2->where('published_at', '=', $publishedAt)
+                [$ts, $id] = $decoded;
+                $field = $bucketIsFiltered ? 'published_at' : 'fetched_at';
+
+                $query->where(function ($q) use ($field, $ts, $id) {
+                    $q->where($field, '<', $ts)
+                        ->orWhere(function ($q2) use ($field, $ts, $id) {
+                            $q2->where($field, '=', $ts)
                                 ->where('id', '<', $id);
                         });
                 });
@@ -47,7 +51,11 @@ class NewsIndexController extends Controller
         }
 
         $items = $query
-            ->orderByDesc('published_at')
+            ->when($bucketIsFiltered, function ($q) {
+                $q->orderByDesc('published_at');
+            }, function ($q) {
+                $q->orderByDesc('fetched_at');
+            })
             ->orderByDesc('id')
             ->limit($limit)
             ->get([
@@ -61,14 +69,15 @@ class NewsIndexController extends Controller
                 'bucket',
                 'sub_category',
                 'published_at',
+                'fetched_at',
             ]);
 
         $nextCursor = null;
         $last = $items->last();
         if ($last) {
-            $publishedAt = $last->published_at;
-            if ($publishedAt) {
-                $nextCursor = self::encodeCursor($publishedAt, (int) $last->id);
+            $ts = $bucketIsFiltered ? $last->published_at : $last->fetched_at;
+            if ($ts) {
+                $nextCursor = self::encodeCursor($ts, (int) $last->id);
             }
         }
 
@@ -109,6 +118,7 @@ class NewsIndexController extends Controller
     private static function encodeCursor(Carbon $publishedAt, int $id): string
     {
         $payload = json_encode([
+            // Backward compatible key name; represents the sort timestamp.
             'p' => $publishedAt->toIso8601String(),
             'id' => $id,
         ], JSON_UNESCAPED_SLASHES);

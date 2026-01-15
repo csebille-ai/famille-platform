@@ -1,5 +1,6 @@
 @php
     $bucketChips = [
+        ['key' => 'all', 'label' => 'Tout'],
         ['key' => 'infos', 'label' => 'Infos'],
         ['key' => 'sorties', 'label' => 'Sorties'],
         ['key' => 'sport', 'label' => 'Sport'],
@@ -10,12 +11,6 @@
     <div class="max-w-3xl mx-auto">
         <div class="sticky top-16 z-40 bg-slate-50/95 backdrop-blur border-b border-slate-200">
             <div class="px-6 pt-4 pb-3">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0">
-                        <h1 class="text-xl font-bold text-gray-900">Actu locale</h1>
-                    </div>
-                </div>
-
                 <div id="actu-buckets" class="mt-3 -mx-6 px-6 pb-1 overflow-x-auto">
                     <div class="flex items-center gap-2 min-w-max">
                         @foreach ($bucketChips as $b)
@@ -81,7 +76,7 @@
             const elNewBtn = document.getElementById('actu-new-btn');
             const bucketButtons = Array.from(document.querySelectorAll('.actu-bucket'));
 
-            let selectedBucket = 'infos';
+            let selectedBucket = 'all';
             let nextCursor = null;
             let heroItem = null;
             let loading = false;
@@ -107,9 +102,9 @@
             const loadBucketPref = () => {
                 try {
                     const v = window.localStorage.getItem('actu.bucket');
-                    if (v === 'infos' || v === 'sorties' || v === 'sport') return v;
+                    if (v === 'all' || v === 'infos' || v === 'sorties' || v === 'sport') return v;
                 } catch (e) {}
-                return 'infos';
+                return 'all';
             };
 
             const saveBucketPref = (v) => {
@@ -398,7 +393,7 @@
             };
 
             const setBucket = (bucket) => {
-                selectedBucket = (bucket === 'infos' || bucket === 'sorties' || bucket === 'sport') ? bucket : 'infos';
+                selectedBucket = (bucket === 'all' || bucket === 'infos' || bucket === 'sorties' || bucket === 'sport') ? bucket : 'all';
                 saveBucketPref(selectedBucket);
                 renderBuckets();
                 setNewBannerVisible(false);
