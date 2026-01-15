@@ -1027,6 +1027,11 @@
                         img.alt = nameLabel;
                         img.loading = 'lazy';
                         img.className = 'block w-full h-full object-contain';
+                        // When the image loads, the bubble height changes; if we're at the bottom,
+                        // keep it pinned so the new upload looks "properly placed".
+                        img.addEventListener('load', () => {
+                            if (isNearBottom()) scrollToBottom();
+                        }, { once: true });
                         card.appendChild(img);
                     } else {
                         const ph = document.createElement('div');
