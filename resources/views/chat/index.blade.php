@@ -832,7 +832,18 @@
                     if (!(img instanceof HTMLImageElement)) return;
                     if (img.dataset.pinBound === '1') return;
                     img.dataset.pinBound = '1';
-                    if (img.complete) return;
+                    if (img.complete) {
+                        // Cached images might not fire 'load', but decoding can still complete later.
+                        try {
+                            if (typeof img.decode === 'function') {
+                                img.decode().then(() => {
+                                    pinToBottom(900);
+                                    scrollToBottom({ force: true });
+                                }).catch(() => {});
+                            }
+                        } catch {}
+                        return;
+                    }
 
                     img.addEventListener('load', () => {
                         // Thumbnails can load after initial scroll, changing layout;
@@ -852,11 +863,23 @@
                 setTimeout(() => scrollToBottom({ force: true }), 360);
                 setTimeout(() => scrollToBottom({ force: true }), 800);
                 setTimeout(() => scrollToBottom({ force: true }), 1600);
+                setTimeout(() => scrollToBottom({ force: true }), 2600);
             }
 
             // Ensure we land at the bottom on initial load and when navigating back.
             window.addEventListener('load', () => ensureBottom(1200));
             window.addEventListener('pageshow', () => ensureBottom(1200));
+
+            // Prevent the browser from restoring a previous scroll position (mobile/PWA can be inconsistent).
+            try {
+                if (window.history && 'scrollRestoration' in window.history) {
+                    window.history.scrollRestoration = 'manual';
+                }
+            } catch {}
+
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) ensureBottom(1200);
+            });
 
             window.addEventListener('resize', () => {
                 syncScrollBottomPadding();
@@ -885,6 +908,7 @@
 
             syncScrollBottomPadding();
             ensureBottom(900);
+            requestAnimationFrame(() => ensureBottom(1200));
             syncScrollToBottomButton();
 
             function hideEmptyState() {
