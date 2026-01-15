@@ -296,6 +296,69 @@
 		return { x, y, w, h };
 	};
 
+	const calcContainRectInBox = ({ x, y, w, h, aspect }) => {
+		const bx = Number(x || 0);
+		const by = Number(y || 0);
+		const bw = Math.max(1, Number(w || 1));
+		const bh = Math.max(1, Number(h || 1));
+		const ar = Math.max(0.05, Number(aspect || 1));
+
+		let ww = bw;
+		let hh = ww / ar;
+		if (hh > bh) {
+			hh = bh;
+			ww = hh * ar;
+		}
+		return { x: bx + (bw - ww) / 2, y: by + (bh - hh) / 2, w: ww, h: hh };
+	};
+
+	const waitForImageReady = async (imgEl, timeoutMs = 2500) => {
+		if (!imgEl) return false;
+		const start = now();
+		const remaining = () => Math.max(0, timeoutMs - (now() - start));
+
+		const alreadyOk = () => {
+			try {
+				return !!(imgEl.complete && (imgEl.naturalWidth || 0) > 0);
+			} catch {
+				return false;
+			}
+		};
+
+		if (alreadyOk()) {
+			try {
+				if (typeof imgEl.decode === 'function') {
+					await Promise.race([
+						imgEl.decode().catch(() => {}),
+						new Promise((r) => setTimeout(r, 400)),
+					]);
+				}
+			} catch {
+				// ignore
+			}
+			return true;
+		}
+
+		return await new Promise((resolve) => {
+			let done = false;
+			const finish = (ok) => {
+				if (done) return;
+				done = true;
+				cleanup();
+				resolve(!!ok);
+			};
+			const onLoad = () => finish(alreadyOk());
+			const onErr = () => finish(false);
+			const cleanup = () => {
+				try { imgEl.removeEventListener('load', onLoad); } catch {}
+				try { imgEl.removeEventListener('error', onErr); } catch {}
+			};
+			try { imgEl.addEventListener('load', onLoad, { once: true }); } catch {}
+			try { imgEl.addEventListener('error', onErr, { once: true }); } catch {}
+			setTimeout(() => finish(alreadyOk()), remaining());
+		});
+	};
+
 	const setPending = (state) => {
 		storageSet(KEY_PENDING, JSON.stringify(state));
 	};
@@ -350,6 +413,7 @@
 		let toRect = null;
 		let destFit = null;
 		let destRadiusPx = null;
+		let destImg = null;
 		if (type === 'return' && st.toRect) {
 			toRect = normalizeRect(st.toRect);
 		} else {
@@ -358,6 +422,7 @@
 				toRect = rectFromEl(destEl);
 				destFit = getObjectFitFrom(destEl, 'contain');
 				destRadiusPx = getRadiusFrom(destEl);
+				destImg = destEl.tagName === 'IMG' ? destEl : (destEl.querySelector ? destEl.querySelector('img') : null);
 				// Hide the real destination element until we settle.
 				try { destEl.style.visibility = 'hidden'; } catch {}
 			}
@@ -400,6 +465,17 @@
 			if (destEl) destEl.style.visibility = '';
 		} catch {}
 
+		// Keep the clone until the real image is ready to avoid a blank/blue flash.
+		if (destImg) {
+			try {
+				await waitForImageReady(destImg, isLowEnd() ? 1400 : 2800);
+			} catch {
+				// ignore
+			}
+		}
+		// Cross-fade out the clone quickly.
+		await animateOpacity(clone, 1, 0, { duration: isLowEnd() ? 90 : 140, easing: 'linear' });
+
 		root.innerHTML = '';
 		document.documentElement.classList.remove('tm-animating');
 		document.documentElement.classList.remove('tm-reveal');
@@ -438,9 +514,14 @@
 		root.appendChild(clone);
 
 		const duration = isLowEnd() ? 180 : 220;
-		// Match the viewer's usual rendering better: expand to a centered contain rect (not full-bleed).
+		// Match the viewer's image area (it has padding top/bottom): expand to a centered contain rect inside that box.
 		const aspect = getAspectRatioFrom(sharedEl, (fromRect.w > 0 && fromRect.h > 0) ? (fromRect.w / fromRect.h) : 1);
-		const target = calcContainRect({ viewportW: window.innerWidth, viewportH: window.innerHeight, aspect });
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		const padX = 8; // viewer uses px-2
+		const padY = 64; // viewer uses py-16
+		const box = { x: padX, y: padY, w: Math.max(1, vw - padX * 2), h: Math.max(1, vh - padY * 2) };
+		const target = calcContainRectInBox({ ...box, aspect });
 		await Promise.all([
 			animateOpacity(backdrop, 0, 1, { duration }),
 			animateMorph(clone, fromRect, target, {
