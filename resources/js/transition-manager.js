@@ -150,39 +150,62 @@
 		return img;
 	};
 
-	const animateRect = (el, fromRect, toRect, { duration = 320, easing = 'cubic-bezier(0.2, 0.8, 0.2, 1)' } = {}) => {
+	const getObjectFitFrom = (el, fallback = 'cover') => {
+		try {
+			const fit = String(window.getComputedStyle(el).objectFit || '').trim();
+			return fit || fallback;
+		} catch {
+			return fallback;
+		}
+	};
+
+	const animateMorph = (
+		el,
+		fromRect,
+		toRect,
+		{
+			duration = 320,
+			easing = 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+			fromRadiusPx = null,
+			toRadiusPx = null,
+		} = {}
+	) => {
 		if (!el) return Promise.resolve();
 		const from = normalizeRect(fromRect);
 		const to = normalizeRect(toRect);
 
-		const keyframes = [
-			{
-				left: `${from.x}px`,
-				top: `${from.y}px`,
-				width: `${Math.max(0, from.w)}px`,
-				height: `${Math.max(0, from.h)}px`,
-			},
-			{
-				left: `${to.x}px`,
-				top: `${to.y}px`,
-				width: `${Math.max(0, to.w)}px`,
-				height: `${Math.max(0, to.h)}px`,
-			},
-		];
+		const kf0 = {
+			left: `${from.x}px`,
+			top: `${from.y}px`,
+			width: `${Math.max(0, from.w)}px`,
+			height: `${Math.max(0, from.h)}px`,
+		};
+		const kf1 = {
+			left: `${to.x}px`,
+			top: `${to.y}px`,
+			width: `${Math.max(0, to.w)}px`,
+			height: `${Math.max(0, to.h)}px`,
+		};
+
+		if (fromRadiusPx != null && toRadiusPx != null) {
+			kf0.borderRadius = `${Math.max(0, Number(fromRadiusPx) || 0)}px`;
+			kf1.borderRadius = `${Math.max(0, Number(toRadiusPx) || 0)}px`;
+		}
 
 		if (el.animate) {
-			const anim = el.animate(keyframes, { duration, easing, fill: 'forwards' });
+			const anim = el.animate([kf0, kf1], { duration, easing, fill: 'forwards' });
 			return anim.finished.catch(() => {});
 		}
 
 		// Fallback: no WAAPI
-		el.style.transition = `left ${duration}ms ${easing}, top ${duration}ms ${easing}, width ${duration}ms ${easing}, height ${duration}ms ${easing}`;
-		el.style.left = `${to.x}px`;
-		el.style.top = `${to.y}px`;
-		el.style.width = `${Math.max(0, to.w)}px`;
-		el.style.height = `${Math.max(0, to.h)}px`;
+		const props = ['left', 'top', 'width', 'height'];
+		if (fromRadiusPx != null && toRadiusPx != null) props.push('border-radius');
+		el.style.transition = props.map((p) => `${p} ${duration}ms ${easing}`).join(', ');
+		Object.assign(el.style, kf1);
 		return new Promise((resolve) => setTimeout(resolve, duration));
 	};
+
+	const animateRect = (el, fromRect, toRect, opts = {}) => animateMorph(el, fromRect, toRect, opts);
 
 	const animateOpacity = (el, from, to, { duration = 320, easing = 'cubic-bezier(0.2, 0.8, 0.2, 1)' } = {}) => {
 		if (!el) return Promise.resolve();
@@ -275,6 +298,8 @@
 		}
 
 		const clone = makeCloneImg(src, cloneRect, Number(st.radiusPx || 16));
+		// Default to source rendering (thumbnail style).
+		clone.style.objectFit = String(st.fit || 'cover');
 		root.appendChild(clone);
 
 		// Make sure the destination is in the right scroll position for "return".
@@ -290,12 +315,16 @@
 		await new Promise((r) => requestAnimationFrame(() => r()));
 
 		let toRect = null;
+		let destFit = null;
+		let destRadiusPx = null;
 		if (type === 'return' && st.toRect) {
 			toRect = normalizeRect(st.toRect);
 		} else {
 			const destEl = findSharedElement(id);
 			if (destEl) {
 				toRect = rectFromEl(destEl);
+				destFit = getObjectFitFrom(destEl, 'contain');
+				destRadiusPx = getRadiusFrom(destEl);
 				// Hide the real destination element until we settle.
 				try { destEl.style.visibility = 'hidden'; } catch {}
 			}
@@ -313,9 +342,20 @@
 			return;
 		}
 
-		// Morph clone to destination.
+		// Match destination rendering near the end to avoid a visible jump when swapping overlay -> real element.
+		if (destFit) {
+			setTimeout(() => {
+				try { clone.style.objectFit = String(destFit || 'contain'); } catch {}
+			}, Math.max(0, Math.floor(duration * 0.75)));
+		}
+
 		await Promise.all([
-			animateRect(clone, cloneRect, toRect, { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+			animateMorph(clone, cloneRect, toRect, {
+				duration,
+				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+				fromRadiusPx: Number(st.radiusPx || 16),
+				toRadiusPx: destRadiusPx != null ? Number(destRadiusPx || 0) : 0,
+			}),
 			type === 'return'
 				? animateOpacity(backdrop, 1, 0, { duration })
 				: Promise.resolve(),
@@ -361,13 +401,19 @@
 		const backdrop = makeBackdrop(0);
 		root.appendChild(backdrop);
 		const clone = makeCloneImg(src, fromRect, getRadiusFrom(sharedEl));
+		clone.style.objectFit = getObjectFitFrom(sharedEl, 'cover');
 		root.appendChild(clone);
 
 		const duration = isLowEnd() ? 180 : 220;
 		const full = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
 		await Promise.all([
 			animateOpacity(backdrop, 0, 1, { duration }),
-			animateRect(clone, fromRect, full, { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+			animateMorph(clone, fromRect, full, {
+				duration,
+				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+				fromRadiusPx: getRadiusFrom(sharedEl),
+				toRadiusPx: 0,
+			}),
 		]);
 
 		// Best-effort persistence for cross-page settle.
@@ -381,7 +427,7 @@
 				ts: now(),
 			};
 			writeOrigins(origins);
-			setPending({
+				setPending({
 				v: 1,
 				type: 'enter',
 				id,
@@ -389,6 +435,7 @@
 				fromRect,
 				fromScrollY: window.scrollY || 0,
 				radiusPx: getRadiusFrom(sharedEl),
+					fit: getObjectFitFrom(sharedEl, 'cover'),
 				ts: now(),
 			});
 		} catch {
