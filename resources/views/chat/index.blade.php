@@ -825,13 +825,33 @@
                 setTimeout(run, 80);
             }
 
+            function bindInitialMediaThumbPinning() {
+                if (!messagesEl) return;
+                const imgs = messagesEl.querySelectorAll('[data-chat-media-open] img');
+                imgs.forEach((img) => {
+                    if (!(img instanceof HTMLImageElement)) return;
+                    if (img.dataset.pinBound === '1') return;
+                    img.dataset.pinBound = '1';
+                    if (img.complete) return;
+
+                    img.addEventListener('load', () => {
+                        // Thumbnails can load after initial scroll, changing layout;
+                        // keep the bottom pinned while this happens.
+                        pinToBottom(900);
+                        scrollToBottom({ force: true });
+                    }, { once: true });
+                });
+            }
+
             function ensureBottom(ms = 900) {
                 pinToBottom(ms);
                 syncScrollBottomPadding();
+                bindInitialMediaThumbPinning();
                 scrollToBottom({ force: true });
                 setTimeout(() => scrollToBottom({ force: true }), 120);
                 setTimeout(() => scrollToBottom({ force: true }), 360);
                 setTimeout(() => scrollToBottom({ force: true }), 800);
+                setTimeout(() => scrollToBottom({ force: true }), 1600);
             }
 
             // Ensure we land at the bottom on initial load and when navigating back.
