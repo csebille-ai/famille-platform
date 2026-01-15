@@ -335,6 +335,37 @@
                 <div class="{{ $attributes->get('navigationClass', '') }}">
                     @include('layouts.navigation')
                 </div>
+
+                <script>
+                    (() => {
+                        const apply = () => {
+                            const nav = document.querySelector('nav');
+                            const h = nav ? Math.ceil(nav.offsetHeight || nav.getBoundingClientRect().height || 0) : 0;
+                            document.documentElement.style.setProperty('--app-nav-h', `${h}px`);
+                        };
+
+                        const schedule = () => {
+                            requestAnimationFrame(() => requestAnimationFrame(apply));
+                        };
+
+                        schedule();
+                        window.addEventListener('load', schedule, { passive: true });
+                        window.addEventListener('resize', schedule, { passive: true });
+
+                        if (window.visualViewport) {
+                            window.visualViewport.addEventListener('resize', schedule, { passive: true });
+                            window.visualViewport.addEventListener('scroll', schedule, { passive: true });
+                        }
+
+                        if (window.ResizeObserver) {
+                            const nav = document.querySelector('nav');
+                            if (nav) {
+                                const ro = new ResizeObserver(schedule);
+                                ro.observe(nav);
+                            }
+                        }
+                    })();
+                </script>
             @endunless
 
             @include('partials.ios-a2hs-banner')
@@ -349,7 +380,10 @@
             @endisset
 
             <!-- Page Content -->
-            <main class="@unless($attributes->get('hideNavigation')) pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8 @endunless">
+            <main
+                class="@unless($attributes->get('hideNavigation')) pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8 @endunless"
+                style="padding-top: var(--app-nav-h, 0px)"
+            >
                 {{ $slot }}
             </main>
 
