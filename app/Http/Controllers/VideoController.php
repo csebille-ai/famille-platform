@@ -472,6 +472,8 @@ class VideoController extends Controller
             abort(404);
         }
 
+        $dispositionType = $request->boolean('download') ? 'attachment' : 'inline';
+
         $diskName = (string) ($video->storage_disk ?? 'public');
         if (!in_array($diskName, ['public', 'local'], true)) {
             $url = '';
@@ -501,7 +503,7 @@ class VideoController extends Controller
         if (!is_int($size) || $size <= 0) {
             return response()->file($absolutePath, [
                 'Content-Type' => $mime,
-                'Content-Disposition' => 'inline; filename="' . addslashes($downloadName) . '"',
+                'Content-Disposition' => $dispositionType . '; filename="' . addslashes($downloadName) . '"',
                 'Accept-Ranges' => 'bytes',
             ]);
         }
@@ -510,7 +512,7 @@ class VideoController extends Controller
         if ($range === '' || !preg_match('/^bytes=(\d*)-(\d*)$/', $range, $m)) {
             return response()->file($absolutePath, [
                 'Content-Type' => $mime,
-                'Content-Disposition' => 'inline; filename="' . addslashes($downloadName) . '"',
+                'Content-Disposition' => $dispositionType . '; filename="' . addslashes($downloadName) . '"',
                 'Accept-Ranges' => 'bytes',
                 'Content-Length' => (string) $size,
             ]);
@@ -570,7 +572,7 @@ class VideoController extends Controller
         }, 206);
 
         $response->headers->set('Content-Type', $mime);
-        $response->headers->set('Content-Disposition', 'inline; filename="' . addslashes($downloadName) . '"');
+        $response->headers->set('Content-Disposition', $dispositionType . '; filename="' . addslashes($downloadName) . '"');
         $response->headers->set('Accept-Ranges', 'bytes');
         $response->headers->set('Content-Length', (string) $length);
         $response->headers->set('Content-Range', "bytes {$start}-{$end}/{$size}");
@@ -771,6 +773,13 @@ SVG;
         UploadAsset::query()
             ->where('video_id', $video->id)
             ->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'Vidéo supprimée.',
+                'redirect' => $returnPath,
+            ]);
+        }
 
         return redirect($returnPath)->with('status', 'Vidéo supprimée.');
     }
