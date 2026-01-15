@@ -5,6 +5,7 @@
 (() => {
 	const KEY_PENDING = 'famille_tm_pending';
 	const KEY_ORIGINS = 'famille_tm_origins';
+	const KEY_LAST_ORIGIN_URL = 'famille_tm_last_origin_url';
 
 	const now = () => Date.now();
 
@@ -67,6 +68,18 @@
 			window.sessionStorage.removeItem(key);
 		} catch {
 			// ignore
+		}
+	};
+
+	const sameOriginHrefOrNull = (raw) => {
+		const s = String(raw || '').trim();
+		if (!s) return null;
+		try {
+			const u = new URL(s, window.location.href);
+			if (u.origin !== window.location.origin) return null;
+			return u.href;
+		} catch {
+			return null;
 		}
 	};
 
@@ -414,6 +427,7 @@
 		let destFit = null;
 		let destRadiusPx = null;
 		let destImg = null;
+		let destElForHide = null;
 		if (type === 'return' && st.toRect) {
 			toRect = normalizeRect(st.toRect);
 		} else {
@@ -423,8 +437,10 @@
 				destFit = getObjectFitFrom(destEl, 'contain');
 				destRadiusPx = getRadiusFrom(destEl);
 				destImg = destEl.tagName === 'IMG' ? destEl : (destEl.querySelector ? destEl.querySelector('img') : null);
-				// Hide the real destination element until we settle.
+				// Hide the real destination element until we fully swap (prevents any clone<->real crossfade).
+				destElForHide = destEl;
 				try { destEl.style.visibility = 'hidden'; } catch {}
+				try { destEl.style.opacity = '0'; } catch {}
 			}
 		}
 
@@ -459,12 +475,6 @@
 				: Promise.resolve(),
 		]);
 
-		// Reveal destination element and controls.
-		try {
-			const destEl = findSharedElement(id);
-			if (destEl) destEl.style.visibility = '';
-		} catch {}
-
 		// Keep the clone until the real image is ready to avoid a blank/blue flash.
 		if (destImg) {
 			try {
@@ -473,9 +483,14 @@
 				// ignore
 			}
 		}
-		// Cross-fade out the clone quickly.
-		await animateOpacity(clone, 1, 0, { duration: isLowEnd() ? 90 : 140, easing: 'linear' });
 
+		// Swap instantly (no visible fade between clone and real image).
+		try {
+			if (destElForHide) {
+				destElForHide.style.visibility = '';
+				destElForHide.style.opacity = '';
+			}
+		} catch {}
 		root.innerHTML = '';
 		document.documentElement.classList.remove('tm-animating');
 		document.documentElement.classList.remove('tm-reveal');
@@ -540,18 +555,20 @@
 				scrollY: window.scrollY || 0,
 				src,
 				radiusPx: getRadiusFrom(sharedEl),
+				originUrl: window.location.href,
 				ts: now(),
 			};
 			writeOrigins(origins);
-				setPending({
+			storageSet(KEY_LAST_ORIGIN_URL, window.location.href);
+			setPending({
 				v: 1,
 				type: 'enter',
 				id,
 				src,
-					fromRect: target,
+				fromRect: target,
 				fromScrollY: window.scrollY || 0,
 				radiusPx: getRadiusFrom(sharedEl),
-					fit: getObjectFitFrom(sharedEl, 'cover'),
+				fit: getObjectFitFrom(sharedEl, 'cover'),
 				ts: now(),
 			});
 		} catch {
@@ -562,11 +579,11 @@
 		return true;
 	};
 
-	const runOutgoingReturn = async ({ backLink, viewerEl, imageEl }) => {
+	const runOutgoingReturn = async ({ backLink, viewerEl, imageEl, returnHref }) => {
 		if (prefersReducedMotion()) return false;
 		if (!backLink || !viewerEl || !imageEl) return false;
 
-		const href = String(backLink.href || '').trim();
+		const href = String(returnHref || backLink.href || '').trim();
 		if (!href) return false;
 
 		const id = getSharedIdFrom(imageEl);
@@ -611,12 +628,6 @@
 			// ignore
 		}
 
-		// Use history.back when it makes sense (better UX / preserves state).
-		if (history.length > 1) {
-			history.back();
-			return true;
-		}
-
 		window.location.href = href;
 		return true;
 	};
@@ -657,9 +668,11 @@
 		backLink.addEventListener('click', async (e) => {
 			if (prefersReducedMotion()) return;
 			e.preventDefault();
-			const ok = await runOutgoingReturn({ backLink, viewerEl: viewer, imageEl });
+			const lastOriginHref = sameOriginHrefOrNull(storageGet(KEY_LAST_ORIGIN_URL));
+			const fallbackHref = lastOriginHref || String(backLink.href || '/');
+			const ok = await runOutgoingReturn({ backLink, viewerEl: viewer, imageEl, returnHref: fallbackHref });
 			if (!ok) {
-				window.location.href = String(backLink.href || '/');
+				window.location.href = fallbackHref;
 			}
 		});
 	};

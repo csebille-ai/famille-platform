@@ -47,28 +47,6 @@
             </div>
         </div>
 
-        @if(!empty($prevNode))
-            <a
-                href="{{ $prevUrl }}"
-                class="absolute left-3 top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-slate-900/70 text-white transition-opacity duration-200"
-                aria-label="Image précédente"
-                data-tm-controls
-            >
-                ←
-            </a>
-        @endif
-
-        @if(!empty($nextNode))
-            <a
-                href="{{ $nextUrl }}"
-                class="absolute right-3 top-1/2 -translate-y-1/2 z-10 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-slate-900/70 text-white transition-opacity duration-200"
-                aria-label="Image suivante"
-                data-tm-controls
-            >
-                →
-            </a>
-        @endif
-
         <div class="min-h-[100svh] flex items-center justify-center px-2 py-16">
             <img
                 src="{{ route('images.view', $node) }}"
