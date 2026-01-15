@@ -21,7 +21,7 @@ $sourcesFromJson = $parseJsonArray(env('NEWS_SOURCES_JSON'));
 $fetchArticleImagesRaw = strtolower(trim((string) env('NEWS_FETCH_ARTICLE_IMAGES', '1')));
 $fetchArticleImages = !in_array($fetchArticleImagesRaw, ['0', 'false', 'off', 'no'], true);
 
-$fetchArticleImagesMaxPerFeed = (int) env('NEWS_FETCH_ARTICLE_IMAGES_MAX_PER_FEED', 3);
+$fetchArticleImagesMaxPerFeed = (int) env('NEWS_FETCH_ARTICLE_IMAGES_MAX_PER_FEED', 8);
 if ($fetchArticleImagesMaxPerFeed < 0) {
     $fetchArticleImagesMaxPerFeed = 0;
 }
