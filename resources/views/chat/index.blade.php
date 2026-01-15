@@ -761,9 +761,53 @@
                 return ini.toUpperCase();
             }
 
-            function scrollToBottom() {
+            let pinToBottomUntil = 0;
+
+            function pinToBottom(ms = 1200) {
+                const until = Date.now() + Math.max(0, Number(ms || 0));
+                pinToBottomUntil = Math.max(pinToBottomUntil, until);
+            }
+
+            function isPinnedToBottom() {
+                return Date.now() < pinToBottomUntil;
+            }
+
+            function getMobileBottomDockHeight() {
+                const dock = document.getElementById('mobileBottomDock');
+                if (!dock) return 0;
+                const rect = dock.getBoundingClientRect();
+                return rect && rect.height ? rect.height : (dock.offsetHeight || 0);
+            }
+
+            function syncScrollBottomPadding() {
+                if (!scrollEl) return;
+
+                let isMobile = true;
+                try {
+                    isMobile = !(window.matchMedia && window.matchMedia('(min-width: 640px)').matches);
+                } catch {}
+
+                const dockH = isMobile ? getMobileBottomDockHeight() : 0;
+                if (dockH > 0) {
+                    const pad = Math.ceil(dockH + 12);
+                    scrollEl.style.paddingBottom = `${pad}px`;
+                    scrollEl.style.scrollPaddingBottom = `${pad}px`;
+                } else {
+                    scrollEl.style.paddingBottom = '';
+                    scrollEl.style.scrollPaddingBottom = '';
+                }
+            }
+
+            function scrollToBottom(opts = {}) {
+                const options = (opts && typeof opts === 'object') ? opts : {};
+                const force = !!options.force;
+
                 const lastRow = messagesEl?.querySelector('[data-message-row]:last-child');
                 if (!lastRow) return;
+
+                if (!force && !isPinnedToBottom() && !isNearBottom()) return;
+
+                syncScrollBottomPadding();
 
                 // iOS Safari can be finicky with programmatic scrolling; do both.
                 const run = () => {
@@ -781,9 +825,29 @@
                 setTimeout(run, 80);
             }
 
+            function ensureBottom(ms = 900) {
+                pinToBottom(ms);
+                syncScrollBottomPadding();
+                scrollToBottom({ force: true });
+                setTimeout(() => scrollToBottom({ force: true }), 120);
+                setTimeout(() => scrollToBottom({ force: true }), 360);
+                setTimeout(() => scrollToBottom({ force: true }), 800);
+            }
+
             // Ensure we land at the bottom on initial load and when navigating back.
-            window.addEventListener('load', () => setTimeout(scrollToBottom, 120));
-            window.addEventListener('pageshow', () => setTimeout(scrollToBottom, 120));
+            window.addEventListener('load', () => ensureBottom(1200));
+            window.addEventListener('pageshow', () => ensureBottom(1200));
+
+            window.addEventListener('resize', () => {
+                syncScrollBottomPadding();
+                if (isPinnedToBottom()) scrollToBottom({ force: true });
+            });
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => {
+                    syncScrollBottomPadding();
+                    if (isPinnedToBottom()) scrollToBottom({ force: true });
+                });
+            }
 
             function isNearBottom() {
                 if (!scrollEl) return true;
@@ -799,7 +863,8 @@
                 scrollToBottomBtn.classList.toggle('flex', show);
             }
 
-            scrollToBottom();
+            syncScrollBottomPadding();
+            ensureBottom(900);
             syncScrollToBottomButton();
 
             function hideEmptyState() {
@@ -1030,7 +1095,7 @@
                         // When the image loads, the bubble height changes; if we're at the bottom,
                         // keep it pinned so the new upload looks "properly placed".
                         img.addEventListener('load', () => {
-                            if (isNearBottom()) scrollToBottom();
+                            if (isPinnedToBottom() || isNearBottom()) scrollToBottom({ force: true });
                         }, { once: true });
                         card.appendChild(img);
                     } else {
@@ -1112,8 +1177,8 @@
                 outer.appendChild(width);
                 messagesEl.appendChild(outer);
 
-                if (wasAtBottom) {
-                    scrollToBottom();
+                if (wasAtBottom || isPinnedToBottom()) {
+                    scrollToBottom({ force: true });
                 }
                 syncScrollToBottomButton();
                 return true;
@@ -1488,7 +1553,7 @@
                             });
 
                             lastMessageId = Math.max(lastMessageId, chatMessageId);
-                            scrollToBottom();
+                            ensureBottom(2000);
                         } else {
                             // Fallback: force a poll so the new message appears quickly.
                             pollOnce().catch(() => {});
@@ -1738,6 +1803,11 @@
                     setActiveComposerKey(c.key);
                     autoGrowTextarea(c.textarea);
                     syncSendButtonFor(c);
+                    // On mobile, the dock height changes as the textarea grows.
+                    requestAnimationFrame(() => {
+                        syncScrollBottomPadding();
+                        if (isPinnedToBottom()) scrollToBottom({ force: true });
+                    });
                 });
 
                 c.textarea.addEventListener('keydown', (ev) => {
@@ -1762,6 +1832,7 @@
 
                     const tempId = `temp-${Date.now()}`;
                     appendLocalMessage(tempId, body);
+                    ensureBottom(1600);
 
                     const token = c.form.querySelector('input[name="_token"]')?.value || getCsrfToken();
                     const socketId = getSocketId();
@@ -1794,6 +1865,8 @@
                             appendMessage(json);
                             if (json?.id) lastMessageId = Math.max(lastMessageId, Number(json.id));
                         }
+
+                        ensureBottom(1200);
 
                         c.textarea.value = '';
                         autoGrowTextarea(c.textarea);
@@ -1893,12 +1966,17 @@
 
             if (scrollEl) {
                 scrollEl.addEventListener('scroll', () => {
+                    if (isNearBottom()) {
+                        pinToBottom(600);
+                    } else {
+                        pinToBottomUntil = 0;
+                    }
                     syncScrollToBottomButton();
                 });
             }
             if (scrollToBottomBtn) {
                 scrollToBottomBtn.addEventListener('click', () => {
-                    scrollToBottom();
+                    ensureBottom(900);
                     syncScrollToBottomButton();
                 });
             }

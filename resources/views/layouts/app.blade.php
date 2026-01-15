@@ -356,7 +356,7 @@
             @unless($attributes->get('hideNavigation'))
                 @isset($bottomDock)
                     <!-- Mobile: single bottom dock (composer + nav) -->
-                    <div class="sm:hidden fixed inset-x-0 bottom-0 z-40">
+                    <div id="mobileBottomDock" class="sm:hidden fixed inset-x-0 bottom-0 z-40">
                         <div class="bg-white/95 backdrop-blur border-t border-slate-100">
                             {{ $bottomDock }}
                         </div>
