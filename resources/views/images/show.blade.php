@@ -87,11 +87,11 @@
         >
             <a
                 href="{{ $backUrl }}"
-                class="inline-flex items-center justify-center min-h-[44px] rounded-xl px-3 text-sm font-semibold bg-slate-900/70 text-white"
+                class="sr-only"
                 aria-label="Retour"
                 data-tm-back="1"
             >
-                ← Retour
+                Retour
             </a>
 
             <div class="min-w-0 flex-1 text-right">
