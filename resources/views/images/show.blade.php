@@ -52,9 +52,15 @@
                 opacity: 1;
                 pointer-events: auto;
                 transition: opacity 180ms ease;
+            }
 
-                /* Keep the UI overlay on its own composited layer (reduces the chance the image gets promoted and shows tiling seams). */
+            /* Keep only the header on its own composited layer (reduces the chance the image gets promoted and shows tiling seams). */
+            #image-viewer-header {
                 transform: translateZ(0);
+                will-change: opacity;
+            }
+
+            #image-viewer-scrim {
                 will-change: opacity;
             }
 
@@ -63,6 +69,14 @@
                 isolation: isolate;
             }
         </style>
+
+        <div
+            id="image-viewer-scrim"
+            data-viewer-ui
+            aria-hidden="true"
+            class="absolute inset-x-0 top-0 pointer-events-none"
+            style="z-index: 5; height: calc(env(safe-area-inset-top) + 6rem); background: linear-gradient(to bottom, rgba(2,6,23,0.78), rgba(2,6,23,0));"
+        ></div>
 
         <div
             id="image-viewer-header"
@@ -125,7 +139,7 @@
         <div
             id="image-viewer-stage"
             class="absolute inset-0 flex items-center justify-center"
-            style="padding: calc(env(safe-area-inset-top) + 0.75rem) 0.5rem calc(env(safe-area-inset-bottom) + 0.75rem) 0.5rem"
+            style="z-index: 0; padding: calc(env(safe-area-inset-top) + 0.75rem) 0.5rem calc(env(safe-area-inset-bottom) + 0.75rem) 0.5rem"
         >
             <img
                 id="image-viewer-img"
@@ -148,11 +162,20 @@
                 const backUrl = root.dataset.backUrl || '';
 
                 const header = document.getElementById('image-viewer-header');
+                const scrim = document.getElementById('image-viewer-scrim');
                 const detailsBtn = document.getElementById('image-viewer-details-btn');
                 const detailsPanel = document.getElementById('image-viewer-details');
                 const backLink = root.querySelector('a[data-tm-back="1"]');
                 const stage = document.getElementById('image-viewer-stage');
                 const img = document.getElementById('image-viewer-img') || root.querySelector('img[data-shared-id]');
+
+                let headerDisplay = 'flex';
+                if (header) {
+                    try {
+                        const d = window.getComputedStyle(header).display;
+                        if (d && d !== 'none') headerDisplay = d;
+                    } catch {}
+                }
 
                 if (stage) {
                     try {
@@ -177,6 +200,7 @@
                     }
 
                     if (show) {
+                        try { header.style.display = headerDisplay; } catch {}
                         try { header.style.visibility = 'visible'; } catch {}
                         // If we're currently hidden, wait a frame so the browser has a chance to apply visibility
                         // before starting the opacity transition.
@@ -193,6 +217,8 @@
                         // Only hide if we are still hidden.
                         if (!root.classList.contains('viewer-ui-hidden')) return;
                         try { header.style.visibility = 'hidden'; } catch {}
+                        // Removing from the render tree helps some mobile GPUs avoid leaving a faint "ghost" rectangle.
+                        try { header.style.display = 'none'; } catch {}
                     }, 200);
                 };
 
