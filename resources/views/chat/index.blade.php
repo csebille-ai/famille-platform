@@ -781,6 +781,10 @@
                 setTimeout(run, 80);
             }
 
+            // Ensure we land at the bottom on initial load and when navigating back.
+            window.addEventListener('load', () => setTimeout(scrollToBottom, 120));
+            window.addEventListener('pageshow', () => setTimeout(scrollToBottom, 120));
+
             function isNearBottom() {
                 if (!scrollEl) return true;
                 const threshold = 120;
@@ -1319,6 +1323,8 @@
 
                 (async () => {
                     try {
+                        let finalized = null;
+
                         if (size > MULTIPART_THRESHOLD_BYTES) {
                             const init = await postJson(mpInitUrl, {
                                 filename: file.name || 'file',
@@ -1413,7 +1419,7 @@
                                 context: 'chat',
                             });
 
-                            await postJson(finalizeUrl, {
+                            finalized = await postJson(finalizeUrl, {
                                 key,
                                 public_url: complete?.public_url || init?.public_url || null,
                                 mime,
@@ -1441,7 +1447,7 @@
                                 updateUploadPlaceholder(tempId, pct);
                             });
 
-                            await postJson(finalizeUrl, {
+                            finalized = await postJson(finalizeUrl, {
                                 key,
                                 public_url: presign?.public_url || null,
                                 mime,
@@ -1455,6 +1461,33 @@
 
                         removeUploadPlaceholder(tempId);
                         refreshQuota().catch(() => {});
+
+                        // Show attachment immediately in the chat (without waiting for realtime/polling).
+                        const chatMessageId = Number(finalized?.chat_message_id || 0);
+                        const openUrl = String(finalized?.open_url || '');
+                        if (chatMessageId && openUrl) {
+                            const attachment = {
+                                media_type: kind === 'video' ? 'video' : 'image',
+                                media_id: Number(finalized?.media_id || 0) || null,
+                                name: String((kind === 'video' ? (file.name || 'Vidéo') : (file.name || 'Photo'))),
+                                url: openUrl,
+                                thumb_url: String(finalized?.thumb_url || ''),
+                                public_url: String(finalized?.public_url || ''),
+                            };
+
+                            appendMessage({
+                                id: chatMessageId,
+                                body: '[[ATTACHMENT]]' + JSON.stringify(attachment),
+                                created_at: new Date().toISOString(),
+                                user: { id: currentUserId, name: currentUserName || 'Vous' },
+                            });
+
+                            lastMessageId = Math.max(lastMessageId, chatMessageId);
+                            scrollToBottom();
+                        } else {
+                            // Fallback: force a poll so the new message appears quickly.
+                            pollOnce().catch(() => {});
+                        }
                     } catch (e) {
                         removeUploadPlaceholder(tempId);
                         alert(String(e?.message || 'Upload impossible.'));
