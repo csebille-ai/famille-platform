@@ -346,7 +346,7 @@
                                                     data-name="{{ $attName }}"
                                                     data-thumb="{{ $attThumb }}"
                                                 >
-                                                    <div class="relative overflow-hidden rounded-xl w-60 max-w-full h-32 sm:w-72 sm:h-40 {{ $isMe ? 'bg-white/10 ring-1 ring-white/15' : 'bg-slate-100 ring-1 ring-black/5' }}">
+                                                    <div class="relative overflow-hidden rounded-xl {{ $isMe ? 'bg-white/10 ring-1 ring-white/15' : 'bg-slate-100 ring-1 ring-black/5' }}" style="width: min(15rem, 100%); height: 8rem;">
                                                         @if ($attThumb !== '')
                                                             <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-cover" loading="lazy" />
                                                         @else
@@ -1124,7 +1124,9 @@
                     btn.dataset.type = String(att.media_type || '');
 
                     const card = document.createElement('div');
-                    card.className = `relative overflow-hidden rounded-xl w-60 max-w-full h-32 sm:w-72 sm:h-40 ${isMe ? 'bg-white/10 ring-1 ring-white/15' : 'bg-slate-100 ring-1 ring-black/5'}`;
+                    card.className = `relative overflow-hidden rounded-xl ${isMe ? 'bg-white/10 ring-1 ring-white/15' : 'bg-slate-100 ring-1 ring-black/5'}`;
+                    card.style.width = 'min(15rem, 100%)';
+                    card.style.height = '8rem';
 
                     const thumb = String(att.thumb_url || '');
                     const nameLabel = String(att.name || (att.media_type === 'video' ? 'Vidéo' : 'Photo'));
