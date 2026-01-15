@@ -185,9 +185,22 @@
 		return id;
 	};
 
+	const escapeAttrValueForSelector = (value) => {
+		// Minimal escaping for use inside an attribute selector: [data-x="..."]
+		// Prefer CSS.escape when available; otherwise escape backslash and quotes.
+		const s = String(value ?? '');
+		try {
+			if (window.CSS && typeof window.CSS.escape === 'function') return window.CSS.escape(s);
+		} catch {
+			// ignore
+		}
+		return s.replace(/\\/g, '\\\\').replace(/\"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+	};
+
 	const findSharedElement = (id) => {
 		if (!id) return null;
-		const el = document.querySelector(`[data-shared-id="${CSS.escape(id)}"]`);
+		const escaped = escapeAttrValueForSelector(id);
+		const el = document.querySelector(`[data-shared-id="${escaped}"]`);
 		return el;
 	};
 
