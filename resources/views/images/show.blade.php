@@ -55,6 +55,15 @@
                 visibility: visible;
                 pointer-events: auto;
                 transition: opacity 180ms ease, visibility 0s linear 0s;
+
+                /* Keep the UI overlay on its own composited layer (reduces the chance the image gets promoted and shows tiling seams). */
+                transform: translateZ(0);
+                will-change: opacity;
+            }
+
+            /* Isolate stacking/compositing for the image area. */
+            #image-viewer-stage {
+                isolation: isolate;
             }
         </style>
 
@@ -97,8 +106,7 @@
 
                         <div
                             id="image-viewer-details"
-                            class="hidden absolute right-0 mt-2 w-[min(320px,calc(100vw-2rem))] rounded-2xl bg-slate-900/90 text-white shadow-2xl ring-1 ring-white/10 overflow-hidden"
-                            style="backdrop-filter: blur(10px)"
+                            class="hidden absolute right-0 mt-2 w-[min(320px,calc(100vw-2rem))] rounded-2xl bg-slate-900/95 text-white shadow-2xl ring-1 ring-white/10 overflow-hidden"
                         >
                             <div class="p-3 text-left">
                                 <div class="text-xs text-white/60">Fichier</div>
@@ -159,7 +167,6 @@
                     try {
                         img.style.touchAction = 'none';
                         img.style.transformOrigin = 'center center';
-                        img.style.willChange = 'transform';
                     } catch {}
                 }
 
