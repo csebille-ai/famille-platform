@@ -449,18 +449,6 @@
 
                     <button
                         type="button"
-                        id="chatAttachPickFile"
-                        class="w-full inline-flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 opacity-50 cursor-not-allowed"
-                        disabled
-                        title="Indisponible"
-                        aria-label="Fichier (indisponible)"
-                    >
-                        <span>Fichier</span>
-                        <i class="ph ph-file" aria-hidden="true"></i>
-                    </button>
-
-                    <button
-                        type="button"
                         id="chatAttachPickVoice"
                         class="w-full inline-flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900"
                     >
