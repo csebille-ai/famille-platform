@@ -529,12 +529,12 @@
 		root.appendChild(clone);
 
 		const duration = isLowEnd() ? 180 : 220;
-		// Match the viewer's image area (it has padding top/bottom): expand to a centered contain rect inside that box.
+		// Match the viewer's image area (maximized contain): expand to a centered contain rect inside a near-full viewport box.
 		const aspect = getAspectRatioFrom(sharedEl, (fromRect.w > 0 && fromRect.h > 0) ? (fromRect.w / fromRect.h) : 1);
 		const vw = window.innerWidth;
 		const vh = window.innerHeight;
-		const padX = 8; // viewer uses px-2
-		const padY = 64; // viewer uses py-16
+		const padX = 8;
+		const padY = 12;
 		const box = { x: padX, y: padY, w: Math.max(1, vw - padX * 2), h: Math.max(1, vh - padY * 2) };
 		const target = calcContainRectInBox({ ...box, aspect });
 		await Promise.all([
