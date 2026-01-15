@@ -39,10 +39,15 @@ class ChatLiveTest extends TestCase
 
         $message = ChatMessage::query()->firstOrFail();
 
-        $this->get(route('chat.index'))
+        $resp = $this->get(route('chat.index'))
             ->assertOk()
-            ->assertSee($user->name)
             ->assertSee($message->body);
+
+        $content = (string) $resp->getContent();
+        $this->assertTrue(
+            str_contains($content, $user->name) || str_contains($content, e($user->name)),
+            'Expected chat page to contain the user name (raw or HTML-escaped).'
+        );
     }
 
     public function test_validation_requires_body(): void

@@ -14,6 +14,8 @@ class NewsItem extends Model
         'image_url',
         'source',
         'tag',
+        'bucket',
+        'sub_category',
         'published_at',
         'fetched_at',
     ];

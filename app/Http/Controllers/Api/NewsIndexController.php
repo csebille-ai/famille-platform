@@ -21,11 +21,15 @@ class NewsIndexController extends Controller
         }
 
         $tag = trim((string) $request->query('tag', ''));
+        $bucket = trim((string) $request->query('bucket', ''));
         $cursor = trim((string) $request->query('cursor', ''));
 
         $query = NewsItem::query();
         if ($tag !== '') {
             $query->where('tag', $tag);
+        }
+        if ($bucket !== '' && in_array($bucket, ['infos', 'sorties', 'sport'], true)) {
+            $query->where('bucket', $bucket);
         }
 
         if ($cursor !== '') {
@@ -54,6 +58,8 @@ class NewsIndexController extends Controller
                 'image_url',
                 'source',
                 'tag',
+                'bucket',
+                'sub_category',
                 'published_at',
             ]);
 
@@ -74,6 +80,8 @@ class NewsIndexController extends Controller
                 'image_url' => $it->image_url !== null ? (string) $it->image_url : null,
                 'source' => $it->source !== null ? (string) $it->source : null,
                 'tag' => $it->tag !== null ? (string) $it->tag : null,
+                'bucket' => $it->bucket !== null ? (string) $it->bucket : null,
+                'sub_category' => $it->sub_category !== null ? (string) $it->sub_category : null,
                 'published_at' => $it->published_at ? $it->published_at->toIso8601String() : null,
             ];
         })->values();

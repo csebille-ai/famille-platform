@@ -1,12 +1,18 @@
 @php
-    $chips = [
-        ['key' => '', 'label' => 'Tout'],
-        ['key' => 'commune', 'label' => 'Commune'],
-        ['key' => 'culture', 'label' => 'Culture'],
-        ['key' => 'travaux', 'label' => 'Travaux'],
+    $bucketChips = [
+        ['key' => 'infos', 'label' => 'Infos'],
+        ['key' => 'sorties', 'label' => 'Sorties'],
         ['key' => 'sport', 'label' => 'Sport'],
-        ['key' => 'meteo', 'label' => 'Météo'],
-        ['key' => 'securite', 'label' => 'Sécurité'],
+    ];
+
+    // Source filter (optional): uses the configured sourceTag stored in DB.
+    $chips = [
+        ['key' => '', 'label' => 'Toutes sources'],
+        ['key' => 'la-rochelle', 'label' => 'La Rochelle'],
+        ['key' => 'ile-de-re', 'label' => 'Île de Ré'],
+        ['key' => 'charente-maritime', 'label' => 'Charente-Maritime'],
+        ['key' => 'habitat', 'label' => 'Habitat'],
+        ['key' => 'sport', 'label' => 'Sport'],
     ];
 @endphp
 
@@ -38,6 +44,20 @@
                                 data-tag="{{ $c['key'] }}"
                             >
                                 {{ $c['label'] }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div id="actu-buckets" class="mt-3 -mx-6 px-6 pb-1 overflow-x-auto">
+                    <div class="flex items-center gap-2 min-w-max">
+                        @foreach ($bucketChips as $b)
+                            <button
+                                type="button"
+                                class="actu-bucket h-9 px-3 rounded-full border text-sm font-bold"
+                                data-bucket="{{ $b['key'] }}"
+                            >
+                                {{ $b['label'] }}
                             </button>
                         @endforeach
                     </div>
@@ -95,8 +115,10 @@
             const elNew = document.getElementById('actu-new');
             const elNewBtn = document.getElementById('actu-new-btn');
             const chips = Array.from(document.querySelectorAll('.actu-chip'));
+            const bucketButtons = Array.from(document.querySelectorAll('.actu-bucket'));
 
             let selectedTag = '';
+            let selectedBucket = 'infos';
             let nextCursor = null;
             let heroItem = null;
             let loading = false;
@@ -118,6 +140,18 @@
                 .replace(/'/g, '&#039;');
 
             const cleanSource = (s) => (s || '').replace(/\s*\(rss\)\s*$/i, '').trim();
+
+            const loadBucketPref = () => {
+                try {
+                    const v = window.localStorage.getItem('actu.bucket');
+                    if (v === 'infos' || v === 'sorties' || v === 'sport') return v;
+                } catch (e) {}
+                return 'infos';
+            };
+
+            const saveBucketPref = (v) => {
+                try { window.localStorage.setItem('actu.bucket', v); } catch (e) {}
+            };
 
             const timeAgo = (iso) => {
                 if (!iso) return '';
@@ -153,10 +187,23 @@
                     : 'border-slate-200 bg-white text-gray-900 hover:bg-slate-50';
             };
 
+            const bucketClasses = (active) => {
+                return active
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : 'border-slate-200 bg-white text-gray-900 hover:bg-slate-50';
+            };
+
             const renderChips = () => {
                 chips.forEach((b) => {
                     const tag = b.getAttribute('data-tag') || '';
                     b.className = `actu-chip h-9 px-3 rounded-full border text-sm font-semibold ${chipClasses(tag === selectedTag)}`;
+                });
+            };
+
+            const renderBuckets = () => {
+                bucketButtons.forEach((b) => {
+                    const bucket = b.getAttribute('data-bucket') || '';
+                    b.className = `actu-bucket h-9 px-3 rounded-full border text-sm font-bold ${bucketClasses(bucket === selectedBucket)}`;
                 });
             };
 
@@ -231,7 +278,11 @@
                     : '';
 
                 const excerpt = item.excerpt ? escapeHtml(item.excerpt) : '';
-                const meta = `${escapeHtml(cleanSource(item.source || ''))}${item.published_at ? ` · ${escapeHtml(timeAgo(item.published_at))}` : ''}`;
+                const parts = [escapeHtml(cleanSource(item.source || ''))];
+                if (item.published_at) parts.push(escapeHtml(timeAgo(item.published_at)));
+                if (item.tag) parts.push(escapeHtml(item.tag));
+                if (item.sub_category) parts.push(escapeHtml(item.sub_category));
+                const meta = parts.filter(Boolean).join(' · ');
 
                 elHero.innerHTML = `
                     <a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
@@ -254,8 +305,11 @@
                         ? `<img src="${escapeHtml(it.image_url)}" alt="" class="w-full h-full object-cover" loading="lazy" />`
                         : `<div class="w-full h-full bg-slate-100"></div>`;
 
-                    const tag = it.tag ? `<span class="text-slate-400">·</span> <span class="text-slate-500">${escapeHtml(it.tag)}</span>` : '';
-                    const meta = `${escapeHtml(cleanSource(it.source || ''))}${it.published_at ? ` · ${escapeHtml(timeAgo(it.published_at))}` : ''} ${tag}`.trim();
+                    const metaParts = [escapeHtml(cleanSource(it.source || ''))];
+                    if (it.published_at) metaParts.push(escapeHtml(timeAgo(it.published_at)));
+                    if (it.tag) metaParts.push(escapeHtml(it.tag));
+                    if (it.sub_category) metaParts.push(escapeHtml(it.sub_category));
+                    const meta = metaParts.filter(Boolean).join(' · ');
                     const excerpt = it.excerpt ? escapeHtml(it.excerpt) : '';
 
                     return `
@@ -286,6 +340,7 @@
             const buildUrl = (cursor = null) => {
                 const u = new URL('/api/news', window.location.origin);
                 u.searchParams.set('limit', String(LIMIT));
+                if (selectedBucket) u.searchParams.set('bucket', selectedBucket);
                 if (selectedTag) u.searchParams.set('tag', selectedTag);
                 if (cursor) u.searchParams.set('cursor', cursor);
                 return u.toString();
@@ -401,6 +456,15 @@
                 fetchPage({ reset: true });
             };
 
+            const setBucket = (bucket) => {
+                selectedBucket = (bucket === 'infos' || bucket === 'sorties' || bucket === 'sport') ? bucket : 'infos';
+                saveBucketPref(selectedBucket);
+                renderBuckets();
+                setNewBannerVisible(false);
+                pendingFirstPage = null;
+                fetchPage({ reset: true });
+            };
+
             const scheduleAutoRefresh = () => {
                 if (autoTimer) {
                     clearInterval(autoTimer);
@@ -435,9 +499,15 @@
             };
 
             // Wiring
+            selectedBucket = loadBucketPref();
+            renderBuckets();
             renderChips();
             fetchPage({ reset: true });
             scheduleAutoRefresh();
+
+            bucketButtons.forEach((b) => {
+                b.addEventListener('click', () => setBucket(b.getAttribute('data-bucket') || 'infos'));
+            });
 
             chips.forEach((b) => {
                 b.addEventListener('click', () => setTag(b.getAttribute('data-tag') || ''));

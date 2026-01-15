@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\NewsItem;
+use App\Services\NewsBucketClassifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -17,6 +18,9 @@ class ImportNewsRss extends Command
 
     public function handle(): int
     {
+        /** @var NewsBucketClassifier $bucketClassifier */
+        $bucketClassifier = app(NewsBucketClassifier::class);
+
         $sources = (array) config('news.sources', []);
         $sources = array_values(array_filter($sources, fn ($v) => is_array($v)));
 
@@ -152,6 +156,24 @@ class ImportNewsRss extends Command
                 $imageUrl = $it['image_url'] ?? null;
                 $tag = $fixedTag ?: $this->guessTag($title . ' ' . ((string) ($excerpt ?? '')));
 
+                $bucketMeta = $bucketClassifier->classify(
+                    $sourceName,
+                    $fixedTag,
+                    $title,
+                    (string) ($excerpt ?? '')
+                );
+                $bucket = (string) ($bucketMeta['bucket'] ?? 'infos');
+                if (!in_array($bucket, ['infos', 'sorties', 'sport'], true)) {
+                    $bucket = 'infos';
+                }
+                $subCategory = $bucketMeta['sub_category'] ?? null;
+                if ($subCategory !== null) {
+                    $subCategory = trim((string) $subCategory);
+                    if ($subCategory === '') {
+                        $subCategory = null;
+                    }
+                }
+
                 $urlHash = hash('sha256', $url);
 
                 $model = NewsItem::query()->where('url_hash', $urlHash)->first();
@@ -182,6 +204,8 @@ class ImportNewsRss extends Command
                 $model->image_url = $imageUrl !== null ? (string) $imageUrl : null;
                 $model->source = $sourceName;
                 $model->tag = $tag;
+                $model->bucket = $bucket;
+                $model->sub_category = $subCategory;
                 $model->published_at = $publishedAt;
                 $model->fetched_at = now();
 
