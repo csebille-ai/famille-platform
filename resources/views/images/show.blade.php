@@ -205,6 +205,19 @@
                 };
 
                 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+                const dpr = (() => {
+                    try {
+                        const v = Number(window.devicePixelRatio || 1);
+                        return Number.isFinite(v) && v > 0 ? v : 1;
+                    } catch {
+                        return 1;
+                    }
+                })();
+                const snapToDevicePx = (v) => {
+                    const n = Number(v || 0);
+                    if (!Number.isFinite(n)) return 0;
+                    return Math.round(n * dpr) / dpr;
+                };
 
                 const getStageRect = () => {
                     const r = stage ? stage.getBoundingClientRect() : root.getBoundingClientRect();
@@ -254,8 +267,13 @@
                         return;
                     } else {
                         clampPan();
+                        // Snap to device pixels to reduce GPU tiling seams / grid artifacts.
+                        zoom.tx = snapToDevicePx(zoom.tx);
+                        zoom.ty = snapToDevicePx(zoom.ty);
+                        clampPan();
                     }
-                    img.style.transform = `scale(${zoom.scale}) translate(${zoom.tx}px, ${zoom.ty}px)`;
+                    // CSS transforms apply right-to-left; using translate() scale() means pan isn't scaled.
+                    img.style.transform = `translate3d(${zoom.tx}px, ${zoom.ty}px, 0) scale(${zoom.scale})`;
                     try { img.style.willChange = 'transform'; } catch {}
                 };
 
