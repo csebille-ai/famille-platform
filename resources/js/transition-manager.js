@@ -44,9 +44,34 @@
 		}
 	};
 
+	const storageGet = (key) => {
+		try {
+			return window.sessionStorage ? window.sessionStorage.getItem(key) : null;
+		} catch {
+			return null;
+		}
+	};
+
+	const storageSet = (key, value) => {
+		try {
+			if (!window.sessionStorage) return;
+			window.sessionStorage.setItem(key, value);
+		} catch {
+			// ignore
+		}
+	};
+
+	const storageRemove = (key) => {
+		try {
+			if (!window.sessionStorage) return;
+			window.sessionStorage.removeItem(key);
+		} catch {
+			// ignore
+		}
+	};
+
 	const readPending = () => {
-		if (!window.sessionStorage) return null;
-		const raw = sessionStorage.getItem(KEY_PENDING);
+		const raw = storageGet(KEY_PENDING);
 		const st = safeParse(raw);
 		if (!st || !st.id || !st.ts) return null;
 		if (now() - Number(st.ts) > 6000) return null;
@@ -54,26 +79,17 @@
 	};
 
 	const clearPending = () => {
-		try {
-			sessionStorage.removeItem(KEY_PENDING);
-		} catch {
-			// ignore
-		}
+		storageRemove(KEY_PENDING);
 	};
 
 	const readOrigins = () => {
-		if (!window.sessionStorage) return {};
-		const raw = sessionStorage.getItem(KEY_ORIGINS);
+		const raw = storageGet(KEY_ORIGINS);
 		const obj = safeParse(raw);
 		return obj && typeof obj === 'object' ? obj : {};
 	};
 
 	const writeOrigins = (origins) => {
-		try {
-			sessionStorage.setItem(KEY_ORIGINS, JSON.stringify(origins || {}));
-		} catch {
-			// ignore
-		}
+		storageSet(KEY_ORIGINS, JSON.stringify(origins || {}));
 	};
 
 	const normalizeRect = (r) => ({
@@ -225,11 +241,7 @@
 	};
 
 	const setPending = (state) => {
-		try {
-			sessionStorage.setItem(KEY_PENDING, JSON.stringify(state));
-		} catch {
-			// ignore
-		}
+		storageSet(KEY_PENDING, JSON.stringify(state));
 	};
 
 	const runIncoming = async ({ fromBfcache = false } = {}) => {
@@ -339,29 +351,8 @@
 		const src = getSrcFromSource(anchor) || getSrcFromSource(sharedEl);
 		if (!src) return false;
 
-		const fromRect = rectFromEl(sharedEl);
-		const origins = readOrigins();
-		origins[id] = {
-			fromRect,
-			scrollY: window.scrollY || 0,
-			src,
-			radiusPx: getRadiusFrom(sharedEl),
-			ts: now(),
-		};
-		writeOrigins(origins);
-
-		setPending({
-			v: 1,
-			type: 'enter',
-			id,
-			src,
-			fromRect,
-			fromScrollY: window.scrollY || 0,
-			radiusPx: getRadiusFrom(sharedEl),
-			ts: now(),
-		});
-
 		// Quick pre-navigation morph (premium feel); keep it short to avoid feeling sluggish.
+		const fromRect = rectFromEl(sharedEl);
 		const root = getOverlayRoot();
 		root.innerHTML = '';
 		document.documentElement.classList.add('tm-animating');
@@ -378,6 +369,31 @@
 			animateOpacity(backdrop, 0, 1, { duration }),
 			animateRect(clone, fromRect, full, { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
 		]);
+
+		// Best-effort persistence for cross-page settle.
+		try {
+			const origins = readOrigins();
+			origins[id] = {
+				fromRect,
+				scrollY: window.scrollY || 0,
+				src,
+				radiusPx: getRadiusFrom(sharedEl),
+				ts: now(),
+			};
+			writeOrigins(origins);
+			setPending({
+				v: 1,
+				type: 'enter',
+				id,
+				src,
+				fromRect,
+				fromScrollY: window.scrollY || 0,
+				radiusPx: getRadiusFrom(sharedEl),
+				ts: now(),
+			});
+		} catch {
+			// ignore
+		}
 
 		window.location.href = href;
 		return true;
