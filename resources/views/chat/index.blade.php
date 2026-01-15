@@ -1,4 +1,4 @@
-<x-app-layout pageBgClass="bg-slate-50" hideNavigation="1">
+<x-app-layout pageBgClass="bg-slate-50">
     @php
         $ATTACH_PREFIX = '[[ATTACHMENT]]';
         $parseAttachment = function (?string $body) use ($ATTACH_PREFIX): ?array {

@@ -339,7 +339,7 @@
                 <script>
                     (() => {
                         const apply = () => {
-                            const nav = document.querySelector('nav');
+                            const nav = document.getElementById('appTopNav');
                             const h = nav ? Math.ceil(nav.offsetHeight || nav.getBoundingClientRect().height || 0) : 0;
                             document.documentElement.style.setProperty('--app-nav-h', `${h}px`);
                         };
@@ -358,7 +358,7 @@
                         }
 
                         if (window.ResizeObserver) {
-                            const nav = document.querySelector('nav');
+                            const nav = document.getElementById('appTopNav');
                             if (nav) {
                                 const ro = new ResizeObserver(schedule);
                                 ro.observe(nav);
