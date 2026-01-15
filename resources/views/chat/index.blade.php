@@ -161,7 +161,7 @@
             </div>
         @endif
 
-        <div class="bg-white sm:rounded-2xl shadow-sm flex flex-col h-[calc(100dvh-7rem-var(--mobile-bottom-nav-h,4rem)-env(safe-area-inset-bottom)-5rem)] sm:h-[calc(100vh-10rem)] sm:overflow-hidden">
+        <div class="bg-white sm:rounded-2xl shadow-sm flex flex-col h-[calc(100dvh-var(--app-nav-h,0px)-var(--mobile-bottom-nav-h,4rem)-env(safe-area-inset-bottom))] sm:h-[calc(100vh-10rem)] sm:overflow-hidden">
             @php
                 $visioDomain = trim((string) (config('visio.jitsi_domain') ?? 'meet.jit.si'));
                 $visioProvider = (string) (config('visio.provider') ?? 'link');
