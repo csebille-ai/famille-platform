@@ -43,10 +43,6 @@
     >
         <style>
             /* Viewer UI is an overlay: it must never reflow the image. */
-            #image-viewer {
-                --viewer-header-h: 0px;
-            }
-
             #image-viewer.viewer-ui-hidden [data-viewer-ui] {
                 opacity: 0;
                 pointer-events: none;
@@ -121,14 +117,14 @@
         <div
             id="image-viewer-stage"
             class="absolute inset-0 flex items-center justify-center"
-            style="padding: calc(env(safe-area-inset-top) + var(--viewer-header-h, 0px) + 0.75rem) 0.5rem calc(env(safe-area-inset-bottom) + 0.75rem) 0.5rem"
+            style="padding: calc(env(safe-area-inset-top) + 0.75rem) 0.5rem calc(env(safe-area-inset-bottom) + 0.75rem) 0.5rem"
         >
             <img
                 id="image-viewer-img"
                 src="{{ route('images.view', $node) }}"
                 alt="{{ $node->name }}"
                 class="max-w-full object-contain select-none"
-                style="max-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--viewer-header-h, 0px) - 1.5rem)"
+                style="max-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem)"
                 draggable="false"
                 data-shared-id="media:{{ (int) $node->id }}"
             />
@@ -167,9 +163,6 @@
                 const setHeaderVisible = (visible) => {
                     const show = !!visible;
                     root.classList.toggle('viewer-ui-hidden', !show);
-
-                    const h = header ? Math.ceil(header.getBoundingClientRect().height || 0) : 0;
-                    root.style.setProperty('--viewer-header-h', show ? `${h}px` : '0px');
                 };
 
                 // On load: show 1s then hide.
