@@ -3,6 +3,7 @@
 namespace App\Services\AvatarAstro;
 
 use App\Models\User;
+use Carbon\CarbonImmutable;
 
 class AvatarAstroPromptBuilder
 {
@@ -24,12 +25,15 @@ class AvatarAstroPromptBuilder
         }
 
         $palette = $this->paletteCue($sunElement, $ascElement);
+        $ageCue = $this->ageCue($user);
 
         // IMPORTANT: do not instruct the model to draw icons/symbols/animals/text.
         $prompt = implode("\n", array_values(array_filter([
-            'Square 1:1 portrait (head and shoulders only), family-friendly soft 3D style, clean studio lighting, subtle depth of field.',
+            'Square 1:1 portrait (head and shoulders only), stylized 2D Franco-Belgian comic / bande dessinée (BD) illustration style.',
+            'Clean ink linework, simplified shapes, cel shading with subtle paper texture; tasteful and premium.',
             'Simple background: smooth light gradient, no scenery.',
-            'Modern, warm, approachable, premium; realistic proportions; no exaggerated fantasy features.',
+            $ageCue,
+            'Modern, warm, approachable; generic face (do not resemble any real person).',
             'Astro influence ONLY via color palette and ambience: ' . $palette . '.',
             'Centered composition, crop-safe margins (do not cut head/hair/shoulders).',
         ])));
@@ -38,6 +42,9 @@ class AvatarAstroPromptBuilder
             'coat of arms', 'blazon', 'shield', 'crest', 'emblem', 'heraldry',
             'text', 'letters', 'numbers', 'logo', 'watermark', 'signature',
             'animals', 'multiple symbols', 'zodiac symbols', 'glyphs',
+            'photorealistic', 'photo', 'photography', 'camera', 'lens', 'realistic skin pores', 'hyperrealistic', 'ultra realistic',
+            '3d render', 'cgi', 'octane render', 'unreal engine', 'ray tracing',
+            'child', 'kid', 'teenager', 'young girl', 'baby face',
             'weapons', 'blood', 'nudity',
         ]);
 
@@ -67,5 +74,32 @@ class AvatarAstroPromptBuilder
         };
 
         return $primary . ' with ' . $accent;
+    }
+
+    private function ageCue(User $user): string
+    {
+        $dob = $user->date_of_birth;
+        if (!$dob) {
+            return 'Adult character, age-appropriate mature features; not childlike.';
+        }
+
+        try {
+            $age = CarbonImmutable::instance($dob)->diffInYears(CarbonImmutable::now());
+        } catch (\Throwable) {
+            return 'Adult character, age-appropriate mature features; not childlike.';
+        }
+
+        // Clamp to avoid extreme/incoherent guidance.
+        $age = max(18, min(90, (int) $age));
+
+        if ($age >= 50) {
+            return 'Mature adult (around ' . $age . ' years old), age-appropriate face; avoid youthful/teen look.';
+        }
+
+        if ($age >= 35) {
+            return 'Adult (around ' . $age . ' years old), age-appropriate face; avoid teen look.';
+        }
+
+        return 'Adult (around ' . $age . ' years old), not childlike.';
     }
 }
