@@ -263,6 +263,39 @@
 		}
 	};
 
+	const getAspectRatioFrom = (el, fallback = 1) => {
+		try {
+			const w = Number(el?.naturalWidth || 0);
+			const h = Number(el?.naturalHeight || 0);
+			if (w > 0 && h > 0) return w / h;
+		} catch {
+			// ignore
+		}
+		try {
+			const r = rectFromEl(el);
+			if (r.w > 0 && r.h > 0) return r.w / r.h;
+		} catch {
+			// ignore
+		}
+		return fallback;
+	};
+
+	const calcContainRect = ({ viewportW, viewportH, aspect }) => {
+		const vw = Math.max(1, Number(viewportW || 1));
+		const vh = Math.max(1, Number(viewportH || 1));
+		const ar = Math.max(0.05, Number(aspect || 1));
+
+		let w = vw;
+		let h = w / ar;
+		if (h > vh) {
+			h = vh;
+			w = h * ar;
+		}
+		const x = (vw - w) / 2;
+		const y = (vh - h) / 2;
+		return { x, y, w, h };
+	};
+
 	const setPending = (state) => {
 		storageSet(KEY_PENDING, JSON.stringify(state));
 	};
@@ -405,10 +438,12 @@
 		root.appendChild(clone);
 
 		const duration = isLowEnd() ? 180 : 220;
-		const full = { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight };
+		// Match the viewer's usual rendering better: expand to a centered contain rect (not full-bleed).
+		const aspect = getAspectRatioFrom(sharedEl, (fromRect.w > 0 && fromRect.h > 0) ? (fromRect.w / fromRect.h) : 1);
+		const target = calcContainRect({ viewportW: window.innerWidth, viewportH: window.innerHeight, aspect });
 		await Promise.all([
 			animateOpacity(backdrop, 0, 1, { duration }),
-			animateMorph(clone, fromRect, full, {
+			animateMorph(clone, fromRect, target, {
 				duration,
 				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
 				fromRadiusPx: getRadiusFrom(sharedEl),
@@ -432,7 +467,7 @@
 				type: 'enter',
 				id,
 				src,
-				fromRect,
+					fromRect: target,
 				fromScrollY: window.scrollY || 0,
 				radiusPx: getRadiusFrom(sharedEl),
 					fit: getObjectFitFrom(sharedEl, 'cover'),
