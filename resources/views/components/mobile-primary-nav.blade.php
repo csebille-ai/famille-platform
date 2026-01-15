@@ -72,7 +72,7 @@
                 >
                     <span class="relative inline-flex h-6 w-6 items-center justify-center">
                         @if(($item['key'] ?? '') === 'tarot')
-                            <img src="{{ asset('images/tarot.png') }}" alt="" class="h-6 w-6 object-contain" aria-hidden="true" loading="lazy" />
+                            <img src="{{ asset('images/tarot.png') }}" alt="" class="h-6 w-6 object-contain" aria-hidden="true" />
                         @else
                             <i class="ph ph-{{ $item['icon'] }} text-[20px]" aria-hidden="true"></i>
                         @endif
