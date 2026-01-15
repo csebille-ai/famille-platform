@@ -9,7 +9,7 @@
 
 <x-app-layout pageBgClass="bg-slate-50">
     <div class="max-w-3xl mx-auto">
-        <div class="sticky top-16 z-40 bg-slate-50/95 backdrop-blur border-b border-slate-200">
+        <div id="actu-sticky" class="sticky z-40 bg-slate-50/95 backdrop-blur border-b border-slate-200" style="top: 0px">
             <div class="px-6 pt-4 pb-3">
                 <div id="actu-buckets" class="mt-3 -mx-6 px-6 pb-1 overflow-x-auto">
                     <div class="flex items-center gap-2 min-w-max">
@@ -43,6 +43,24 @@
                 </div>
             </div>
         </div>
+
+        <script>
+            (() => {
+                const sticky = document.getElementById('actu-sticky');
+                if (!sticky) return;
+
+                const nav = document.querySelector('nav');
+                if (!nav) return;
+
+                const applyTop = () => {
+                    const h = Math.ceil(nav.getBoundingClientRect().height || 0);
+                    sticky.style.top = `${h}px`;
+                };
+
+                applyTop();
+                window.addEventListener('resize', applyTop, { passive: true });
+            })();
+        </script>
 
         <div class="px-6 py-5 space-y-4">
             <div id="actu-hero"></div>
