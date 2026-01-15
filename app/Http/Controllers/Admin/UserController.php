@@ -61,7 +61,6 @@ class UserController extends Controller
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'birth_time' => ['nullable', 'date_format:H:i'],
             'birth_place' => ['nullable', 'string', 'max:255'],
-            'birth_timezone' => ['nullable', 'string', 'max:64'],
             'birth_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'birth_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'address_line1' => ['nullable', 'string', 'max:255'],
@@ -84,7 +83,6 @@ class UserController extends Controller
         $user->date_of_birth = $validated['date_of_birth'] ?? null;
         $user->birth_time = $validated['birth_time'] ?? null;
         $user->birth_place = $validated['birth_place'] ?? null;
-        $user->birth_timezone = $validated['birth_timezone'] ?? null;
         $user->birth_latitude = $validated['birth_latitude'] ?? null;
         $user->birth_longitude = $validated['birth_longitude'] ?? null;
         $user->address_line1 = $validated['address_line1'] ?? null;

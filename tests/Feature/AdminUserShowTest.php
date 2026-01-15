@@ -17,7 +17,6 @@ class AdminUserShowTest extends TestCase
         $target = User::factory()->create([
             'role' => 'member',
             'birth_place' => 'Paris',
-            'birth_timezone' => 'Europe/Paris',
         ]);
 
         AstroProfile::query()->updateOrCreate(

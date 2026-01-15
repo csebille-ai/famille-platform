@@ -23,7 +23,6 @@ class UserObserver
             'date_of_birth',
             'birth_time',
             'birth_place',
-            'birth_timezone',
             'birth_latitude',
             'birth_longitude',
         ];

@@ -52,11 +52,8 @@
                             <div class="mt-1 text-sm font-semibold text-gray-900">
                                 {{ $user->birth_place ?? '—' }}
                             </div>
-                            @if($user->birth_timezone || $user->birth_latitude || $user->birth_longitude)
+                            @if($user->birth_latitude || $user->birth_longitude)
                                 <div class="mt-2 text-xs text-gray-500">
-                                    @if($user->birth_timezone)
-                                        <span class="mr-3">Timezone: {{ $user->birth_timezone }}</span>
-                                    @endif
                                     @if($user->birth_latitude && $user->birth_longitude)
                                         <span>Coords: {{ $user->birth_latitude }}, {{ $user->birth_longitude }}</span>
                                     @endif

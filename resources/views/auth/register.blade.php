@@ -52,13 +52,6 @@
                 <x-input-error :messages="$errors->get('birth_place')" class="mt-2" />
             </div>
 
-            <div class="mt-4">
-                <x-input-label for="birth_timezone" :value="__('Fuseau horaire (IANA)')" />
-                <x-text-input id="birth_timezone" class="block mt-1 w-full" type="text" name="birth_timezone" :value="old('birth_timezone')" placeholder="ex: Europe/Paris" autocomplete="off" />
-                <x-input-error :messages="$errors->get('birth_timezone')" class="mt-2" />
-                <div class="microcopy mt-1 text-xs text-slate-500">Si tu laisses vide, l’app essaie de le deviner via le lieu.</div>
-            </div>
-
             <details class="mt-4">
                 <summary class="cursor-pointer text-sm font-semibold text-slate-700">Coordonnées (optionnel)</summary>
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">

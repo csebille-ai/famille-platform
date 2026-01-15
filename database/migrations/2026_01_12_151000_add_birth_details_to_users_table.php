@@ -11,8 +11,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->time('birth_time')->nullable()->after('date_of_birth');
             $table->string('birth_place', 255)->nullable()->after('birth_time');
-            $table->string('birth_timezone', 64)->nullable()->after('birth_place');
-            $table->decimal('birth_latitude', 10, 7)->nullable()->after('birth_timezone');
+            $table->decimal('birth_latitude', 10, 7)->nullable()->after('birth_place');
             $table->decimal('birth_longitude', 10, 7)->nullable()->after('birth_latitude');
         });
     }
@@ -23,7 +22,6 @@ return new class extends Migration
             $table->dropColumn([
                 'birth_time',
                 'birth_place',
-                'birth_timezone',
                 'birth_latitude',
                 'birth_longitude',
             ]);

@@ -7,6 +7,8 @@ use Carbon\CarbonImmutable;
 
 class AstroProfileComputer
 {
+    private const DEFAULT_TZ = 'Europe/Paris';
+
     public function __construct(private NatalChartProvider $natalProvider)
     {
     }
@@ -31,7 +33,7 @@ class AstroProfileComputer
         $lat = $user->birth_latitude !== null ? (float) $user->birth_latitude : null;
         $lng = $user->birth_longitude !== null ? (float) $user->birth_longitude : null;
 
-        $tz = (string) ($user->birth_timezone ?: config('app.timezone'));
+        $tz = self::DEFAULT_TZ;
         $birthTime = $user->birth_time ? (string) $user->birth_time : null;
 
         if ($birthTime && $lat !== null && $lng !== null) {

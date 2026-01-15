@@ -47,7 +47,6 @@ class AvatarAstroApiTest extends TestCase
             ],
             'date_of_birth' => '1990-01-01',
             'birth_time' => '12:00',
-            'birth_timezone' => 'Europe/Paris',
         ]);
 
         $this->actingAs($user)

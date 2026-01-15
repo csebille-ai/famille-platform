@@ -63,14 +63,6 @@
                                         <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
                                     @enderror
                                 </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700" for="birth_timezone">Fuseau horaire</label>
-                                    <input id="birth_timezone" name="birth_timezone" type="text" value="{{ old('birth_timezone') }}" placeholder="Europe/Paris" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
-                                    @error('birth_timezone')
-                                        <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
-                                    @enderror
-                                </div>
                             </div>
 
                             <div class="mt-4">

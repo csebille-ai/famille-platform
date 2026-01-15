@@ -71,12 +71,6 @@
                 <x-input-error class="mt-2" :messages="$errors->get('birth_place')" />
             </div>
 
-            <div class="mt-4">
-                <x-input-label for="birth_timezone" :value="__('Fuseau horaire (IANA)')" />
-                <x-text-input id="birth_timezone" name="birth_timezone" type="text" class="mt-1 block w-full" :value="old('birth_timezone', $user->birth_timezone ?: config('app.timezone'))" placeholder="ex: Europe/Paris" />
-                <x-input-error class="mt-2" :messages="$errors->get('birth_timezone')" />
-            </div>
-
             <details class="mt-4">
                 <summary class="cursor-pointer text-sm font-semibold text-slate-700">Coordonnées (optionnel)</summary>
                 <div class="mt-3 grid gap-4 sm:grid-cols-2">

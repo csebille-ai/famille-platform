@@ -38,7 +38,6 @@ class RegisteredUserController extends Controller
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'birth_time' => ['nullable', 'date_format:H:i'],
             'birth_place' => ['nullable', 'string', 'max:255'],
-            'birth_timezone' => ['nullable', 'string', 'max:64'],
             'birth_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'birth_longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
@@ -51,7 +50,6 @@ class RegisteredUserController extends Controller
             'date_of_birth' => $validated['date_of_birth'] ?? null,
             'birth_time' => $validated['birth_time'] ?? null,
             'birth_place' => $validated['birth_place'] ?? null,
-            'birth_timezone' => $validated['birth_timezone'] ?? null,
             'birth_latitude' => $validated['birth_latitude'] ?? null,
             'birth_longitude' => $validated['birth_longitude'] ?? null,
         ]);

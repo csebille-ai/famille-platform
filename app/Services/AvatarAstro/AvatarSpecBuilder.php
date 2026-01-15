@@ -10,6 +10,8 @@ class AvatarSpecBuilder
 {
     public const VERSION = 'avatar_astro_v1';
 
+    private const DEFAULT_TZ = 'Europe/Paris';
+
     /**
      * @return array{
      *   sun_sign:string,
@@ -79,7 +81,7 @@ class AvatarSpecBuilder
             return '';
         }
 
-        $tz = (string) ($user->birth_timezone ?: config('app.timezone'));
+        $tz = self::DEFAULT_TZ;
         $date = CarbonImmutable::instance($dob);
 
         $time = trim((string) ($user->birth_time ?? ''));

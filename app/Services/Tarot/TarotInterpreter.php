@@ -58,10 +58,28 @@ class TarotInterpreter
     - Carte renversée: blocage, excès, retard, angle mort ou "mode bug". Explique en 1 phrase claire.
 
     FORMAT EXACT (Markdown)
-    1) **Annonce du tirage** (1 phrase drôle)
-    2) **Passé / Présent / Futur** (3 sections, 2 phrases chacune)
-    3) **Le conseil qui pique mais qui aide** (2 actions concrètes, format ✅)
-    4) **Le twist final** (1 punchline surprise)
+    - Utilise des TITRES avec des dièses (##) et de VRAIS paragraphes (lignes séparées par une ligne vide).
+    - Aucun bloc compact tout collé : laisse une ligne vide entre les sections.
+
+    ## Annonce du tirage
+    1 phrase drôle.
+
+    ## Passé
+    2 phrases.
+
+    ## Présent
+    2 phrases.
+
+    ## Futur
+    2 phrases.
+
+    ## Le conseil qui pique mais qui aide
+    2 actions concrètes au format liste:
+    - ✅ ...
+    - ✅ ...
+
+    ## Le twist final
+    1 punchline surprise.
 
     EN PLUS: SPOKEN_TEXT (pour lecture audio)
     - Génère aussi un champ spoken_text adapté à l’oral: 25–45 secondes.
@@ -133,6 +151,8 @@ TXT;
             $spokenText = $this->deriveSpokenText($interpretation);
         }
 
+        $interpretation = $this->normalizeInterpretationMarkdown($interpretation);
+
         if ($maxChars > 0 && mb_strlen($interpretation) > $maxChars) {
             $interpretation = rtrim(mb_substr($interpretation, 0, $maxChars - 1)) . '…';
         }
@@ -141,6 +161,37 @@ TXT;
             'interpretation' => $interpretation,
             'spoken_text' => $spokenText,
         ];
+    }
+
+    private function normalizeInterpretationMarkdown(string $interpretation): string
+    {
+        $t = trim($interpretation);
+        if ($t === '') {
+            return '';
+        }
+
+        // Normalize line endings.
+        $t = str_replace("\r\n", "\n", $t);
+
+        // Normalize common list markers.
+        $t = preg_replace('/^\s*✅\s*/mu', '- ✅ ', $t) ?? $t;
+        $t = preg_replace('/^\s*•\s+/mu', '- ', $t) ?? $t;
+
+        // Upgrade common section labels to markdown headings.
+        $t = preg_replace('/^\s*\*\*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:?\s*\*\*\s*$/mu', '## $1', $t) ?? $t;
+        $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*$/mu', '## $1', $t) ?? $t;
+        $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*(.+)$/mu', "## $1\n\n$2", $t) ?? $t;
+
+        // Ensure a blank line after headings.
+        $t = preg_replace('/^(##\s+[^\n]+)\n(?!\n)/m', "$1\n\n", $t) ?? $t;
+
+        // Ensure a blank line before lists.
+        $t = preg_replace('/\n(\s*[-*]\s+)/m', "\n\n$1", $t) ?? $t;
+
+        // Collapse excessive blank lines.
+        $t = preg_replace("/\n{3,}/", "\n\n", $t) ?? $t;
+
+        return trim($t);
     }
 
     /**

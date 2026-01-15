@@ -23,7 +23,6 @@ class AdminUserCreateTest extends TestCase
             'date_of_birth' => '1990-10-23',
             'birth_time' => '13:45',
             'birth_place' => 'Paris',
-            'birth_timezone' => 'Europe/Paris',
             'birth_latitude' => 48.8566,
             'birth_longitude' => 2.3522,
         ];
@@ -37,7 +36,6 @@ class AdminUserCreateTest extends TestCase
         $this->assertSame('1990-10-23', optional($user->date_of_birth)->format('Y-m-d'));
         $this->assertTrue(in_array($user->birth_time, ['13:45', '13:45:00'], true));
         $this->assertSame('Paris', $user->birth_place);
-        $this->assertSame('Europe/Paris', $user->birth_timezone);
     }
 
     public function test_admin_can_create_user_even_if_astro_profiles_table_is_missing(): void

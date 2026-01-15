@@ -33,16 +33,6 @@ class BirthPlaceAutoResolver
             }
         }
 
-        $tz = trim((string) ($user->birth_timezone ?? ''));
-        if ($tz === '' && $hasLat && $hasLon) {
-            $lat = (float) ($updates['birth_latitude'] ?? $user->birth_latitude);
-            $lon = (float) ($updates['birth_longitude'] ?? $user->birth_longitude);
-            $resolvedTz = $this->timezoneForCoordinates($lat, $lon);
-            if ($resolvedTz) {
-                $updates['birth_timezone'] = $resolvedTz;
-            }
-        }
-
         return $updates;
     }
 
@@ -118,54 +108,4 @@ class BirthPlaceAutoResolver
         });
     }
 
-    private function timezoneForCoordinates(float $lat, float $lon): ?string
-    {
-        if (!is_finite($lat) || !is_finite($lon)) {
-            return null;
-        }
-
-        if ($lat < -90.0 || $lat > 90.0 || $lon < -180.0 || $lon > 180.0) {
-            return null;
-        }
-
-        $endpoint = (string) config('services.geo.timezone_url', 'https://timeapi.io/api/TimeZone/coordinate');
-        $cacheDays = (int) config('services.geo.cache_days', 365);
-
-        $cacheKey = 'geo:tz:' . hash('sha256', round($lat, 5) . ',' . round($lon, 5));
-
-        return Cache::remember($cacheKey, now()->addDays($cacheDays), function () use ($endpoint, $lat, $lon) {
-            try {
-                $resp = Http::timeout(6)
-                    ->retry(1, 250)
-                    ->withHeaders([
-                        'Accept' => 'application/json',
-                    ])
-                    ->get($endpoint, [
-                        'latitude' => $lat,
-                        'longitude' => $lon,
-                    ]);
-
-                if (!$resp->ok()) {
-                    return null;
-                }
-
-                $data = $resp->json();
-                if (!is_array($data)) {
-                    return null;
-                }
-
-                $tz = (string) ($data['timeZone'] ?? $data['timeZoneName'] ?? '');
-                $tz = trim($tz);
-
-                // Very light validation.
-                if ($tz === '' || !str_contains($tz, '/')) {
-                    return null;
-                }
-
-                return $tz;
-            } catch (\Throwable $e) {
-                return null;
-            }
-        });
-    }
 }
