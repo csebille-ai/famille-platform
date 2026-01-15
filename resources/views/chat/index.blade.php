@@ -1082,12 +1082,12 @@
                 avatar.textContent = initials;
                 avatarWrap.appendChild(avatar);
 
+                const att = parseAttachmentBody(body);
+
                 const wrapper = document.createElement('div');
                 const bubblePad = att ? 'p-2' : 'px-4 py-3';
                 wrapper.className = `${bubblePad} border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
                 wrapper.dataset.bubble = '1';
-
-                const att = parseAttachmentBody(body);
                 const bodyEl = document.createElement('div');
 
                 if (att) {
