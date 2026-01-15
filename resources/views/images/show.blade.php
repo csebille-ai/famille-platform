@@ -36,7 +36,7 @@
 <x-app-layout hideNavigation="1" pageBgClass="bg-slate-950">
     <div
         id="image-viewer"
-        class="min-h-[100svh] relative"
+        class="min-h-[100svh] relative viewer-ui-hidden"
         data-prev-url="{{ $prevUrl }}"
         data-next-url="{{ $nextUrl }}"
         data-back-url="{{ $backUrl }}"
@@ -222,9 +222,14 @@
                     }, 200);
                 };
 
-                // On load: show 1s then hide.
-                setHeaderVisible(true);
-                setTimeout(() => setHeaderVisible(false), 1000);
+                // On load: start hidden (prevents a paint "flash"), then fade in briefly.
+                setHeaderVisible(false);
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setHeaderVisible(true);
+                        setTimeout(() => setHeaderVisible(false), 1100);
+                    });
+                });
 
                 // Details menu
                 const closeDetails = () => {
