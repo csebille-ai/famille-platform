@@ -9,7 +9,7 @@
 
 <x-app-layout pageBgClass="bg-slate-50">
     <div class="max-w-3xl mx-auto">
-        <div id="actu-sticky" class="sticky z-40 bg-slate-50/95 backdrop-blur border-b border-slate-200" style="top: 0px">
+        <div id="actu-sticky" class="sticky z-[55] bg-slate-50/95 backdrop-blur border-b border-slate-200" style="top: 0px">
             <div class="px-6 pt-4 pb-3">
                 <div id="actu-buckets" class="mt-3 -mx-6 px-6 pb-1 overflow-x-auto">
                     <div class="flex items-center gap-2 min-w-max">
@@ -53,12 +53,27 @@
                 if (!nav) return;
 
                 const applyTop = () => {
-                    const h = Math.ceil(nav.getBoundingClientRect().height || 0);
+                    const h = Math.ceil(nav.offsetHeight || nav.getBoundingClientRect().height || 0);
                     sticky.style.top = `${h}px`;
                 };
 
-                applyTop();
-                window.addEventListener('resize', applyTop, { passive: true });
+                const scheduleApply = () => {
+                    requestAnimationFrame(() => requestAnimationFrame(applyTop));
+                };
+
+                scheduleApply();
+                window.addEventListener('load', scheduleApply, { passive: true });
+                window.addEventListener('resize', scheduleApply, { passive: true });
+
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', scheduleApply, { passive: true });
+                    window.visualViewport.addEventListener('scroll', scheduleApply, { passive: true });
+                }
+
+                if (window.ResizeObserver) {
+                    const ro = new ResizeObserver(scheduleApply);
+                    ro.observe(nav);
+                }
             })();
         </script>
 
