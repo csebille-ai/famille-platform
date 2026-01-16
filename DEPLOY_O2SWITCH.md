@@ -186,6 +186,15 @@ curl -k "$ASTRO_ENGINE_URL/health"
 curl -k -X POST "$ASTRO_ENGINE_URL/sun" \
   -H "Content-Type: application/json" \
   -d '{"date":"1990-05-10","time":"13:30","timezone":"Europe/Paris"}'
+
+Pour diagnostiquer rapidement côté Laravel (URL finale, TLS, endpoint chart), utilise aussi :
+
+```bash
+php artisan astro:engine-check
+
+# override ponctuel
+php artisan astro:engine-check --url="https://astro-engine.exemple.tld" --verify-ssl=false
+```
 ```
 
 Note : `-k` est uniquement pour diagnostiquer côté shell. Côté Laravel, c'est `ASTRO_ENGINE_VERIFY_SSL=false` qui évite l'échec TLS.
@@ -200,6 +209,23 @@ php artisan astro:recompute --email="toi@exemple.fr" --sync --yes
 
 # ou tous (à faire hors heures de pointe)
 php artisan astro:recompute --all --queue --yes
+```
+
+### Redémarrer l'app Node (cPanel / Passenger)
+
+Après un `git pull` dans `astro-engine/` (ou si tu modifies `passenger.json` / `app.cjs` / deps), il faut redémarrer l'app Node.
+
+- **cPanel → Setup Node.js App** : sélectionner l'app `astro-engine` puis cliquer **Restart**.
+- Si tu n'as pas le bouton : dans le **File Manager**, modifier/toucher le fichier `tmp/restart.txt` dans le dossier de l'app (Passenger) pour forcer un reload.
+
+Ensuite, re-teste :
+
+```bash
+curl -k "$ASTRO_ENGINE_URL/health"
+
+curl -k -X POST "$ASTRO_ENGINE_URL/chart" \
+  -H "Content-Type: application/json" \
+  -d '{"utc":"2026-01-16T12:00:00Z","lat":48.8566,"lng":2.3522}'
 ```
 
 ### Recommandation (sécurité)
