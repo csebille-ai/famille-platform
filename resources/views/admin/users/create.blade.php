@@ -85,7 +85,12 @@
 
                             <div class="mt-4">
                                 <label class="block text-sm font-medium text-gray-700" for="birth_place">Lieu de naissance</label>
-                                <input id="birth_place" name="birth_place" type="text" value="{{ old('birth_place') }}" placeholder="Lille, France" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                <div class="relative">
+                                    <input id="birth_place" name="birth_place" type="text" value="{{ old('birth_place') }}" placeholder="Lille, France" autocomplete="off" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                    <div id="birth_place_suggestions" class="absolute z-10 mt-1 hidden w-full rounded-md border border-gray-200 bg-white shadow-lg">
+                                        <div class="max-h-56 overflow-auto py-1"></div>
+                                    </div>
+                                </div>
                                 @error('birth_place')
                                     <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
                                 @enderror
@@ -168,4 +173,88 @@
             </div>
         </div>
     </div>
+
+    <script>
+        (function () {
+            const input = document.getElementById('birth_place');
+            const lat = document.getElementById('birth_latitude');
+            const lon = document.getElementById('birth_longitude');
+            const box = document.getElementById('birth_place_suggestions');
+            const list = box ? box.querySelector('div') : null;
+
+            if (!input || !box || !list) return;
+
+            let aborter = null;
+            let timer = null;
+
+            function hide() {
+                box.classList.add('hidden');
+                list.innerHTML = '';
+            }
+
+            function show(items) {
+                list.innerHTML = '';
+                if (!items || items.length === 0) {
+                    hide();
+                    return;
+                }
+
+                for (const item of items) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'block w-full px-3 py-2 text-left text-sm hover:bg-gray-50';
+                    btn.textContent = item.label;
+                    btn.addEventListener('click', function () {
+                        input.value = item.label;
+                        if (lat && typeof item.latitude === 'number') lat.value = String(item.latitude);
+                        if (lon && typeof item.longitude === 'number') lon.value = String(item.longitude);
+                        hide();
+                    });
+                    list.appendChild(btn);
+                }
+
+                box.classList.remove('hidden');
+            }
+
+            async function search(q) {
+                if (aborter) aborter.abort();
+                aborter = new AbortController();
+
+                const url = new URL('/api/geo/cities', window.location.origin);
+                url.searchParams.set('q', q);
+
+                const resp = await fetch(url.toString(), {
+                    headers: { 'Accept': 'application/json' },
+                    signal: aborter.signal,
+                });
+
+                if (!resp.ok) return [];
+                const data = await resp.json();
+                return Array.isArray(data?.items) ? data.items : [];
+            }
+
+            input.addEventListener('input', function () {
+                const q = (input.value || '').trim();
+                if (timer) window.clearTimeout(timer);
+                if (q.length < 3) {
+                    hide();
+                    return;
+                }
+                timer = window.setTimeout(async function () {
+                    try {
+                        const items = await search(q);
+                        show(items);
+                    } catch (e) {
+                        // ignore (abort/network)
+                    }
+                }, 200);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (e.target === input) return;
+                if (box.contains(e.target)) return;
+                hide();
+            });
+        })();
+    </script>
 </x-app-layout>

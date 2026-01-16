@@ -29,6 +29,9 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 
+Route::get('/api/geo/cities', \App\Http\Controllers\Api\GeoCitySearchController::class)
+    ->middleware(['auth', 'verified', 'throttle:60,1']);
+
 Route::post('/api/tarot/draw', TarotDrawController::class)
     ->middleware('throttle:tarot-draw')
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
