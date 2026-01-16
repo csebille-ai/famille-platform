@@ -69,6 +69,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'gender' => ['nullable', 'in:male,female'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'role' => ['required', 'in:member,editor,admin'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
@@ -90,6 +91,7 @@ class UserController extends Controller
         }
 
         $user->name = $validated['name'];
+        $user->gender = $validated['gender'] ?? null;
         $user->email = $validated['email'];
         $user->role = $validated['role'];
         $user->date_of_birth = $validated['date_of_birth'] ?? null;
@@ -117,6 +119,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
+            'gender' => ['nullable', 'in:male,female'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'in:member,editor,admin'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
@@ -137,6 +140,7 @@ class UserController extends Controller
         $user->name = $computedName !== ''
             ? $computedName
             : (Str::before((string) $user->email, '@') ?: 'Utilisateur');
+        $user->gender = $validated['gender'] ?? null;
         $user->role = $validated['role'];
         $user->password = Str::random(32);
 

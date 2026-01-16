@@ -30,6 +30,7 @@ class AdminUserCreateTest extends TestCase
         $payload = [
             'first_name' => 'New',
             'last_name' => 'User',
+            'gender' => 'female',
             'email' => 'new.user@example.test',
             'role' => 'member',
             'date_of_birth' => '1990-10-23',
@@ -45,6 +46,7 @@ class AdminUserCreateTest extends TestCase
         $user = User::query()->where('email', 'new.user@example.test')->firstOrFail();
 
         $this->assertSame('New User', $user->name);
+        $this->assertSame('female', $user->gender);
         $this->assertSame('member', $user->role);
         $this->assertSame('1990-10-23', optional($user->date_of_birth)->format('Y-m-d'));
         $this->assertTrue(in_array($user->birth_time, ['13:45', '13:45:00'], true));

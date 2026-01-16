@@ -61,6 +61,19 @@
                             </div>
 
                             <div>
+                                <label class="block text-sm font-medium text-gray-700" for="gender">Sexe (avatar)</label>
+                                <select id="gender" name="gender" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                    <option value="" @selected(old('gender', '') === '')>Auto</option>
+                                    <option value="male" @selected(old('gender', '') === 'male')>Homme</option>
+                                    <option value="female" @selected(old('gender', '') === 'female')>Femme</option>
+                                </select>
+                                <div class="microcopy mt-1 text-xs text-gray-600">Optionnel — utilisé pour générer un avatar homme/femme (sinon déduction par le prénom).</div>
+                                @error('gender')
+                                    <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700" for="date_of_birth">{{ __('Date of birth') }}</label>
                                 <input id="date_of_birth" name="date_of_birth" type="date" value="{{ old('date_of_birth') }}" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
                                 @error('date_of_birth')

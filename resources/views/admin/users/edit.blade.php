@@ -52,6 +52,19 @@
                             @enderror
                         </div>
 
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="gender">Sexe (avatar)</label>
+                            <select id="gender" name="gender" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                <option value="" @selected(old('gender', $user->gender ?? '') === '')>Auto</option>
+                                <option value="male" @selected(old('gender', $user->gender ?? '') === 'male')>Homme</option>
+                                <option value="female" @selected(old('gender', $user->gender ?? '') === 'female')>Femme</option>
+                            </select>
+                            <div class="microcopy mt-1 text-xs text-gray-600">Optionnel — utilisé pour générer un avatar homme/femme (sinon déduction par le prénom).</div>
+                            @error('gender')
+                                <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                            @enderror
+                        </div>
+
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700" for="date_of_birth">Date de naissance</label>

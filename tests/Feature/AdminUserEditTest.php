@@ -36,6 +36,7 @@ class AdminUserEditTest extends TestCase
             'name' => 'Manon Sebille',
             'email' => 'manon.sebille@example.test',
             'role' => 'editor',
+            'gender' => 'female',
             'date_of_birth' => '1995-01-02',
             'birth_time' => '08:15',
             'birth_place' => 'Lille',
@@ -56,6 +57,7 @@ class AdminUserEditTest extends TestCase
         $this->assertSame('Manon Sebille', $user->name);
         $this->assertSame('manon.sebille@example.test', $user->email);
         $this->assertSame('editor', $user->role);
+        $this->assertSame('female', $user->gender);
         $this->assertSame('1995-01-02', optional($user->date_of_birth)->format('Y-m-d'));
         $this->assertTrue(in_array($user->birth_time, ['08:15', '08:15:00'], true));
         $this->assertSame('Lille', $user->birth_place);
