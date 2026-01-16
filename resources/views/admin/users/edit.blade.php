@@ -132,7 +132,12 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700" for="postal_code">Code postal</label>
-                                <input id="postal_code" name="postal_code" type="text" value="{{ old('postal_code', $user->postal_code) }}" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                <div class="relative">
+                                    <input id="postal_code" name="postal_code" type="text" value="{{ old('postal_code', $user->postal_code) }}" autocomplete="off" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                    <div id="postal_code_suggestions" class="absolute z-10 mt-1 hidden w-full rounded-md border border-gray-200 bg-white shadow-lg">
+                                        <div class="max-h-56 overflow-auto py-1"></div>
+                                    </div>
+                                </div>
                                 @error('postal_code')
                                     <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
                                 @enderror
@@ -140,7 +145,12 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700" for="city">Ville</label>
-                                <input id="city" name="city" type="text" value="{{ old('city', $user->city) }}" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                <div class="relative">
+                                    <input id="city" name="city" type="text" value="{{ old('city', $user->city) }}" autocomplete="off" class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                    <div id="city_suggestions" class="absolute z-10 mt-1 hidden w-full rounded-md border border-gray-200 bg-white shadow-lg">
+                                        <div class="max-h-56 overflow-auto py-1"></div>
+                                    </div>
+                                </div>
                                 @error('city')
                                     <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
                                 @enderror
@@ -242,6 +252,138 @@
                 if (e.target === input) return;
                 if (box.contains(e.target)) return;
                 hide();
+            });
+        })();
+    </script>
+
+    <script>
+        (function () {
+            const postal = document.getElementById('postal_code');
+            const city = document.getElementById('city');
+
+            const postalBox = document.getElementById('postal_code_suggestions');
+            const postalList = postalBox ? postalBox.querySelector('div') : null;
+
+            const cityBox = document.getElementById('city_suggestions');
+            const cityList = cityBox ? cityBox.querySelector('div') : null;
+
+            if (!postal || !city || !postalBox || !postalList || !cityBox || !cityList) return;
+
+            let aborter = null;
+            let postalTimer = null;
+            let cityTimer = null;
+
+            function hidePostal() {
+                postalBox.classList.add('hidden');
+                postalList.innerHTML = '';
+            }
+
+            function hideCity() {
+                cityBox.classList.add('hidden');
+                cityList.innerHTML = '';
+            }
+
+            function applyItem(item) {
+                if (item?.postcode) postal.value = String(item.postcode);
+                if (item?.city) city.value = String(item.city);
+                hidePostal();
+                hideCity();
+            }
+
+            function render(listEl, boxEl, items) {
+                listEl.innerHTML = '';
+                if (!items || items.length === 0) {
+                    boxEl.classList.add('hidden');
+                    return;
+                }
+                for (const item of items) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'block w-full px-3 py-2 text-left text-sm hover:bg-gray-50';
+                    btn.textContent = item.label;
+                    btn.addEventListener('click', function () {
+                        applyItem(item);
+                    });
+                    listEl.appendChild(btn);
+                }
+                boxEl.classList.remove('hidden');
+            }
+
+            async function search(q) {
+                if (aborter) aborter.abort();
+                aborter = new AbortController();
+
+                const url = new URL('/api/geo/cities', window.location.origin);
+                url.searchParams.set('q', q);
+
+                const resp = await fetch(url.toString(), {
+                    headers: { 'Accept': 'application/json' },
+                    signal: aborter.signal,
+                });
+
+                if (!resp.ok) return [];
+                const data = await resp.json();
+                return Array.isArray(data?.items) ? data.items : [];
+            }
+
+            function digitsOnly(value) {
+                return String(value || '').replace(/\D+/g, '');
+            }
+
+            postal.addEventListener('input', function () {
+                const cp = digitsOnly(postal.value);
+                if (postalTimer) window.clearTimeout(postalTimer);
+
+                if (cp.length === 0) {
+                    hidePostal();
+                    return;
+                }
+
+                postalTimer = window.setTimeout(async function () {
+                    try {
+                        const q = (cp + ' ' + (city.value || '')).trim();
+                        const items = await search(q);
+
+                        if (cp.length >= 5 && String(city.value || '').trim() === '' && items.length === 1) {
+                            applyItem(items[0]);
+                            return;
+                        }
+
+                        render(postalList, postalBox, items);
+                    } catch (e) {
+                        // ignore
+                    }
+                }, 200);
+            });
+
+            city.addEventListener('input', function () {
+                const qCity = String(city.value || '').trim();
+                if (cityTimer) window.clearTimeout(cityTimer);
+
+                if (qCity.length < 3) {
+                    hideCity();
+                    return;
+                }
+
+                cityTimer = window.setTimeout(async function () {
+                    try {
+                        const cp = digitsOnly(postal.value);
+                        const q = (cp ? (cp + ' ' + qCity) : qCity).trim();
+                        const items = await search(q);
+                        render(cityList, cityBox, items);
+                    } catch (e) {
+                        // ignore
+                    }
+                }, 200);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (e.target === postal) return;
+                if (e.target === city) return;
+                if (postalBox.contains(e.target)) return;
+                if (cityBox.contains(e.target)) return;
+                hidePostal();
+                hideCity();
             });
         })();
     </script>
