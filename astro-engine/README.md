@@ -26,4 +26,4 @@ If you host this service on cPanel via “Setup Node.js App” (Passenger), make
 Health check: `GET /health` should return `{ "ok": true }`.
 
 If you cannot access Passenger logs, this app writes a local debug log:
-- `.astro-engine.log` (in the application root folder if writable; otherwise in your home directory)
+- `astro-engine.log` (and also `.astro-engine.log`) in the application root folder if writable; otherwise in your home directory

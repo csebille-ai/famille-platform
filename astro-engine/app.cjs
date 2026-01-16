@@ -8,6 +8,7 @@ function logLine(...parts) {
 
   try {
     fs.appendFileSync(path.join(process.cwd(), '.astro-engine.log'), line, 'utf8');
+    fs.appendFileSync(path.join(process.cwd(), 'astro-engine.log'), line, 'utf8');
     return;
   } catch {
     // ignore
@@ -17,6 +18,7 @@ function logLine(...parts) {
     const home = process.env.HOME || process.env.USERPROFILE;
     if (home) {
       fs.appendFileSync(path.join(home, '.astro-engine.log'), line, 'utf8');
+      fs.appendFileSync(path.join(home, 'astro-engine.log'), line, 'utf8');
     }
   } catch {
     // ignore

@@ -10,6 +10,7 @@ function logLine(...parts) {
 
   try {
     fs.appendFileSync(path.join(process.cwd(), '.astro-engine.log'), line, 'utf8');
+    fs.appendFileSync(path.join(process.cwd(), 'astro-engine.log'), line, 'utf8');
   } catch {
     // ignore
   }
