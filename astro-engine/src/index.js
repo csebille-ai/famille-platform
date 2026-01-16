@@ -2,6 +2,18 @@ import express from 'express';
 import { DateTime } from 'luxon';
 import Astronomy from 'astronomy-engine';
 
+process.on('unhandledRejection', (reason) => {
+  // eslint-disable-next-line no-console
+  console.error('[astro-engine] unhandledRejection', reason);
+  process.exitCode = 1;
+});
+
+process.on('uncaughtException', (err) => {
+  // eslint-disable-next-line no-console
+  console.error('[astro-engine] uncaughtException', err);
+  process.exit(1);
+});
+
 const app = express();
 app.use(express.json({ limit: '64kb' }));
 
@@ -93,6 +105,8 @@ app.post('/moon', (req, res) => {
       moon_deg_in_sign: degInSign,
     });
   } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[astro-engine] /moon error', e);
     res.status(500).json({ error: 'internal_error' });
   }
 });

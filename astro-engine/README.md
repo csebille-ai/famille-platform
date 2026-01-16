@@ -13,3 +13,14 @@ The service is started via `compose.yaml` as `astro-engine`.
 
 - Internal URL from Laravel containers: `http://astro-engine:3000`
 - Host port: `${ASTRO_ENGINE_PORT:-3010}`
+
+## cPanel / Passenger
+If you host this service on cPanel via “Setup Node.js App” (Passenger), make sure:
+
+- **Application root** points to the `astro-engine` directory that contains `package.json`.
+- **Startup file** is either:
+  - `index.js` (ESM)
+  - or `app.cjs` (fallback entrypoint, useful if Passenger/ESM is problematic)
+- You run **NPM Install** from cPanel UI, then restart the app.
+
+Health check: `GET /health` should return `{ "ok": true }`.
