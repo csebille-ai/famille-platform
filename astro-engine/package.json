@@ -1,0 +1,16 @@
+{
+  "name": "astro-engine",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Internal astro ephemerides microservice (Moon position/sign).",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "astronomy-engine": "^2.1.19",
+    "express": "^4.19.2",
+    "luxon": "^3.5.0"
+  }
+}

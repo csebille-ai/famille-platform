@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\AstroProfile;
 use App\Models\User;
 use App\Services\Astro\Geo\BirthPlaceAutoResolver;
+use App\Services\Astro\Moon\MoonSignResolver;
 use App\Services\Astro\AstroMixer;
 use App\Services\Astro\AstroProfileComputer;
 use Illuminate\Bus\Queueable;
@@ -23,13 +24,15 @@ class ComputeAstroProfile implements ShouldQueue
     {
     }
 
-    public function handle(AstroProfileComputer $computer): void
+    public function handle(AstroProfileComputer $computer, MoonSignResolver $moonResolver): void
     {
         try {
             $user = User::query()->find($this->userId);
             if (!$user) {
                 return;
             }
+
+            $user->loadMissing('astroProfile');
 
             // Auto-fill missing geo/timezone data from birth_place (best effort).
             try {
@@ -48,12 +51,36 @@ class ComputeAstroProfile implements ShouldQueue
 
             $payload = $computer->compute($user);
 
+            // Compute moon sign with minimal requirements (date + time, tz Europe/Paris).
+            // Cached via astro_hash on astro_profiles.
+            $moon = [
+                'moon_sign' => null,
+                'moon_lon' => null,
+                'moon_deg_in_sign' => null,
+                'astro_hash' => null,
+                'astro_computed_at' => null,
+            ];
+            try {
+                $moon = $moonResolver->resolve($user, $user->astroProfile);
+            } catch (Throwable $e) {
+                // best-effort; do not block profile computation
+                Log::warning('Moon computation failed', [
+                    'user_id' => $user->id,
+                    'exception' => $e,
+                ]);
+            }
+
             if ($payload === []) {
                 $mix = AstroMixer::mix([]);
                 $profile = AstroProfile::updateOrCreate(
                     ['user_id' => $user->id],
                     [
                         'user_id' => $user->id,
+                        'moon_sign' => $moon['moon_sign'],
+                        'moon_lon' => $moon['moon_lon'],
+                        'moon_deg_in_sign' => $moon['moon_deg_in_sign'],
+                        'astro_hash' => $moon['astro_hash'],
+                        'astro_computed_at' => $moon['astro_computed_at'],
                         'signature' => $mix['signature'],
                         'archetype' => $mix['archetype'],
                         'talents' => $mix['talents'],
@@ -64,6 +91,7 @@ class ComputeAstroProfile implements ShouldQueue
 
                 $signatureJson = [
                     'sun_sign' => null,
+                    'moon_sign' => $profile->moon_sign ?? null,
                     'ascendant' => null,
                     'chinese' => [
                         'polarity' => null,
@@ -88,12 +116,18 @@ class ComputeAstroProfile implements ShouldQueue
                 ['user_id' => $user->id],
                 array_merge($payload, [
                     'user_id' => $user->id,
+                    'moon_sign' => $moon['moon_sign'],
+                    'moon_lon' => $moon['moon_lon'],
+                    'moon_deg_in_sign' => $moon['moon_deg_in_sign'],
+                    'astro_hash' => $moon['astro_hash'],
+                    'astro_computed_at' => $moon['astro_computed_at'],
                     'computed_at' => now(),
                 ])
             );
 
             $signatureJson = [
                 'sun_sign' => $profile->western_sign ?? null,
+                'moon_sign' => $profile->moon_sign ?? null,
                 'ascendant' => $profile->ascendant_sign ?? null,
                 'chinese' => [
                     'polarity' => $profile->chinese_yin_yang ?? null,

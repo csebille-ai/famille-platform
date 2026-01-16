@@ -1,0 +1,95 @@
+import express from 'express';
+import { DateTime } from 'luxon';
+import Astronomy from 'astronomy-engine';
+
+const app = express();
+app.use(express.json({ limit: '64kb' }));
+
+function signFromLongitude(lon) {
+  // Normalize into [0, 360)
+  const normalized = ((lon % 360) + 360) % 360;
+  const index = Math.floor(normalized / 30);
+  const signs = [
+    'Bélier',
+    'Taureau',
+    'Gémeaux',
+    'Cancer',
+    'Lion',
+    'Vierge',
+    'Balance',
+    'Scorpion',
+    'Sagittaire',
+    'Capricorne',
+    'Verseau',
+    'Poissons',
+  ];
+
+  const sign = signs[index] ?? '';
+  const degInSign = normalized - index * 30;
+  return { sign, degInSign, normalized };
+}
+
+app.get('/health', (req, res) => {
+  res.json({ ok: true });
+});
+
+// POST /moon
+// Body can be:
+// - { utc: '2026-01-16T12:34:00Z' }
+// - or { date: 'YYYY-MM-DD', time: 'HH:MM', timezone: 'Europe/Paris' }
+app.post('/moon', (req, res) => {
+  try {
+    const body = req.body ?? {};
+
+    let utc;
+    if (typeof body.utc === 'string' && body.utc.trim() !== '') {
+      utc = DateTime.fromISO(body.utc, { zone: 'utc' });
+    } else {
+      const date = typeof body.date === 'string' ? body.date.trim() : '';
+      const time = typeof body.time === 'string' ? body.time.trim() : '';
+      const timezone = typeof body.timezone === 'string' && body.timezone.trim() !== '' ? body.timezone.trim() : 'Europe/Paris';
+
+      if (!date || !time) {
+        return res.status(422).json({ error: 'date and time are required' });
+      }
+
+      const local = DateTime.fromISO(`${date}T${time}`, { zone: timezone });
+      if (!local.isValid) {
+        return res.status(422).json({ error: 'invalid local datetime', details: local.invalidExplanation });
+      }
+      utc = local.toUTC();
+    }
+
+    if (!utc.isValid) {
+      return res.status(422).json({ error: 'invalid utc datetime', details: utc.invalidExplanation });
+    }
+
+    // astronomy-engine uses a custom Time type. Passing a JS Date is supported.
+    const timeObj = Astronomy.MakeTime(utc.toJSDate());
+
+    // Ecliptic longitude of the geocentric Moon (degrees).
+    const ecl = Astronomy.EclipticGeoMoon(timeObj);
+    const lon = Number(ecl.elon);
+
+    if (!Number.isFinite(lon)) {
+      return res.status(500).json({ error: 'moon longitude computation failed' });
+    }
+
+    const { sign, degInSign, normalized } = signFromLongitude(lon);
+
+    res.json({
+      utc: utc.toISO({ suppressMilliseconds: true }),
+      moon_lon: normalized,
+      moon_sign: sign,
+      moon_deg_in_sign: degInSign,
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'internal_error' });
+  }
+});
+
+const port = Number(process.env.PORT || 3000);
+app.listen(port, '0.0.0.0', () => {
+  // eslint-disable-next-line no-console
+  console.log(`astro-engine listening on :${port}`);
+});

@@ -25,6 +25,17 @@ services:
         depends_on:
             - mysql
 
+    astro-engine:
+        image: 'node:24-alpine'
+        working_dir: /app
+        volumes:
+            - './astro-engine:/app'
+        command: 'sh -lc "npm install --silent && npm run start"'
+        ports:
+            - '${ASTRO_ENGINE_PORT:-3010}:3000'
+        networks:
+            - sail
+
     reverb:
         image: 'sail-8.5/app'
         depends_on:

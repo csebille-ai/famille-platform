@@ -1,0 +1,47 @@
+<?php
+
+namespace App\Services\Astro\Moon;
+
+use Illuminate\Support\Facades\Http;
+
+class MoonEngineClient
+{
+    /**
+     * @param array{utc:string} $payload
+     * @return array{moon_lon:float,moon_sign:string,moon_deg_in_sign:float,utc?:string}
+     */
+    public function moonForUtc(array $payload): array
+    {
+        $baseUrl = rtrim((string) config('astro.engine_url'), '/');
+        $timeout = (int) config('astro.timeout_seconds', 3);
+
+        $resp = Http::timeout($timeout)
+            ->acceptJson()
+            ->asJson()
+            ->post($baseUrl . '/moon', $payload);
+
+        if (!$resp->successful()) {
+            throw new \RuntimeException('Astro engine error: HTTP ' . $resp->status());
+        }
+
+        $data = $resp->json();
+        if (!is_array($data)) {
+            throw new \RuntimeException('Astro engine error: invalid JSON');
+        }
+
+        $lon = $data['moon_lon'] ?? null;
+        $sign = $data['moon_sign'] ?? null;
+        $deg = $data['moon_deg_in_sign'] ?? null;
+
+        if (!is_numeric($lon) || !is_string($sign) || $sign === '' || !is_numeric($deg)) {
+            throw new \RuntimeException('Astro engine error: missing fields');
+        }
+
+        return [
+            'moon_lon' => (float) $lon,
+            'moon_sign' => (string) $sign,
+            'moon_deg_in_sign' => (float) $deg,
+            'utc' => is_string($data['utc'] ?? null) ? (string) $data['utc'] : null,
+        ];
+    }
+}

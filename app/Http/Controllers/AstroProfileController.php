@@ -18,6 +18,7 @@ class AstroProfileController extends Controller
         $p = $user->astroProfile;
 
         $sun = trim((string) ($sig['sun_sign'] ?? ($p?->western_sign ?? '')));
+        $moon = trim((string) ($sig['moon_sign'] ?? ($p?->moon_sign ?? '')));
         $asc = trim((string) ($sig['ascendant'] ?? ($p?->ascendant_sign ?? '')));
         $life = (int) ($sig['life_path'] ?? ($p?->life_path ?? 0));
 
@@ -60,7 +61,7 @@ class AstroProfileController extends Controller
 
         $astro = [
             'sun_sign' => $sun,
-            'moon_sign' => '', // MVP placeholder
+            'moon_sign' => $moon,
             'ascendant' => $asc,
             'chinese' => $chStr,
             'life_path' => $life,

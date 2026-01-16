@@ -41,6 +41,7 @@ class AvatarAstroApiTest extends TestCase
         $user = User::factory()->create([
             'astro_signature_json' => [
                 'sun_sign' => 'Taureau',
+                'moon_sign' => 'Gémeaux',
                 'ascendant' => 'Bélier',
                 'chinese' => ['polarity' => 'Yang', 'element' => 'Métal', 'animal' => 'Chien'],
                 'life_path' => 8,

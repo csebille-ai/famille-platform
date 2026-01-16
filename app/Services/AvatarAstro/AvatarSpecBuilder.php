@@ -3,8 +3,6 @@
 namespace App\Services\AvatarAstro;
 
 use App\Models\User;
-use App\Services\Astro\MoonSignCalculator;
-use Carbon\CarbonImmutable;
 
 class AvatarSpecBuilder
 {
@@ -40,9 +38,9 @@ class AvatarSpecBuilder
             throw new \InvalidArgumentException('Signature astro incomplète (sun_sign + ascendant requis).');
         }
 
-        $moonSign = $this->computeMoonSign($user);
+        $moonSign = $this->moonSignFromCache($user);
         if ($moonSign === '') {
-            throw new \InvalidArgumentException('Signe lunaire indisponible (date de naissance requise).');
+            throw new \InvalidArgumentException('Signe lunaire indisponible (date + heure de naissance requises).');
         }
 
         $sunElement = $this->elementFromWesternSign($sunSign);
@@ -74,29 +72,28 @@ class AvatarSpecBuilder
         ];
     }
 
-    private function computeMoonSign(User $user): string
+    private function moonSignFromCache(User $user): string
     {
-        $dob = $user->date_of_birth;
-        if (!$dob) {
+        $sig = is_array($user->astro_signature_json ?? null) ? (array) $user->astro_signature_json : [];
+        $fromSig = trim((string) ($sig['moon_sign'] ?? ''));
+        if ($fromSig !== '') {
+            return $fromSig;
+        }
+
+        $p = $user->astroProfile;
+        $fromProfile = trim((string) ($p?->moon_sign ?? ''));
+        if ($fromProfile !== '') {
+            return $fromProfile;
+        }
+
+        // Require time for reliable Moon sign.
+        if (!$user->date_of_birth || trim((string) ($user->birth_time ?? '')) === '') {
             return '';
         }
 
-        $tz = self::DEFAULT_TZ;
-        $date = CarbonImmutable::instance($dob);
-
-        $time = trim((string) ($user->birth_time ?? ''));
-        if ($time === '') {
-            // No time: approximate with local noon.
-            $time = '12:00';
-        }
-
-        try {
-            $dt = CarbonImmutable::parse($date->format('Y-m-d') . ' ' . $time, $tz);
-        } catch (\Throwable) {
-            $dt = $date->setTime(12, 0);
-        }
-
-        return (string) (MoonSignCalculator::moonSign($dt, $tz) ?? '');
+        // If the cache is empty despite required inputs, ask user to trigger a recompute.
+        // (ComputeAstroProfile runs on user updates and via astro:recompute.)
+        return '';
     }
 
     /**

@@ -16,6 +16,11 @@ class AstroProfile extends Model
         'chinese_yin_yang',
         'life_path',
         'ascendant_sign',
+        'moon_sign',
+        'moon_lon',
+        'moon_deg_in_sign',
+        'astro_hash',
+        'astro_computed_at',
         'natal',
         'archetype',
         'talents',
@@ -28,6 +33,7 @@ class AstroProfile extends Model
         'natal' => 'array',
         'talents' => 'array',
         'computed_at' => 'datetime',
+        'astro_computed_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
