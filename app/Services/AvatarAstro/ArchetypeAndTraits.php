@@ -25,26 +25,51 @@ class ArchetypeAndTraits
         };
     }
 
-    public static function numerologyTrait(int $lifePath): string
+    public static function kemeticDecanTrait(int $kemeticIndex): string
     {
-        return match ($lifePath) {
-            1 => 'pionnier',
-            2 => 'harmonieux',
-            3 => 'drôle',
-            4 => 'méthodique',
-            5 => 'aventurier',
-            6 => 'bienveillant',
-            7 => 'sage',
-            8 => 'ambitieux',
-            9 => 'inspirant',
-            11 => 'visionnaire',
-            22 => 'bâtisseur',
-            default => '',
-        };
+        if ($kemeticIndex < 1 || $kemeticIndex > 36) {
+            return '';
+        }
+
+        $signIndex = intdiv($kemeticIndex - 1, 3); // 0..11
+        $within = (($kemeticIndex - 1) % 3) + 1; // 1..3
+
+        $signs = [
+            'Bélier',
+            'Taureau',
+            'Gémeaux',
+            'Cancer',
+            'Lion',
+            'Vierge',
+            'Balance',
+            'Scorpion',
+            'Sagittaire',
+            'Capricorne',
+            'Verseau',
+            'Poissons',
+        ];
+
+        $keywords = [
+            'Bélier' => [1 => 'élan', 2 => 'courage', 3 => 'percée'],
+            'Taureau' => [1 => 'stabilité', 2 => 'ancrage', 3 => 'patience'],
+            'Gémeaux' => [1 => 'curiosité', 2 => 'agilité', 3 => 'connexion'],
+            'Cancer' => [1 => 'protection', 2 => 'cocon', 3 => 'intuition'],
+            'Lion' => [1 => 'rayonnement', 2 => 'créativité', 3 => 'leadership'],
+            'Vierge' => [1 => 'clarté', 2 => 'précision', 3 => 'service'],
+            'Balance' => [1 => 'harmonie', 2 => 'lien', 3 => 'justesse'],
+            'Scorpion' => [1 => 'profondeur', 2 => 'intensité', 3 => 'transformation'],
+            'Sagittaire' => [1 => 'cap', 2 => 'expansion', 3 => 'exploration'],
+            'Capricorne' => [1 => 'structure', 2 => 'ambition', 3 => 'maîtrise'],
+            'Verseau' => [1 => 'idées', 2 => 'innovation', 3 => 'indépendance'],
+            'Poissons' => [1 => 'imagination', 2 => 'empathie', 3 => 'inspiration'],
+        ];
+
+        $sign = (string) ($signs[$signIndex] ?? '');
+        return (string) (($keywords[$sign][$within] ?? '') ?: '');
     }
 
     /**
-     * @param array{sun_element:string,asc_element:string,moon_element:string,chinese_animal:string,life_path:int} $spec
+     * @param array{sun_element:string,asc_element:string,moon_element:string,chinese_animal:string,kemetic_decan_index:int} $spec
      * @return array{archetype_title:string,traits_canon:list<string>,traits_surannes:list<string>}
      */
     public function build(User $user, array $spec): array
@@ -57,7 +82,7 @@ class ArchetypeAndTraits
             (string) $spec['asc_element'],
             (string) $spec['moon_element'],
             (string) $spec['chinese_animal'],
-            (int) $spec['life_path'],
+            (int) $spec['kemetic_decan_index'],
         );
 
         $mapper = new TraitsSurannesMapper();
@@ -109,7 +134,7 @@ class ArchetypeAndTraits
     /**
      * @return list<string>
      */
-    private function buildTraitsCanon(int $userId, string $sunElement, string $ascElement, string $moonElement, string $chineseAnimal, int $lifePath): array
+    private function buildTraitsCanon(int $userId, string $sunElement, string $ascElement, string $moonElement, string $chineseAnimal, int $kemeticIndex): array
     {
         $chosen = [];
 
@@ -147,9 +172,9 @@ class ArchetypeAndTraits
             $chosen[] = $totemTrait;
         }
 
-        $lifeTrait = self::numerologyTrait($lifePath);
-        if ($lifeTrait !== '' && !in_array($lifeTrait, $chosen, true)) {
-            $chosen[] = $lifeTrait;
+        $kemeticTrait = self::kemeticDecanTrait($kemeticIndex);
+        if ($kemeticTrait !== '' && !in_array($kemeticTrait, $chosen, true)) {
+            $chosen[] = $kemeticTrait;
         }
 
         // Optional “liant” if we ended up with < 5 traits (because of duplicates).

@@ -85,6 +85,88 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /sun
+// Body can be:
+// - { utc: '2026-01-16T12:34:00Z' }
+// - or { date: 'YYYY-MM-DD', time?: 'HH:MM', timezone?: 'Europe/Paris' }
+// If time is missing, we default to 12:00 to keep it stable.
+app.post('/sun', (req, res) => {
+  try {
+    if (DEBUG) {
+      logLine('[astro-engine] /sun start');
+    }
+
+    const body = req.body ?? {};
+
+    let utc;
+    if (typeof body.utc === 'string' && body.utc.trim() !== '') {
+      utc = DateTime.fromISO(body.utc, { zone: 'utc' });
+    } else {
+      const date = typeof body.date === 'string' ? body.date.trim() : '';
+      let time = typeof body.time === 'string' ? body.time.trim() : '';
+      const timezone = typeof body.timezone === 'string' && body.timezone.trim() !== '' ? body.timezone.trim() : 'Europe/Paris';
+
+      if (!date) {
+        return res.status(422).json({ error: 'date is required' });
+      }
+      if (!time) {
+        time = '12:00';
+      }
+
+      const local = DateTime.fromISO(`${date}T${time}`, { zone: timezone });
+      if (!local.isValid) {
+        return res.status(422).json({ error: 'invalid local datetime', details: local.invalidExplanation });
+      }
+      utc = local.toUTC();
+    }
+
+    if (!utc.isValid) {
+      return res.status(422).json({ error: 'invalid utc datetime', details: utc.invalidExplanation });
+    }
+
+    const timeObj = Astronomy.MakeTime(utc.toJSDate());
+    const pos = Astronomy.SunPosition(timeObj);
+    const lon = Number(pos.elon);
+
+    if (!Number.isFinite(lon)) {
+      return res.status(500).json({ error: 'sun longitude computation failed' });
+    }
+
+    const { sign, degInSign, normalized } = signFromLongitude(lon);
+
+    res.json({
+      utc: utc.toISO({ suppressMilliseconds: true }),
+      sun_lon: normalized,
+      sun_sign: sign,
+      sun_deg_in_sign: degInSign,
+    });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[astro-engine] /sun error', e);
+    try {
+      const payload = (() => {
+        try {
+          return JSON.stringify(req.body ?? {});
+        } catch {
+          return '[unserializable]';
+        }
+      })();
+      logLine('[astro-engine] /sun error', e && e.stack ? e.stack : String(e), 'payload=', payload);
+    } catch {
+      logLine('[astro-engine] /sun error', e && e.stack ? e.stack : String(e));
+    }
+
+    if (DEBUG) {
+      return res.status(500).json({
+        error: 'internal_error',
+        message: e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e),
+      });
+    }
+
+    res.status(500).json({ error: 'internal_error' });
+  }
+});
+
 // POST /moon
 // Body can be:
 // - { utc: '2026-01-16T12:34:00Z' }

@@ -14,8 +14,14 @@
 
     $chinese = \App\Services\Astro\ChineseZodiac::formatDisplayLabel($animal, $element, $polarity);
 
-    $lifePath = $sig['life_path'] ?? ($p->life_path ?? null);
-    $numerology = $lifePath !== null && $lifePath !== '' ? 'Chemin de vie ' . (string) $lifePath : '';
+    $kemeticIndex = (int) ($sig['kemetic_decan_index'] ?? ($p->kemetic_decan_index ?? 0));
+    $kemeticLabel = trim((string) ($sig['kemetic_decan_label'] ?? ($p->kemetic_decan_label ?? '')));
+    $kemeticKeyword = trim((string) ($sig['kemetic_decan_keyword'] ?? ($p->kemetic_decan_keyword ?? '')));
+
+    $kemeticLine = $kemeticLabel;
+    if ($kemeticIndex > 0) {
+        $kemeticLine = ($kemeticLine !== '' ? ('#' . $kemeticIndex . ' · ' . $kemeticLine) : ('#' . $kemeticIndex));
+    }
 
     $archetype = trim((string) ($sig['archetype'] ?? ($p->archetype ?? '')));
     $talents = $sig['talents'] ?? ($p->talents ?? []);
@@ -72,8 +78,11 @@
             </div>
 
             <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
-                <div class="text-xs text-slate-500">Numérologie</div>
-                <div class="mt-1 text-sm font-semibold text-slate-900">{{ $numerology !== '' ? $numerology : '—' }}</div>
+                <div class="text-xs text-slate-500">Décan kémétique</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900">{{ $kemeticLine !== '' ? $kemeticLine : '—' }}</div>
+                @if($kemeticKeyword !== '')
+                    <div class="mt-1 text-xs text-slate-500">{{ $kemeticKeyword }}</div>
+                @endif
             </div>
 
             <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
@@ -116,7 +125,8 @@
             $spec = is_array($user->avatar_spec_json ?? null) ? (array) $user->avatar_spec_json : [];
             $sunElement = (string) ($spec['sun_element'] ?? '');
             $chAnimal = (string) ($spec['chinese_animal'] ?? '');
-            $life = (int) ($spec['life_path'] ?? 0);
+            $kemetic = (int) ($spec['kemetic_decan_index'] ?? 0);
+            $kemeticSpecLabel = trim((string) ($spec['kemetic_decan_label'] ?? ''));
 
             $traitsSur = is_array($user->avatar_traits_surannes ?? null) ? (array) $user->avatar_traits_surannes : [];
             $traitsSurLine = implode(', ', array_values(array_filter(array_map('strval', $traitsSur))));
@@ -138,10 +148,10 @@
                 : asset('icons/astro/_default.svg');
 
             $totemCanon = $chAnimal !== '' ? \App\Services\AvatarAstro\ArchetypeAndTraits::chineseTrait($chAnimal) : '';
-            $numCanon = $life > 0 ? \App\Services\AvatarAstro\ArchetypeAndTraits::numerologyTrait($life) : '';
+            $kemCanon = $kemetic > 0 ? \App\Services\AvatarAstro\ArchetypeAndTraits::kemeticDecanTrait($kemetic) : '';
             $surMapper = app(\App\Services\AvatarAstro\TraitsSurannesMapper::class);
             $totemSur = $totemCanon !== '' ? $surMapper->toSuranne((int) $user->id, $totemCanon) : '';
-            $numSur = $numCanon !== '' ? $surMapper->toSuranne((int) $user->id, $numCanon) : '';
+            $kemSur = $kemCanon !== '' ? $surMapper->toSuranne((int) $user->id, $kemCanon) : '';
 
             $archetypeTitle = trim((string) ($user->avatar_archetype_title ?? ''));
         @endphp
@@ -159,10 +169,10 @@
                                     <span>{{ $totemSur !== '' ? $totemSur : ($chAnimal !== '' ? $chAnimal : 'mystère') }}</span>
                                 </span>
 
-                                @if($life > 0)
+                                @if($kemetic > 0)
                                     <span class="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/85 px-3 py-1 text-[11px] font-semibold text-slate-800 shadow-sm">
-                                        <span class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-900 text-[10px] font-extrabold text-white">{{ $life }}</span>
-                                        <span>{{ $numSur !== '' ? $numSur : '—' }}</span>
+                                        <span class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-slate-900 px-1 text-[10px] font-extrabold text-white">{{ $kemetic }}</span>
+                                        <span>{{ $kemSur !== '' ? $kemSur : ($kemeticSpecLabel !== '' ? $kemeticSpecLabel : 'Décan kémétique') }}</span>
                                     </span>
                                 @endif
 

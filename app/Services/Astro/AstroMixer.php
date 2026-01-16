@@ -5,7 +5,7 @@ namespace App\Services\Astro;
 class AstroMixer
 {
     /**
-     * @param array{western_sign?:string,western_element?:string,chinese_animal?:string,chinese_element?:string,chinese_yin_yang?:string,life_path?:int,ascendant_sign?:string} $base
+     * @param array{western_sign?:string,western_element?:string,chinese_animal?:string,chinese_element?:string,chinese_yin_yang?:string,ascendant_sign?:string,kemetic_decan_index?:int} $base
      * @return array{archetype:string,talents:list<string>,weakness:string,signature:string}
      */
     public static function mix(array $base): array
@@ -16,7 +16,7 @@ class AstroMixer
         $animal = (string) ($base['chinese_animal'] ?? '');
         $chElement = (string) ($base['chinese_element'] ?? '');
         $yy = (string) ($base['chinese_yin_yang'] ?? '');
-        $lifePath = (int) ($base['life_path'] ?? 0);
+        $kemeticIndex = (int) ($base['kemetic_decan_index'] ?? 0);
 
         // Prefer sign-based archetypes so two people of the same element (e.g. Balance vs Verseau)
         // don't always end up with the exact same archetype.
@@ -37,10 +37,10 @@ class AstroMixer
 
         $archetype = $archetypeBySign[$westSign]
             ?? match ($westElement) {
-                'Feu' => in_array($lifePath, [1, 3, 5, 11], true) ? 'Explorateur' : 'Moteur',
-                'Terre' => in_array($lifePath, [4, 8, 22], true) ? 'Gardien' : 'Bâtisseur',
-                'Air' => in_array($lifePath, [7], true) ? 'Stratège' : 'Messager',
-                'Eau' => in_array($lifePath, [2, 6, 9], true) ? 'Soigneur' : 'Intuitif',
+                'Feu' => 'Moteur',
+                'Terre' => 'Gardien',
+                'Air' => 'Messager',
+                'Eau' => 'Soigneur',
                 default => 'Équilibriste',
             };
 
@@ -71,8 +71,8 @@ class AstroMixer
         $pool = $talentPool[$archetype] ?? ['Curiosité', 'Adaptation', 'Humour'];
 
         // Deterministic variation: same inputs => same talents.
-        // Different ascendant/chinese/life-path will rotate the pool.
-        $seed = implode('|', [$westSign, $asc, $animal, $chElement, $yy, (string) $lifePath, $archetype]);
+        // Different ascendant/chinese/kemetic decan will rotate the pool.
+        $seed = implode('|', [$westSign, $asc, $animal, $chElement, $yy, (string) $kemeticIndex, $archetype]);
         $offset = (int) (abs((int) crc32($seed)) % max(1, count($pool)));
         $rotated = array_merge(array_slice($pool, $offset), array_slice($pool, 0, $offset));
         $talents = array_slice($rotated, 0, 3);
@@ -81,7 +81,7 @@ class AstroMixer
         if ($westSign !== '') $signatureParts[] = "$westSign";
         if ($asc !== '' && $asc !== $westSign) $signatureParts[] = "Asc $asc";
         if ($animal !== '') $signatureParts[] = ChineseZodiac::formatDisplayLabel($animal, $chElement, $yy);
-        if ($lifePath > 0) $signatureParts[] = "Chemin $lifePath";
+        if ($kemeticIndex > 0) $signatureParts[] = "Décan #$kemeticIndex";
 
         $signature = implode(' · ', $signatureParts);
         if ($signature === '') {

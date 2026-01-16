@@ -27,7 +27,6 @@ class AstroProfileComputer
 
         $west = WesternZodiac::fromDate($date);
         $ch = ChineseZodiac::fromDate($date);
-        $life = Numerology::lifePath($date);
 
         $ascendant = null;
         $lat = $user->birth_latitude !== null ? (float) $user->birth_latitude : null;
@@ -52,21 +51,14 @@ class AstroProfileComputer
             'chinese_animal' => $ch['animal'],
             'chinese_element' => $ch['element'],
             'chinese_yin_yang' => $ch['yin_yang'],
-            'life_path' => $life,
             'ascendant_sign' => $ascendant,
         ];
-
-        $mix = AstroMixer::mix($base);
 
         // Optional natal chart (real planets/houses) if a provider is configured.
         $natal = $this->natalProvider->compute($user);
 
         return array_merge($base, [
             'natal' => $natal,
-            'archetype' => $mix['archetype'],
-            'talents' => $mix['talents'],
-            'weakness' => $mix['weakness'],
-            'signature' => $mix['signature'],
         ]);
     }
 }

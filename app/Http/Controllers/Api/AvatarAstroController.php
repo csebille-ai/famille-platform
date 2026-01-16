@@ -156,7 +156,8 @@ class AvatarAstroController
                 $overlay = [
                     'sun_element' => $spec['sun_element'] ?? null,
                     'chinese_animal' => $spec['chinese_animal'] ?? null,
-                    'life_path' => $spec['life_path'] ?? null,
+                    'kemetic_decan_index' => $spec['kemetic_decan_index'] ?? null,
+                    'kemetic_decan_label' => $spec['kemetic_decan_label'] ?? null,
                     'archetype_title' => $user->avatar_archetype_title ?? null,
                     'traits_surannes' => $user->avatar_traits_surannes ?? null,
                 ];

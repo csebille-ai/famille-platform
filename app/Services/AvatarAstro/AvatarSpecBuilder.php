@@ -6,7 +6,7 @@ use App\Models\User;
 
 class AvatarSpecBuilder
 {
-    public const VERSION = 'avatar_astro_v1';
+    public const VERSION = 'avatar_astro_v2';
 
     private const DEFAULT_TZ = 'Europe/Paris';
 
@@ -19,7 +19,8 @@ class AvatarSpecBuilder
      *   asc_element:'Terre'|'Feu'|'Air'|'Eau',
      *   moon_element:'Terre'|'Feu'|'Air'|'Eau',
      *   chinese_animal:string,
-     *   life_path:int,
+    *   kemetic_decan_index:int,
+    *   kemetic_decan_label:string,
      *   generated_at:string,
      *   version:string
      * }
@@ -53,9 +54,10 @@ class AvatarSpecBuilder
             throw new \InvalidArgumentException('Astro chinoise manquante.');
         }
 
-        $lifePath = $this->parseLifePath($sig['life_path'] ?? ($p?->life_path ?? null));
-        if ($lifePath <= 0) {
-            throw new \InvalidArgumentException('Numérologie manquante (chemin de vie).');
+        $kemeticIndex = $this->parseKemeticIndex($sig['kemetic_decan_index'] ?? ($p?->kemetic_decan_index ?? null));
+        $kemeticLabel = trim((string) ($sig['kemetic_decan_label'] ?? ($p?->kemetic_decan_label ?? '')));
+        if ($kemeticIndex <= 0 || $kemeticLabel === '') {
+            throw new \InvalidArgumentException('Décan kémétique manquant.');
         }
 
         return [
@@ -66,7 +68,8 @@ class AvatarSpecBuilder
             'asc_element' => $ascElement,
             'moon_element' => $moonElement,
             'chinese_animal' => $chineseAnimal,
-            'life_path' => $lifePath,
+            'kemetic_decan_index' => $kemeticIndex,
+            'kemetic_decan_label' => $kemeticLabel,
             'generated_at' => now()->toISOString(),
             'version' => self::VERSION,
         ];
@@ -179,13 +182,14 @@ class AvatarSpecBuilder
         };
     }
 
-    private function parseLifePath(mixed $raw): int
+    private function parseKemeticIndex(mixed $raw): int
     {
         if (is_int($raw)) {
-            return $raw;
+            return ($raw >= 1 && $raw <= 36) ? $raw : 0;
         }
         if (is_numeric($raw)) {
-            return (int) $raw;
+            $n = (int) $raw;
+            return ($n >= 1 && $n <= 36) ? $n : 0;
         }
 
         $s = trim((string) ($raw ?? ''));
@@ -193,19 +197,9 @@ class AvatarSpecBuilder
             return 0;
         }
 
-        // Prefer master numbers.
-        if (preg_match('/\b(11|22)\b/u', $s, $m)) {
-            return (int) $m[1];
-        }
-
-        if (preg_match('/\b([1-9])\b/u', $s, $m)) {
-            return (int) $m[1];
-        }
-
-        // Last digit fallback.
-        if (preg_match('/([0-9])\D*$/u', $s, $m)) {
+        if (preg_match('/\b([1-9]|[1-2][0-9]|3[0-6])\b/u', $s, $m)) {
             $n = (int) $m[1];
-            return ($n >= 1 && $n <= 9) ? $n : 0;
+            return ($n >= 1 && $n <= 36) ? $n : 0;
         }
 
         return 0;

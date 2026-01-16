@@ -6,6 +6,7 @@ use App\Models\AstroProfile;
 use App\Models\User;
 use App\Services\Astro\Geo\BirthPlaceAutoResolver;
 use App\Services\Astro\Moon\MoonSignResolver;
+use App\Services\Astro\Sun\SunKemeticResolver;
 use App\Services\Astro\AstroMixer;
 use App\Services\Astro\AstroProfileComputer;
 use Illuminate\Bus\Queueable;
@@ -24,7 +25,7 @@ class ComputeAstroProfile implements ShouldQueue
     {
     }
 
-    public function handle(AstroProfileComputer $computer, MoonSignResolver $moonResolver): void
+    public function handle(AstroProfileComputer $computer, MoonSignResolver $moonResolver, SunKemeticResolver $sunKemetic): void
     {
         try {
             $user = User::query()->find($this->userId);
@@ -70,6 +71,25 @@ class ComputeAstroProfile implements ShouldQueue
                 ]);
             }
 
+            // Compute sun longitude and kemetic decan (best effort, cached via kemetic_hash).
+            $kemetic = [
+                'sun_lon' => $user->astroProfile?->sun_lon,
+                'sun_deg_in_sign' => $user->astroProfile?->sun_deg_in_sign,
+                'kemetic_decan_index' => $user->astroProfile?->kemetic_decan_index,
+                'kemetic_decan_label' => $user->astroProfile?->kemetic_decan_label,
+                'kemetic_decan_keyword' => $user->astroProfile?->kemetic_decan_keyword,
+                'kemetic_hash' => $user->astroProfile?->kemetic_hash,
+                'kemetic_computed_at' => $user->astroProfile?->kemetic_computed_at,
+            ];
+            try {
+                $kemetic = $sunKemetic->resolve($user, $user->astroProfile);
+            } catch (Throwable $e) {
+                Log::warning('Kemetic decan computation failed', [
+                    'user_id' => $user->id,
+                    'exception' => $e,
+                ]);
+            }
+
             if ($payload === []) {
                 $mix = AstroMixer::mix([]);
                 $profile = AstroProfile::updateOrCreate(
@@ -79,6 +99,13 @@ class ComputeAstroProfile implements ShouldQueue
                         'moon_sign' => $moon['moon_sign'],
                         'moon_lon' => $moon['moon_lon'],
                         'moon_deg_in_sign' => $moon['moon_deg_in_sign'],
+                        'sun_lon' => $kemetic['sun_lon'],
+                        'sun_deg_in_sign' => $kemetic['sun_deg_in_sign'],
+                        'kemetic_decan_index' => $kemetic['kemetic_decan_index'],
+                        'kemetic_decan_label' => $kemetic['kemetic_decan_label'],
+                        'kemetic_decan_keyword' => $kemetic['kemetic_decan_keyword'],
+                        'kemetic_hash' => $kemetic['kemetic_hash'],
+                        'kemetic_computed_at' => $kemetic['kemetic_computed_at'],
                         'astro_hash' => $moon['astro_hash'],
                         'astro_computed_at' => $moon['astro_computed_at'],
                         'signature' => $mix['signature'],
@@ -98,7 +125,9 @@ class ComputeAstroProfile implements ShouldQueue
                         'element' => null,
                         'animal' => null,
                     ],
-                    'life_path' => null,
+                    'kemetic_decan_index' => $profile->kemetic_decan_index ?? null,
+                    'kemetic_decan_label' => $profile->kemetic_decan_label ?? null,
+                    'kemetic_decan_keyword' => $profile->kemetic_decan_keyword ?? null,
                     'archetype' => (string) ($profile->archetype ?? ''),
                     'talents' => (array) ($profile->talents ?? []),
                     'vigilance' => (string) ($profile->weakness ?? ''),
@@ -112,13 +141,26 @@ class ComputeAstroProfile implements ShouldQueue
                 return;
             }
 
+            $baseForMix = array_merge($payload, [
+                'moon_sign' => $moon['moon_sign'],
+                'kemetic_decan_index' => $kemetic['kemetic_decan_index'],
+            ]);
+            $mix = AstroMixer::mix($baseForMix);
+
             $profile = AstroProfile::updateOrCreate(
                 ['user_id' => $user->id],
-                array_merge($payload, [
+                array_merge($payload, $mix, [
                     'user_id' => $user->id,
                     'moon_sign' => $moon['moon_sign'],
                     'moon_lon' => $moon['moon_lon'],
                     'moon_deg_in_sign' => $moon['moon_deg_in_sign'],
+                    'sun_lon' => $kemetic['sun_lon'],
+                    'sun_deg_in_sign' => $kemetic['sun_deg_in_sign'],
+                    'kemetic_decan_index' => $kemetic['kemetic_decan_index'],
+                    'kemetic_decan_label' => $kemetic['kemetic_decan_label'],
+                    'kemetic_decan_keyword' => $kemetic['kemetic_decan_keyword'],
+                    'kemetic_hash' => $kemetic['kemetic_hash'],
+                    'kemetic_computed_at' => $kemetic['kemetic_computed_at'],
                     'astro_hash' => $moon['astro_hash'],
                     'astro_computed_at' => $moon['astro_computed_at'],
                     'computed_at' => now(),
@@ -134,7 +176,9 @@ class ComputeAstroProfile implements ShouldQueue
                     'element' => $profile->chinese_element ?? null,
                     'animal' => $profile->chinese_animal ?? null,
                 ],
-                'life_path' => $profile->life_path ?? null,
+                'kemetic_decan_index' => $profile->kemetic_decan_index ?? null,
+                'kemetic_decan_label' => $profile->kemetic_decan_label ?? null,
+                'kemetic_decan_keyword' => $profile->kemetic_decan_keyword ?? null,
                 'archetype' => $profile->archetype ?? null,
                 'talents' => (array) ($profile->talents ?? []),
                 'vigilance' => $profile->weakness ?? null,

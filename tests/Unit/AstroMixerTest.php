@@ -12,13 +12,13 @@ class AstroMixerTest extends TestCase
         $balance = AstroMixer::mix([
             'western_sign' => 'Balance',
             'western_element' => 'Air',
-            'life_path' => 5,
+            'kemetic_decan_index' => 5,
         ]);
 
         $verseau = AstroMixer::mix([
             'western_sign' => 'Verseau',
             'western_element' => 'Air',
-            'life_path' => 5,
+            'kemetic_decan_index' => 5,
         ]);
 
         $this->assertNotSame($balance['archetype'], $verseau['archetype']);
@@ -29,7 +29,7 @@ class AstroMixerTest extends TestCase
         $base = [
             'western_sign' => 'Gémeaux',
             'western_element' => 'Air',
-            'life_path' => 5,
+            'kemetic_decan_index' => 5,
             'chinese_animal' => 'Dragon',
             'chinese_element' => 'Métal',
             'chinese_yin_yang' => 'Yang',

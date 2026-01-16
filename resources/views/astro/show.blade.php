@@ -35,8 +35,9 @@
 
         $archetypeHero = trim((string) ($astro['archetype'] ?? ''));
 
-        $lifePathHero = (int) ($astro['life_path'] ?? 0);
         $chineseHero = trim((string) ($astro['chinese'] ?? ''));
+        $kemeticIndexHero = (int) ($astro['kemetic_decan_index'] ?? 0);
+        $kemeticLabelHero = trim((string) ($astro['kemetic_decan_label'] ?? ''));
 
         $elementFromSign = function (string $sign): string {
             $sign = mb_strtolower(trim($sign));
@@ -61,8 +62,12 @@
 
         $elementHero = $sun !== '' ? $elementFromSign($sun) : '';
         $signatureParts = [];
-        if ($lifePathHero > 0) $signatureParts[] = (string) $lifePathHero;
         if ($chineseHero !== '') $signatureParts[] = $chineseHero;
+        if ($kemeticLabelHero !== '') {
+            $signatureParts[] = $kemeticLabelHero . ($kemeticIndexHero > 0 ? (' · #' . $kemeticIndexHero) : '');
+        } elseif ($kemeticIndexHero > 0) {
+            $signatureParts[] = 'Décan kémétique #' . $kemeticIndexHero;
+        }
         $signatureLine = implode(' • ', $signatureParts);
 
         $birthCtaUrl = isset($birthCtaUrl)
@@ -314,18 +319,25 @@
 
                         @php
                             $chinese = trim((string) ($astro['chinese'] ?? ''));
-                            $lifePath = (int) ($astro['life_path'] ?? 0);
+                            $kemeticIndex = (int) ($astro['kemetic_decan_index'] ?? 0);
+                            $kemeticLabel = trim((string) ($astro['kemetic_decan_label'] ?? ''));
+                            $kemeticKeyword = trim((string) ($astro['kemetic_decan_keyword'] ?? ''));
 
                             $essentialCards = [
                                 [
                                     'label' => 'Signe chinois',
                                     'value' => $chinese !== '' ? $chinese : 'À compléter',
                                     'muted' => $chinese === '',
+                                    'meta' => '',
                                 ],
                                 [
-                                    'label' => 'Numérologie',
-                                    'value' => $lifePath > 0 ? (string) $lifePath : 'À calculer',
-                                    'muted' => $lifePath <= 0,
+                                    'label' => 'Décan kémétique',
+                                    'value' => $kemeticLabel !== '' ? $kemeticLabel : 'À calculer',
+                                    'muted' => $kemeticLabel === '' && $kemeticIndex <= 0,
+                                    'meta' => trim(implode(' · ', array_values(array_filter([
+                                        $kemeticIndex > 0 ? ('#' . $kemeticIndex) : '',
+                                        $kemeticKeyword !== '' ? $kemeticKeyword : '',
+                                    ])))),
                                 ],
                             ];
                         @endphp
@@ -341,6 +353,9 @@
                                         <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
                                     </div>
                                     <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $e['value'] }}</div>
+                                    @if(($e['meta'] ?? '') !== '')
+                                        <div class="mt-0.5 text-[11px] text-slate-500">{{ $e['meta'] }}</div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

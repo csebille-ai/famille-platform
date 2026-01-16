@@ -21,7 +21,8 @@ class AvatarAstroApiTest extends TestCase
                 'sun_sign' => 'Taureau',
                 'ascendant' => 'Bélier',
                 'chinese' => ['polarity' => 'Yang', 'element' => 'Métal', 'animal' => 'Chien'],
-                'life_path' => 8,
+                'kemetic_decan_index' => 5,
+                'kemetic_decan_label' => 'Taureau — 2e décan',
             ],
             'date_of_birth' => null,
         ]);
@@ -44,7 +45,8 @@ class AvatarAstroApiTest extends TestCase
                 'moon_sign' => 'Gémeaux',
                 'ascendant' => 'Bélier',
                 'chinese' => ['polarity' => 'Yang', 'element' => 'Métal', 'animal' => 'Chien'],
-                'life_path' => 8,
+                'kemetic_decan_index' => 5,
+                'kemetic_decan_label' => 'Taureau — 2e décan',
             ],
             'date_of_birth' => '1990-01-01',
             'birth_time' => '12:00',
@@ -77,7 +79,8 @@ class AvatarAstroApiTest extends TestCase
             'avatar_spec_json' => [
                 'sun_element' => 'Terre',
                 'chinese_animal' => 'Chien',
-                'life_path' => 8,
+                'kemetic_decan_index' => 5,
+                'kemetic_decan_label' => 'Taureau — 2e décan',
             ],
             'avatar_archetype_title' => 'Le Pilier',
             'avatar_traits_surannes' => ['flegmatique', 'tenace'],
@@ -90,6 +93,6 @@ class AvatarAstroApiTest extends TestCase
             ->assertJsonStructure(['status', 'image_url', 'image_display_url', 'updated_at', 'error', 'overlay'])
             ->assertJsonPath('overlay.sun_element', 'Terre')
             ->assertJsonPath('overlay.chinese_animal', 'Chien')
-            ->assertJsonPath('overlay.life_path', 8);
+            ->assertJsonPath('overlay.kemetic_decan_index', 5);
     }
 }
