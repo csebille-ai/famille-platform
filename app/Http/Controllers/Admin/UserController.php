@@ -51,6 +51,65 @@ class UserController extends Controller
         ]);
     }
 
+    public function edit(Request $request, User $user): View
+    {
+        Gate::authorize('manage-users');
+
+        $user->load('astroProfile');
+
+        return view('admin.users.edit', [
+            'user' => $user,
+            'roles' => ['member', 'editor', 'admin'],
+        ]);
+    }
+
+    public function update(Request $request, User $user): RedirectResponse
+    {
+        Gate::authorize('manage-users');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'role' => ['required', 'in:member,editor,admin'],
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'birth_time' => ['nullable', 'date_format:H:i'],
+            'birth_place' => ['nullable', 'string', 'max:255'],
+            'birth_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'birth_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'address_line1' => ['nullable', 'string', 'max:255'],
+            'address_line2' => ['nullable', 'string', 'max:255'],
+            'postal_code' => ['nullable', 'string', 'max:32'],
+            'city' => ['nullable', 'string', 'max:191'],
+            'phone' => ['nullable', 'string', 'max:32'],
+        ]);
+
+        if ($user->id === Auth::id() && $validated['role'] !== 'admin') {
+            return redirect()
+                ->route('admin.users.edit', $user)
+                ->withErrors(['role' => __('You cannot change your own role.')]);
+        }
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->role = $validated['role'];
+        $user->date_of_birth = $validated['date_of_birth'] ?? null;
+        $user->birth_time = $validated['birth_time'] ?? null;
+        $user->birth_place = $validated['birth_place'] ?? null;
+        $user->birth_latitude = $validated['birth_latitude'] ?? null;
+        $user->birth_longitude = $validated['birth_longitude'] ?? null;
+        $user->address_line1 = $validated['address_line1'] ?? null;
+        $user->address_line2 = $validated['address_line2'] ?? null;
+        $user->postal_code = $validated['postal_code'] ?? null;
+        $user->city = $validated['city'] ?? null;
+        $user->phone = $validated['phone'] ?? null;
+
+        $user->save();
+
+        return redirect()
+            ->route('admin.users.show', $user)
+            ->with('status', __('User updated.'));
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Gate::authorize('manage-users');

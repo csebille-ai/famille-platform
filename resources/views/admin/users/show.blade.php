@@ -10,9 +10,14 @@
                 </div>
             </div>
 
-            <a href="{{ route('admin.users.index') }}" class="inline-flex items-center h-10 px-4 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50">
-                Retour
-            </a>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.users.edit', $user) }}" class="inline-flex items-center h-10 px-4 rounded-md bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+                    Modifier
+                </a>
+                <a href="{{ route('admin.users.index') }}" class="inline-flex items-center h-10 px-4 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-semibold hover:bg-gray-50">
+                    Retour
+                </a>
+            </div>
         </div>
     </x-slot>
 

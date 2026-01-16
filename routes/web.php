@@ -1423,8 +1423,10 @@ Route::middleware('auth')->group(function () {
     Route::prefix('admin')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
+        Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('admin.users.edit');
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
         Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+        Route::patch('/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
         Route::post('/users/invites/send-pending', [AdminUserController::class, 'sendPendingInvites'])->name('admin.users.invites.sendPending');
         Route::post('/users/{user}/invite', [AdminUserController::class, 'resendInvite'])->name('admin.users.invite');
         Route::patch('/users/{user}/role', [AdminUserController::class, 'updateRole'])->name('admin.users.role');
