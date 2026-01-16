@@ -2,15 +2,30 @@ import express from 'express';
 import { DateTime } from 'luxon';
 import Astronomy from 'astronomy-engine';
 
+import fs from 'fs';
+import path from 'path';
+
+function logLine(...parts) {
+  const line = `[${new Date().toISOString()}] ${parts.map(String).join(' ')}\n`;
+
+  try {
+    fs.appendFileSync(path.join(process.cwd(), '.astro-engine.log'), line, 'utf8');
+  } catch {
+    // ignore
+  }
+}
+
 process.on('unhandledRejection', (reason) => {
   // eslint-disable-next-line no-console
   console.error('[astro-engine] unhandledRejection', reason);
+  logLine('[astro-engine] unhandledRejection', reason && reason.stack ? reason.stack : String(reason));
   process.exitCode = 1;
 });
 
 process.on('uncaughtException', (err) => {
   // eslint-disable-next-line no-console
   console.error('[astro-engine] uncaughtException', err);
+  logLine('[astro-engine] uncaughtException', err && err.stack ? err.stack : String(err));
   process.exit(1);
 });
 
@@ -107,6 +122,7 @@ app.post('/moon', (req, res) => {
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error('[astro-engine] /moon error', e);
+    logLine('[astro-engine] /moon error', e && e.stack ? e.stack : String(e));
     res.status(500).json({ error: 'internal_error' });
   }
 });
@@ -119,10 +135,13 @@ const server = app.listen(port, host, () => {
   console.log(`astro-engine listening on ${host}:${port}`);
   // eslint-disable-next-line no-console
   console.log(`healthcheck: http://${host}:${port}/health`);
+
+  logLine('[astro-engine] listening', `${host}:${port}`);
 });
 
 server.on('error', (err) => {
   // eslint-disable-next-line no-console
   console.error('astro-engine server error', err);
+  logLine('[astro-engine] server error', err && err.stack ? err.stack : String(err));
   process.exitCode = 1;
 });
