@@ -177,7 +177,6 @@
         $tabs = [
             'profile' => 'Synthèse',
             'chart' => 'Carte du ciel',
-            'places' => 'Naissance',
         ];
     @endphp
 
@@ -280,20 +279,6 @@
                         @if($signatureLine !== '')
                             <div class="text-xs text-slate-600">{{ $signatureLine }}</div>
                         @endif
-                    </div>
-                @endif
-
-                @if($isChartMissing)
-                    <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 mt-3 flex items-center justify-between gap-3">
-                        <div class="min-w-0 flex-1 text-sm font-medium text-amber-950 leading-5 sm:whitespace-nowrap">
-                            Complète tes infos de naissance pour calculer la carte du ciel.
-                        </div>
-                        <a
-                            href="{{ $birthCtaUrl }}"
-                            class="inline-flex items-center h-9 px-3 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 active:bg-amber-800 shrink-0"
-                        >
-                            Compléter
-                        </a>
                     </div>
                 @endif
 
@@ -434,12 +419,43 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="pt-2">
+                            <div class="text-sm font-semibold text-slate-900">Actions</div>
+                            <div class="mt-3 grid sm:grid-cols-2 gap-3">
+                                <a href="{{ $birthCtaUrl }}" class="inline-flex items-center justify-center h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">
+                                    Modifier mes infos
+                                </a>
+
+                                <form method="POST" action="{{ route('avatar.astro.generate') }}">
+                                    @csrf
+                                    <button type="submit" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:bg-slate-950">
+                                        Générer mon avatar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             @elseif($tab === 'chart')
                 <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="bg-white shadow sm:rounded-2xl">
                     <div class="p-4 sm:p-6 space-y-4">
                         <div class="text-sm font-semibold text-slate-900">Carte du ciel</div>
+
+                        @if($isChartMissing)
+                            <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    <div class="text-sm font-semibold text-amber-950">Complète tes infos pour calculer la carte du ciel</div>
+                                    <div class="mt-1 text-sm text-amber-950/80">Heure + lieu requis pour l’Ascendant & les maisons.</div>
+                                </div>
+                                <a
+                                    href="{{ $birthCtaUrl }}"
+                                    class="inline-flex items-center h-10 px-4 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 active:bg-amber-800 shrink-0"
+                                >
+                                    Modifier
+                                </a>
+                            </div>
+                        @endif
 
                         @if(($astro['precision'] ?? 'unknown') === 'unknown')
                             <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -457,50 +473,7 @@
                         @endif
                     </div>
                 </div>
-            @else
-                <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="bg-white shadow sm:rounded-2xl">
-                    <div class="p-4 sm:p-6 space-y-4">
-                        <div class="text-sm font-semibold text-slate-900">Lieux</div>
-
-                        @php
-                            $place = trim((string) ($user->birth_place ?? ''));
-                            $time = trim((string) ($user->birth_time ?? ''));
-                            $tz = 'Europe/Paris';
-                        @endphp
-
-                        <div class="rounded-xl border border-slate-200 p-4">
-                            <div class="text-xs text-slate-500">Naissance</div>
-                            <div class="mt-1 text-sm font-semibold text-slate-900">{{ $place !== '' ? $place : 'À compléter' }}</div>
-                            <div class="mt-1 text-sm text-slate-600">
-                                Heure locale: {{ $time !== '' ? $time : 'À compléter' }} · Fuseau: {{ $tz }}
-                            </div>
-                            <div class="mt-3">
-                                <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-md border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50">Corriger / préciser</a>
-                            </div>
-                        </div>
-
-                        <div class="text-xs text-slate-500">Les coordonnées précises restent masquées (MVP).</div>
-                    </div>
-                </div>
             @endif
-
-            <div class="bg-white shadow sm:rounded-2xl">
-                <div class="p-4 sm:p-6">
-                    <div class="text-sm font-semibold text-slate-900">Actions</div>
-                    <div class="mt-3 grid sm:grid-cols-2 gap-3">
-                        <a href="{{ $birthCtaUrl }}" class="inline-flex items-center justify-center h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">
-                            Modifier mes infos de naissance
-                        </a>
-
-                        <form method="POST" action="{{ route('avatar.astro.generate') }}">
-                            @csrf
-                            <button type="submit" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:bg-slate-950">
-                                Générer mon avatar
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
 
             <!-- Talents bottom sheet -->
             @php
