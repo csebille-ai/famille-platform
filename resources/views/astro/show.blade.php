@@ -24,6 +24,9 @@
 
         $hasAvatar = trim((string) ($user->avatar_image_url ?? '')) !== '';
         $avatarV = optional($user->avatar_updated_at)->getTimestamp() ?? time();
+        $avatarImageUrl = isset($avatarImageUrl)
+            ? (string) $avatarImageUrl
+            : route('avatar.astro.image', ['v' => $avatarV]);
 
         $sun = trim((string) ($astro['sun_sign'] ?? ''));
         $moon = trim((string) ($astro['moon_sign'] ?? ''));
@@ -32,7 +35,9 @@
 
         $archetypeHero = trim((string) ($astro['archetype'] ?? ''));
 
-        $birthCtaUrl = route('profile.edit') . '#astro-birth';
+        $birthCtaUrl = isset($birthCtaUrl)
+            ? (string) $birthCtaUrl
+            : (route('profile.edit') . '#astro-birth');
 
         $isChartMissing = $precision !== 'exact' || $moon === '' || $asc === '';
         $pill = function (string $label, string $value, array $opts = []) {
@@ -103,7 +108,7 @@
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
                             @if($hasAvatar)
-                                <img src="{{ route('avatar.astro.image', ['v' => $avatarV]) }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
+                                <img src="{{ $avatarImageUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
                             @else
                                 <div class="text-slate-600 font-semibold">
                                     {{ $user->initials() }}

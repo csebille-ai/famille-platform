@@ -47,9 +47,10 @@ class AdminUserShowTest extends TestCase
             ->get(route('admin.users.show', $target))
             ->assertOk()
             ->assertSee($target->email)
-            ->assertSee('Fiche astrale')
-            ->assertSee('Test archetype')
-            ->assertSee('Test weakness')
-            ->assertSee('A');
+            ->assertSee('Statut')
+            ->assertSee('Naissance (astro)')
+            ->assertSee('Actions rapides')
+            ->assertSee('Copier lien invitation')
+            ->assertSee('Voir la fiche astro');
     }
 }
