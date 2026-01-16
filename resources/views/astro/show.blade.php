@@ -269,25 +269,42 @@
                     @endforeach
                 </div>
 
-                @if($signatureLine !== '' || $elementHero !== '')
-                    <div class="mt-3 flex flex-wrap items-center gap-2">
-                        @if($elementHero !== '')
-                            <span class="inline-flex items-center h-6 px-2.5 rounded-full border border-slate-200/70 bg-slate-50 text-[11px] font-semibold text-slate-700">
-                                Élément: {{ $elementHero }}
-                            </span>
-                        @endif
-                        @if($signatureLine !== '')
-                            <div class="text-xs text-slate-600">{{ $signatureLine }}</div>
-                        @endif
-                    </div>
-                @endif
+                @php
+                    $heroChips = [
+                        [
+                            'value' => $elementHero,
+                            'fallback' => '—',
+                        ],
+                        [
+                            'value' => $chineseHero,
+                            'fallback' => 'À compléter',
+                        ],
+                        [
+                            'value' => $kemeticNameHero,
+                            'fallback' => 'À calculer',
+                        ],
+                    ];
+                @endphp
 
-                <div class="mt-3">
-                    <div class="inline-flex w-full bg-slate-100/60 border border-slate-200 rounded-xl p-1">
+                <div class="mt-3 grid grid-cols-1 min-[360px]:grid-cols-3 gap-2">
+                    @foreach($heroChips as $c)
+                        @php
+                            $val = trim((string) ($c['value'] ?? ''));
+                            $missing = ($val === '');
+                            $text = $missing ? (string) ($c['fallback'] ?? '—') : $val;
+                        @endphp
+                        <div class="inline-flex w-full items-center justify-center h-9 px-3 rounded-full border {{ $missing ? 'border-slate-200 bg-slate-50 text-slate-500' : 'border-slate-200 bg-white text-slate-900' }} text-sm font-semibold">
+                            <span class="truncate">{{ $text }}</span>
+                        </div>
+                    @endforeach
+                </div>
+
+                <div class="mt-3 flex justify-center">
+                    <div class="inline-flex bg-slate-100/60 border border-slate-200 rounded-full p-1">
                         @foreach($tabs as $key => $label)
                             <a
                                 href="{{ route('astro.show', ['tab' => $key]) }}"
-                                class="flex-1 text-center h-10 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-150 {{ $tab === $key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900' }}"
+                                class="px-4 text-center h-9 inline-flex items-center justify-center rounded-full text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900' }}"
                             >
                                 {{ $label }}
                             </a>
@@ -324,17 +341,17 @@
                             ];
                         @endphp
 
-                        <div class="grid gap-2 min-[420px]:grid-cols-2 sm:gap-3">
+                        <div class="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 sm:gap-3">
                             @foreach($essentialCards as $e)
                                 @php
                                     $accent = $loop->first ? 'bg-sky-400/70' : 'bg-violet-400/70';
                                 @endphp
-                                <div class="h-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+                                <div class="h-full min-w-0 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="flex items-center gap-2">
                                         <span class="h-1.5 w-1.5 rounded-full {{ $accent }}"></span>
                                         <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
                                     </div>
-                                    <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $e['value'] }}</div>
+                                    <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }} truncate">{{ $e['value'] }}</div>
                                     @if(($e['meta'] ?? '') !== '')
                                         <div class="mt-0.5 text-[11px] text-slate-500">{{ $e['meta'] }}</div>
                                     @endif
@@ -408,14 +425,14 @@
 
                         <div class="mt-1">
                             <div class="text-sm font-semibold text-slate-900">Insights</div>
-                            <div class="mt-2 grid gap-2 min-[420px]:grid-cols-2 sm:gap-3">
-                                <div class="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
+                            <div class="mt-2 grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 sm:gap-3">
+                                <div class="h-full min-w-0 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="text-[11px] font-semibold text-slate-600">Point fort</div>
-                                    <div class="mt-1 text-sm font-semibold text-emerald-950">{{ $strength !== '' ? $strength : '—' }}</div>
+                                    <div class="mt-1 text-sm font-semibold text-emerald-950 line-clamp-2">{{ $strength !== '' ? $strength : '—' }}</div>
                                 </div>
-                                <div class="rounded-2xl border border-amber-200/70 bg-amber-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
+                                <div class="h-full min-w-0 rounded-2xl border border-amber-200/70 bg-amber-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="text-[11px] font-semibold text-slate-600">À surveiller</div>
-                                    <div class="mt-1 text-sm font-semibold text-slate-900">{{ $vigilance !== '' ? $vigilance : 'À calculer' }}</div>
+                                    <div class="mt-1 text-sm font-semibold text-slate-900 line-clamp-2">{{ $vigilance !== '' ? $vigilance : 'À calculer' }}</div>
                                 </div>
                             </div>
                         </div>
