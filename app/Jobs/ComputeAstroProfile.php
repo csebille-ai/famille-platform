@@ -54,11 +54,11 @@ class ComputeAstroProfile implements ShouldQueue
             // Compute moon sign with minimal requirements (date + time, tz Europe/Paris).
             // Cached via astro_hash on astro_profiles.
             $moon = [
-                'moon_sign' => null,
-                'moon_lon' => null,
-                'moon_deg_in_sign' => null,
-                'astro_hash' => null,
-                'astro_computed_at' => null,
+                'moon_sign' => $user->astroProfile?->moon_sign,
+                'moon_lon' => $user->astroProfile?->moon_lon,
+                'moon_deg_in_sign' => $user->astroProfile?->moon_deg_in_sign,
+                'astro_hash' => $user->astroProfile?->astro_hash,
+                'astro_computed_at' => $user->astroProfile?->astro_computed_at,
             ];
             try {
                 $moon = $moonResolver->resolve($user, $user->astroProfile);
