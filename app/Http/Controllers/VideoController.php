@@ -683,6 +683,45 @@ SVG;
         ]));
     }
 
+    public function storePoster(Request $request, Video $video)
+    {
+        Gate::authorize('cloud-write');
+
+        $validated = $request->validate([
+            // We intentionally validate via extension/mime (not the "image" rule)
+            // so tests and lightweight clients can upload a poster without GD/Imagick.
+            'poster' => ['required', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $diskName = (string) ($video->storage_disk ?? 'public');
+        if (!in_array($diskName, ['public', 'local'], true)) {
+            $diskName = 'public';
+        }
+
+        $file = $validated['poster'];
+        $ext = strtolower((string) ($file->guessExtension() ?: $file->getClientOriginalExtension() ?: 'jpg'));
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $ext = 'jpg';
+        }
+        if ($ext === 'jpeg') {
+            $ext = 'jpg';
+        }
+
+        $relative = 'videos/posters/' . $video->id . '.' . $ext;
+        Storage::disk($diskName)->putFileAs('videos/posters', $file, $video->id . '.' . $ext);
+
+        $video->forceFill(['poster_path' => $relative])->save();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'poster_url' => route('videos.poster', $video) . '?v=' . time(),
+            ]);
+        }
+
+        return back()->with('status', 'Poster mis à jour');
+    }
+
     /**
      * Show the form for editing the specified resource.
      */

@@ -1289,6 +1289,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->name('videos.stream');
     Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->name('videos.poster');
+    Route::post('videos/{video}/poster', [VideoController::class, 'storePoster'])->name('videos.poster.store');
 
     Route::get('videos/classify/{node}', [VideoController::class, 'classifyFromCloud'])->name('videos.classify');
     Route::post('videos/classify/{node}', [VideoController::class, 'storeFromCloudClassification'])->name('videos.classify.store');

@@ -588,6 +588,104 @@
                             return n + ' ' + units[i];
                         };
 
+                        const withTimeout = (promise, ms, label) => {
+                            let t = null;
+                            const timeout = new Promise((_, reject) => {
+                                t = window.setTimeout(() => reject(new Error(label || 'Timeout')), ms);
+                            });
+                            return Promise.race([promise, timeout]).finally(() => {
+                                if (t) window.clearTimeout(t);
+                            });
+                        };
+
+                        const generatePosterBlobFromVideoFile = async (file) => {
+                            if (!file || !file.type || !String(file.type).startsWith('video/')) return null;
+
+                            const url = URL.createObjectURL(file);
+                            try {
+                                const video = document.createElement('video');
+                                video.muted = true;
+                                video.playsInline = true;
+                                video.preload = 'metadata';
+                                video.src = url;
+
+                                await withTimeout(new Promise((resolve, reject) => {
+                                    const onLoaded = () => resolve();
+                                    const onError = () => reject(new Error('Video unreadable'));
+                                    video.addEventListener('loadedmetadata', onLoaded, { once: true });
+                                    video.addEventListener('error', onError, { once: true });
+                                }), 12000, 'Metadata timeout');
+
+                                const targetTime = Math.min(1, Math.max(0, (Number.isFinite(video.duration) ? video.duration : 1) / 10));
+                                try { video.currentTime = targetTime; } catch (e) { video.currentTime = 0; }
+
+                                await withTimeout(new Promise((resolve, reject) => {
+                                    const onSeeked = () => resolve();
+                                    const onError = () => reject(new Error('Seek failed'));
+                                    video.addEventListener('seeked', onSeeked, { once: true });
+                                    video.addEventListener('error', onError, { once: true });
+                                }), 12000, 'Seek timeout');
+
+                                const w = Math.max(1, video.videoWidth || 0);
+                                const h = Math.max(1, video.videoHeight || 0);
+                                if (w <= 1 || h <= 1) return null;
+
+                                const canvas = document.createElement('canvas');
+
+                                // Cap size to keep uploads light.
+                                const maxW = 960;
+                                const scale = Math.min(1, maxW / w);
+                                canvas.width = Math.max(1, Math.round(w * scale));
+                                canvas.height = Math.max(1, Math.round(h * scale));
+
+                                const ctx = canvas.getContext('2d');
+                                if (!ctx) return null;
+                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                                const blob = await withTimeout(new Promise((resolve) => {
+                                    canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.82);
+                                }), 8000, 'Poster encode timeout');
+
+                                return blob || null;
+                            } finally {
+                                try { URL.revokeObjectURL(url); } catch (e) {}
+                            }
+                        };
+
+                        const uploadPoster = async (videoId, blob, token) => {
+                            if (!videoId || !blob) return;
+
+                            const fd = new FormData();
+                            if (token) fd.append('_token', token);
+                            fd.append('poster', blob, 'poster.jpg');
+
+                            const res = await fetch(`/videos/${encodeURIComponent(String(videoId))}/poster`, {
+                                method: 'POST',
+                                body: fd,
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json',
+                                },
+                                credentials: 'same-origin',
+                            });
+
+                            // Best-effort: ignore failures.
+                            if (!res.ok) return;
+                            try { await res.json(); } catch (e) {}
+                        };
+
+                        const maybeGenerateAndUploadPoster = async (file, videoId, token) => {
+                            if (aborted) return;
+                            if (!file || !file.type || !String(file.type).startsWith('video/')) return;
+                            if (!videoId) return;
+
+                            const blob = await generatePosterBlobFromVideoFile(file);
+                            if (!blob) return;
+
+                            if (aborted) return;
+                            await withTimeout(uploadPoster(videoId, blob, token), 15000, 'Poster upload timeout');
+                        };
+
                         if (cancelBtn) {
                             cancelBtn.addEventListener('click', function () {
                                 aborted = true;
@@ -753,6 +851,17 @@
                             completeFd.append('upload_id', uploadId);
                             setProgress(100, 'Finalisation…');
                             const { json: completeJson } = await postWithRetry('Finalisation', () => postFormData('{{ route('cloud.uploads.complete') }}', completeFd));
+
+                            const videoId = completeJson && completeJson.video_id ? completeJson.video_id : null;
+                            if (videoId && file && file.type && String(file.type).startsWith('video/')) {
+                                try {
+                                    setProgress(100, 'Création du poster…');
+                                    await maybeGenerateAndUploadPoster(file, videoId, token);
+                                } catch (e) {
+                                    // best-effort
+                                }
+                            }
+
                             const redirectUrl = completeJson.redirect_url || null;
                             clearSession();
                             if (redirectUrl) {
@@ -800,17 +909,30 @@
                                 }
 
                                 const redirectUrl = (json && json.redirect_url) ? String(json.redirect_url) : null;
-                                if (redirectUrl) {
-                                    window.location.href = redirectUrl;
+                                const videoId = (json && json.video_id) ? json.video_id : null;
+                                const token = (form.querySelector('input[name="_token"]') || {}).value;
+
+                                const finishNav = () => {
+                                    if (redirectUrl) {
+                                        window.location.href = redirectUrl;
+                                        return;
+                                    }
+                                    if (returnPath) {
+                                        window.location.href = returnPath;
+                                        return;
+                                    }
+                                    window.location.reload();
+                                };
+
+                                if (videoId && file && file.type && String(file.type).startsWith('video/')) {
+                                    setProgress(100, 'Création du poster…');
+                                    Promise.resolve(maybeGenerateAndUploadPoster(file, videoId, token))
+                                        .catch(() => {})
+                                        .finally(finishNav);
                                     return;
                                 }
 
-                                if (returnPath) {
-                                    window.location.href = returnPath;
-                                    return;
-                                }
-
-                                window.location.reload();
+                                finishNav();
                             };
 
                             xhr.onerror = function () {
