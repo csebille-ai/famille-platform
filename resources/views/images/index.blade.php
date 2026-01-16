@@ -137,7 +137,13 @@
                     @endphp
 
                     <div class="group relative rounded-2xl overflow-hidden bg-white shadow-sm" x-data="{menuOpen:false, broken:false}">
-                        <a href="{{ route('media.photos.show', $openParams) }}" class="block">
+                        <a
+                            href="{{ route('media.photos.show', $openParams) }}"
+                            class="block"
+                            aria-label="Ouvrir photo"
+                            data-shared-id="media:{{ (int) $image->id }}"
+                            data-shared-src="{{ route('images.view', $image) }}"
+                        >
                             <div class="relative">
                                 <div class="w-full aspect-[4/3] bg-slate-100" x-show="!broken">
                                     <img
@@ -146,6 +152,7 @@
                                         class="w-full h-full object-cover"
                                         loading="lazy"
                                         x-on:error="broken = true"
+                                        data-shared-id="media:{{ (int) $image->id }}"
                                     />
                                 </div>
 

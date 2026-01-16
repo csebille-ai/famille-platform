@@ -226,16 +226,24 @@
                 <div>
                     <div class="grid grid-cols-3 gap-2">
                         <template x-for="(img, idx) in (photos || [])" :key="'photo_' + img.id">
-                            <button
-                                type="button"
-                                class="block overflow-hidden rounded-xl bg-slate-100"
-                                @click="openViewer(idx)"
+                            <a
+                                :href="img.open_url"
+                                class="block overflow-hidden rounded-xl bg-slate-100 active:scale-[0.99] transition-transform"
                                 :aria-label="'Ouvrir photo ' + (idx + 1)"
+                                :data-shared-id="'media:' + img.id"
+                                :data-shared-src="img.thumb_url"
                             >
                                 <div class="aspect-square">
-                                    <img :src="img.thumb_url" alt="" class="block h-full w-full object-cover" :style="{ objectPosition: focalPosition(img) }" loading="lazy" />
+                                    <img
+                                        :src="img.thumb_url"
+                                        alt=""
+                                        class="block h-full w-full object-cover"
+                                        :style="{ objectPosition: focalPosition(img) }"
+                                        loading="lazy"
+                                        :data-shared-id="'media:' + img.id"
+                                    />
                                 </div>
-                            </button>
+                            </a>
                         </template>
                     </div>
 
