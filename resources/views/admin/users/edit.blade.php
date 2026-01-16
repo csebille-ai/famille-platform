@@ -83,8 +83,10 @@
                             @enderror
                         </div>
 
-                        <details class="rounded-md border border-gray-200 bg-gray-50 p-4">
-                            <summary class="cursor-pointer text-sm font-medium text-gray-700">Coordonnées (optionnel)</summary>
+                        <div class="rounded-md border border-gray-200 bg-white p-4">
+                            <div class="text-sm font-semibold text-gray-800">Coordonnées</div>
+                            <div class="microcopy mt-1 text-xs text-gray-600">Remplies automatiquement quand tu sélectionnes une ville (modifiable si besoin).</div>
+
                             <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700" for="birth_latitude">Latitude</label>
@@ -101,7 +103,7 @@
                                     @enderror
                                 </div>
                             </div>
-                        </details>
+                        </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700" for="phone">Téléphone</label>

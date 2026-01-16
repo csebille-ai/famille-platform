@@ -96,8 +96,10 @@
                                 @enderror
                             </div>
 
-                            <details class="mt-4">
-                                <summary class="cursor-pointer text-sm font-medium text-gray-700">Coordonnées (optionnel)</summary>
+                            <div class="mt-4 rounded-md border border-gray-200 bg-white p-4">
+                                <div class="text-sm font-semibold text-gray-800">Coordonnées</div>
+                                <div class="microcopy mt-1 text-xs text-gray-600">Remplies automatiquement quand tu sélectionnes une ville (modifiable si besoin).</div>
+
                                 <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700" for="birth_latitude">Latitude</label>
@@ -114,7 +116,7 @@
                                         @enderror
                                     </div>
                                 </div>
-                            </details>
+                            </div>
                         </div>
 
                         <div>
@@ -206,8 +208,10 @@
                     btn.textContent = item.label;
                     btn.addEventListener('click', function () {
                         input.value = item.label;
-                        if (lat && typeof item.latitude === 'number') lat.value = String(item.latitude);
-                        if (lon && typeof item.longitude === 'number') lon.value = String(item.longitude);
+                        const latNum = Number(item.latitude);
+                        const lonNum = Number(item.longitude);
+                        if (lat && !Number.isNaN(latNum)) lat.value = String(latNum);
+                        if (lon && !Number.isNaN(lonNum)) lon.value = String(lonNum);
                         hide();
                     });
                     list.appendChild(btn);
