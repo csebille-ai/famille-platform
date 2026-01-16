@@ -30,17 +30,7 @@
         $asc = trim((string) ($astro['ascendant'] ?? ''));
         $precision = (string) ($astro['precision'] ?? 'unknown');
 
-        $precLabel = match ($precision) {
-            'exact' => 'Données exactes',
-            'approx' => 'Données approx.',
-            default => 'Données inconnues',
-        };
-
-        $precClass = match ($precision) {
-            'exact' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-            'approx' => 'bg-amber-50 text-amber-900 border-amber-200',
-            default => 'bg-slate-50 text-slate-600 border-slate-200',
-        };
+        $archetypeHero = trim((string) ($astro['archetype'] ?? ''));
 
         $birthCtaUrl = route('profile.edit') . '#astro-birth';
 
@@ -116,12 +106,24 @@
                                     Âge inconnu
                                 @endif
                             </div>
+
+                            @if(!$isChartMissing && $precision === 'exact')
+                                <div class="mt-0.5 text-xs text-slate-500">Données complètes</div>
+                            @endif
                         </div>
                     </div>
 
-                    <div class="inline-flex items-center h-7 rounded-full border px-3 text-[11px] font-semibold {{ $precClass }} shrink-0">
-                        {{ $precLabel }}
-                    </div>
+                    @if($archetypeHero !== '')
+                        <div class="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1">
+                            <div class="flex items-center gap-2">
+                                <i class="ph ph-shield text-slate-500" aria-hidden="true"></i>
+                                <div>
+                                    <div class="text-[11px] leading-4 text-slate-500">Archétype</div>
+                                    <div class="text-sm font-semibold leading-5 text-slate-900">{{ $archetypeHero }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-3 gap-3 mt-3">
@@ -161,7 +163,6 @@
                         @php
                             $chinese = trim((string) ($astro['chinese'] ?? ''));
                             $lifePath = (int) ($astro['life_path'] ?? 0);
-                            $archetype = trim((string) ($astro['archetype'] ?? ''));
 
                             $essentials = [
                                 [
@@ -173,11 +174,6 @@
                                     'label' => 'Numérologie',
                                     'value' => $lifePath > 0 ? ('Chemin de vie ' . $lifePath) : 'À calculer',
                                     'muted' => $lifePath <= 0,
-                                ],
-                                [
-                                    'label' => 'Archétype',
-                                    'value' => $archetype !== '' ? $archetype : 'À calculer',
-                                    'muted' => $archetype === '',
                                 ],
                             ];
                         @endphp
@@ -193,7 +189,7 @@
                             </div>
                         </div>
 
-                        <div class="hidden sm:grid sm:grid-cols-3 gap-3">
+                        <div class="hidden sm:grid sm:grid-cols-2 gap-3">
                             @foreach($essentials as $e)
                                 <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                                     <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
