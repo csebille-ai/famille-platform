@@ -419,20 +419,20 @@
 
             @include('partials.ios-a2hs-banner')
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
-
             <!-- Page Content -->
             <main
                 class="@unless($attributes->get('hideNavigation')) pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8 @endunless"
                 style="@unless($attributes->get('hideNavigation')) padding-top: var(--app-nav-h, 0px) @endunless"
             >
+                <!-- Page Heading (must be below fixed top nav) -->
+                @isset($header)
+                    <header class="bg-white shadow">
+                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                            {{ $header }}
+                        </div>
+                    </header>
+                @endisset
+
                 {{ $slot }}
             </main>
 
