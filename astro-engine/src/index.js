@@ -16,6 +16,11 @@ function logLine(...parts) {
   }
 }
 
+const DEBUG = (() => {
+  const v = String(process.env.ASTRO_ENGINE_DEBUG || '').toLowerCase().trim();
+  return v === '1' || v === 'true' || v === 'yes';
+})();
+
 process.on('unhandledRejection', (reason) => {
   // eslint-disable-next-line no-console
   console.error('[astro-engine] unhandledRejection', reason);
@@ -123,7 +128,26 @@ app.post('/moon', (req, res) => {
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error('[astro-engine] /moon error', e);
-    logLine('[astro-engine] /moon error', e && e.stack ? e.stack : String(e));
+    try {
+      const payload = (() => {
+        try {
+          return JSON.stringify(req.body ?? {});
+        } catch {
+          return '[unserializable]';
+        }
+      })();
+      logLine('[astro-engine] /moon error', e && e.stack ? e.stack : String(e), 'payload=', payload);
+    } catch {
+      logLine('[astro-engine] /moon error', e && e.stack ? e.stack : String(e));
+    }
+
+    if (DEBUG) {
+      return res.status(500).json({
+        error: 'internal_error',
+        message: e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e),
+      });
+    }
+
     res.status(500).json({ error: 'internal_error' });
   }
 });
