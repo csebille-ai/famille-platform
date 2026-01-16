@@ -124,7 +124,7 @@ app.post('/moon', (req, res) => {
 
     // Ecliptic longitude of the geocentric Moon (degrees).
     const ecl = Astronomy.EclipticGeoMoon(timeObj);
-    const lon = Number(ecl.elon);
+    const lon = Number(ecl.lon);
 
     if (!Number.isFinite(lon)) {
       return res.status(500).json({ error: 'moon longitude computation failed' });

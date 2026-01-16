@@ -9,7 +9,7 @@
 
 # Dependencies
 /vendor/
-/node_modules/
+node_modules/
 
 # Vite / Laravel runtime artifacts
 /public/hot
