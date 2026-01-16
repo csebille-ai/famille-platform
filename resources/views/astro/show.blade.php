@@ -35,6 +35,37 @@
 
         $archetypeHero = trim((string) ($astro['archetype'] ?? ''));
 
+        $lifePathHero = (int) ($astro['life_path'] ?? 0);
+        $chineseHero = trim((string) ($astro['chinese'] ?? ''));
+
+        $elementFromSign = function (string $sign): string {
+            $sign = mb_strtolower(trim($sign));
+
+            $map = [
+                'bélier' => 'Feu',
+                'taureau' => 'Terre',
+                'gémeaux' => 'Air',
+                'cancer' => 'Eau',
+                'lion' => 'Feu',
+                'vierge' => 'Terre',
+                'balance' => 'Air',
+                'scorpion' => 'Eau',
+                'sagittaire' => 'Feu',
+                'capricorne' => 'Terre',
+                'verseau' => 'Air',
+                'poissons' => 'Eau',
+            ];
+
+            return (string) ($map[$sign] ?? '');
+        };
+
+        $elementHero = $sun !== '' ? $elementFromSign($sun) : '';
+        $signatureParts = [];
+        if ($elementHero !== '') $signatureParts[] = $elementHero;
+        if ($lifePathHero > 0) $signatureParts[] = 'Chemin de vie ' . $lifePathHero;
+        if ($chineseHero !== '') $signatureParts[] = $chineseHero;
+        $signatureLine = implode(' • ', $signatureParts);
+
         $birthCtaUrl = isset($birthCtaUrl)
             ? (string) $birthCtaUrl
             : (route('profile.edit') . '#astro-birth');
@@ -126,6 +157,10 @@
                                 @endif
                             </div>
 
+                            @if($signatureLine !== '')
+                                <div class="mt-1 text-xs text-slate-600 truncate">{{ $signatureLine }}</div>
+                            @endif
+
                             @if(!$isChartMissing && $precision === 'exact')
                                 <div class="mt-0.5 text-xs text-slate-500">Données complètes</div>
                             @endif
@@ -147,12 +182,12 @@
 
                 <div class="grid grid-cols-3 gap-3 mt-3">
                     @foreach($pills as $p)
-                        <div class="rounded-xl border border-slate-200 p-3 min-h-[74px] bg-white">
-                            <div class="text-xs text-slate-500">{{ $p['label'] }}</div>
-                            <div class="mt-1 text-base font-semibold {{ $p['missing'] ? 'text-slate-400' : 'text-slate-900' }}">
+                        <div class="rounded-2xl border border-slate-200 p-3 min-h-[74px] bg-white">
+                            <div class="text-[11px] font-semibold text-slate-500">{{ $p['label'] }}</div>
+                            <div class="mt-1 text-lg font-extrabold tracking-tight {{ $p['missing'] ? 'text-slate-400' : 'text-slate-900' }}">
                                 {{ $p['value'] }}
                             </div>
-                            <div class="mt-1 text-xs text-slate-400 leading-4">
+                            <div class="mt-1 text-[11px] text-slate-400 leading-4">
                                 {{ $p['hint'] !== '' ? $p['hint'] : ' ' }}
                             </div>
                         </div>
@@ -196,52 +231,9 @@
                             $chinese = trim((string) ($astro['chinese'] ?? ''));
                             $lifePath = (int) ($astro['life_path'] ?? 0);
 
-                            $elementFromSign = function (string $sign): string {
-                                $sign = mb_strtolower(trim($sign));
-
-                                $map = [
-                                    'bélier' => 'Feu',
-                                    'taureau' => 'Terre',
-                                    'gémeaux' => 'Air',
-                                    'cancer' => 'Eau',
-                                    'lion' => 'Feu',
-                                    'vierge' => 'Terre',
-                                    'balance' => 'Air',
-                                    'scorpion' => 'Eau',
-                                    'sagittaire' => 'Feu',
-                                    'capricorne' => 'Terre',
-                                    'verseau' => 'Air',
-                                    'poissons' => 'Eau',
-                                ];
-
-                                return (string) ($map[$sign] ?? '');
-                            };
-
-                            $modalityFromSign = function (string $sign): string {
-                                $sign = mb_strtolower(trim($sign));
-
-                                $map = [
-                                    'bélier' => 'Cardinal',
-                                    'cancer' => 'Cardinal',
-                                    'balance' => 'Cardinal',
-                                    'capricorne' => 'Cardinal',
-                                    'taureau' => 'Fixe',
-                                    'lion' => 'Fixe',
-                                    'scorpion' => 'Fixe',
-                                    'verseau' => 'Fixe',
-                                    'gémeaux' => 'Mutable',
-                                    'vierge' => 'Mutable',
-                                    'sagittaire' => 'Mutable',
-                                    'poissons' => 'Mutable',
-                                ];
-
-                                return (string) ($map[$sign] ?? '');
-                            };
-
                             $element = $sun !== '' ? $elementFromSign($sun) : '';
-                            $modality = $sun !== '' ? $modalityFromSign($sun) : '';
 
-                            $essentials = [
+                            $essentialCards = [
                                 [
                                     'label' => 'Signe chinois',
                                     'value' => $chinese !== '' ? $chinese : 'À compléter',
@@ -252,37 +244,29 @@
                                     'value' => $lifePath > 0 ? ('Chemin de vie ' . $lifePath) : 'À calculer',
                                     'muted' => $lifePath <= 0,
                                 ],
-                                [
-                                    'label' => 'Élément',
-                                    'value' => $element !== '' ? $element : 'À calculer',
-                                    'muted' => $element === '',
-                                ],
-                                [
-                                    'label' => 'Modalité',
-                                    'value' => $modality !== '' ? $modality : 'À calculer',
-                                    'muted' => $modality === '',
-                                ],
+                            ];
+
+                            $elementChip = [
+                                'label' => 'Élément',
+                                'value' => $element !== '' ? $element : 'À calculer',
+                                'muted' => $element === '',
                             ];
                         @endphp
 
-                        <div class="sm:hidden overflow-x-auto -mx-4 px-4">
-                            <div class="flex gap-3 snap-x snap-mandatory pb-1">
-                                @foreach($essentials as $e)
-                                    <div class="w-[240px] shrink-0 snap-start rounded-xl border border-slate-200 bg-white p-3 min-h-[76px]">
-                                        <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
-                                        <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $e['value'] }}</div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <div class="hidden sm:grid sm:grid-cols-2 gap-3">
-                            @foreach($essentials as $e)
-                                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 min-h-[76px]">
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            @foreach($essentialCards as $e)
+                                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                                     <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
                                     <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $e['value'] }}</div>
                                 </div>
                             @endforeach
+                        </div>
+
+                        <div class="flex flex-wrap gap-2">
+                            <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold {{ $elementChip['muted'] ? 'text-slate-500' : 'text-slate-800' }}">
+                                <span class="text-slate-500">{{ $elementChip['label'] }}:</span>
+                                <span>{{ $elementChip['value'] }}</span>
+                            </span>
                         </div>
 
                         <div>
@@ -293,7 +277,7 @@
                             @php
                                 $talents = is_array($astro['talents'] ?? null) ? $astro['talents'] : [];
                                 $talents = array_values(array_filter(array_map('strval', $talents)));
-                                $visible = array_slice($talents, 0, 6);
+                                $visible = array_slice($talents, 0, 3);
                                 $more = count($talents) - count($visible);
                             @endphp
 
@@ -306,7 +290,7 @@
 
                                 @if($more > 0)
                                     <button type="button" @click="openTalents = true" class="inline-flex items-center h-8 px-3 rounded-full text-sm border border-slate-200 bg-white font-semibold text-slate-700 hover:bg-slate-50">
-                                        Voir tout
+                                        Voir +
                                     </button>
                                 @endif
                             </div>
@@ -314,16 +298,50 @@
 
                         @php
                             $vigilance = trim((string) ($astro['vigilance'] ?? ''));
+
+                            $strengthFromSun = function (string $sign): string {
+                                $sign = mb_strtolower(trim($sign));
+
+                                $map = [
+                                    'bélier' => 'Courage & initiative',
+                                    'taureau' => 'Stabilité & persévérance',
+                                    'gémeaux' => 'Curiosité & adaptabilité',
+                                    'cancer' => 'Protection & sensibilité',
+                                    'lion' => 'Rayonnement & créativité',
+                                    'vierge' => 'Analyse & précision',
+                                    'balance' => 'Diplomatie & sens de l’équilibre',
+                                    'scorpion' => 'Profondeur & détermination',
+                                    'sagittaire' => 'Optimisme & exploration',
+                                    'capricorne' => 'Discipline & ambition',
+                                    'verseau' => 'Innovation & indépendance',
+                                    'poissons' => 'Intuition & imagination',
+                                ];
+
+                                return (string) ($map[$sign] ?? '');
+                            };
+
+                            $strength = trim((string) ($astro['strength'] ?? ''));
+                            if ($strength === '' && $sun !== '') {
+                                $strength = $strengthFromSun($sun);
+                            }
+                            if ($strength === '' && $archetypeHero !== '') {
+                                $strength = 'Clé: ' . $archetypeHero;
+                            }
+                            if ($strength === '') {
+                                $strength = trim((string) ($talents[0] ?? ''));
+                            }
                         @endphp
 
-                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                            <div class="flex items-start gap-3">
-                                <div class="mt-0.5 text-amber-900 text-xs">
-                                    <i class="ph ph-warning-circle" aria-hidden="true"></i>
+                        <div>
+                            <div class="text-sm font-semibold text-slate-900">Insights</div>
+                            <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                                    <div class="text-[11px] font-semibold text-emerald-900/70">Point fort</div>
+                                    <div class="mt-1 text-sm font-semibold text-emerald-950">{{ $strength !== '' ? $strength : '—' }}</div>
                                 </div>
-                                <div class="min-w-0">
-                                    <div class="text-xs font-semibold text-amber-950/80">Point de vigilance</div>
-                                    <div class="mt-1 text-sm font-medium text-amber-950">{{ $vigilance !== '' ? $vigilance : 'À calculer' }}</div>
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <div class="text-[11px] font-semibold text-slate-600">À surveiller</div>
+                                    <div class="mt-1 text-sm font-semibold text-slate-900">{{ $vigilance !== '' ? $vigilance : 'À calculer' }}</div>
                                 </div>
                             </div>
                         </div>
@@ -381,13 +399,13 @@
                 <div class="p-4 sm:p-6">
                     <div class="text-sm font-semibold text-slate-900">Actions</div>
                     <div class="mt-3 grid sm:grid-cols-2 gap-3">
-                        <a href="{{ $birthCtaUrl }}" class="inline-flex items-center justify-center h-11 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">
+                        <a href="{{ $birthCtaUrl }}" class="inline-flex items-center justify-center h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">
                             Modifier mes infos de naissance
                         </a>
 
                         <form method="POST" action="{{ route('avatar.astro.generate') }}">
                             @csrf
-                            <button type="submit" class="w-full inline-flex items-center justify-center h-11 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:bg-slate-950">
+                            <button type="submit" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:bg-slate-950">
                                 Générer mon avatar
                             </button>
                         </form>
