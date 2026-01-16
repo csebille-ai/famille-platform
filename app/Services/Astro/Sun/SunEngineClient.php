@@ -17,7 +17,7 @@ class SunEngineClient
             throw new \RuntimeException('astro.engine_url is not configured');
         }
 
-        $verify = (bool) config('astro.engine_verify_ssl', true);
+        $verify = (bool) config('astro.verify_ssl', true);
 
         $res = Http::timeout(6)
             ->retry(1, 150)

@@ -158,6 +158,54 @@ Si tu ne peux pas faire tourner Reverb en prod o2switch, mets par exemple :
 
 (Le chat reste utilisable mais sans temps réel.)
 
+## 5) Astro-engine (profil astro)
+
+Le calcul astro (signe lunaire, décans kémétiques, etc.) dépend du micro-service `astro-engine`.
+
+### Variables `.env`
+
+Dans `.env` (Laravel), configure :
+
+- `ASTRO_ENGINE_URL=https://astro-engine.ciyu0696.odns.fr`
+- `ASTRO_ENGINE_VERIFY_SSL=false` (nécessaire si le certificat du sous-domaine est auto-signé)
+
+Puis recache la config :
+
+```bash
+php artisan optimize:clear
+php artisan config:cache
+```
+
+### Vérifier que l'engine répond
+
+Sur le serveur, teste :
+
+```bash
+curl -k "$ASTRO_ENGINE_URL/health"
+
+curl -k -X POST "$ASTRO_ENGINE_URL/sun" \
+  -H "Content-Type: application/json" \
+  -d '{"date":"1990-05-10","time":"13:30","timezone":"Europe/Paris"}'
+```
+
+Note : `-k` est uniquement pour diagnostiquer côté shell. Côté Laravel, c'est `ASTRO_ENGINE_VERIFY_SSL=false` qui évite l'échec TLS.
+
+### Backfill / Recompute (pour enlever “À calculer”)
+
+Après déploiement + migration, relance le calcul du profil astro :
+
+```bash
+# 1 utilisateur
+php artisan astro:recompute --email="toi@exemple.fr" --sync --yes
+
+# ou tous (à faire hors heures de pointe)
+php artisan astro:recompute --all --queue --yes
+```
+
+### Recommandation (sécurité)
+
+Idéalement, installe un vrai certificat (Let’s Encrypt) sur `astro-engine...` et remets `ASTRO_ENGINE_VERIFY_SSL=true`.
+
 ## 6) Cron (scheduler)
 
 Pour alimenter l'actu locale via RSS, configure un cron (o2switch) qui exécute le scheduler Laravel toutes les minutes :
@@ -174,9 +222,15 @@ Et dans ton `.env`, configure tes flux :
 - Option “encore mieux” (sources + tags) :
   - `NEWS_SOURCES_JSON=[{"name":"Préfecture","url":"https://.../rss.xml","tag":"securite","enabled":true},{"name":"Sud Ouest","url":"https://.../rss.xml","tag":"commune","enabled":true}]`
 
-## 5) Vérifications post-déploiement
+## 7) Vérifications post-déploiement
 
 - `https://famille.opanoma.fr` charge correctement
 - Login OK
 - Playlists : création + ajout d’un track `open.spotify.com/.../track/...` OK
 - Chat : page OK (temps réel selon infra)
+
+Si tu as une erreur de class not found après un refactor (ex: suppression d'une classe), ajoute aussi :
+
+```bash
+composer dump-autoload -o
+```
