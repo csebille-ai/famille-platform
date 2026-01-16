@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Person;
 use App\Models\User;
 use App\Services\NextBirthday;
 use Carbon\CarbonImmutable;
@@ -49,5 +50,27 @@ class NextBirthdayTest extends TestCase
         $this->assertSame('2026-02-28', $next['next_date']->toDateString());
         $this->assertSame(27, $next['days_remaining']);
         $this->assertSame(26, $next['turning_age']);
+    }
+
+    public function test_people_birthdays_include_children(): void
+    {
+        $svc = new NextBirthday();
+
+        $today = CarbonImmutable::create(2026, 1, 14, 12, 0, 0, 'Europe/Paris');
+
+        $child = new Person(['first_name' => 'Léo', 'last_name' => '']);
+        $child->birth_date = CarbonImmutable::create(2016, 1, 20, 0, 0, 0, 'Europe/Paris');
+        $child->is_child = true;
+
+        $adult = new Person(['first_name' => 'Alice', 'last_name' => '']);
+        $adult->birth_date = CarbonImmutable::create(1990, 2, 1, 0, 0, 0, 'Europe/Paris');
+
+        $next = $svc->forPeople(new Collection([$child, $adult]), $today);
+
+        $this->assertNotNull($next);
+        $this->assertSame('Léo', $next['name']);
+        $this->assertSame('2026-01-20', $next['next_date']->toDateString());
+        $this->assertSame(6, $next['days_remaining']);
+        $this->assertSame(10, $next['turning_age']);
     }
 }

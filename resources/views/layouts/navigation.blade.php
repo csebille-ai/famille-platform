@@ -14,6 +14,7 @@
         || request()->routeIs('mediatheque.index')
         || request()->routeIs('videos.index')
         || request()->routeIs('chat.index')
+        || request()->routeIs('family.*')
         || request()->routeIs('tarot.index')
         || request()->routeIs('actu.index');
 
@@ -144,6 +145,10 @@
                     <div class="hidden sm:-my-px sm:ms-10 sm:flex items-center gap-8">
                         <x-nav-link :href="route('dashboard')" :active="$isHome">
                             Accueil
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('family.index')" :active="request()->routeIs('family.*')">
+                            Famille
                         </x-nav-link>
 
                         <x-nav-link :href="route('media.index')" :active="$isMedia">

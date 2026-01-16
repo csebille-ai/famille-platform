@@ -10,6 +10,7 @@ use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
+use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
@@ -19,6 +20,7 @@ use App\Models\CloudNode;
 use App\Models\ChatMessage;
 use App\Models\Event;
 use App\Models\NewsItem;
+use App\Models\Person;
 use App\Models\User;
 use App\Models\Video;
 use App\Services\NextBirthday;
@@ -57,6 +59,26 @@ Route::post('/api/uploads/finalize', [UploadsController::class, 'finalize'])
 Route::get('/', function () {
     return redirect()->route('dashboard');
 });
+
+Route::get('/famille', [FamilyController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('family.index');
+
+Route::get('/famille/enfants/creer', [FamilyController::class, 'createChild'])
+    ->middleware(['auth', 'verified'])
+    ->name('family.children.create');
+
+Route::post('/famille/enfants', [FamilyController::class, 'storeChild'])
+    ->middleware(['auth', 'verified'])
+    ->name('family.children.store');
+
+Route::get('/famille/enfants/{person}/modifier', [FamilyController::class, 'editChild'])
+    ->middleware(['auth', 'verified'])
+    ->name('family.children.edit');
+
+Route::patch('/famille/enfants/{person}', [FamilyController::class, 'updateChild'])
+    ->middleware(['auth', 'verified'])
+    ->name('family.children.update');
 
 // Home (mobile-first). Keep route name 'dashboard' for backward compatibility.
 Route::get('/home', function () {
@@ -307,7 +329,15 @@ Route::get('/home', function () {
 
     $nextBirthday = null;
     try {
-        if (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
+        if (Schema::hasTable('people') && Schema::hasColumn('people', 'birth_date')) {
+            $peopleWithDob = Person::query()
+                ->whereNotNull('birth_date')
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'birth_date']);
+
+            $nextBirthday = app(NextBirthday::class)->forPeople($peopleWithDob);
+        } elseif (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
             $usersWithDob = User::query()
                 ->whereNotNull('date_of_birth')
                 ->orderBy('name')
@@ -547,7 +577,15 @@ Route::get('/anniversaires', function () {
     $birthdays = [];
 
     try {
-        if (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
+        if (Schema::hasTable('people') && Schema::hasColumn('people', 'birth_date')) {
+            $peopleWithDob = Person::query()
+                ->whereNotNull('birth_date')
+                ->orderBy('first_name')
+                ->orderBy('last_name')
+                ->get(['id', 'first_name', 'last_name', 'birth_date']);
+
+            $birthdays = app(NextBirthday::class)->upcomingForPeople($peopleWithDob);
+        } elseif (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
             $usersWithDob = User::query()
                 ->whereNotNull('date_of_birth')
                 ->orderBy('name')

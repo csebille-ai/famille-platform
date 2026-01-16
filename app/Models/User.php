@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -84,6 +85,21 @@ class User extends Authenticatable
     public function astroProfile(): HasOne
     {
         return $this->hasOne(AstroProfile::class);
+    }
+
+    public function person(): HasOne
+    {
+        return $this->hasOne(Person::class);
+    }
+
+    /**
+     * Children this user can manage.
+     */
+    public function guardedChildren(): BelongsToMany
+    {
+        return $this->belongsToMany(Person::class, 'guardianships', 'guardian_user_id', 'child_person_id')
+            ->withPivot(['can_edit', 'notify'])
+            ->withTimestamps();
     }
 
     public function initials(): string
