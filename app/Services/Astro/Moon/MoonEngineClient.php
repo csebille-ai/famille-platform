@@ -26,6 +26,25 @@ class MoonEngineClient
         $resp = $http->post($baseUrl . '/moon', $payload);
 
         if (!$resp->successful()) {
+            $details = '';
+            try {
+                $json = $resp->json();
+                if (is_array($json)) {
+                    $msg = is_string($json['message'] ?? null) ? (string) $json['message'] : '';
+                    $err = is_string($json['error'] ?? null) ? (string) $json['error'] : '';
+                    $details = trim($err . ' ' . $msg);
+                } else {
+                    $details = trim((string) $resp->body());
+                }
+            } catch (\Throwable) {
+                $details = '';
+            }
+
+            if ($details !== '') {
+                $details = mb_substr($details, 0, 400);
+                throw new \RuntimeException('Astro engine error: HTTP ' . $resp->status() . ' (' . $details . ')');
+            }
+
             throw new \RuntimeException('Astro engine error: HTTP ' . $resp->status());
         }
 

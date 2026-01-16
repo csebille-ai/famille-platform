@@ -38,6 +38,16 @@ process.on('uncaughtException', (err) => {
 const app = express();
 app.use(express.json({ limit: '64kb' }));
 
+// Log every request/response so we can diagnose Passenger/proxy issues.
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - startedAt;
+    logLine('[astro-engine] req', req.method, req.originalUrl, String(res.statusCode), `${ms}ms`);
+  });
+  next();
+});
+
 // Some hosting panels probe the app at "/" to verify it's up.
 // Provide a tiny HTML response to make that check pass.
 app.get('/', (req, res) => {
@@ -81,6 +91,9 @@ app.get('/health', (req, res) => {
 // - or { date: 'YYYY-MM-DD', time: 'HH:MM', timezone: 'Europe/Paris' }
 app.post('/moon', (req, res) => {
   try {
+    if (DEBUG) {
+      logLine('[astro-engine] /moon start');
+    }
     const body = req.body ?? {};
 
     let utc;
@@ -150,6 +163,24 @@ app.post('/moon', (req, res) => {
 
     res.status(500).json({ error: 'internal_error' });
   }
+});
+
+// Express error handler (e.g. invalid JSON body)
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  // eslint-disable-next-line no-console
+  console.error('[astro-engine] middleware error', err);
+  logLine('[astro-engine] middleware error', err && err.stack ? err.stack : String(err));
+
+  const status = typeof err?.status === 'number' ? err.status : 500;
+  if (DEBUG) {
+    return res.status(status).json({
+      error: 'request_error',
+      message: err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err),
+    });
+  }
+
+  return res.status(status).json({ error: 'request_error' });
 });
 
 const port = Number(process.env.PORT || 3000);
