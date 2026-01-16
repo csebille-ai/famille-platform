@@ -253,10 +253,16 @@
                             ];
                         @endphp
 
-                        <div class="grid gap-2 min-[420px]:grid-cols-2 sm:gap-3">
+                        <div class="grid gap-2 min-[520px]:grid-cols-2 sm:gap-3">
                             @foreach($essentialCards as $e)
-                                <div class="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
-                                    <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
+                                @php
+                                    $accent = $loop->first ? 'bg-sky-400/70' : 'bg-violet-400/70';
+                                @endphp
+                                <div class="h-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="h-1.5 w-1.5 rounded-full {{ $accent }}"></span>
+                                        <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
+                                    </div>
                                     <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $e['value'] }}</div>
                                 </div>
                             @endforeach
@@ -328,12 +334,12 @@
 
                         <div class="mt-1">
                             <div class="text-sm font-semibold text-slate-900">Insights</div>
-                            <div class="mt-2 grid gap-2 min-[420px]:grid-cols-2 sm:gap-3">
+                            <div class="mt-2 grid gap-2 min-[520px]:grid-cols-2 sm:gap-3">
                                 <div class="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="text-[11px] font-semibold text-slate-600">Point fort</div>
                                     <div class="mt-1 text-sm font-semibold text-emerald-950">{{ $strength !== '' ? $strength : '—' }}</div>
                                 </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 sm:px-4 sm:py-3">
+                                <div class="rounded-2xl border border-amber-200/70 bg-amber-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="text-[11px] font-semibold text-slate-600">À surveiller</div>
                                     <div class="mt-1 text-sm font-semibold text-slate-900">{{ $vigilance !== '' ? $vigilance : 'À calculer' }}</div>
                                 </div>
