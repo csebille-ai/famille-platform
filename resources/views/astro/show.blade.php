@@ -65,6 +65,18 @@
 
     <div x-data="{ show: false, openTalents: false }" x-init="requestAnimationFrame(() => show = true)" class="pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-4">
+            @if (session('status'))
+                <div class="mx-4 sm:mx-0 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            @if ($errors->has('avatar_astro'))
+                <div class="mx-4 sm:mx-0 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950">
+                    {{ $errors->first('avatar_astro') }}
+                </div>
+            @endif
+
             <div class="px-4 sm:px-0">
                 <div class="relative flex items-center justify-between h-12">
                     <button

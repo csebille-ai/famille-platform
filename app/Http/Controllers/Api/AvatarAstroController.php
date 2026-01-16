@@ -8,26 +8,29 @@ use App\Services\AvatarAstro\ArchetypeAndTraits;
 use App\Services\AvatarAstro\AvatarAstroPromptBuilder;
 use App\Services\AvatarAstro\AvatarSpecBuilder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 
 class AvatarAstroController
 {
-    public function generate(Request $request): JsonResponse
+    public function generate(Request $request)
     {
         $user = $request->user();
         abort_unless($user !== null, 401);
 
-        return $this->doGenerate($request, $user);
+        $json = $this->doGenerate($request, $user);
+        return $this->respond($request, $json);
     }
 
-    public function generateForUser(Request $request, User $user): JsonResponse
+    public function generateForUser(Request $request, User $user)
     {
         abort_unless($request->user() !== null, 401);
         abort_unless($request->user()?->can('manage-users') === true, 403);
 
-        return $this->doGenerate($request, $user);
+        $json = $this->doGenerate($request, $user);
+        return $this->respond($request, $json);
     }
 
     public function status(Request $request): JsonResponse
@@ -102,6 +105,31 @@ class AvatarAstroController
         GenerateAvatarAstroJob::dispatch((int) $target->id);
 
         return response()->json(['status' => 'pending'], 202);
+    }
+
+    /**
+     * For API/AJAX calls, return JSON. For regular browser form submits, redirect back with flash.
+     */
+    private function respond(Request $request, JsonResponse $json)
+    {
+        if ($request->expectsJson()) {
+            return $json;
+        }
+
+        $data = $json->getData(true);
+        $status = is_array($data) ? (string) ($data['status'] ?? '') : '';
+
+        if ($status === 'pending') {
+            return back()->with('status', 'Génération lancée. Reviens dans quelques secondes.');
+        }
+
+        if ($status === 'error') {
+            $msg = is_array($data) && is_string($data['error'] ?? null) ? (string) $data['error'] : 'Impossible de générer l\'avatar.';
+            return back()->withErrors(['avatar_astro' => $msg]);
+        }
+
+        // Fallback
+        return back()->with('status', 'Action prise en compte.');
     }
 
     /**
