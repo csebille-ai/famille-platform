@@ -38,6 +38,9 @@
         $chineseHero = trim((string) ($astro['chinese'] ?? ''));
         $kemeticIndexHero = (int) ($astro['kemetic_decan_index'] ?? 0);
         $kemeticLabelHero = trim((string) ($astro['kemetic_decan_label'] ?? ''));
+        $kemeticNameHero = $kemeticIndexHero > 0
+            ? \App\Services\Astro\Kemetic\KemeticDecan::nameFromIndex($kemeticIndexHero)
+            : '';
 
         $elementFromSign = function (string $sign): string {
             $sign = mb_strtolower(trim($sign));
@@ -63,11 +66,7 @@
         $elementHero = $sun !== '' ? $elementFromSign($sun) : '';
         $signatureParts = [];
         if ($chineseHero !== '') $signatureParts[] = $chineseHero;
-        if ($kemeticLabelHero !== '') {
-            $signatureParts[] = $kemeticLabelHero . ($kemeticIndexHero > 0 ? (' · #' . $kemeticIndexHero) : '');
-        } elseif ($kemeticIndexHero > 0) {
-            $signatureParts[] = 'Décan kémétique #' . $kemeticIndexHero;
-        }
+        if ($kemeticNameHero !== '') $signatureParts[] = $kemeticNameHero;
         $signatureLine = implode(' • ', $signatureParts);
 
         $birthCtaUrl = isset($birthCtaUrl)
@@ -320,8 +319,9 @@
                         @php
                             $chinese = trim((string) ($astro['chinese'] ?? ''));
                             $kemeticIndex = (int) ($astro['kemetic_decan_index'] ?? 0);
-                            $kemeticLabel = trim((string) ($astro['kemetic_decan_label'] ?? ''));
-                            $kemeticKeyword = trim((string) ($astro['kemetic_decan_keyword'] ?? ''));
+                            $kemeticName = $kemeticIndex > 0
+                                ? \App\Services\Astro\Kemetic\KemeticDecan::nameFromIndex($kemeticIndex)
+                                : '';
 
                             $essentialCards = [
                                 [
@@ -331,13 +331,10 @@
                                     'meta' => '',
                                 ],
                                 [
-                                    'label' => 'Décan kémétique',
-                                    'value' => $kemeticLabel !== '' ? $kemeticLabel : 'À calculer',
-                                    'muted' => $kemeticLabel === '' && $kemeticIndex <= 0,
-                                    'meta' => trim(implode(' · ', array_values(array_filter([
-                                        $kemeticIndex > 0 ? ('#' . $kemeticIndex) : '',
-                                        $kemeticKeyword !== '' ? $kemeticKeyword : '',
-                                    ])))),
+                                    'label' => 'Zodiac kémétique',
+                                    'value' => $kemeticName !== '' ? $kemeticName : 'À calculer',
+                                    'muted' => $kemeticName === '' && $kemeticIndex <= 0,
+                                    'meta' => '',
                                 ],
                             ];
                         @endphp
