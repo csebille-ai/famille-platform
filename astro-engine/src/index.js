@@ -5,6 +5,15 @@ import Astronomy from 'astronomy-engine';
 const app = express();
 app.use(express.json({ limit: '64kb' }));
 
+// Some hosting panels probe the app at "/" to verify it's up.
+// Provide a tiny HTML response to make that check pass.
+app.get('/', (req, res) => {
+  res
+    .status(200)
+    .type('html')
+    .send('astro-engine: ok (try /health)');
+});
+
 function signFromLongitude(lon) {
   // Normalize into [0, 360)
   const normalized = ((lon % 360) + 360) % 360;
@@ -89,7 +98,17 @@ app.post('/moon', (req, res) => {
 });
 
 const port = Number(process.env.PORT || 3000);
-app.listen(port, '0.0.0.0', () => {
+const host = process.env.IP || '0.0.0.0';
+
+const server = app.listen(port, host, () => {
   // eslint-disable-next-line no-console
-  console.log(`astro-engine listening on :${port}`);
+  console.log(`astro-engine listening on ${host}:${port}`);
+  // eslint-disable-next-line no-console
+  console.log(`healthcheck: http://${host}:${port}/health`);
+});
+
+server.on('error', (err) => {
+  // eslint-disable-next-line no-console
+  console.error('astro-engine server error', err);
+  process.exitCode = 1;
 });
