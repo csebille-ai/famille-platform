@@ -61,7 +61,6 @@
 
         $elementHero = $sun !== '' ? $elementFromSign($sun) : '';
         $signatureParts = [];
-        if ($elementHero !== '') $signatureParts[] = $elementHero;
         if ($lifePathHero > 0) $signatureParts[] = 'Chemin de vie ' . $lifePathHero;
         if ($chineseHero !== '') $signatureParts[] = $chineseHero;
         $signatureLine = implode(' • ', $signatureParts);
@@ -157,8 +156,17 @@
                                 @endif
                             </div>
 
-                            @if($signatureLine !== '')
-                                <div class="mt-1 text-xs text-slate-600 truncate">{{ $signatureLine }}</div>
+                            @if($signatureLine !== '' || $elementHero !== '')
+                                <div class="mt-1 flex items-center gap-2 min-w-0">
+                                    @if($elementHero !== '')
+                                        <span class="shrink-0 inline-flex items-center h-6 px-2.5 rounded-full border border-slate-200/70 bg-slate-50 text-[11px] font-semibold text-slate-700">
+                                            Élément: {{ $elementHero }}
+                                        </span>
+                                    @endif
+                                    @if($signatureLine !== '')
+                                        <div class="text-xs text-slate-600 truncate">{{ $signatureLine }}</div>
+                                    @endif
+                                </div>
                             @endif
 
                             @if(!$isChartMissing && $precision === 'exact')
@@ -224,14 +232,12 @@
 
             @if($tab === 'profile')
                 <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="bg-white shadow sm:rounded-2xl">
-                    <div class="p-4 sm:p-6 space-y-5">
+                    <div class="p-4 sm:p-6 space-y-4">
                         <div class="text-sm font-semibold text-slate-900">Essentiel</div>
 
                         @php
                             $chinese = trim((string) ($astro['chinese'] ?? ''));
                             $lifePath = (int) ($astro['life_path'] ?? 0);
-
-                            $element = $sun !== '' ? $elementFromSign($sun) : '';
 
                             $essentialCards = [
                                 [
@@ -245,31 +251,18 @@
                                     'muted' => $lifePath <= 0,
                                 ],
                             ];
-
-                            $elementChip = [
-                                'label' => 'Élément',
-                                'value' => $element !== '' ? $element : 'À calculer',
-                                'muted' => $element === '',
-                            ];
                         @endphp
 
-                        <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="grid gap-2 min-[420px]:grid-cols-2 sm:gap-3">
                             @foreach($essentialCards as $e)
-                                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                                <div class="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
                                     <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $e['value'] }}</div>
                                 </div>
                             @endforeach
                         </div>
 
-                        <div class="flex flex-wrap gap-2">
-                            <span class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold {{ $elementChip['muted'] ? 'text-slate-500' : 'text-slate-800' }}">
-                                <span class="text-slate-500">{{ $elementChip['label'] }}:</span>
-                                <span>{{ $elementChip['value'] }}</span>
-                            </span>
-                        </div>
-
-                        <div>
+                        <div class="mt-1">
                             <div class="flex items-center justify-between">
                                 <div class="text-sm font-semibold text-slate-900">Talents</div>
                             </div>
@@ -289,8 +282,9 @@
                                 @endforelse
 
                                 @if($more > 0)
-                                    <button type="button" @click="openTalents = true" class="inline-flex items-center h-8 px-3 rounded-full text-sm border border-slate-200 bg-white font-semibold text-slate-700 hover:bg-slate-50">
-                                        Voir +
+                                    <button type="button" @click="openTalents = true" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm border border-slate-200 bg-white font-semibold text-slate-700 hover:bg-slate-50">
+                                        <span>Voir +</span>
+                                        <i class="ph ph-caret-down text-slate-500" aria-hidden="true"></i>
                                     </button>
                                 @endif
                             </div>
@@ -332,14 +326,14 @@
                             }
                         @endphp
 
-                        <div>
+                        <div class="mt-1">
                             <div class="text-sm font-semibold text-slate-900">Insights</div>
-                            <div class="mt-2 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                                    <div class="text-[11px] font-semibold text-emerald-900/70">Point fort</div>
+                            <div class="mt-2 grid gap-2 min-[420px]:grid-cols-2 sm:gap-3">
+                                <div class="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
+                                    <div class="text-[11px] font-semibold text-slate-600">Point fort</div>
                                     <div class="mt-1 text-sm font-semibold text-emerald-950">{{ $strength !== '' ? $strength : '—' }}</div>
                                 </div>
-                                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="text-[11px] font-semibold text-slate-600">À surveiller</div>
                                     <div class="mt-1 text-sm font-semibold text-slate-900">{{ $vigilance !== '' ? $vigilance : 'À calculer' }}</div>
                                 </div>
