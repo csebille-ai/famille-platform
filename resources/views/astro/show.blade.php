@@ -39,19 +39,21 @@
             $value = trim($value);
             $isMissing = ($value === '');
 
-            $missingLabel = (string) ($opts['missing'] ?? '—');
+            $missingValue = (string) ($opts['missingValue'] ?? '—');
+            $hintWhenMissing = (string) ($opts['hintWhenMissing'] ?? '');
 
             return [
                 'label' => $label,
-                'value' => $isMissing ? $missingLabel : $value,
+                'value' => $isMissing ? $missingValue : $value,
                 'missing' => $isMissing,
+                'hint' => $isMissing ? $hintWhenMissing : '',
             ];
         };
 
         $pills = [
-            $pill('Soleil', $sun, ['missing' => '—']),
-            $pill('Lune', $moon, ['missing' => '—']),
-            $pill('Ascendant', $asc, ['missing' => '—']),
+            $pill('Soleil', $sun, ['missingValue' => '—']),
+            $pill('Lune', $moon, ['missingValue' => 'Non dispo', 'hintWhenMissing' => 'Heure/lieu requis']),
+            $pill('Ascendant', $asc, ['missingValue' => '—']),
         ];
 
         $tabs = [
@@ -85,7 +87,7 @@
             </div>
 
             <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
-                <div class="flex items-center justify-between gap-3">
+                <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
                             @if($hasAvatar)
@@ -115,8 +117,8 @@
 
                     @if($archetypeHero !== '')
                         <div class="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1">
-                            <div class="flex items-center gap-2">
-                                <i class="ph ph-shield text-slate-500" aria-hidden="true"></i>
+                            <div class="flex items-center gap-1.5">
+                                <i class="ph ph-shield text-slate-500 text-xs" aria-hidden="true"></i>
                                 <div>
                                     <div class="text-[11px] leading-4 text-slate-500">Archétype</div>
                                     <div class="text-sm font-semibold leading-5 text-slate-900">{{ $archetypeHero }}</div>
@@ -133,21 +135,34 @@
                             <div class="mt-1 text-base font-semibold {{ $p['missing'] ? 'text-slate-400' : 'text-slate-900' }}">
                                 {{ $p['value'] }}
                             </div>
+                            <div class="mt-1 text-xs text-slate-400 leading-4">
+                                {{ $p['hint'] !== '' ? $p['hint'] : ' ' }}
+                            </div>
                         </div>
                     @endforeach
                 </div>
 
                 @if($isChartMissing)
                     <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 mt-3 flex items-center justify-between gap-3">
-                        <div class="text-sm font-semibold text-amber-950">Certaines données sont manquantes pour calculer la carte du ciel.</div>
-                        <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-9 px-3 rounded-lg bg-amber-900 text-white text-sm font-semibold hover:bg-amber-800 shrink-0">Compléter</a>
+                        <div class="min-w-0 flex-1 text-sm font-medium text-amber-950 leading-5 sm:whitespace-nowrap">
+                            Complète tes infos de naissance pour calculer la carte du ciel.
+                        </div>
+                        <a
+                            href="{{ $birthCtaUrl }}"
+                            class="inline-flex items-center h-9 px-3 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 active:bg-amber-800 shrink-0"
+                        >
+                            Compléter
+                        </a>
                     </div>
                 @endif
 
-                <div class="mt-4">
-                    <div class="inline-flex w-full rounded-2xl border border-slate-200 bg-slate-50 p-1">
+                <div class="mt-3">
+                    <div class="inline-flex w-full bg-slate-100/60 border border-slate-200 rounded-xl p-1">
                         @foreach($tabs as $key => $label)
-                            <a href="{{ route('astro.show', ['tab' => $key]) }}" class="flex-1 text-center rounded-xl px-3 py-2 text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200' : 'text-slate-600 hover:text-slate-900' }}">
+                            <a
+                                href="{{ route('astro.show', ['tab' => $key]) }}"
+                                class="flex-1 text-center h-10 inline-flex items-center justify-center rounded-lg text-sm font-medium transition-all duration-150 {{ $tab === $key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900' }}"
+                            >
                                 {{ $label }}
                             </a>
                         @endforeach
@@ -164,6 +179,51 @@
                             $chinese = trim((string) ($astro['chinese'] ?? ''));
                             $lifePath = (int) ($astro['life_path'] ?? 0);
 
+                            $elementFromSign = function (string $sign): string {
+                                $sign = mb_strtolower(trim($sign));
+
+                                $map = [
+                                    'bélier' => 'Feu',
+                                    'taureau' => 'Terre',
+                                    'gémeaux' => 'Air',
+                                    'cancer' => 'Eau',
+                                    'lion' => 'Feu',
+                                    'vierge' => 'Terre',
+                                    'balance' => 'Air',
+                                    'scorpion' => 'Eau',
+                                    'sagittaire' => 'Feu',
+                                    'capricorne' => 'Terre',
+                                    'verseau' => 'Air',
+                                    'poissons' => 'Eau',
+                                ];
+
+                                return (string) ($map[$sign] ?? '');
+                            };
+
+                            $modalityFromSign = function (string $sign): string {
+                                $sign = mb_strtolower(trim($sign));
+
+                                $map = [
+                                    'bélier' => 'Cardinal',
+                                    'cancer' => 'Cardinal',
+                                    'balance' => 'Cardinal',
+                                    'capricorne' => 'Cardinal',
+                                    'taureau' => 'Fixe',
+                                    'lion' => 'Fixe',
+                                    'scorpion' => 'Fixe',
+                                    'verseau' => 'Fixe',
+                                    'gémeaux' => 'Mutable',
+                                    'vierge' => 'Mutable',
+                                    'sagittaire' => 'Mutable',
+                                    'poissons' => 'Mutable',
+                                ];
+
+                                return (string) ($map[$sign] ?? '');
+                            };
+
+                            $element = $sun !== '' ? $elementFromSign($sun) : '';
+                            $modality = $sun !== '' ? $modalityFromSign($sun) : '';
+
                             $essentials = [
                                 [
                                     'label' => 'Signe chinois',
@@ -175,13 +235,23 @@
                                     'value' => $lifePath > 0 ? ('Chemin de vie ' . $lifePath) : 'À calculer',
                                     'muted' => $lifePath <= 0,
                                 ],
+                                [
+                                    'label' => 'Élément',
+                                    'value' => $element !== '' ? $element : 'À calculer',
+                                    'muted' => $element === '',
+                                ],
+                                [
+                                    'label' => 'Modalité',
+                                    'value' => $modality !== '' ? $modality : 'À calculer',
+                                    'muted' => $modality === '',
+                                ],
                             ];
                         @endphp
 
                         <div class="sm:hidden overflow-x-auto -mx-4 px-4">
                             <div class="flex gap-3 snap-x snap-mandatory pb-1">
                                 @foreach($essentials as $e)
-                                    <div class="w-[240px] shrink-0 snap-start rounded-xl border border-slate-200 bg-white p-3">
+                                    <div class="w-[240px] shrink-0 snap-start rounded-xl border border-slate-200 bg-white p-3 min-h-[76px]">
                                         <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
                                         <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $e['value'] }}</div>
                                     </div>
@@ -191,7 +261,7 @@
 
                         <div class="hidden sm:grid sm:grid-cols-2 gap-3">
                             @foreach($essentials as $e)
-                                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                                <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 min-h-[76px]">
                                     <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
                                     <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $e['value'] }}</div>
                                 </div>
@@ -231,12 +301,12 @@
 
                         <div class="bg-amber-50 border border-amber-200 rounded-xl p-3">
                             <div class="flex items-start gap-3">
-                                <div class="mt-0.5 text-amber-900 text-sm">
+                                <div class="mt-0.5 text-amber-900 text-xs">
                                     <i class="ph ph-warning-circle" aria-hidden="true"></i>
                                 </div>
                                 <div class="min-w-0">
-                                    <div class="text-xs font-semibold text-amber-900">Point de vigilance</div>
-                                    <div class="mt-1 text-sm font-semibold text-amber-950">{{ $vigilance !== '' ? $vigilance : 'À calculer' }}</div>
+                                    <div class="text-xs font-semibold text-amber-950/80">Point de vigilance</div>
+                                    <div class="mt-1 text-sm font-medium text-amber-950">{{ $vigilance !== '' ? $vigilance : 'À calculer' }}</div>
                                 </div>
                             </div>
                         </div>
@@ -249,16 +319,16 @@
 
                         @if(($astro['precision'] ?? 'unknown') === 'unknown')
                             <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                                <div class="text-sm font-semibold text-amber-900">Ajoute l’heure pour calculer l’Ascendant & les maisons</div>
-                                <div class="mt-1 text-sm text-amber-900/80">Puis reviens ici pour la carte complète.</div>
+                                <div class="text-sm font-semibold text-amber-950">Ajoute l’heure et le lieu pour calculer l’Ascendant & les maisons</div>
+                                <div class="mt-1 text-sm text-amber-950/80">Ensuite, la carte complète apparaîtra ici.</div>
                                 <div class="mt-3">
-                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-md bg-amber-900 text-white text-sm font-semibold hover:bg-amber-800">Compléter</a>
+                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 active:bg-amber-800">Compléter</a>
                                 </div>
                             </div>
                         @else
                             <div class="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-                                <div class="text-sm font-semibold text-slate-900">SVG placeholder (MVP)</div>
-                                <div class="mt-1 text-sm text-slate-600">La roue interactive arrive en phase 2.</div>
+                                <div class="text-sm font-semibold text-slate-900">Carte du ciel</div>
+                                <div class="mt-1 text-sm text-slate-600">Elle s’affichera ici quand tout est prêt.</div>
                             </div>
                         @endif
                     </div>
@@ -289,6 +359,24 @@
                     </div>
                 </div>
             @endif
+
+            <div class="bg-white shadow sm:rounded-2xl">
+                <div class="p-4 sm:p-6">
+                    <div class="text-sm font-semibold text-slate-900">Actions</div>
+                    <div class="mt-3 grid sm:grid-cols-2 gap-3">
+                        <a href="{{ $birthCtaUrl }}" class="inline-flex items-center justify-center h-11 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">
+                            Modifier mes infos de naissance
+                        </a>
+
+                        <form method="POST" action="{{ route('avatar.astro.generate') }}">
+                            @csrf
+                            <button type="submit" class="w-full inline-flex items-center justify-center h-11 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:bg-slate-950">
+                                Générer mon avatar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
             <!-- Talents bottom sheet -->
             @php
