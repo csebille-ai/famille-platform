@@ -50,4 +50,62 @@ class ChineseZodiac
 
         return ['animal' => $animal, 'element' => $element, 'yin_yang' => $yinYang];
     }
+
+    /**
+     * UI label.
+     * Examples:
+     * - "Dragon de Métal (Yang)"
+     * - "Rat d'Eau (Yin)"
+     */
+    public static function formatDisplayLabel(string $animal, string $element, string $yinYang): string
+    {
+        $animal = trim($animal);
+        $element = trim($element);
+        $yinYang = trim($yinYang);
+
+        if ($animal === '') {
+            return '';
+        }
+
+        $label = $animal;
+
+        if ($element !== '') {
+            $needsApostrophe = (bool) preg_match('/^[AEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŒ]/u', $element);
+            $label .= $needsApostrophe ? " d'" . $element : ' de ' . $element;
+        }
+
+        if ($yinYang !== '') {
+            $label .= ' (' . $yinYang . ')';
+        }
+
+        return $label;
+    }
+
+    /**
+     * Best-effort formatter for legacy strings like "Yang Métal Dragon".
+     */
+    public static function formatLegacyDisplayString(string $raw): string
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return '';
+        }
+
+        $tokens = preg_split('/\s+/u', $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if (count($tokens) < 3) {
+            return $raw;
+        }
+
+        $first = (string) ($tokens[0] ?? '');
+        if (!in_array($first, ['Yin', 'Yang'], true)) {
+            return $raw;
+        }
+
+        $polarity = $first;
+        $element = (string) ($tokens[1] ?? '');
+        $animal = trim(implode(' ', array_slice($tokens, 2)));
+
+        $formatted = self::formatDisplayLabel($animal, $element, $polarity);
+        return $formatted !== '' ? $formatted : $raw;
+    }
 }

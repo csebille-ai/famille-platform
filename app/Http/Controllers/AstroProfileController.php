@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\Astro\ChineseZodiac;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -28,13 +29,16 @@ class AstroProfileController extends Controller
             $animal = trim((string) ($ch['animal'] ?? ''));
             $element = trim((string) ($ch['element'] ?? ''));
             $polarity = trim((string) ($ch['polarity'] ?? ''));
-            $chStr = trim(implode(' ', array_values(array_filter([$polarity, $element, $animal], fn ($v) => trim((string) $v) !== ''))));
+            $chStr = ChineseZodiac::formatDisplayLabel($animal, $element, $polarity);
         } elseif (is_string($ch)) {
-            $chStr = trim($ch);
+            $chStr = ChineseZodiac::formatLegacyDisplayString($ch);
         }
         if ($chStr === '') {
-            $chStr = trim((string) ($p?->chinese_yin_yang ?? '')) . ' ' . trim((string) ($p?->chinese_element ?? '')) . ' ' . trim((string) ($p?->chinese_animal ?? ''));
-            $chStr = trim(preg_replace('/\s+/u', ' ', $chStr) ?? $chStr);
+            $chStr = ChineseZodiac::formatDisplayLabel(
+                trim((string) ($p?->chinese_animal ?? '')),
+                trim((string) ($p?->chinese_element ?? '')),
+                trim((string) ($p?->chinese_yin_yang ?? '')),
+            );
         }
 
         $archetype = trim((string) ($sig['archetype'] ?? ($p?->archetype ?? '')));

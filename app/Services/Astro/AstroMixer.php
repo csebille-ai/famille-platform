@@ -80,7 +80,7 @@ class AstroMixer
         $signatureParts = [];
         if ($westSign !== '') $signatureParts[] = "$westSign";
         if ($asc !== '' && $asc !== $westSign) $signatureParts[] = "Asc $asc";
-        if ($animal !== '') $signatureParts[] = "$yy $chElement $animal";
+        if ($animal !== '') $signatureParts[] = ChineseZodiac::formatDisplayLabel($animal, $chElement, $yy);
         if ($lifePath > 0) $signatureParts[] = "Chemin $lifePath";
 
         $signature = implode(' · ', $signatureParts);

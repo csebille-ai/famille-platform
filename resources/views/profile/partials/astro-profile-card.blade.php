@@ -12,7 +12,7 @@
     $element = trim((string) ($ch['element'] ?? ($p->chinese_element ?? '')));
     $animal = trim((string) ($ch['animal'] ?? ($p->chinese_animal ?? '')));
 
-    $chinese = trim(implode(' ', array_values(array_filter([$polarity, $element, $animal], fn ($v) => trim((string) $v) !== ''))));
+    $chinese = \App\Services\Astro\ChineseZodiac::formatDisplayLabel($animal, $element, $polarity);
 
     $lifePath = $sig['life_path'] ?? ($p->life_path ?? null);
     $numerology = $lifePath !== null && $lifePath !== '' ? 'Chemin de vie ' . (string) $lifePath : '';

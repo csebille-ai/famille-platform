@@ -116,11 +116,8 @@ class AvatarSpecBuilder
         $ch = $sig['chinese'] ?? null;
         if (is_array($ch)) {
             $animal = trim((string) ($ch['animal'] ?? ''));
-            $element = trim((string) ($ch['element'] ?? ''));
-            $polarity = trim((string) ($ch['polarity'] ?? ''));
-            $joined = trim(implode(' ', array_values(array_filter([$polarity, $element, $animal], fn ($v) => trim((string) $v) !== ''))));
-            if ($joined !== '') {
-                return $joined;
+            if ($animal !== '') {
+                return $animal;
             }
         }
 
@@ -143,10 +140,19 @@ class AvatarSpecBuilder
             return '';
         }
 
-        // Take the last token (spec requirement).
-        $tokens = preg_split('/\s+/u', $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        $last = (string) ($tokens[count($tokens) - 1] ?? $raw);
-        $k = $this->key($last);
+        // New display format example: "Dragon de Métal (Yang)".
+        // If it matches, take the first word as the animal.
+        $candidate = '';
+        if (preg_match('/^([\p{L}]+)\s+de\s+/u', $raw, $m)) {
+            $candidate = (string) $m[1];
+        } else {
+            // Legacy formats: "Yang Métal Dragon" or "Dragon".
+            // Take the last token (spec requirement).
+            $tokens = preg_split('/\s+/u', $raw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $candidate = (string) ($tokens[count($tokens) - 1] ?? $raw);
+        }
+
+        $k = $this->key($candidate);
 
         // Normalize variants.
         if (in_array($k, ['boeuf', 'bœuf', 'buffle'], true)) {
