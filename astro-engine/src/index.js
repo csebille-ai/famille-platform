@@ -1,6 +1,6 @@
 import express from 'express';
 import { DateTime } from 'luxon';
-import Astronomy from 'astronomy-engine';
+import * as Astronomy from 'astronomy-engine';
 
 import fs from 'fs';
 import path from 'path';
