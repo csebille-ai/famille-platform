@@ -61,7 +61,7 @@
 
         $elementHero = $sun !== '' ? $elementFromSign($sun) : '';
         $signatureParts = [];
-        if ($lifePathHero > 0) $signatureParts[] = 'Chemin de vie ' . $lifePathHero;
+        if ($lifePathHero > 0) $signatureParts[] = (string) $lifePathHero;
         if ($chineseHero !== '') $signatureParts[] = $chineseHero;
         $signatureLine = implode(' • ', $signatureParts);
 
@@ -70,31 +70,110 @@
             : (route('profile.edit') . '#astro-birth');
 
         $isChartMissing = $precision !== 'exact' || $moon === '' || $asc === '';
-        $pill = function (string $label, string $value, array $opts = []) {
+        $themeForSign = function (string $sign, string $variant = 'sun'): array {
+            $sign = mb_strtolower(trim($sign));
+
+            $base = [
+                'box' => 'border-slate-200 bg-white',
+                'label' => 'text-slate-500',
+                'value' => 'text-slate-900',
+            ];
+
+            $themes = [
+                'bélier' => [
+                    'sun' => ['box' => 'border-rose-200/80 bg-rose-50/80', 'label' => 'text-rose-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-rose-200/60 bg-rose-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'taureau' => [
+                    'sun' => ['box' => 'border-emerald-200/80 bg-emerald-50/70', 'label' => 'text-emerald-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-emerald-200/60 bg-emerald-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'gémeaux' => [
+                    'sun' => ['box' => 'border-sky-200/80 bg-sky-50/80', 'label' => 'text-sky-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-sky-200/60 bg-sky-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'cancer' => [
+                    'sun' => ['box' => 'border-indigo-200/80 bg-indigo-50/70', 'label' => 'text-indigo-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-indigo-200/60 bg-indigo-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'lion' => [
+                    'sun' => ['box' => 'border-amber-200/80 bg-amber-50/70', 'label' => 'text-amber-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-amber-200/60 bg-amber-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'vierge' => [
+                    'sun' => ['box' => 'border-teal-200/80 bg-teal-50/70', 'label' => 'text-teal-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-teal-200/60 bg-teal-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'balance' => [
+                    'sun' => ['box' => 'border-violet-200/80 bg-violet-50/70', 'label' => 'text-violet-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-violet-200/60 bg-violet-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'scorpion' => [
+                    'sun' => ['box' => 'border-fuchsia-200/80 bg-fuchsia-50/70', 'label' => 'text-fuchsia-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-fuchsia-200/60 bg-fuchsia-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'sagittaire' => [
+                    'sun' => ['box' => 'border-orange-200/80 bg-orange-50/70', 'label' => 'text-orange-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-orange-200/60 bg-orange-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'capricorne' => [
+                    'sun' => ['box' => 'border-stone-200/80 bg-stone-50/80', 'label' => 'text-stone-700', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-stone-200/60 bg-stone-50/50', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'verseau' => [
+                    'sun' => ['box' => 'border-cyan-200/80 bg-cyan-50/70', 'label' => 'text-cyan-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-cyan-200/60 bg-cyan-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+                'poissons' => [
+                    'sun' => ['box' => 'border-blue-200/80 bg-blue-50/70', 'label' => 'text-blue-900/70', 'value' => 'text-slate-900'],
+                    'soft' => ['box' => 'border-blue-200/60 bg-blue-50/40', 'label' => 'text-slate-600', 'value' => 'text-slate-900'],
+                ],
+            ];
+
+            $t = $themes[$sign][$variant] ?? null;
+            if (!$t) return $base;
+
+            return [
+                'box' => $t['box'] ?? $base['box'],
+                'label' => $t['label'] ?? $base['label'],
+                'value' => $t['value'] ?? $base['value'],
+            ];
+        };
+
+        $pill = function (string $label, string $value, array $opts = []) use ($themeForSign) {
+            $raw = trim($value);
             $value = trim($value);
             $isMissing = ($value === '');
 
             $missingValue = (string) ($opts['missingValue'] ?? '—');
             $hintWhenMissing = (string) ($opts['hintWhenMissing'] ?? '');
+            $variant = (string) ($opts['variant'] ?? 'soft');
+
+            $theme = $isMissing
+                ? ['box' => 'border-slate-200 bg-white', 'label' => 'text-slate-500', 'value' => 'text-slate-400']
+                : $themeForSign($raw, $variant);
 
             return [
                 'label' => $label,
                 'value' => $isMissing ? $missingValue : $value,
                 'missing' => $isMissing,
                 'hint' => $isMissing ? $hintWhenMissing : '',
+                'boxClass' => $theme['box'],
+                'labelClass' => $theme['label'],
+                'valueClass' => $theme['value'],
             ];
         };
 
         $pills = [
-            $pill('Soleil', $sun, ['missingValue' => '—']),
-            $pill('Lune', $moon, ['missingValue' => 'Non dispo', 'hintWhenMissing' => 'Heure/lieu requis']),
-            $pill('Ascendant', $asc, ['missingValue' => '—']),
+            $pill('Soleil', $sun, ['missingValue' => '—', 'variant' => 'sun']),
+            $pill('Lune', $moon, ['missingValue' => 'Non dispo', 'hintWhenMissing' => 'Heure/lieu requis', 'variant' => 'soft']),
+            $pill('Ascendant', $asc, ['missingValue' => '—', 'variant' => 'soft']),
         ];
 
         $tabs = [
-            'profile' => 'Profil',
-            'chart' => 'Carte',
-            'places' => 'Lieux',
+            'profile' => 'Synthèse',
+            'chart' => 'Carte du ciel',
+            'places' => 'Naissance',
         ];
     @endphp
 
@@ -156,22 +235,7 @@
                                 @endif
                             </div>
 
-                            @if($signatureLine !== '' || $elementHero !== '')
-                                <div class="mt-1 flex items-center gap-2 min-w-0">
-                                    @if($elementHero !== '')
-                                        <span class="shrink-0 inline-flex items-center h-6 px-2.5 rounded-full border border-slate-200/70 bg-slate-50 text-[11px] font-semibold text-slate-700">
-                                            Élément: {{ $elementHero }}
-                                        </span>
-                                    @endif
-                                    @if($signatureLine !== '')
-                                        <div class="text-xs text-slate-600 truncate">{{ $signatureLine }}</div>
-                                    @endif
-                                </div>
-                            @endif
-
-                            @if(!$isChartMissing && $precision === 'exact')
-                                <div class="mt-0.5 text-xs text-slate-500">Données complètes</div>
-                            @endif
+                            {{-- signature moved under zodiac frames --}}
                         </div>
                     </div>
 
@@ -190,9 +254,9 @@
 
                 <div class="grid grid-cols-3 gap-3 mt-3">
                     @foreach($pills as $p)
-                        <div class="rounded-2xl border border-slate-200 p-3 min-h-[74px] bg-white">
-                            <div class="text-[11px] font-semibold text-slate-500">{{ $p['label'] }}</div>
-                            <div class="mt-1 text-lg font-extrabold tracking-tight {{ $p['missing'] ? 'text-slate-400' : 'text-slate-900' }}">
+                        <div class="rounded-2xl border p-3 min-h-[74px] {{ $p['boxClass'] }}">
+                            <div class="text-[11px] font-semibold {{ $p['labelClass'] }}">{{ $p['label'] }}</div>
+                            <div class="mt-1 text-lg font-extrabold tracking-tight {{ $p['missing'] ? 'text-slate-400' : $p['valueClass'] }}">
                                 {{ $p['value'] }}
                             </div>
                             <div class="mt-1 text-[11px] text-slate-400 leading-4">
@@ -201,6 +265,19 @@
                         </div>
                     @endforeach
                 </div>
+
+                @if($signatureLine !== '' || $elementHero !== '')
+                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                        @if($elementHero !== '')
+                            <span class="inline-flex items-center h-6 px-2.5 rounded-full border border-slate-200/70 bg-slate-50 text-[11px] font-semibold text-slate-700">
+                                Élément: {{ $elementHero }}
+                            </span>
+                        @endif
+                        @if($signatureLine !== '')
+                            <div class="text-xs text-slate-600">{{ $signatureLine }}</div>
+                        @endif
+                    </div>
+                @endif
 
                 @if($isChartMissing)
                     <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 mt-3 flex items-center justify-between gap-3">
@@ -247,7 +324,7 @@
                                 ],
                                 [
                                     'label' => 'Numérologie',
-                                    'value' => $lifePath > 0 ? ('Chemin de vie ' . $lifePath) : 'À calculer',
+                                    'value' => $lifePath > 0 ? (string) $lifePath : 'À calculer',
                                     'muted' => $lifePath <= 0,
                                 ],
                             ];
