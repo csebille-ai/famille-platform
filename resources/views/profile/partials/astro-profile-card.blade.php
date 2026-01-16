@@ -15,13 +15,9 @@
     $chinese = \App\Services\Astro\ChineseZodiac::formatDisplayLabel($animal, $element, $polarity);
 
     $kemeticIndex = (int) ($sig['kemetic_decan_index'] ?? ($p->kemetic_decan_index ?? 0));
-    $kemeticLabel = trim((string) ($sig['kemetic_decan_label'] ?? ($p->kemetic_decan_label ?? '')));
-    $kemeticKeyword = trim((string) ($sig['kemetic_decan_keyword'] ?? ($p->kemetic_decan_keyword ?? '')));
-
-    $kemeticLine = $kemeticLabel;
-    if ($kemeticIndex > 0) {
-        $kemeticLine = ($kemeticLine !== '' ? ('#' . $kemeticIndex . ' · ' . $kemeticLine) : ('#' . $kemeticIndex));
-    }
+    $kemeticName = $kemeticIndex > 0
+        ? \App\Services\Astro\Kemetic\KemeticDecan::nameFromIndex($kemeticIndex)
+        : '';
 
     $archetype = trim((string) ($sig['archetype'] ?? ($p->archetype ?? '')));
     $talents = $sig['talents'] ?? ($p->talents ?? []);
@@ -78,11 +74,8 @@
             </div>
 
             <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
-                <div class="text-xs text-slate-500">Décan kémétique</div>
-                <div class="mt-1 text-sm font-semibold text-slate-900">{{ $kemeticLine !== '' ? $kemeticLine : '—' }}</div>
-                @if($kemeticKeyword !== '')
-                    <div class="mt-1 text-xs text-slate-500">{{ $kemeticKeyword }}</div>
-                @endif
+                <div class="text-xs text-slate-500">Zodiac kémétique</div>
+                <div class="mt-1 text-sm font-semibold text-slate-900">{{ $kemeticName !== '' ? $kemeticName : 'À calculer' }}</div>
             </div>
 
             <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">

@@ -4,6 +4,13 @@ namespace App\Services\Astro\Kemetic;
 
 final class KemeticDecan
 {
+    public static function nameFromIndex(int $kemeticIndex): string
+    {
+        $names = self::names();
+
+        return (string) ($names[$kemeticIndex] ?? '');
+    }
+
     /**
      * @return array{
      *   sun_lon: float,
@@ -89,6 +96,51 @@ final class KemeticDecan
             'Capricorne' => [1 => 'Structure', 2 => 'Ambition', 3 => 'Maîtrise'],
             'Verseau' => [1 => 'Idées', 2 => 'Innovation', 3 => 'Indépendance'],
             'Poissons' => [1 => 'Imagination', 2 => 'Empathie', 3 => 'Inspiration'],
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function names(): array
+    {
+        return [
+            1 => 'Khent-kheru',
+            2 => 'Qet',
+            3 => 'Sasaqet',
+            4 => 'Art',
+            5 => 'Khau',
+            6 => 'Remen-heru-an-Sah',
+            7 => 'Mestcher-Sah',
+            8 => 'Remen-kher-Sah',
+            9 => 'A-Sah',
+            10 => 'Septet',
+            11 => 'Tepa-Kenmut',
+            12 => 'Kenmut',
+            13 => 'Kher-khept-Kenmut',
+            14 => 'Ha-tchat',
+            15 => 'Pehui-tchat',
+            16 => 'Themat-hert',
+            17 => 'Themat-khert',
+            18 => 'Ustha',
+            19 => 'Bekatha',
+            20 => 'Tepa-khentet',
+            21 => 'Khentet-hert',
+            22 => 'Khentet-khert',
+            23 => 'Themes-en-khentet',
+            24 => 'Sapt-khennu',
+            25 => 'Her-ab-uaa',
+            26 => 'Shesmu',
+            27 => 'Kenmu',
+            28 => 'Semtet',
+            29 => 'Tepa-semt',
+            30 => 'Sert',
+            31 => 'Sasa-sert',
+            32 => 'Kher-khept-sert',
+            33 => 'Khukhu',
+            34 => 'Baba',
+            35 => 'Khent-heru',
+            36 => 'Her-ab-khentu',
         ];
     }
 }
