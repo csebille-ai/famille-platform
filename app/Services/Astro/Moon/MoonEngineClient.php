@@ -15,10 +15,15 @@ class MoonEngineClient
         $baseUrl = rtrim((string) config('astro.engine_url'), '/');
         $timeout = (int) config('astro.timeout_seconds', 3);
 
-        $resp = Http::timeout($timeout)
+        $http = Http::timeout($timeout)
             ->acceptJson()
-            ->asJson()
-            ->post($baseUrl . '/moon', $payload);
+            ->asJson();
+
+        if (!((bool) config('astro.verify_ssl', true))) {
+            $http = $http->withoutVerifying();
+        }
+
+        $resp = $http->post($baseUrl . '/moon', $payload);
 
         if (!$resp->successful()) {
             throw new \RuntimeException('Astro engine error: HTTP ' . $resp->status());
