@@ -28,6 +28,8 @@ class AdminUserCreateTest extends TestCase
         $this->actingAs($admin);
 
         $payload = [
+            'first_name' => 'New',
+            'last_name' => 'User',
             'email' => 'new.user@example.test',
             'role' => 'member',
             'date_of_birth' => '1990-10-23',
@@ -42,6 +44,7 @@ class AdminUserCreateTest extends TestCase
 
         $user = User::query()->where('email', 'new.user@example.test')->firstOrFail();
 
+        $this->assertSame('New User', $user->name);
         $this->assertSame('member', $user->role);
         $this->assertSame('1990-10-23', optional($user->date_of_birth)->format('Y-m-d'));
         $this->assertTrue(in_array($user->birth_time, ['13:45', '13:45:00'], true));
@@ -57,6 +60,8 @@ class AdminUserCreateTest extends TestCase
         $this->actingAs($admin);
 
         $this->post(route('admin.users.store'), [
+            'first_name' => 'No',
+            'last_name' => 'Astro',
             'email' => 'no.astro@example.test',
             'role' => 'member',
             'date_of_birth' => '1990-10-23',
@@ -66,6 +71,7 @@ class AdminUserCreateTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'email' => 'no.astro@example.test',
+            'name' => 'No Astro',
             'role' => 'member',
         ]);
     }

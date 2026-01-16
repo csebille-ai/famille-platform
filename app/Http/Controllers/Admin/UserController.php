@@ -56,6 +56,8 @@ class UserController extends Controller
         Gate::authorize('manage-users');
 
         $validated = $request->validate([
+            'first_name' => ['required', 'string', 'max:100'],
+            'last_name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', 'in:member,editor,admin'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
@@ -72,8 +74,10 @@ class UserController extends Controller
 
         $user = new User();
         $user->email = $validated['email'];
-        // Temporary placeholder; user will choose their username during invite acceptance.
-        $user->name = Str::before((string) $user->email, '@') ?: 'Utilisateur';
+        $computedName = trim($validated['first_name'] . ' ' . $validated['last_name']);
+        $user->name = $computedName !== ''
+            ? $computedName
+            : (Str::before((string) $user->email, '@') ?: 'Utilisateur');
         $user->role = $validated['role'];
         $user->password = Str::random(32);
 

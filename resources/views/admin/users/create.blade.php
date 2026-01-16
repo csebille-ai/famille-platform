@@ -17,6 +17,24 @@
                     <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-6">
                         @csrf
 
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="first_name">Prénom</label>
+                                <input id="first_name" name="first_name" type="text" value="{{ old('first_name') }}" required class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                @error('first_name')
+                                    <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="last_name">Nom</label>
+                                <input id="last_name" name="last_name" type="text" value="{{ old('last_name') }}" required class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                @error('last_name')
+                                    <div class="mt-1 text-xs text-red-600">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700" for="email">{{ __('Email') }}</label>
                             <input id="email" name="email" type="email" value="{{ old('email') }}" required class="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
