@@ -433,14 +433,29 @@
 		} else {
 			const destEl = findSharedElement(id);
 			if (destEl) {
-				toRect = rectFromEl(destEl);
 				destFit = getObjectFitFrom(destEl, 'contain');
 				destRadiusPx = getRadiusFrom(destEl);
 				destImg = destEl.tagName === 'IMG' ? destEl : (destEl.querySelector ? destEl.querySelector('img') : null);
+
+				// Large/vertical images may not have a layout box yet at this point.
+				// Wait briefly for the destination image to decode/load so rect measurement isn't 0x0.
+				if (destImg) {
+					try {
+						await waitForImageReady(destImg, isLowEnd() ? 700 : 1400);
+					} catch {
+						// ignore
+					}
+				}
+
+				toRect = rectFromEl(destEl);
+
 				// Hide the real destination element until we fully swap (prevents any clone<->real crossfade).
+				// Only do this if we have a valid destination rect; otherwise we can accidentally hide it forever.
 				destElForHide = destEl;
-				try { destEl.style.visibility = 'hidden'; } catch {}
-				try { destEl.style.opacity = '0'; } catch {}
+				if (toRect && toRect.w > 0 && toRect.h > 0) {
+					try { destEl.style.visibility = 'hidden'; } catch {}
+					try { destEl.style.opacity = '0'; } catch {}
+				}
 			}
 		}
 
@@ -449,6 +464,13 @@
 		if (!toRect || toRect.w <= 0 || toRect.h <= 0) {
 			// Fallback: simple fade.
 			await animateOpacity(backdrop, 1, 0, { duration: Math.max(160, Math.floor(duration * 0.7)) });
+			// Ensure the destination element is visible even if we had hidden it.
+			try {
+				if (destElForHide) {
+					destElForHide.style.visibility = '';
+					destElForHide.style.opacity = '';
+				}
+			} catch {}
 			document.documentElement.classList.remove('tm-animating');
 			document.documentElement.classList.remove('tm-reveal');
 			root.innerHTML = '';
