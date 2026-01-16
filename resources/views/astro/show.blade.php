@@ -253,7 +253,7 @@
                             ];
                         @endphp
 
-                        <div class="grid gap-2 min-[520px]:grid-cols-2 sm:gap-3">
+                        <div class="grid gap-2 min-[420px]:grid-cols-2 sm:gap-3">
                             @foreach($essentialCards as $e)
                                 @php
                                     $accent = $loop->first ? 'bg-sky-400/70' : 'bg-violet-400/70';
@@ -334,7 +334,7 @@
 
                         <div class="mt-1">
                             <div class="text-sm font-semibold text-slate-900">Insights</div>
-                            <div class="mt-2 grid gap-2 min-[520px]:grid-cols-2 sm:gap-3">
+                            <div class="mt-2 grid gap-2 min-[420px]:grid-cols-2 sm:gap-3">
                                 <div class="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="text-[11px] font-semibold text-slate-600">Point fort</div>
                                     <div class="mt-1 text-sm font-semibold text-emerald-950">{{ $strength !== '' ? $strength : '—' }}</div>
