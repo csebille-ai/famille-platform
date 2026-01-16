@@ -582,15 +582,20 @@ class VideoController extends Controller
 
     public function poster(Video $video): \Symfony\Component\HttpFoundation\Response
     {
-            if (in_array((string) ($video->storage_disk ?? 'public'), ['public', 'local'], true) && !$video->poster_path) {
-                // Best-effort lazy generation for older uploads or servers where
-                // synchronous generation may fail intermittently.
-                $this->generatePosterForVideo($video);
-                $video->refresh();
-            }
+        $diskName = (string) ($video->storage_disk ?? 'public');
+        if (!in_array($diskName, ['public', 'local'], true)) {
+            $diskName = 'public';
+        }
 
-        $disk = Storage::disk('public');
-                if (!$video->poster_path || !$disk->exists($video->poster_path)) {
+        if (in_array($diskName, ['public', 'local'], true) && !$video->poster_path) {
+            // Best-effort lazy generation for older uploads or servers where
+            // synchronous generation may fail intermittently.
+            $this->generatePosterForVideo($video);
+            $video->refresh();
+        }
+
+        $disk = Storage::disk($diskName);
+        if (!$video->poster_path || !$disk->exists($video->poster_path)) {
                         $title = trim((string) ($video->title ?? 'Vidéo'));
                         $label = htmlspecialchars($title !== '' ? $title : 'Vidéo', ENT_QUOTES, 'UTF-8');
                         $svg = <<<SVG
