@@ -47,9 +47,37 @@
             @endif
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div class="text-sm font-semibold text-slate-900">Naissance (pour l’astro)</div>
-            <div class="microcopy mt-1 text-xs text-slate-500">Ces champs servent uniquement à générer la fiche astrale “fun”.</div>
+        @php
+            $hasDob = $user->date_of_birth !== null;
+            $hasTime = trim((string) ($user->birth_time ?? '')) !== '';
+            $hasPlace = trim((string) ($user->birth_place ?? '')) !== '';
+            $hasCoords = trim((string) ($user->birth_latitude ?? '')) !== '' && trim((string) ($user->birth_longitude ?? '')) !== '';
+
+            $completeness = ($hasDob ? 1 : 0) + ($hasTime ? 1 : 0) + ($hasPlace ? 1 : 0) + ($hasCoords ? 1 : 0);
+
+            [$badgeLabel, $badgeClass] = match (true) {
+                $completeness >= 4 => ['Complet', 'border-emerald-200 bg-emerald-50 text-emerald-700'],
+                $completeness >= 2 => ['Partiel', 'border-amber-200 bg-amber-50 text-amber-900'],
+                default => ['À compléter', 'border-slate-200 bg-white text-slate-700'],
+            };
+        @endphp
+
+        <div id="astro-birth" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 scroll-mt-28">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <div class="text-sm font-semibold text-slate-900">Naissance (pour l’astro)</div>
+                    <div class="microcopy mt-1 text-xs text-slate-500">Ces champs servent uniquement à générer la fiche astrale “fun”.</div>
+                </div>
+
+                <div class="shrink-0 flex flex-col items-end gap-2">
+                    <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold {{ $badgeClass }}">
+                        {{ $badgeLabel }}
+                    </span>
+                    <a href="{{ route('astro.show') }}" class="inline-flex items-center h-9 px-3 rounded-md bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800">
+                        Voir ma fiche astro
+                    </a>
+                </div>
+            </div>
 
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>

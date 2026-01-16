@@ -21,6 +21,7 @@
     $mobileTitle = '—';
     if ($isHome) $mobileTitle = 'Accueil';
     elseif (request()->routeIs('profile.*')) $mobileTitle = 'Profile';
+    elseif (request()->routeIs('astro.show')) $mobileTitle = 'Ma fiche astro';
     elseif (request()->routeIs('tarot.*')) $mobileTitle = 'Tarot';
     elseif (request()->routeIs('actu.*')) $mobileTitle = 'Actu locale';
     elseif (request()->routeIs('mediatheque.index') || request()->routeIs('videos.index')) $mobileTitle = 'Médiathèque';
@@ -96,6 +97,10 @@
 
                                     <x-dropdown-link :href="route('profile.edit')">
                                         {{ __('Profile') }}
+                                    </x-dropdown-link>
+
+                                    <x-dropdown-link :href="route('astro.show')">
+                                        Ma fiche astro
                                     </x-dropdown-link>
 
                                     <form method="POST" action="{{ route('logout') }}">
@@ -206,6 +211,10 @@
 
                             <x-dropdown-link :href="route('profile.edit')">
                                 {{ __('Profile') }}
+                            </x-dropdown-link>
+
+                            <x-dropdown-link :href="route('astro.show')">
+                                Ma fiche astro
                             </x-dropdown-link>
 
                             <form method="POST" action="{{ route('logout') }}">
