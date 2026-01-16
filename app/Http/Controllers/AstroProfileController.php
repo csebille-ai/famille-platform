@@ -74,6 +74,7 @@ class AstroProfileController extends Controller
             'kemetic_decan_index' => $kemeticIndex > 0 ? $kemeticIndex : null,
             'kemetic_decan_label' => $kemeticLabel !== '' ? $kemeticLabel : null,
             'kemetic_decan_keyword' => $kemeticKeyword !== '' ? $kemeticKeyword : null,
+            'natal' => $p?->natal,
             'archetype' => $archetype,
             'talents' => $talents,
             'vigilance' => $vigilance,

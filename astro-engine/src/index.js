@@ -81,8 +81,205 @@ function signFromLongitude(lon) {
   return { sign, degInSign, normalized };
 }
 
+function normalizeDeg(deg) {
+  const n = ((deg % 360) + 360) % 360;
+  return n;
+}
+
+function deg2rad(deg) {
+  return (deg * Math.PI) / 180;
+}
+
+function rad2deg(rad) {
+  return (rad * 180) / Math.PI;
+}
+
+function computeAngles({ timeObj, latitudeDeg, longitudeDeg }) {
+  // Local Sidereal Time (degrees).
+  const gmstHours = Number(Astronomy.SiderealTime(timeObj));
+  const lstDeg = normalizeDeg(gmstHours * 15 + longitudeDeg);
+
+  // True obliquity of the ecliptic (degrees).
+  const tilt = Astronomy.e_tilt(timeObj);
+  const epsDeg = Number(tilt?.tobl);
+
+  const theta = deg2rad(lstDeg);
+  const phi = deg2rad(latitudeDeg);
+  const eps = deg2rad(epsDeg);
+
+  // MC: intersection of meridian with ecliptic.
+  const mcRad = Math.atan2(Math.sin(theta) * Math.cos(eps), Math.cos(theta));
+  const mcDeg = normalizeDeg(rad2deg(mcRad));
+
+  // Ascendant.
+  const ascRad = Math.atan2(
+    Math.sin(theta) * Math.cos(eps) - Math.tan(phi) * Math.sin(eps),
+    Math.cos(theta)
+  );
+  const ascDeg = normalizeDeg(rad2deg(ascRad));
+
+  return {
+    lst_deg: lstDeg,
+    obliquity_deg: epsDeg,
+    asc_deg: ascDeg,
+    mc_deg: mcDeg,
+  };
+}
+
+function equalHouses(ascDeg) {
+  const cusps = [];
+  for (let i = 0; i < 12; i += 1) {
+    const cuspLon = normalizeDeg(ascDeg + i * 30);
+    cusps.push({ house: i + 1, cusp_lon: cuspLon, ...signFromLongitude(cuspLon) });
+  }
+  return cusps;
+}
+
+function houseForLongitudeEqual(lon, ascDeg) {
+  const rel = normalizeDeg(lon - ascDeg);
+  return Math.floor(rel / 30) + 1;
+}
+
 app.get('/health', (req, res) => {
   res.json({ ok: true });
+});
+
+// POST /chart
+// Body:
+// - { utc: 'ISOZ', lat: number, lng: number }
+// - or { date: 'YYYY-MM-DD', time: 'HH:MM', timezone?: 'Europe/Paris', lat: number, lng: number }
+// Notes:
+// - lat/lng are required to compute ASC/MC and houses.
+// - we currently use Equal Houses (cusp 1 = ASC, +30° increments).
+app.post('/chart', (req, res) => {
+  try {
+    if (DEBUG) {
+      logLine('[astro-engine] /chart start');
+    }
+
+    const body = req.body ?? {};
+    const lat = Number(body.lat);
+    const lng = Number(body.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return res.status(422).json({ error: 'lat and lng are required' });
+    }
+
+    let utc;
+    if (typeof body.utc === 'string' && body.utc.trim() !== '') {
+      utc = DateTime.fromISO(body.utc, { zone: 'utc' });
+    } else {
+      const date = typeof body.date === 'string' ? body.date.trim() : '';
+      const time = typeof body.time === 'string' ? body.time.trim() : '';
+      const timezone = typeof body.timezone === 'string' && body.timezone.trim() !== '' ? body.timezone.trim() : 'Europe/Paris';
+
+      if (!date || !time) {
+        return res.status(422).json({ error: 'date and time are required' });
+      }
+
+      const local = DateTime.fromISO(`${date}T${time}`, { zone: timezone });
+      if (!local.isValid) {
+        return res.status(422).json({ error: 'invalid local datetime', details: local.invalidExplanation });
+      }
+      utc = local.toUTC();
+    }
+
+    if (!utc.isValid) {
+      return res.status(422).json({ error: 'invalid utc datetime', details: utc.invalidExplanation });
+    }
+
+    const timeObj = Astronomy.MakeTime(utc.toJSDate());
+
+    // Angles & houses.
+    const anglesRaw = computeAngles({ timeObj, latitudeDeg: lat, longitudeDeg: lng });
+    const houses = equalHouses(anglesRaw.asc_deg);
+
+    const asc = signFromLongitude(anglesRaw.asc_deg);
+    const mc = signFromLongitude(anglesRaw.mc_deg);
+
+    // Planets (geocentric ecliptic longitude).
+    const planets = [];
+
+    // Sun (special helper).
+    const sunPos = Astronomy.SunPosition(timeObj);
+    const sunLon = normalizeDeg(Number(sunPos.elon));
+    const sun = signFromLongitude(sunLon);
+    planets.push({
+      key: 'sun',
+      name: 'Soleil',
+      lon: sunLon,
+      sign: sun.sign,
+      deg_in_sign: sun.degInSign,
+      house: houseForLongitudeEqual(sunLon, anglesRaw.asc_deg),
+    });
+
+    // Moon (geocentric helper).
+    const moonEcl = Astronomy.EclipticGeoMoon(timeObj);
+    const moonLon = normalizeDeg(Number(moonEcl.lon));
+    const moon = signFromLongitude(moonLon);
+    planets.push({
+      key: 'moon',
+      name: 'Lune',
+      lon: moonLon,
+      sign: moon.sign,
+      deg_in_sign: moon.degInSign,
+      house: houseForLongitudeEqual(moonLon, anglesRaw.asc_deg),
+    });
+
+    // Personal planets.
+    for (const [key, body, name] of [
+      ['mercury', 'Mercury', 'Mercure'],
+      ['venus', 'Venus', 'Vénus'],
+      ['mars', 'Mars', 'Mars'],
+    ]) {
+      const vec = Astronomy.GeoVector(body, timeObj, true);
+      const ecl = Astronomy.Ecliptic(vec);
+      const lon = normalizeDeg(Number(ecl.elon));
+      const s = signFromLongitude(lon);
+      planets.push({
+        key,
+        name,
+        lon,
+        sign: s.sign,
+        deg_in_sign: s.degInSign,
+        house: houseForLongitudeEqual(lon, anglesRaw.asc_deg),
+      });
+    }
+
+    res.json({
+      utc: utc.toISO({ suppressMilliseconds: true }),
+      angles: {
+        asc: { lon: anglesRaw.asc_deg, sign: asc.sign, deg_in_sign: asc.degInSign },
+        mc: { lon: anglesRaw.mc_deg, sign: mc.sign, deg_in_sign: mc.degInSign },
+      },
+      houses,
+      planets,
+    });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[astro-engine] /chart error', e);
+    try {
+      const payload = (() => {
+        try {
+          return JSON.stringify(req.body ?? {});
+        } catch {
+          return '[unserializable]';
+        }
+      })();
+      logLine('[astro-engine] /chart error', e && e.stack ? e.stack : String(e), 'payload=', payload);
+    } catch {
+      logLine('[astro-engine] /chart error', e && e.stack ? e.stack : String(e));
+    }
+
+    if (DEBUG) {
+      return res.status(500).json({
+        error: 'internal_error',
+        message: e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e),
+      });
+    }
+
+    res.status(500).json({ error: 'internal_error' });
+  }
 });
 
 // POST /sun

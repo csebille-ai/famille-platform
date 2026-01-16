@@ -180,7 +180,7 @@
         ];
     @endphp
 
-    <div x-data="{ show: false, openTalents: false }" x-init="requestAnimationFrame(() => show = true)" class="pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+    <div x-data="{ show: false, openTalents: false, openPlanet: false, planet: null }" x-init="requestAnimationFrame(() => show = true)" class="pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-4">
             @if (session('status'))
                 <div class="mx-4 sm:mx-0 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
@@ -442,33 +442,198 @@
                     <div class="p-4 sm:p-6 space-y-4">
                         <div class="text-sm font-semibold text-slate-900">Carte du ciel</div>
 
-                        @if($isChartMissing)
-                            <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start justify-between gap-3">
-                                <div class="min-w-0 flex-1">
-                                    <div class="text-sm font-semibold text-amber-950">Complète tes infos pour calculer la carte du ciel</div>
-                                    <div class="mt-1 text-sm text-amber-950/80">Heure + lieu requis pour l’Ascendant & les maisons.</div>
-                                </div>
-                                <a
-                                    href="{{ $birthCtaUrl }}"
-                                    class="inline-flex items-center h-10 px-4 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 active:bg-amber-800 shrink-0"
-                                >
-                                    Modifier
-                                </a>
-                            </div>
-                        @endif
+                        @php
+                            $birthTimeLocal = trim((string) ($user->birth_time ?? ''));
+                            $hasCoords = $user->birth_latitude !== null && $user->birth_longitude !== null;
+                            $missingTime = $birthTimeLocal === '';
+                            $missingCoords = !$hasCoords;
 
-                        @if(($astro['precision'] ?? 'unknown') === 'unknown')
+                            $natal = is_array($astro['natal'] ?? null) ? (array) $astro['natal'] : null;
+                            $angles = is_array($natal['angles'] ?? null) ? (array) $natal['angles'] : [];
+                            $houses = is_array($natal['houses'] ?? null) ? (array) $natal['houses'] : [];
+                            $planets = is_array($natal['planets'] ?? null) ? (array) $natal['planets'] : [];
+
+                            $fmtDeg = function ($deg) {
+                                $deg = is_numeric($deg) ? (float) $deg : 0.0;
+                                $d = (int) floor($deg);
+                                $m = (int) round(($deg - $d) * 60);
+                                if ($m >= 60) {
+                                    $d += 1;
+                                    $m = 0;
+                                }
+                                $d = $d % 30;
+                                return sprintf('%d°%02d', $d, $m);
+                            };
+
+                            $wheelXY = function ($deg, $r) {
+                                $deg = is_numeric($deg) ? (float) $deg : 0.0;
+                                $rad = deg2rad($deg - 90.0);
+                                return [
+                                    'x' => $r * cos($rad),
+                                    'y' => $r * sin($rad),
+                                ];
+                            };
+
+                            $planetGlyph = function (string $key): string {
+                                return match ($key) {
+                                    'sun' => '☉',
+                                    'moon' => '☽',
+                                    'mercury' => '☿',
+                                    'venus' => '♀',
+                                    'mars' => '♂',
+                                    default => '•',
+                                };
+                            };
+
+                            $planetRows = [];
+                            foreach ($planets as $pl) {
+                                if (!is_array($pl)) continue;
+                                $key = (string) ($pl['key'] ?? '');
+                                $name = (string) ($pl['name'] ?? '');
+                                $sign = (string) ($pl['sign'] ?? '');
+                                $degInSign = $pl['deg_in_sign'] ?? null;
+                                $house = (int) ($pl['house'] ?? 0);
+                                $lon = $pl['lon'] ?? null;
+                                $planetRows[] = [
+                                    'key' => $key,
+                                    'glyph' => $planetGlyph($key),
+                                    'name' => $name,
+                                    'sign' => $sign,
+                                    'deg_in_sign' => is_numeric($degInSign) ? (float) $degInSign : null,
+                                    'deg_label' => $fmtDeg($degInSign),
+                                    'house' => $house > 0 ? $house : null,
+                                    'lon' => is_numeric($lon) ? (float) $lon : null,
+                                ];
+                            }
+                        @endphp
+
+                        @if($missingCoords)
                             <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                                <div class="text-sm font-semibold text-amber-950">Ajoute l’heure et le lieu pour calculer l’Ascendant & les maisons</div>
-                                <div class="mt-1 text-sm text-amber-950/80">Ensuite, la carte complète apparaîtra ici.</div>
+                                <div class="text-sm font-semibold text-amber-950">Ajoute le lieu précis pour calculer Ascendant & maisons.</div>
                                 <div class="mt-3">
-                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 active:bg-amber-800">Compléter</a>
+                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 active:bg-amber-800">Modifier</a>
+                                </div>
+                            </div>
+                        @elseif($missingTime)
+                            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                <div class="text-sm font-semibold text-amber-950">Ajoute l’heure pour calculer la carte.</div>
+                                <div class="mt-3">
+                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 active:bg-amber-800">Modifier</a>
+                                </div>
+                            </div>
+                        @elseif(!is_array($natal) || empty($planetRows))
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="text-sm font-semibold text-slate-900">La carte n’est pas disponible pour le moment.</div>
+                                <div class="mt-3">
+                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">Modifier</a>
                                 </div>
                             </div>
                         @else
-                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-                                <div class="text-sm font-semibold text-slate-900">Carte du ciel</div>
-                                <div class="mt-1 text-sm text-slate-600">Elle s’affichera ici quand tout est prêt.</div>
+                            @php
+                                $asc = is_array($angles['asc'] ?? null) ? (array) $angles['asc'] : [];
+                                $mc = is_array($angles['mc'] ?? null) ? (array) $angles['mc'] : [];
+                                $ascSign = (string) ($asc['sign'] ?? '');
+                                $ascDeg = $asc['deg_in_sign'] ?? null;
+                                $mcSign = (string) ($mc['sign'] ?? '');
+                                $mcDeg = $mc['deg_in_sign'] ?? null;
+                            @endphp
+
+                            <div class="grid gap-4 sm:grid-cols-[minmax(0,360px)_1fr]">
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="text-sm font-semibold text-slate-900">Roue</div>
+                                        <div class="text-xs text-slate-500">
+                                            <span class="font-semibold text-slate-700">ASC</span>
+                                            {{ $ascSign !== '' ? ($ascSign . ' ' . $fmtDeg($ascDeg)) : '—' }}
+                                            <span class="mx-1">·</span>
+                                            <span class="font-semibold text-slate-700">MC</span>
+                                            {{ $mcSign !== '' ? ($mcSign . ' ' . $fmtDeg($mcDeg)) : '—' }}
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3 aspect-square">
+                                        <svg viewBox="-120 -120 240 240" class="h-full w-full">
+                                            <circle cx="0" cy="0" r="108" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" />
+                                            <circle cx="0" cy="0" r="78" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+                                            <circle cx="0" cy="0" r="36" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+
+                                            @foreach($houses as $h)
+                                                @php
+                                                    if (!is_array($h)) continue;
+                                                    $cuspLon = $h['cusp_lon'] ?? null;
+                                                    $p = $wheelXY($cuspLon, 108);
+                                                @endphp
+                                                <line x1="0" y1="0" x2="{{ $p['x'] }}" y2="{{ $p['y'] }}" stroke="#cbd5e1" stroke-width="1" />
+                                            @endforeach
+
+                                            @foreach($planetRows as $pl)
+                                                @php
+                                                    $lon = $pl['lon'] ?? null;
+                                                    $pt = $wheelXY($lon, 66);
+                                                @endphp
+                                                <text x="{{ $pt['x'] }}" y="{{ $pt['y'] }}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#0f172a">{{ $pl['glyph'] }}</text>
+                                            @endforeach
+
+                                            <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="#64748b">Carte</text>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                                    <div class="text-sm font-semibold text-slate-900">Planètes</div>
+                                    <div class="mt-3 divide-y divide-slate-100">
+                                        @foreach($planetRows as $pl)
+                                            <button
+                                                type="button"
+                                                class="w-full py-3 flex items-center justify-between gap-3 text-left"
+                                                @click="planet = {{ \Illuminate\Support\Js::from($pl) }}; openPlanet = true"
+                                            >
+                                                <div class="min-w-0">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-base">{{ $pl['glyph'] }}</span>
+                                                        <div class="text-sm font-semibold text-slate-900">{{ $pl['name'] }}</div>
+                                                    </div>
+                                                    <div class="mt-0.5 text-xs text-slate-600">
+                                                        {{ ($pl['sign'] ?? '') !== '' ? ($pl['sign'] . ' ' . ($pl['deg_label'] ?? '')) : '—' }}
+                                                        @if(($pl['house'] ?? null) !== null)
+                                                            <span class="mx-1">·</span>
+                                                            Maison {{ $pl['house'] }}
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <i class="ph ph-caret-right text-slate-400" aria-hidden="true"></i>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div x-show="openPlanet" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
+                                <button type="button" @click="openPlanet = false" class="absolute inset-0 bg-black/30" aria-label="Fermer"></button>
+
+                                <div
+                                    x-show="openPlanet"
+                                    x-transition.opacity.duration.160ms
+                                    x-transition.transform.duration.160ms
+                                    class="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white p-4 shadow-2xl"
+                                    style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem)"
+                                >
+                                    <div class="flex items-center justify-between">
+                                        <div class="text-sm font-semibold text-slate-900" x-text="planet ? (planet.glyph + ' ' + planet.name) : ''"></div>
+                                        <button type="button" @click="openPlanet = false" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Fermer</button>
+                                    </div>
+
+                                    <div class="mt-3 grid gap-2">
+                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                            <div class="text-[11px] font-semibold text-slate-500">Position</div>
+                                            <div class="mt-1 text-sm font-semibold text-slate-900" x-text="planet && planet.sign ? (planet.sign + ' ' + planet.deg_label) : '—'"></div>
+                                        </div>
+                                        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                                            <div class="text-[11px] font-semibold text-slate-500">Maison</div>
+                                            <div class="mt-1 text-sm font-semibold text-slate-900" x-text="planet && planet.house ? ('Maison ' + planet.house) : '—'"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         @endif
                     </div>

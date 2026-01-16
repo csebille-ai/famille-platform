@@ -27,6 +27,8 @@ class AstroProfile extends Model
         'kemetic_computed_at',
         'astro_hash',
         'astro_computed_at',
+        'natal_hash',
+        'natal_computed_at',
         'natal',
         'archetype',
         'talents',
@@ -41,6 +43,7 @@ class AstroProfile extends Model
         'computed_at' => 'datetime',
         'astro_computed_at' => 'datetime',
         'kemetic_computed_at' => 'datetime',
+        'natal_computed_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

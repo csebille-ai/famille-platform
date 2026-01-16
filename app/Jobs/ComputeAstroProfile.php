@@ -6,6 +6,7 @@ use App\Models\AstroProfile;
 use App\Models\User;
 use App\Services\Astro\Geo\BirthPlaceAutoResolver;
 use App\Services\Astro\Moon\MoonSignResolver;
+use App\Services\Astro\Natal\NatalChartResolver;
 use App\Services\Astro\Sun\SunKemeticResolver;
 use App\Services\Astro\AstroMixer;
 use App\Services\Astro\AstroProfileComputer;
@@ -25,7 +26,7 @@ class ComputeAstroProfile implements ShouldQueue
     {
     }
 
-    public function handle(AstroProfileComputer $computer, MoonSignResolver $moonResolver, SunKemeticResolver $sunKemetic): void
+    public function handle(AstroProfileComputer $computer, MoonSignResolver $moonResolver, SunKemeticResolver $sunKemetic, NatalChartResolver $natalResolver): void
     {
         try {
             $user = User::query()->find($this->userId);
@@ -90,6 +91,21 @@ class ComputeAstroProfile implements ShouldQueue
                 ]);
             }
 
+            // Natal chart (angles/houses/planets) (best effort, cached via natal_hash).
+            $natal = [
+                'natal' => $user->astroProfile?->natal,
+                'natal_hash' => $user->astroProfile?->natal_hash,
+                'natal_computed_at' => $user->astroProfile?->natal_computed_at,
+            ];
+            try {
+                $natal = $natalResolver->resolve($user, $user->astroProfile);
+            } catch (Throwable $e) {
+                Log::warning('Natal chart computation failed', [
+                    'user_id' => $user->id,
+                    'exception' => $e,
+                ]);
+            }
+
             if ($payload === []) {
                 $mix = AstroMixer::mix([]);
                 $profile = AstroProfile::updateOrCreate(
@@ -108,6 +124,9 @@ class ComputeAstroProfile implements ShouldQueue
                         'kemetic_computed_at' => $kemetic['kemetic_computed_at'],
                         'astro_hash' => $moon['astro_hash'],
                         'astro_computed_at' => $moon['astro_computed_at'],
+                        'natal' => $natal['natal'],
+                        'natal_hash' => $natal['natal_hash'],
+                        'natal_computed_at' => $natal['natal_computed_at'],
                         'signature' => $mix['signature'],
                         'archetype' => $mix['archetype'],
                         'talents' => $mix['talents'],
@@ -163,6 +182,9 @@ class ComputeAstroProfile implements ShouldQueue
                     'kemetic_computed_at' => $kemetic['kemetic_computed_at'],
                     'astro_hash' => $moon['astro_hash'],
                     'astro_computed_at' => $moon['astro_computed_at'],
+                    'natal' => $natal['natal'],
+                    'natal_hash' => $natal['natal_hash'],
+                    'natal_computed_at' => $natal['natal_computed_at'],
                     'computed_at' => now(),
                 ])
             );
