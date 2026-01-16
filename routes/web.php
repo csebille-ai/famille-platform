@@ -1409,6 +1409,17 @@ Route::middleware('auth')->group(function () {
         Route::delete('/cloud/trash/{id}/purge', [CloudNodeController::class, 'purge'])->name('cloud.trash.purge');
     Route::delete('/cloud/nodes/{node}', [CloudNodeController::class, 'destroy'])->name('cloud.nodes.destroy');
 
+    // Legacy/shortcut aliases (older links/bookmarks)
+    Route::get('/users', function () {
+        Gate::authorize('manage-users');
+        return redirect()->route('admin.users.index');
+    })->name('users.index');
+
+    Route::get('/users/create', function () {
+        Gate::authorize('manage-users');
+        return redirect()->route('admin.users.create');
+    })->name('users.create');
+
     Route::prefix('admin')->group(function () {
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
