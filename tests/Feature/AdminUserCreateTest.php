@@ -11,6 +11,16 @@ class AdminUserCreateTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_admin_can_view_create_user_page(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin);
+
+        $this->get(route('admin.users.create'))
+            ->assertOk();
+    }
+
     public function test_admin_can_create_user_with_birth_fields(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
