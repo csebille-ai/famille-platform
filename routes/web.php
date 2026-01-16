@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/api/geo/cities', \App\Http\Controllers\Api\GeoCitySearchController::class)
     ->middleware(['auth', 'verified', 'throttle:60,1']);
@@ -329,15 +330,19 @@ Route::get('/home', function () {
     }
 
     $nextBirthday = null;
+    $birthdayStrip = [];
     try {
         if (Schema::hasTable('people') && Schema::hasColumn('people', 'birth_date')) {
             $peopleWithDob = Person::query()
                 ->whereNotNull('birth_date')
                 ->orderBy('first_name')
                 ->orderBy('last_name')
-                ->get(['id', 'first_name', 'last_name', 'birth_date']);
+                ->get(['id', 'user_id', 'first_name', 'last_name', 'birth_date', 'is_child', 'avatar_path']);
 
             $nextBirthday = app(NextBirthday::class)->forPeople($peopleWithDob);
+
+            $upcoming = app(NextBirthday::class)->upcomingForPeople($peopleWithDob);
+            $birthdayStrip = array_values(array_filter($upcoming, fn ($b) => (int) ($b['days_remaining'] ?? 9999) <= 30));
         } elseif (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
             $usersWithDob = User::query()
                 ->whereNotNull('date_of_birth')
@@ -345,10 +350,53 @@ Route::get('/home', function () {
                 ->get(['id', 'name', 'date_of_birth']);
 
             $nextBirthday = app(NextBirthday::class)->forUsers($usersWithDob);
+
+            $upcoming = app(NextBirthday::class)->upcomingForUsers($usersWithDob);
+            $birthdayStrip = array_values(array_filter($upcoming, fn ($b) => (int) ($b['days_remaining'] ?? 9999) <= 30));
         }
     } catch (Throwable $e) {
         $nextBirthday = null;
+        $birthdayStrip = [];
     }
+
+    $birthdayStrip = array_values(array_map(function (array $b): array {
+        $kind = (string) ($b['kind'] ?? '');
+        $id = (int) ($b['id'] ?? 0);
+
+        $href = route('family.index');
+        if ($kind === 'person' && $id > 0 && (bool) ($b['is_child'] ?? false)) {
+            $href = route('family.children.edit', ['person' => $id]);
+        }
+        if ($kind === 'user' && $id > 0) {
+            if (Gate::allows('manage-users')) {
+                $href = route('admin.users.show', ['user' => $id]);
+            } elseif (auth()->check() && auth()->id() === $id) {
+                $href = route('profile.edit');
+            }
+        }
+
+        $avatarUrl = null;
+        if ($kind === 'user' && $id > 0) {
+            $avatarUrl = route('avatar.astro.imagePublic', ['user' => $id]);
+        } elseif ($kind === 'person') {
+            $path = trim((string) ($b['avatar_path'] ?? ''));
+            if ($path !== '') {
+                try {
+                    $avatarUrl = Storage::url($path);
+                } catch (Throwable $e) {
+                    $avatarUrl = null;
+                }
+            }
+        }
+
+        $b['href'] = $href;
+        $b['avatar_url'] = $avatarUrl;
+
+        return $b;
+    }, $birthdayStrip));
+
+    // Keep it compact.
+    $birthdayStrip = array_slice($birthdayStrip, 0, 12);
 
     $buildFamilyMoments = function (): array {
         $today = now();
@@ -563,6 +611,7 @@ Route::get('/home', function () {
         'latestAdds' => $latestAdds,
         'feed' => $feed,
         'nextBirthday' => $nextBirthday,
+        'birthdayStrip' => $birthdayStrip,
         'familyActivity' => $familyActivity,
     ]);
 

@@ -70,6 +70,9 @@
             animation: dashShimmer 900ms linear infinite;
         }
         @keyframes dashShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
     @endverbatim
 
@@ -85,7 +88,96 @@
 
             $familyActivity = $familyActivity ?? [];
             $activityItems = is_array($familyActivity) ? array_slice($familyActivity, 0, 3) : [];
+
+            /** @var array<int,array{href?:string,avatar_url?:string|null,id?:int,kind?:string,name?:string,initials?:string,next_date?:\Carbon\CarbonImmutable,days_remaining?:int}> $birthdayStrip */
+            $birthdayStrip = is_array($birthdayStrip ?? null) ? $birthdayStrip : [];
         @endphp
+
+        @if(!empty($birthdayStrip))
+            @php
+                $today = now()->startOfDay();
+                $count = count($birthdayStrip);
+
+                $labelForDays = function (int $days): string {
+                    if ($days <= 0) return 'Aujourd’hui';
+                    if ($days === 1) return 'Demain';
+                    return 'J+' . $days;
+                };
+            @endphp
+
+            <section class="dash-fade">
+                <div class="rounded-2xl bg-white px-3 py-3 ring-1 ring-black/5 shadow-sm">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="text-sm font-semibold text-[#0F172A]">Anniversaires</div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-xs font-semibold text-[#64748B]">{{ $count }} prochains</div>
+                            <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
+                        </div>
+                    </div>
+
+                    <div class="mt-2 relative">
+                        <div class="pointer-events-none absolute left-3 right-3 top-4 h-px bg-[#E2E8F0]"></div>
+                        <div class="pointer-events-none absolute left-3 top-4 -translate-y-1/2 flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-[#0F172A]"></span>
+                            <span class="text-[11px] font-semibold text-[#64748B]">Aujourd’hui</span>
+                        </div>
+
+                        <div class="no-scrollbar overflow-x-auto snap-x snap-mandatory">
+                            <div class="flex gap-2 pr-3 pl-12 pt-6 pb-1">
+                                @foreach($birthdayStrip as $b)
+                                    @php
+                                        $days = (int) ($b['days_remaining'] ?? 9999);
+                                        $name = trim((string) ($b['name'] ?? ''));
+                                        $initials = (string) ($b['initials'] ?? '?');
+                                        $label = $labelForDays($days);
+
+                                        $href = (string) ($b['href'] ?? route('family.index'));
+                                        $avatarUrl = $b['avatar_url'] ?? null;
+
+                                        $badge = $days <= 0
+                                            ? 'bg-emerald-600/10 text-emerald-900 ring-1 ring-emerald-600/20'
+                                            : 'bg-[#0F172A]/5 text-[#0F172A] ring-1 ring-black/5';
+
+                                        $dot = $days <= 0 ? 'bg-emerald-500' : 'bg-[#CBD5E1]';
+                                        $aria = $days <= 0
+                                            ? 'Anniversaire de ' . ($name !== '' ? $name : 'Quelqu’un') . " aujourd’hui"
+                                            : 'Anniversaire de ' . ($name !== '' ? $name : 'Quelqu’un') . ' dans ' . $days . ' jour' . ($days > 1 ? 's' : '');
+                                    @endphp
+
+                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[168px] rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A]/30" aria-label="{{ $aria }}">
+                                        <div class="relative rounded-2xl bg-white ring-1 ring-black/5 px-3 py-2.5 hover:shadow-sm transition-shadow">
+                                            <span class="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-full {{ $dot }} ring-2 ring-white"></span>
+
+                                            <div class="flex items-center gap-2">
+                                                @if(is_string($avatarUrl) && trim($avatarUrl) !== '')
+                                                    <img
+                                                        src="{{ $avatarUrl }}"
+                                                        alt=""
+                                                        class="h-9 w-9 rounded-full bg-[#0F172A]/5 ring-1 ring-black/5 object-cover shrink-0"
+                                                        loading="lazy"
+                                                    />
+                                                @else
+                                                    <div class="h-9 w-9 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                                                        {{ $initials }}
+                                                    </div>
+                                                @endif
+
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="text-sm font-semibold text-[#0F172A] truncate">{{ $name !== '' ? $name : 'Quelqu’un' }}</div>
+                                                    <div class="mt-1 inline-flex items-center h-6 px-2 rounded-full text-xs font-semibold {{ $badge }}">
+                                                        {{ $label }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        @endif
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 dash-fade">
             <div class="md:col-span-1 md:col-start-3 md:row-span-3">
