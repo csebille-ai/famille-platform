@@ -144,15 +144,15 @@
             }
         }"
     >
-        <div class="bg-white rounded-2xl shadow-sm p-3 md:p-4">
+        <div class="fam-card p-3 md:p-4">
             <div class="flex items-center gap-3">
                 <div class="flex-1">
                     <div class="flex items-center gap-2.5">
-                        <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1 flex-1">
+                        <div class="grid grid-cols-2 rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] p-1 flex-1">
                             <button
                                 type="button"
                                 class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
-                                :class="tab === 'films' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]'"
+                                :class="tab === 'films' ? 'bg-[color:var(--fam-primary)] text-white shadow-sm' : 'text-slate-700 hover:bg-[color:var(--fam-tint)]'"
                                 @click="setTab('films')"
                                 aria-controls="mediatheque-films"
                                 :aria-selected="tab === 'films'"
@@ -164,7 +164,7 @@
                             <button
                                 type="button"
                                 class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
-                                :class="tab === 'series' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]'"
+                                :class="tab === 'series' ? 'bg-[color:var(--fam-primary)] text-white shadow-sm' : 'text-slate-700 hover:bg-[color:var(--fam-tint)]'"
                                 @click="setTab('series')"
                                 aria-controls="mediatheque-series"
                                 :aria-selected="tab === 'series'"
@@ -178,7 +178,7 @@
                         <div class="shrink-0">
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-black/10 bg-white text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-slate-900 hover:bg-[color:var(--fam-tint)]"
                                 aria-label="Ajouter"
                                 onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker()"
                             >
@@ -193,7 +193,7 @@
 
         <div id="mediatheque-films" x-show="tab === 'films'" x-cloak>
             <template x-if="(films || []).length === 0">
-                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <div class="fam-card p-6">
                     <div class="text-base font-semibold text-gray-900">Aucun film pour l’instant</div>
                     <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez un premier film avec “+ Ajouter”.</div>
                 </div>
@@ -201,16 +201,20 @@
 
             <template x-if="(films || []).length > 0">
                 <div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                         <template x-for="v in (films || [])" :key="'film_' + v.id">
-                            <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div class="aspect-[2/3] bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                            <a :href="v.open_url" class="block rounded-2xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] active:scale-[0.99] transition" style="touch-action: manipulation">
+                                <div class="aspect-[2/3] bg-[color:var(--fam-surface-alt)] overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Film'" class="block w-full h-full object-cover" :style="{ objectPosition: focalPosition(v) }" loading="lazy" />
                                     </template>
                                     <template x-if="!v.poster_url">
                                         <i class="ph ph-film-strip text-slate-400" style="font-size:28px" aria-hidden="true"></i>
                                     </template>
+
+                                    <div class="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/45 ring-1 ring-white/10 flex items-center justify-center text-white/95">
+                                        <span aria-hidden="true">▶</span>
+                                    </div>
 
                                     <template x-if="!!formatDuration(v.duration_seconds)">
                                         <div class="absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-0.5 text-[0.7rem] font-semibold text-white">
@@ -229,7 +233,7 @@
                     <div class="mt-4 flex justify-center">
                         <button
                             type="button"
-                            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
+                            class="rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-[color:var(--fam-surface-alt)] disabled:opacity-50"
                             @click="loadMore('films')"
                             :disabled="!nextFilmsCursor || loadingFilms"
                             x-show="!!nextFilmsCursor"
@@ -245,10 +249,10 @@
                     </div>
 
                     <template x-if="loadingFilms">
-                        <div class="mt-4 grid grid-cols-2 gap-2">
+                        <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'film_skel_' + i">
-                                <div class="rounded-xl overflow-hidden bg-white shadow-sm">
-                                    <div class="aspect-[2/3] bg-slate-100 animate-pulse"></div>
+                                <div class="rounded-2xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10">
+                                    <div class="aspect-[2/3] bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
                                 </div>
                             </template>
                         </div>
@@ -259,7 +263,7 @@
 
         <div id="mediatheque-series" x-show="tab === 'series'" x-cloak>
             <template x-if="(series || []).length === 0">
-                <div class="bg-white rounded-2xl shadow-sm p-6">
+                <div class="fam-card p-6">
                     <div class="text-base font-semibold text-gray-900">Aucune série pour l’instant</div>
                     <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première série avec “+ Ajouter”.</div>
                 </div>
@@ -267,16 +271,20 @@
 
             <template x-if="(series || []).length > 0">
                 <div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                         <template x-for="v in (series || [])" :key="'series_' + v.id">
-                            <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div class="aspect-[2/3] bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                            <a :href="v.open_url" class="block rounded-2xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] active:scale-[0.99] transition" style="touch-action: manipulation">
+                                <div class="aspect-[2/3] bg-[color:var(--fam-surface-alt)] overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Série'" class="block w-full h-full object-cover" :style="{ objectPosition: focalPosition(v) }" loading="lazy" />
                                     </template>
                                     <template x-if="!v.poster_url">
                                         <i class="ph ph-television text-slate-400" style="font-size:28px" aria-hidden="true"></i>
                                     </template>
+
+                                    <div class="absolute top-2 right-2 w-10 h-10 rounded-full bg-black/45 ring-1 ring-white/10 flex items-center justify-center text-white/95">
+                                        <span aria-hidden="true">▶</span>
+                                    </div>
 
                                     <template x-if="!!formatDuration(v.duration_seconds)">
                                         <div class="absolute bottom-2 right-2 rounded-md bg-black/60 px-2 py-0.5 text-[0.7rem] font-semibold text-white">
@@ -295,7 +303,7 @@
                     <div class="mt-4 flex justify-center">
                         <button
                             type="button"
-                            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
+                            class="rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-[color:var(--fam-surface-alt)] disabled:opacity-50"
                             @click="loadMore('series')"
                             :disabled="!nextSeriesCursor || loadingSeries"
                             x-show="!!nextSeriesCursor"
@@ -311,10 +319,10 @@
                     </div>
 
                     <template x-if="loadingSeries">
-                        <div class="mt-4 grid grid-cols-2 gap-2">
+                        <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'series_skel_' + i">
-                                <div class="rounded-xl overflow-hidden bg-white shadow-sm">
-                                    <div class="aspect-[2/3] bg-slate-100 animate-pulse"></div>
+                                <div class="rounded-2xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10">
+                                    <div class="aspect-[2/3] bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
                                 </div>
                             </template>
                         </div>

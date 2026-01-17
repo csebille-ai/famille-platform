@@ -167,15 +167,15 @@
             }
         }"
     >
-        <div class="bg-white rounded-2xl shadow-sm p-3 md:p-4">
+        <div class="fam-card p-3 md:p-4">
             <div class="flex items-center gap-3">
                 <div class="flex-1">
                     <div class="flex items-center gap-2.5">
-                        <div class="grid grid-cols-2 rounded-xl border border-slate-200 bg-white p-1 flex-1">
+                        <div class="grid grid-cols-2 rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] p-1 flex-1">
                             <button
                                 type="button"
                                 class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
-                                :class="tab === 'photos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]'"
+                                :class="tab === 'photos' ? 'bg-[color:var(--fam-primary)] text-white shadow-sm' : 'text-slate-700 hover:bg-[color:var(--fam-tint)]'"
                                 @click="setTab('photos')"
                                 aria-controls="media-photos"
                                 :aria-selected="tab === 'photos'"
@@ -187,7 +187,7 @@
                             <button
                                 type="button"
                                 class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
-                                :class="tab === 'videos' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]'"
+                                :class="tab === 'videos' ? 'bg-[color:var(--fam-primary)] text-white shadow-sm' : 'text-slate-700 hover:bg-[color:var(--fam-tint)]'"
                                 @click="setTab('videos')"
                                 aria-controls="media-videos"
                                 :aria-selected="tab === 'videos'"
@@ -201,7 +201,7 @@
                         <div class="shrink-0">
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-black/10 bg-white text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-slate-900 hover:bg-[color:var(--fam-tint)]"
                                 aria-label="Ajouter"
                                 onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker()"
                             >
@@ -216,7 +216,7 @@
 
         <div id="media-photos" x-show="tab === 'photos'" x-cloak>
             <template x-if="(photos || []).length === 0">
-                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <div class="fam-card p-6">
                     <div class="text-base font-semibold text-gray-900">Aucune photo pour l’instant</div>
                     <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première photo avec “+ Ajouter”.</div>
                 </div>
@@ -228,12 +228,12 @@
                         <template x-for="(img, idx) in (photos || [])" :key="'photo_' + img.id">
                             <a
                                 :href="img.open_url"
-                                class="block overflow-hidden rounded-xl bg-slate-100 active:scale-[0.99] transition-transform"
+                                class="block overflow-hidden rounded-xl bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] active:scale-[0.99] transition"
                                 :aria-label="'Ouvrir photo ' + (idx + 1)"
                                 :data-shared-id="'media:' + img.id"
                                 :data-shared-src="img.thumb_url"
                             >
-                                <div class="aspect-square">
+                                <div class="aspect-square bg-[color:var(--fam-surface-alt)]">
                                     <img
                                         :src="img.thumb_url"
                                         alt=""
@@ -250,7 +250,7 @@
                     <div class="mt-4 flex justify-center">
                         <button
                             type="button"
-                            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
+                            class="rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-[color:var(--fam-surface-alt)] disabled:opacity-50"
                             @click="loadMore('photos')"
                             :disabled="!nextPhotosCursor || loadingPhotos"
                             x-show="!!nextPhotosCursor"
@@ -268,8 +268,8 @@
                     <template x-if="loadingPhotos">
                         <div class="mt-4 grid grid-cols-3 gap-2">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'img_skel_' + i">
-                                <div class="overflow-hidden rounded-xl bg-slate-100">
-                                    <div class="aspect-square bg-slate-200/60 animate-pulse"></div>
+                                <div class="overflow-hidden rounded-xl bg-[color:var(--fam-surface)] ring-1 ring-black/10">
+                                    <div class="aspect-square bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
                                 </div>
                             </template>
                         </div>
@@ -280,7 +280,7 @@
 
         <div id="media-videos" x-show="tab === 'videos'" x-cloak>
             <template x-if="(videos || []).length === 0">
-                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <div class="fam-card p-6">
                     <div class="text-base font-semibold text-gray-900">Aucune vidéo pour l’instant</div>
                     <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première vidéo avec “+ Ajouter”.</div>
                 </div>
@@ -290,8 +290,8 @@
                 <div>
                     <div class="grid grid-cols-2 gap-2">
                         <template x-for="v in (videos || [])" :key="'vid_' + v.id">
-                            <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-white shadow-sm">
-                                <div class="aspect-video bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                            <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] transition">
+                                <div class="aspect-video bg-[color:var(--fam-surface-alt)] overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="block w-full h-full object-cover" :style="{ objectPosition: focalPosition(v) }" loading="lazy" />
                                     </template>
@@ -322,7 +322,7 @@
                     <div class="mt-4 flex justify-center">
                         <button
                             type="button"
-                            class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900 disabled:opacity-50"
+                            class="rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-[color:var(--fam-surface-alt)] disabled:opacity-50"
                             @click="loadMore('videos')"
                             :disabled="!nextVideosCursor || loadingVideos"
                             x-show="!!nextVideosCursor"
@@ -340,11 +340,11 @@
                     <template x-if="loadingVideos">
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'vid_skel_' + i">
-                                <div class="rounded-xl overflow-hidden bg-white shadow-sm">
-                                    <div class="aspect-video bg-slate-100 animate-pulse"></div>
+                                <div class="rounded-xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10">
+                                    <div class="aspect-video bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
                                     <div class="px-2 py-2">
-                                        <div class="h-3 w-2/3 bg-slate-100 animate-pulse rounded"></div>
-                                        <div class="mt-2 h-3 w-1/2 bg-slate-100 animate-pulse rounded"></div>
+                                        <div class="h-3 w-2/3 bg-[color:var(--fam-surface-alt)] animate-pulse rounded"></div>
+                                        <div class="mt-2 h-3 w-1/2 bg-[color:var(--fam-surface-alt)] animate-pulse rounded"></div>
                                     </div>
                                 </div>
                             </template>

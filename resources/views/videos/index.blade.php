@@ -5,7 +5,7 @@
     }
 @endphp
 
-<x-app-layout pageBgClass="bg-slate-950">
+<x-app-layout pageBgClass="fam-page-bg">
     <script type="application/json" id="mediatheque-initial-tab">@json($initialTab)</script>
     <script type="application/json" id="mediatheque-films-items">@json($filmsItems ?? [])</script>
     <script type="application/json" id="mediatheque-series-items">@json($seriesItems ?? [])</script>
@@ -13,7 +13,7 @@
     <script type="application/json" id="mediatheque-series-next-cursor">@json($seriesNextCursor ?? null)</script>
 
     <div
-        class="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-6 space-y-4 text-white"
+        class="max-w-6xl mx-auto px-6 pt-4 pb-6 space-y-4"
         x-data="{
             tab: 'films',
             pageSize: {{ (int) ($pageSize ?? 24) }},
@@ -132,15 +132,15 @@
         }"
     >
         @if (session('status'))
-            <div class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 p-4 text-sm text-white/90">
+            <div class="fam-card p-4 text-sm text-slate-700">
                 {{ session('status') }}
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 p-4">
-                <div class="text-sm font-semibold text-red-400">Erreur</div>
-                <ul class="mt-2 space-y-1 text-sm text-red-300">
+            <div class="fam-card p-4">
+                <div class="text-sm font-semibold text-red-700">Erreur</div>
+                <ul class="mt-2 space-y-1 text-sm text-red-700">
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
                     @endforeach
@@ -148,15 +148,15 @@
             </div>
         @endif
 
-        <div class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 p-3 md:p-4">
+        <div class="fam-card p-3 md:p-4">
             <div class="flex items-center gap-3">
                 <div class="flex-1">
                     <div class="flex items-center gap-2.5">
-                        <div class="grid grid-cols-2 rounded-xl border border-white/10 bg-slate-950/40 p-1 flex-1">
+                        <div class="grid grid-cols-2 rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] p-1 flex-1">
                             <button
                                 type="button"
                                 class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
-                                :class="tab === 'films' ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5'"
+                                :class="tab === 'films' ? 'bg-[color:var(--fam-primary)] text-white shadow-sm' : 'text-slate-700 hover:bg-[color:var(--fam-tint)]'"
                                 x-on:click="setTab('films')"
                                 aria-controls="mediatheque-films"
                                 :aria-selected="tab === 'films'"
@@ -168,7 +168,7 @@
                             <button
                                 type="button"
                                 class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
-                                :class="tab === 'series' ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5'"
+                                :class="tab === 'series' ? 'bg-[color:var(--fam-primary)] text-white shadow-sm' : 'text-slate-700 hover:bg-[color:var(--fam-tint)]'"
                                 x-on:click="setTab('series')"
                                 aria-controls="mediatheque-series"
                                 :aria-selected="tab === 'series'"
@@ -182,7 +182,7 @@
                         <div class="shrink-0">
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-800/60 text-white ring-1 ring-white/10 hover:bg-slate-800/80"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-slate-900 hover:bg-[color:var(--fam-tint)]"
                                 aria-label="Ajouter"
                                 x-on:click.prevent="window.openGlobalUploadPicker && window.openGlobalUploadPicker({ video_kind: (tab === 'series' ? 'serie' : 'film'), return: (window.location.pathname + window.location.search + window.location.hash) })"
                             >
@@ -197,9 +197,9 @@
 
         <div id="mediatheque-films" x-show="tab === 'films'" x-cloak>
             <template x-if="(films || []).length === 0">
-                <div class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 p-6">
-                    <div class="text-base font-semibold text-white">Aucun film pour l’instant</div>
-                    <div class="microcopy text-sm text-white/60 mt-1">Ajoutez un premier film avec “+ Ajouter”.</div>
+                <div class="fam-card p-6">
+                    <div class="text-base font-semibold text-gray-900">Aucun film pour l’instant</div>
+                    <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez un premier film avec “+ Ajouter”.</div>
                 </div>
             </template>
 
@@ -207,13 +207,13 @@
                 <div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                         <template x-for="v in (films || [])" :key="'film_' + v.id">
-                            <a :href="v.open_url" class="block rounded-2xl overflow-hidden bg-slate-900/40 ring-1 ring-white/10 active:scale-[0.99] transition-transform" style="touch-action: manipulation">
-                                <div class="aspect-[2/3] bg-black/40 overflow-hidden flex items-center justify-center relative">
+                            <a :href="v.open_url" class="block rounded-2xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] active:scale-[0.99] transition" style="touch-action: manipulation">
+                                <div class="aspect-[2/3] bg-[color:var(--fam-surface-alt)] overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Film'" class="block w-full h-full object-cover" loading="lazy" />
                                     </template>
                                     <template x-if="!v.poster_url">
-                                        <i class="ph ph-film-slate text-white/40" style="font-size:28px" aria-hidden="true"></i>
+                                        <i class="ph ph-film-slate text-slate-400" style="font-size:28px" aria-hidden="true"></i>
                                     </template>
 
                                     <div class="absolute top-2 left-2 rounded-full bg-black/55 px-2 py-1 text-[0.68rem] font-semibold text-white/90 ring-1 ring-white/10">
@@ -241,7 +241,7 @@
                     <div class="mt-4 flex justify-center">
                         <button
                             type="button"
-                            class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                            class="rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-[color:var(--fam-surface-alt)] disabled:opacity-50"
                             x-on:click="loadMore('films')"
                             :disabled="!nextFilmsCursor || loadingFilms"
                             x-show="!!nextFilmsCursor"
@@ -249,7 +249,7 @@
                             <span class="inline-flex items-center gap-2">
                                 <span x-show="!loadingFilms">Charger plus</span>
                                 <span x-show="loadingFilms" class="inline-flex items-center gap-2">
-                                    <i class="ph ph-circle-notch animate-spin text-white/70" style="font-size:16px" aria-hidden="true"></i>
+                                    <i class="ph ph-circle-notch animate-spin text-slate-600" style="font-size:16px" aria-hidden="true"></i>
                                     Chargement…
                                 </span>
                             </span>
@@ -259,11 +259,11 @@
                     <template x-if="loadingFilms">
                         <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'film_skel_' + i">
-                                <div class="rounded-2xl overflow-hidden bg-slate-900/40 ring-1 ring-white/10">
-                                    <div class="aspect-[2/3] bg-white/5 animate-pulse"></div>
+                                <div class="rounded-2xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10">
+                                    <div class="aspect-[2/3] bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
                                     <div class="px-3 py-3">
-                                        <div class="h-3 w-2/3 bg-white/5 animate-pulse rounded"></div>
-                                        <div class="mt-2 h-3 w-1/2 bg-white/5 animate-pulse rounded"></div>
+                                        <div class="h-3 w-2/3 bg-[color:var(--fam-surface-alt)] animate-pulse rounded"></div>
+                                        <div class="mt-2 h-3 w-1/2 bg-[color:var(--fam-surface-alt)] animate-pulse rounded"></div>
                                     </div>
                                 </div>
                             </template>
@@ -275,9 +275,9 @@
 
         <div id="mediatheque-series" x-show="tab === 'series'" x-cloak>
             <template x-if="(series || []).length === 0">
-                <div class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 p-6">
-                    <div class="text-base font-semibold text-white">Aucune série pour l’instant</div>
-                    <div class="microcopy text-sm text-white/60 mt-1">Ajoutez une première série avec “+ Ajouter”.</div>
+                <div class="fam-card p-6">
+                    <div class="text-base font-semibold text-gray-900">Aucune série pour l’instant</div>
+                    <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première série avec “+ Ajouter”.</div>
                 </div>
             </template>
 
@@ -285,13 +285,13 @@
                 <div>
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                         <template x-for="v in (series || [])" :key="'series_' + v.id">
-                            <a :href="v.open_url" class="block rounded-2xl overflow-hidden bg-slate-900/40 ring-1 ring-white/10 active:scale-[0.99] transition-transform" style="touch-action: manipulation">
-                                <div class="aspect-[2/3] bg-black/40 overflow-hidden flex items-center justify-center relative">
+                            <a :href="v.open_url" class="block rounded-2xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] active:scale-[0.99] transition" style="touch-action: manipulation">
+                                <div class="aspect-[2/3] bg-[color:var(--fam-surface-alt)] overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Série'" class="block w-full h-full object-cover" loading="lazy" />
                                     </template>
                                     <template x-if="!v.poster_url">
-                                        <i class="ph ph-film-slate text-white/40" style="font-size:28px" aria-hidden="true"></i>
+                                        <i class="ph ph-film-slate text-slate-400" style="font-size:28px" aria-hidden="true"></i>
                                     </template>
 
                                     <div class="absolute top-2 left-2 rounded-full bg-black/55 px-2 py-1 text-[0.68rem] font-semibold text-white/90 ring-1 ring-white/10">
@@ -319,7 +319,7 @@
                     <div class="mt-4 flex justify-center">
                         <button
                             type="button"
-                            class="rounded-2xl bg-slate-900/60 ring-1 ring-white/10 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                            class="rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] px-4 py-2 text-sm font-semibold text-gray-900 hover:bg-[color:var(--fam-surface-alt)] disabled:opacity-50"
                             x-on:click="loadMore('series')"
                             :disabled="!nextSeriesCursor || loadingSeries"
                             x-show="!!nextSeriesCursor"
@@ -327,7 +327,7 @@
                             <span class="inline-flex items-center gap-2">
                                 <span x-show="!loadingSeries">Charger plus</span>
                                 <span x-show="loadingSeries" class="inline-flex items-center gap-2">
-                                    <i class="ph ph-circle-notch animate-spin text-white/70" style="font-size:16px" aria-hidden="true"></i>
+                                    <i class="ph ph-circle-notch animate-spin text-slate-600" style="font-size:16px" aria-hidden="true"></i>
                                     Chargement…
                                 </span>
                             </span>
@@ -337,11 +337,11 @@
                     <template x-if="loadingSeries">
                         <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 md:gap-4">
                             <template x-for="i in Array.from({ length: skeletonCount })" :key="'series_skel_' + i">
-                                <div class="rounded-2xl overflow-hidden bg-slate-900/40 ring-1 ring-white/10">
-                                    <div class="aspect-[2/3] bg-white/5 animate-pulse"></div>
+                                <div class="rounded-2xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10">
+                                    <div class="aspect-[2/3] bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
                                     <div class="px-3 py-3">
-                                        <div class="h-3 w-2/3 bg-white/5 animate-pulse rounded"></div>
-                                        <div class="mt-2 h-3 w-1/2 bg-white/5 animate-pulse rounded"></div>
+                                        <div class="h-3 w-2/3 bg-[color:var(--fam-surface-alt)] animate-pulse rounded"></div>
+                                        <div class="mt-2 h-3 w-1/2 bg-[color:var(--fam-surface-alt)] animate-pulse rounded"></div>
                                     </div>
                                 </div>
                             </template>
