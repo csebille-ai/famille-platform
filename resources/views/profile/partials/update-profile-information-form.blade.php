@@ -62,7 +62,7 @@
             };
         @endphp
 
-        <div id="astro-birth" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 scroll-mt-28">
+        <div id="astro-birth" class="rounded-2xl border border-black/10 bg-white p-4 scroll-mt-28">
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <div class="text-sm font-semibold text-slate-900">Naissance (pour l’astro)</div>

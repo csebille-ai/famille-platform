@@ -107,7 +107,7 @@
                 <button
                     type="button"
                     id="chatAttachBtn"
-                    class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]"
                     aria-label="Ajouter"
                     title="Ajouter"
                 >
@@ -182,7 +182,7 @@
                     <button
                         type="button"
                         id="chatBackBtn"
-                        class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]"
                         aria-label="Retour"
                         title="Retour"
                     >
@@ -202,7 +202,7 @@
                         <button
                             type="button"
                             id="chatVisioBtn"
-                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)] disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label="Appel vidéo"
                             title="{{ $visioAvailable ? 'Appel vidéo' : 'Indisponible' }}"
                             {{ $visioAvailable ? '' : 'disabled' }}
@@ -214,7 +214,7 @@
                         <button
                             type="button"
                             id="chatSearchBtn"
-                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]"
                             aria-label="Rechercher"
                             title="Rechercher"
                         >
@@ -224,7 +224,7 @@
                         <button
                             type="button"
                             id="chatInfoBtn"
-                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]"
                             aria-label="Infos"
                             title="Infos"
                         >
@@ -260,7 +260,7 @@
                     </button>
 
                     <div id="chatMessages" class="flex flex-col gap-2.5 sm:gap-3 p-4 sm:p-6">
-                        <div id="chatNotifBanner" class="hidden rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div id="chatNotifBanner" class="hidden rounded-2xl border border-black/10 bg-white p-4">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <div class="text-sm font-semibold text-gray-900">Activer les notifications</div>
@@ -271,7 +271,7 @@
                             </div>
                             <div class="mt-3 flex items-center gap-2">
                                 <button type="button" id="chatNotifPrimary" class="inline-flex items-center justify-center rounded-full bg-slate-900 text-white px-4 py-2 text-sm font-semibold">Activer</button>
-                                <button type="button" id="chatNotifLater" class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 px-4 py-2 text-sm font-semibold">Plus tard</button>
+                                <button type="button" id="chatNotifLater" class="inline-flex items-center justify-center rounded-full border border-black/10 bg-white text-slate-700 px-4 py-2 text-sm font-semibold">Plus tard</button>
                             </div>
                         </div>
                     @if(($messages ?? collect())->count() === 0)
@@ -305,7 +305,7 @@
 
                             @if($dayKey && $dayKey !== $prevDay)
                                 <div class="py-2 flex justify-center">
-                                    <div class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1">
+                                    <div class="text-xs text-slate-500 bg-white border border-black/10 rounded-full px-3 py-1">
                                         {{ $dayLabel }}
                                     </div>
                                 </div>
@@ -391,7 +391,7 @@
                                                     </div>
                                                 </button>
                                             @elseif ($link)
-                                                <div class="rounded-xl border border-slate-200 {{ $isMe ? 'bg-white/10' : 'bg-slate-50' }} p-3">
+                                                <div class="rounded-xl border border-black/10 {{ $isMe ? 'bg-white/10' : 'bg-white' }} p-3">
                                                     <div class="text-sm font-semibold {{ $isMe ? 'text-white' : 'text-gray-900' }}">{{ $link['title'] }}</div>
                                                     <div class="mt-0.5 text-xs {{ $isMe ? 'text-white/80' : 'text-slate-500' }}">{{ $link['domain'] }}</div>
                                                     <div class="mt-3 flex items-center gap-2">
@@ -419,7 +419,7 @@
                         <button
                             type="button"
                             id="chatAttachBtnDesktop"
-                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]"
                             aria-label="Ajouter"
                             title="Ajouter"
                         >
@@ -495,7 +495,7 @@
             <div class="absolute inset-x-0 bottom-0 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:top-24 sm:bottom-auto w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl p-4 shadow-2xl">
                 <div class="flex items-center justify-between">
                     <div class="text-sm font-semibold text-gray-900">Participants</div>
-                    <button type="button" id="chatInfoClose" class="w-9 h-9 rounded-full inline-flex items-center justify-center text-slate-600 hover:bg-slate-50" aria-label="Fermer" title="Fermer">✕</button>
+                    <button type="button" id="chatInfoClose" class="w-9 h-9 rounded-full inline-flex items-center justify-center text-slate-600 hover:bg-[color:rgba(14,165,160,0.10)]" aria-label="Fermer" title="Fermer">✕</button>
                 </div>
                 <div class="mt-1 text-xs text-slate-500"><span id="chatInfoCount">0</span> en ligne</div>
                 <div id="chatInfoList" class="mt-3 space-y-2"></div>
@@ -524,20 +524,20 @@
             <div id="chatQuickTypeMenuBackdrop" class="absolute inset-0"></div>
             <div id="chatQuickTypeMenuPanel" role="menu" aria-label="Actions suggestion" class="absolute min-w-[14rem] rounded-2xl border border-slate-200 bg-white shadow-xl p-1">
                 <div id="chatQuickTypeMenuMain">
-                    <button type="button" data-qt-action="insert" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Insérer</button>
-                    <button type="button" data-qt-action="copy" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Copier</button>
-                    <button type="button" data-qt-action="pin" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Épingler</button>
-                    <button type="button" data-qt-action="unpin" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Désépingler</button>
+                    <button type="button" data-qt-action="insert" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Insérer</button>
+                    <button type="button" data-qt-action="copy" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Copier</button>
+                    <button type="button" data-qt-action="pin" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Épingler</button>
+                    <button type="button" data-qt-action="unpin" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Désépingler</button>
                     <div class="h-px bg-slate-100 my-1"></div>
-                    <button type="button" data-qt-action="remove_recent" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Retirer des récents</button>
+                    <button type="button" data-qt-action="remove_recent" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Retirer des récents</button>
                     <button type="button" data-qt-action="hide" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Masquer</button>
                     <div class="h-px bg-slate-100 my-1"></div>
-                    <button type="button" data-qt-action="manage_hidden" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Gérer les masqués…</button>
+                    <button type="button" data-qt-action="manage_hidden" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Gérer les masqués…</button>
                 </div>
 
                 <div id="chatQuickTypeMenuHidden" class="hidden">
                     <div class="flex items-center justify-between gap-2 px-2 py-2">
-                        <button type="button" data-qt-action="hidden_back" class="rounded-xl px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-50">← Retour</button>
+                        <button type="button" data-qt-action="hidden_back" class="rounded-xl px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">← Retour</button>
                         <div class="text-sm font-semibold text-slate-900">Masqués</div>
                         <button type="button" data-qt-action="hidden_clear" class="rounded-xl px-2 py-1 text-sm font-semibold text-red-600 hover:bg-red-50">Tout rétablir</button>
                     </div>
@@ -1052,7 +1052,7 @@
                         const pinned = isPinnedSuggestion(label);
                         const cls = selected
                             ? 'bg-slate-900 text-white border-slate-900'
-                            : (pinned ? 'bg-amber-50 text-slate-900 border-amber-200 hover:bg-amber-100' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50');
+                            : (pinned ? 'bg-amber-50 text-slate-900 border-amber-200 hover:bg-amber-100' : 'bg-white text-slate-700 border-black/10 hover:bg-[color:rgba(14,165,160,0.10)]');
                         const esc = String(label)
                             .replace(/&/g, '&amp;')
                             .replace(/</g, '&lt;')
@@ -1128,7 +1128,7 @@
                         return `
                             <div class="flex items-center justify-between gap-2 px-2 py-1">
                                 <div class="text-sm text-slate-900 truncate max-w-[12rem]">${esc}</div>
-                                <button type="button" data-qt-action="unhide" class="shrink-0 rounded-xl px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-50">Rétablir</button>
+                                <button type="button" data-qt-action="unhide" class="shrink-0 rounded-xl px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">Rétablir</button>
                             </div>
                         `;
                     })
@@ -2037,7 +2037,7 @@
                 sep.dataset.dayKey = dayKey;
 
                 const pill = document.createElement('div');
-                pill.className = 'text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-full px-3 py-1';
+                pill.className = 'text-xs text-slate-500 bg-white border border-black/10 rounded-full px-3 py-1';
                 pill.textContent = label;
 
                 sep.appendChild(pill);
@@ -2205,7 +2205,7 @@
                     const link = parseLinkCardBody(body);
                     if (link) {
                         const card = document.createElement('div');
-                        card.className = `rounded-xl border border-slate-200 ${isMe ? 'bg-white/10' : 'bg-slate-50'} p-3`;
+                        card.className = `rounded-xl border border-black/10 ${isMe ? 'bg-white/10' : 'bg-white'} p-3`;
 
                         const t = document.createElement('div');
                         t.className = `text-sm font-semibold ${isMe ? 'text-white' : 'text-gray-900'}`;
@@ -2227,7 +2227,7 @@
 
                         const copy = document.createElement('button');
                         copy.type = 'button';
-                        copy.className = 'inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700';
+                        copy.className = 'inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700';
                         copy.textContent = 'Copier le lien';
                         copy.dataset.copyLink = String(link.url || '');
 

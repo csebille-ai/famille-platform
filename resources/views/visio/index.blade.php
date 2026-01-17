@@ -50,7 +50,7 @@
 
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-slate-50"
+                        class="inline-flex items-center justify-center rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-[color:rgba(14,165,160,0.10)]"
                         @click="if(url){ navigator.clipboard?.writeText(url) }"
                         :disabled="!url"
                         :class="!url ? 'opacity-50 cursor-not-allowed' : ''"
@@ -83,7 +83,7 @@
 
                     <button
                         type="button"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-slate-50"
+                        class="inline-flex items-center justify-center rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-[color:rgba(14,165,160,0.10)]"
                         x-data
                         @click="navigator.clipboard?.writeText('{{ $visioUrl }}')"
                     >

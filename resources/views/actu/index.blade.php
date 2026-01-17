@@ -85,7 +85,7 @@
                 <button
                     type="button"
                     id="actu-more"
-                    class="w-full h-11 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-gray-900 hover:bg-slate-50"
+                    class="w-full h-11 rounded-xl border border-black/10 bg-white text-sm font-semibold text-gray-900 transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]"
                 >
                     Charger plus
                 </button>
@@ -249,7 +249,7 @@
             const bucketClasses = (active) => {
                 return active
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                    : 'border-slate-200 bg-white text-gray-900 hover:bg-slate-50';
+                    : 'border-black/10 bg-white text-gray-900 hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]';
             };
 
             const renderBuckets = () => {
@@ -264,7 +264,7 @@
             const renderHeroSkeleton = () => {
                 if (!elHero) return;
                 elHero.innerHTML = `
-                    <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden animate-pulse">
+                    <div class="rounded-2xl border border-black/10 bg-white overflow-hidden animate-pulse">
                         <div class="aspect-[16/9] bg-slate-200"></div>
                         <div class="p-4 space-y-3">
                             <div class="h-5 w-28 rounded bg-slate-200"></div>
@@ -337,7 +337,7 @@
                 const meta = parts.filter(Boolean).join(' · ');
 
                 elHero.innerHTML = `
-                    <a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                    <a href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer" class="block rounded-2xl border border-black/10 bg-white overflow-hidden hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         ${img}
                         <div class="p-4">
                             <div class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border border-amber-200 bg-amber-50 text-amber-800">À LA UNE</div>
@@ -365,7 +365,7 @@
                     const excerpt = it.excerpt ? escapeHtml(it.excerpt) : '';
 
                     return `
-                        <a href="${escapeHtml(it.url || '#')}" target="_blank" rel="noopener noreferrer" class="block rounded-2xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
+                        <a href="${escapeHtml(it.url || '#')}" target="_blank" rel="noopener noreferrer" class="block rounded-2xl border border-black/10 bg-white p-3 hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                             <div class="flex gap-3">
                                 <div class="h-16 w-16 rounded-xl overflow-hidden bg-slate-100 shrink-0">${img}</div>
                                 <div class="min-w-0 flex-1">

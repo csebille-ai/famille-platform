@@ -35,13 +35,13 @@
                 <div class="grid grid-cols-3 gap-3">
                     @foreach ((array) ($reading->cards ?? []) as $i => $c)
                         @php $p = $pos[(int) $i] ?? ['row' => 1, 'col' => 1]; @endphp
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4" style="grid-row: {{ $p['row'] }}; grid-column: {{ $p['col'] }};">
+                        <div class="rounded-xl border border-black/10 bg-white px-4 py-4" style="grid-row: {{ $p['row'] }}; grid-column: {{ $p['col'] }};">
                             @if (!empty($c['file']))
                                 <div class="flex justify-center">
                                     <img
                                         src="{{ 'https://opanoma.fr/tarot/' . $c['file'] }}"
                                         alt="{{ $c['name'] ?? '' }}"
-                                        class="h-56 w-auto max-w-full rounded-lg border border-slate-200 bg-white object-contain"
+                                        class="h-56 w-auto max-w-full rounded-lg border border-black/10 bg-white object-contain"
                                         style="transform: {{ !empty($c['reversed']) ? 'rotate(180deg)' : 'none' }};"
                                         loading="lazy"
                                     />
@@ -55,13 +55,13 @@
             @else
                 <div class="grid grid-cols-3 gap-3">
                     @foreach ((array) ($reading->cards ?? []) as $c)
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                        <div class="rounded-xl border border-black/10 bg-white px-4 py-4">
                         @if (!empty($c['file']))
                             <div class="flex justify-center">
                                 <img
                                     src="{{ 'https://opanoma.fr/tarot/' . $c['file'] }}"
                                     alt="{{ $c['name'] ?? '' }}"
-                                    class="h-56 w-auto max-w-full rounded-lg border border-slate-200 bg-white object-contain"
+                                    class="h-56 w-auto max-w-full rounded-lg border border-black/10 bg-white object-contain"
                                     style="transform: {{ !empty($c['reversed']) ? 'rotate(180deg)' : 'none' }};"
                                     loading="lazy"
                                 />

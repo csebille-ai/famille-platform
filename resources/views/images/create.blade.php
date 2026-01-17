@@ -75,7 +75,7 @@
 
                 <div
                     class="border-2 border-dashed border-slate-200 rounded-2xl p-6"
-                    :class="isDragOver ? 'bg-slate-50' : 'bg-white'"
+                    :class="isDragOver ? 'bg-[color:rgba(14,165,160,0.10)]' : 'bg-white'"
                     x-on:dragover.prevent="isDragOver = true"
                     x-on:dragleave.prevent="isDragOver = false"
                     x-on:drop.prevent="isDragOver = false; setFileFromDrop($event)"
@@ -96,7 +96,7 @@
                         </div>
 
                         <template x-if="uploadFileName">
-                            <div class="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-gray-900">
+                            <div class="mt-4 inline-flex items-center gap-2 rounded-xl border border-black/10 bg-white px-3 py-2 text-sm text-gray-900">
                                 <span class="font-medium" x-text="uploadFileName"></span>
                                 <span class="text-slate-500" x-text="uploadFileSize"></span>
                             </div>

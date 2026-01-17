@@ -57,7 +57,7 @@
                         @if($showBack)
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-[color:var(--fam-text)] hover:bg-[color:var(--fam-surface-2)]"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]"
                                 aria-label="Retour"
                                 onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                             >
@@ -136,7 +136,7 @@
                         <div class="flex items-center me-2">
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-[color:var(--fam-text)] hover:bg-[color:var(--fam-surface-2)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25"
                                 aria-label="Retour"
                                 onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                             >

@@ -7,7 +7,7 @@
             $roleBadge = match ($role) {
                 'admin' => 'bg-violet-50 text-violet-700 border-violet-200',
                 'editor' => 'bg-sky-50 text-sky-700 border-sky-200',
-                default => 'bg-slate-50 text-slate-700 border-slate-200',
+                default => 'bg-white text-slate-700 border-black/10',
             };
 
             $inviteBadge = $user->invited_at
@@ -23,14 +23,14 @@
             <div class="flex items-start gap-3 min-w-0">
                 <a
                     href="{{ route('admin.users.index') }}"
-                    class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white text-slate-700 transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]"
                     aria-label="Retour"
                     title="Retour"
                 >
                     <i class="ph ph-caret-left" aria-hidden="true"></i>
                 </a>
 
-                <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-black/10 flex items-center justify-center shrink-0">
                     @if($hasAvatar)
                         <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
                     @else
@@ -107,7 +107,7 @@
                 </div>
             @endif
 
-            <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
+            <div class="rounded-2xl bg-white shadow-sm border border-black/10 p-4">
                 <div class="flex items-center justify-between">
                     <div class="text-sm font-semibold text-slate-900">Statut</div>
                 </div>
@@ -132,7 +132,7 @@
                 </div>
             </div>
 
-            <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4" x-data="{ showCoords: false }">
+            <div class="rounded-2xl bg-white shadow-sm border border-black/10 p-4" x-data="{ showCoords: false }">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-slate-900">Naissance (astro)</div>
                     <div class="text-xs text-slate-500">
@@ -142,19 +142,19 @@
                 </div>
 
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div class="rounded-2xl border border-black/10 bg-white px-4 py-3">
                         <div class="text-[11px] font-semibold text-slate-500">Date de naissance</div>
                         <div class="mt-1 text-sm font-semibold text-slate-900">{{ $dob ? $dob->format('Y-m-d') : '—' }}</div>
                     </div>
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <div class="rounded-2xl border border-black/10 bg-white px-4 py-3">
                         <div class="text-[11px] font-semibold text-slate-500">Heure de naissance</div>
                         <div class="mt-1 text-sm font-semibold text-slate-900">{{ $birthTime !== '' ? $birthTime : '—' }}</div>
                     </div>
-                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                    <div class="rounded-2xl border border-black/10 bg-white px-4 py-3">
                         <div class="text-[11px] font-semibold text-slate-500">Lieu</div>
                         <div class="mt-1 text-sm font-semibold text-slate-900">{{ $birthPlace !== '' ? $birthPlace : '—' }}</div>
                     </div>
-                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                    <div class="rounded-2xl border border-black/10 bg-white px-4 py-3">
                         <div class="text-[11px] font-semibold text-slate-500">Fuseau</div>
                         <div class="mt-1 text-sm font-semibold text-slate-900">{{ $tz }}</div>
                     </div>
@@ -162,7 +162,7 @@
 
                 <div class="mt-3 flex flex-wrap items-center gap-2">
                     @if($hasCoords)
-                        <button type="button" class="inline-flex items-center h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50" @click="showCoords = !showCoords">
+                        <button type="button" class="inline-flex items-center h-9 px-3 rounded-xl border border-black/10 bg-white text-slate-700 text-sm font-semibold transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]" @click="showCoords = !showCoords">
                             <span x-text="showCoords ? 'Masquer coords' : 'Afficher coords'"></span>
                         </button>
                         <div x-show="showCoords" x-transition.opacity.duration.120ms class="text-sm text-slate-700">
@@ -175,7 +175,7 @@
                 </div>
             </div>
 
-            <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
+            <div class="rounded-2xl bg-white shadow-sm border border-black/10 p-4">
                 <div class="text-sm font-semibold text-slate-900">Actions rapides</div>
 
                 <div class="mt-3 flex flex-wrap gap-2">
@@ -190,7 +190,7 @@
 
                     <button
                         type="button"
-                        class="inline-flex items-center h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                        class="inline-flex items-center h-9 px-3 rounded-xl border border-black/10 bg-white text-slate-700 text-sm font-semibold transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]"
                         data-copy-invite
                         data-url="{{ route('admin.users.inviteLink', $user) }}"
                     >
@@ -201,17 +201,17 @@
                 <div class="mt-2 text-xs text-slate-500" data-copy-status></div>
             </div>
 
-            <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
+            <div class="rounded-2xl bg-white shadow-sm border border-black/10 p-4">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-slate-900">Astro</div>
-                    <a href="{{ route('admin.users.astro', $user) }}" class="inline-flex items-center h-9 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50">
+                    <a href="{{ route('admin.users.astro', $user) }}" class="inline-flex items-center h-9 px-3 rounded-xl border border-black/10 bg-white text-slate-700 text-sm font-semibold transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         Voir la fiche astro
                     </a>
                 </div>
 
                 <div class="mt-3 grid gap-3 sm:grid-cols-3">
                     @foreach($pills as $p)
-                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                        <div class="rounded-2xl border border-black/10 bg-white px-4 py-3">
                             <div class="text-[11px] font-semibold text-slate-500">{{ $p['label'] }}</div>
                             <div class="mt-1 text-sm font-semibold {{ $p['missing'] ? 'text-slate-500' : 'text-slate-900' }}">{{ $p['value'] }}</div>
                         </div>

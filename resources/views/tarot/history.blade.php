@@ -29,7 +29,7 @@
             @if (($readings ?? null) && $readings->count())
                 <div class="space-y-3">
                     @foreach ($readings as $r)
-                        <a href="{{ route('tarot.history.show', $r) }}" class="block rounded-xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50">
+                        <a href="{{ route('tarot.history.show', $r) }}" class="block rounded-xl border border-black/10 bg-white px-4 py-3 hover:bg-[color:rgba(14,165,160,0.10)]">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <div class="text-sm font-semibold text-gray-900 truncate">{{ $short($r->question, 90) }}</div>
@@ -51,7 +51,7 @@
                     {{ $readings->links() }}
                 </div>
             @else
-                <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                <div class="rounded-xl border border-black/10 bg-white px-4 py-6 text-sm text-slate-500">
                     Aucun tirage enregistré pour l’instant.
                 </div>
             @endif

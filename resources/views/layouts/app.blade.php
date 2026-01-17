@@ -143,7 +143,7 @@
             }
 
             .ui-btn--secondary:hover {
-                background: var(--fam-surface-2);
+                background: var(--fam-surface-alt);
             }
 
             .ui-btn--danger {
@@ -350,7 +350,7 @@
             }
 
             .ui-chip:hover {
-                background: var(--fam-surface-2);
+                background: var(--fam-surface-alt);
                 color: var(--ui-text);
             }
 

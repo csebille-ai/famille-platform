@@ -28,7 +28,7 @@
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="mt-6 rounded-2xl border border-black/10 bg-white p-4">
             <div class="text-sm font-semibold text-slate-900">Naissance (pour l’astro)</div>
             <div class="microcopy mt-1 text-xs text-slate-500">Optionnel — tu peux aussi le remplir plus tard dans ton profil.</div>
 

@@ -200,16 +200,16 @@
                         </button>
 
                         <div
-                            class="absolute top-12 right-2 z-20 w-44 rounded-xl border border-slate-200 bg-white shadow-sm p-1"
+                            class="absolute top-12 right-2 z-20 w-44 rounded-xl border border-black/10 bg-white shadow-sm p-1"
                             x-show="menuOpen"
                             x-cloak
                         >
-                            <a href="{{ route('media.photos.show', $openParams) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-slate-50">Ouvrir</a>
-                            <a href="{{ route('cloud.files.download', $image) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-slate-50">Télécharger</a>
+                            <a href="{{ route('media.photos.show', $openParams) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-[color:rgba(14,165,160,0.10)]">Ouvrir</a>
+                            <a href="{{ route('cloud.files.download', $image) }}" class="block rounded-lg px-3 py-2 text-sm text-gray-900 hover:bg-[color:rgba(14,165,160,0.10)]">Télécharger</a>
                             @can('images-delete')
                                 <button
                                     type="button"
-                                    class="w-full text-left rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-slate-50"
+                                    class="w-full text-left rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-[color:rgba(14,165,160,0.10)]"
                                     x-on:click="menuOpen = false; confirmAction = '{{ route('images.destroy', $image) }}'; confirmOpen = true;"
                                 >
                                     Supprimer

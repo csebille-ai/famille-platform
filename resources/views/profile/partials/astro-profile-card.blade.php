@@ -68,7 +68,7 @@
         </div>
 
         <div class="flex flex-col gap-3">
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+            <div class="rounded-xl border border-black/10 bg-white p-3 sm:p-4">
                 <div class="text-xs text-slate-500">Ascendant</div>
                 <div class="mt-1 text-sm font-semibold text-slate-900">{{ $ascendant !== '' ? $ascendant : '—' }}</div>
             </div>
@@ -152,7 +152,7 @@
         <div class="mt-4" data-state>
             @if($status === 'ready' && $imageUrl !== '')
                 <div class="grid gap-4 sm:grid-cols-[minmax(0,260px)_1fr]">
-                    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    <div class="overflow-hidden rounded-2xl border border-black/10 bg-white">
                         <div class="relative w-full" style="padding-bottom:100%;">
                             <img src="{{ $displayUrl }}" data-external-src="{{ $imageUrl }}" alt="Avatar Astro" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
 
@@ -191,13 +191,13 @@
 
                         @if($canGenerateAvatarAstro)
                             <div class="mt-4 flex flex-wrap gap-2">
-                                <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
+                                <button type="button" data-action="regen" class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">Regénérer</button>
                             </div>
                         @endif
                     </div>
                 </div>
             @elseif($status === 'pending')
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="rounded-2xl border border-black/10 bg-white p-4">
                     <div class="text-sm font-semibold text-slate-900">Création en cours…</div>
                     <div class="microcopy mt-1 text-xs text-slate-500">Ça peut prendre ~10–30s.</div>
                     <div class="mt-3 h-3 w-full overflow-hidden rounded-full bg-slate-200">
@@ -215,7 +215,7 @@
                     @endif
                 </div>
             @else
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="rounded-2xl border border-black/10 bg-white p-4">
                     <div class="text-sm font-semibold text-slate-900">Pas encore généré</div>
                     <div class="microcopy mt-1 text-xs text-slate-500">Portrait 1:1 (tête + épaules), ambiance astro via palette (sans symboles, sans texte).</div>
                     @if($canGenerateAvatarAstro)
@@ -267,7 +267,7 @@
 
     const renderPending = () => {
         stateEl.innerHTML = `
-            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div class="rounded-2xl border border-black/10 bg-white p-4">
                 <div class="text-sm font-semibold text-slate-900">Création en cours…</div>
                 <div class="mt-1 text-xs text-slate-500">Ça peut prendre ~10–30s.</div>
                 <div class="mt-3 h-3 w-full overflow-hidden rounded-full bg-slate-200">
@@ -299,7 +299,7 @@
     const renderReady = (imageUrl, externalUrl = null) => {
         stateEl.innerHTML = `
             <div class="grid gap-4 sm:grid-cols-[minmax(0,260px)_1fr]">
-                <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                <div class="overflow-hidden rounded-2xl border border-black/10 bg-white">
                     <div class="relative w-full" style="padding-bottom:100%;">
                         <img src="${escapeHtml(imageUrl)}" data-external-src="${escapeHtml(externalUrl || '')}" alt="Avatar Astro" class="absolute inset-0 h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" onerror="if(this.dataset.triedExternal==='1'){this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');} else {this.dataset.triedExternal='1'; if(this.dataset.externalSrc){this.src=this.dataset.externalSrc;} else {this.style.display='none'; this.parentElement?.querySelector('[data-img-fail]')?.classList.remove('hidden');}}">
                         <div class="hidden absolute inset-0 p-3 text-center text-xs text-red-800" data-img-fail>
@@ -311,7 +311,7 @@
                 </div>
                 <div class="text-sm text-slate-600">
                     <div class="mt-4 flex flex-wrap gap-2">
-                        <button type="button" data-action="regen" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Regénérer</button>
+                        <button type="button" data-action="regen" class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">Regénérer</button>
                     </div>
                 </div>
             </div>

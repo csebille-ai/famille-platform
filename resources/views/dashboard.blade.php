@@ -25,14 +25,14 @@
                         $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
                     @endphp
 
-                    <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                    <a href="{{ $href }}" class="block rounded-2xl border border-black/10 bg-white overflow-hidden transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         @if($img !== '')
                             <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
                                 <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
                             </div>
                         @else
-                            <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
-                                <div class="h-10 w-10 rounded-2xl bg-slate-100 border border-slate-200"></div>
+                            <div class="aspect-[16/10] bg-[color:var(--fam-surface-alt)] flex items-center justify-center">
+                                <div class="h-10 w-10 rounded-2xl bg-white border border-black/10"></div>
                             </div>
                         @endif
 
@@ -50,7 +50,7 @@
                         </div>
                     </a>
                 @else
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                    <div class="rounded-xl border border-black/10 bg-white px-4 py-6 text-sm text-slate-500">
                         Rien à signaler aujourd’hui — juste nous.
                     </div>
                 @endif
@@ -101,7 +101,7 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                        <div class="rounded-xl border border-black/10 bg-white px-4 py-6 text-sm text-slate-500">
                             Aucune photo pour l’instant.
                         </div>
                     @endif
@@ -136,7 +136,7 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                        <div class="rounded-xl border border-black/10 bg-white px-4 py-6 text-sm text-slate-500">
                             Aucune vidéo pour l’instant.
                         </div>
                     @endif
@@ -184,14 +184,14 @@
                         $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
                     @endphp
 
-                    <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                    <a href="{{ $href }}" class="block rounded-2xl border border-black/10 bg-white overflow-hidden transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         @if($img !== '')
                             <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
                                 <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
                             </div>
                         @else
-                            <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
-                                <div class="h-10 w-10 rounded-2xl bg-slate-100 border border-slate-200"></div>
+                            <div class="aspect-[16/10] bg-[color:var(--fam-surface-alt)] flex items-center justify-center">
+                                <div class="h-10 w-10 rounded-2xl bg-white border border-black/10"></div>
                             </div>
                         @endif
 
@@ -219,14 +219,14 @@
                         $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
                     @endphp
 
-                    <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                    <a href="{{ $href }}" class="block rounded-2xl border border-black/10 bg-white overflow-hidden transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         @if($img !== '')
                             <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
                                 <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
                             </div>
                         @else
-                            <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
-                                <div class="h-10 w-10 rounded-2xl bg-slate-100 border border-slate-200"></div>
+                            <div class="aspect-[16/10] bg-[color:var(--fam-surface-alt)] flex items-center justify-center">
+                                <div class="h-10 w-10 rounded-2xl bg-white border border-black/10"></div>
                             </div>
                         @endif
 
@@ -254,14 +254,14 @@
                         $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
                     @endphp
 
-                    <a href="{{ $href }}" class="block rounded-2xl border border-slate-200 bg-white overflow-hidden hover:bg-slate-50">
+                    <a href="{{ $href }}" class="block rounded-2xl border border-black/10 bg-white overflow-hidden transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         @if($img !== '')
                             <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
                                 <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
                             </div>
                         @else
-                            <div class="aspect-[16/10] bg-slate-50 flex items-center justify-center">
-                                <div class="h-10 w-10 rounded-2xl bg-slate-100 border border-slate-200"></div>
+                            <div class="aspect-[16/10] bg-[color:var(--fam-surface-alt)] flex items-center justify-center">
+                                <div class="h-10 w-10 rounded-2xl bg-white border border-black/10"></div>
                             </div>
                         @endif
 
@@ -279,7 +279,7 @@
                 @endif
 
                 @if(empty($c1) && empty($c2) && empty($c3))
-                    <div class="md:col-span-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                    <div class="md:col-span-3 rounded-xl border border-black/10 bg-white px-4 py-6 text-sm text-slate-500">
                         Rien pour aujourd’hui. On se retrouve demain.
                     </div>
                 @endif

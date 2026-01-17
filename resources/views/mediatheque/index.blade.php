@@ -152,7 +152,7 @@
                             <button
                                 type="button"
                                 class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
-                                :class="tab === 'films' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
+                                :class="tab === 'films' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]'"
                                 @click="setTab('films')"
                                 aria-controls="mediatheque-films"
                                 :aria-selected="tab === 'films'"
@@ -164,7 +164,7 @@
                             <button
                                 type="button"
                                 class="rounded-lg px-3 text-center text-[0.72rem] font-semibold transition inline-flex items-center justify-center h-11"
-                                :class="tab === 'series' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'"
+                                :class="tab === 'series' ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]'"
                                 @click="setTab('series')"
                                 aria-controls="mediatheque-series"
                                 :aria-selected="tab === 'series'"
@@ -178,7 +178,7 @@
                         <div class="shrink-0">
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-900 hover:bg-slate-50"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-black/10 bg-white text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]"
                                 aria-label="Ajouter"
                                 onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker()"
                             >

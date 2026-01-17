@@ -93,15 +93,15 @@
 
         @if($upcomingCount > 0)
             <section class="dash-fade">
-                <div class="rounded-2xl bg-[color:var(--fam-surface)] px-3 py-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)]">
+                <div class="rounded-2xl bg-white px-3 py-3 border border-[color:var(--fam-border)] shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div class="text-sm font-semibold text-[color:var(--fam-text)]">Anniversaires</div>
-                        <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
+                        <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
                     </div>
 
                     <div class="mt-2 relative">
-                        <div class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[color:var(--fam-surface)] to-transparent"></div>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[color:var(--fam-surface)] to-transparent"></div>
+                        <div class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white to-transparent"></div>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent"></div>
 
                         <div class="no-scrollbar overflow-x-auto snap-x snap-mandatory">
                             <div class="flex gap-2 pr-2">
@@ -116,7 +116,7 @@
                                         $ageLabel = $b['age_label'] ?? null;
                                     @endphp
 
-                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border)] px-3 py-2.5 hover:bg-[color:var(--fam-surface)] hover:shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
+                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-white border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
                                         <div class="flex items-center justify-between gap-3">
                                             <div class="min-w-0 flex items-center gap-3">
                                                 <div class="relative h-9 w-9 shrink-0">
@@ -124,7 +124,7 @@
                                                         <img
                                                             src="{{ $avatarUrl }}"
                                                             alt=""
-                                                            class="h-9 w-9 rounded-full bg-black/5 border border-[color:var(--fam-border)] object-cover"
+                                                            class="h-9 w-9 rounded-full bg-black/5 border border-[color:var(--fam-border-soft)] object-cover"
                                                             loading="lazy"
                                                             onerror="this.style.display='none';var fb=this.parentElement.querySelector('[data-fallback]');if(fb){fb.style.display='flex';}"
                                                         />
@@ -161,10 +161,10 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 dash-fade">
 
-            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)]">
+            <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Actu famille</div>
-                    <a href="{{ route('moments.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
+                    <a href="{{ route('moments.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
                 </div>
 
                 @if(count($activityItems))
@@ -187,7 +187,7 @@
                             @endphp
 
                             <a href="{{ $href }}" class="block">
-                                <div class="group rounded-2xl bg-[color:var(--fam-surface-2)] px-3 py-2.5 border border-[color:var(--fam-border)] hover:bg-[color:var(--fam-surface)] hover:shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)] transition active:scale-[0.995]">
+                                <div class="group rounded-2xl bg-white px-3 py-2.5 border border-[color:var(--fam-border-soft)] hover:shadow-sm transition active:scale-[0.995]">
                                     <div class="flex items-start gap-3">
                                         <div class="mt-2 h-2.5 w-2.5 rounded-full {{ $dot }}"></div>
 
@@ -209,10 +209,10 @@
                 @endif
             </div>
 
-            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)]">
+            <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Photos récentes</div>
-                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
+                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
                 </div>
 
                 @php $photos = ($latestImages ?? collect())->take(6); @endphp
@@ -227,7 +227,7 @@
                                 data-shared-id="media:{{ (int) $img->id }}"
                                 data-shared-src="{{ route('images.view', $img) }}"
                             >
-                                <div class="aspect-square overflow-hidden rounded-2xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border)]" data-skel="img" data-loaded="0">
+                                <div class="aspect-square overflow-hidden rounded-2xl bg-white border border-[color:var(--fam-border-soft)]" data-skel="img" data-loaded="0">
                                     <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover opacity-0 transition-opacity duration-200" style="object-position: 50% 35%;" loading="lazy" onload="try{const w=this.closest('[data-skel=img]');if(w){w.dataset.loaded='1';this.style.opacity='1';}}catch(e){}" data-shared-id="media:{{ (int) $img->id }}" />
                                 </div>
                             </a>
@@ -238,10 +238,10 @@
                 @endif
             </div>
 
-            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 md:col-span-2 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)]">
+            <div class="rounded-2xl bg-white p-3 md:col-span-2 border border-[color:var(--fam-border)] shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Vidéos récentes</div>
-                    <a href="{{ route('mediatheque.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
+                    <a href="{{ route('mediatheque.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
                 </div>
 
                 @php $videos = ($latestVideos ?? collect())->take(6); @endphp
@@ -251,7 +251,7 @@
                         @foreach($videos as $v)
                             @php $dur = $fmtDuration($v->duration_seconds ?? null); @endphp
                             <a href="{{ route('videos.show', $v) }}" class="block" aria-label="Ouvrir vidéo">
-                                <div class="relative aspect-video overflow-hidden rounded-2xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border)]">
+                                <div class="relative aspect-video overflow-hidden rounded-2xl bg-white border border-[color:var(--fam-border-soft)]">
                                     <img src="{{ route('videos.poster', $v) }}" alt="" class="block h-full w-full object-cover" style="object-position: 50% 35%;" loading="lazy" />
 
                                     <div class="absolute inset-0 flex items-center justify-center">

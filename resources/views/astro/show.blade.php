@@ -198,7 +198,7 @@
                 <div class="relative flex items-center justify-between h-12">
                     <button
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white text-slate-800 hover:bg-[color:rgba(14,165,160,0.10)]"
                         aria-label="Retour"
                         onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                     >
@@ -209,7 +209,7 @@
                         <div class="text-[0.95rem] font-semibold text-slate-900">Fiche astro</div>
                     </div>
 
-                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-3 rounded-2xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">
+                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-3 rounded-2xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">
                         Modifier
                     </a>
                 </div>
@@ -293,7 +293,7 @@
                             $missing = ($val === '');
                             $text = $missing ? (string) ($c['fallback'] ?? '—') : $val;
                         @endphp
-                        <div class="inline-flex w-full items-center justify-center h-9 px-3 rounded-full border {{ $missing ? 'border-slate-200 bg-slate-50 text-slate-500' : 'border-slate-200 bg-white text-slate-900' }} text-sm font-semibold">
+                        <div class="inline-flex w-full items-center justify-center h-9 px-3 rounded-full border {{ $missing ? 'border-black/10 bg-white text-slate-500' : 'border-black/10 bg-white text-slate-900' }} text-sm font-semibold">
                             <span class="truncate">{{ $text }}</span>
                         </div>
                     @endforeach
@@ -379,7 +379,7 @@
                                 @endforelse
 
                                 @if($more > 0)
-                                    <button type="button" @click="openTalents = true" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm border border-slate-200 bg-white font-semibold text-slate-700 hover:bg-slate-50">
+                                    <button type="button" @click="openTalents = true" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm border border-black/10 bg-white font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">
                                         <span>Voir +</span>
                                         <i class="ph ph-caret-down text-slate-500" aria-hidden="true"></i>
                                     </button>
@@ -440,7 +440,7 @@
                         <div class="pt-2">
                             <div class="text-sm font-semibold text-slate-900">Actions</div>
                             <div class="mt-3 grid sm:grid-cols-2 gap-3">
-                                <a href="{{ $birthCtaUrl }}" class="inline-flex items-center justify-center h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">
+                                <a href="{{ $birthCtaUrl }}" class="inline-flex items-center justify-center h-10 px-4 rounded-xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">
                                     Modifier mes infos
                                 </a>
 
@@ -539,10 +539,10 @@
                                 </div>
                             </div>
                         @elseif(!is_array($natal) || empty($planetRows))
-                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div class="rounded-xl border border-black/10 bg-white p-4">
                                 <div class="text-sm font-semibold text-slate-900">La carte n’est pas disponible pour le moment.</div>
                                 <div class="mt-3">
-                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg border border-slate-200 bg-white text-slate-800 text-sm font-semibold hover:bg-slate-50">Modifier</a>
+                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">Modifier</a>
                                 </div>
                             </div>
                         @else
@@ -641,7 +641,7 @@
                                     </div>
 
                                     <div class="mt-3 grid gap-2">
-                                        <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                        <div class="rounded-2xl border border-black/10 bg-white px-4 py-3">
                                             <div class="text-[11px] font-semibold text-slate-500">Position</div>
                                             <div class="mt-1 text-sm font-semibold text-slate-900" x-text="planet && planet.sign ? (planet.sign + ' ' + planet.deg_label) : '—'"></div>
                                         </div>

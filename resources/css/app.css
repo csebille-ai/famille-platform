@@ -7,8 +7,11 @@
 		/* Famille Teal — warm + family (Jan 2026 palette) */
 		--fam-bg: #F6F2EC;
 		--fam-surface: #FFFFFF;
-		--fam-surface-2: #F6F4EF;
-		--fam-border: #E8E2D8;
+		/* Use sparingly; main cards should stay pure white */
+		--fam-surface-2: #FFFFFF;
+		--fam-surface-alt: #FAF7F2;
+		--fam-border: rgba(15, 23, 42, 0.10);
+		--fam-border-soft: rgba(15, 23, 42, 0.06);
 		--fam-text: #0F172A;
 		--fam-muted: #475569;
 		--fam-primary: #0EA5A0;
