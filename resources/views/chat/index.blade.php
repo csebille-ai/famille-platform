@@ -114,15 +114,21 @@
                     ＋
                 </button>
 
-                <div class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2">
-                    <textarea
-                        id="body"
-                        name="body"
-                        rows="1"
-                        class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm leading-6 max-h-28"
-                        placeholder="Écrire un message…"
-                        required
-                    >{{ old('body') }}</textarea>
+                <div class="flex-1 min-w-0">
+                    <div id="chatQuickType" class="hidden mb-2">
+                        <div id="chatQuickTypeList" role="listbox" aria-label="Suggestions" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1"></div>
+                    </div>
+
+                    <div class="rounded-full border border-slate-200 bg-white px-4 py-2">
+                        <textarea
+                            id="body"
+                            name="body"
+                            rows="1"
+                            class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm leading-6 max-h-28"
+                            placeholder="Écrire un message…"
+                            required
+                        >{{ old('body') }}</textarea>
+                    </div>
                 </div>
 
                 <input type="file" id="chatAttachInput" class="hidden" accept="image/*,video/*" />
@@ -405,15 +411,21 @@
                             ＋
                         </button>
 
-                        <div class="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2">
-                            <textarea
-                                id="bodyDesktop"
-                                name="body"
-                                rows="1"
-                                class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm leading-6"
-                                placeholder="Écrire un message…"
-                                required
-                            >{{ old('body') }}</textarea>
+                        <div class="flex-1 min-w-0">
+                            <div id="chatQuickTypeDesktop" class="hidden mb-2">
+                                <div id="chatQuickTypeListDesktop" role="listbox" aria-label="Suggestions" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1"></div>
+                            </div>
+
+                            <div class="rounded-full border border-slate-200 bg-white px-4 py-2">
+                                <textarea
+                                    id="bodyDesktop"
+                                    name="body"
+                                    rows="1"
+                                    class="block w-full resize-none border-0 p-0 focus:ring-0 text-sm leading-6"
+                                    placeholder="Écrire un message…"
+                                    required
+                                >{{ old('body') }}</textarea>
+                            </div>
                         </div>
 
                         <input type="file" id="chatAttachInputDesktop" class="hidden" accept="image/*,video/*" />
@@ -492,6 +504,37 @@
                 </div>
             </div>
         </div>
+
+        <div id="chatQuickTypeMenu" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
+            <div id="chatQuickTypeMenuBackdrop" class="absolute inset-0"></div>
+            <div id="chatQuickTypeMenuPanel" role="menu" aria-label="Actions suggestion" class="absolute min-w-[14rem] rounded-2xl border border-slate-200 bg-white shadow-xl p-1">
+                <div id="chatQuickTypeMenuMain">
+                    <button type="button" data-qt-action="insert" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Insérer</button>
+                    <button type="button" data-qt-action="copy" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Copier</button>
+                    <button type="button" data-qt-action="pin" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Épingler</button>
+                    <button type="button" data-qt-action="unpin" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Désépingler</button>
+                    <div class="h-px bg-slate-100 my-1"></div>
+                    <button type="button" data-qt-action="remove_recent" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Retirer des récents</button>
+                    <button type="button" data-qt-action="hide" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Masquer</button>
+                    <div class="h-px bg-slate-100 my-1"></div>
+                    <button type="button" data-qt-action="manage_hidden" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50">Gérer les masqués…</button>
+                </div>
+
+                <div id="chatQuickTypeMenuHidden" class="hidden">
+                    <div class="flex items-center justify-between gap-2 px-2 py-2">
+                        <button type="button" data-qt-action="hidden_back" class="rounded-xl px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-50">← Retour</button>
+                        <div class="text-sm font-semibold text-slate-900">Masqués</div>
+                        <button type="button" data-qt-action="hidden_clear" class="rounded-xl px-2 py-1 text-sm font-semibold text-red-600 hover:bg-red-50">Tout rétablir</button>
+                    </div>
+                    <div class="h-px bg-slate-100 my-1"></div>
+                    <div id="chatQuickTypeHiddenList" class="max-h-64 overflow-auto"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="chatQuickTypeToast" class="fixed inset-x-0 bottom-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom)+0.75rem)] sm:bottom-6 z-[70] pointer-events-none hidden">
+            <div class="mx-auto w-fit rounded-full bg-slate-900 text-white px-3 py-1.5 text-xs font-semibold shadow-lg">Copié</div>
+        </div>
     </div>
 
     <script>
@@ -544,6 +587,687 @@
             function getActiveComposer() {
                 return composer[activeComposerKey] || composer.mobile;
             }
+
+            // --- QuickType (suggestion bar) ---
+            const QUICKTYPE_RECENTS_KEY = 'famille:chat:quicktype_recents_v1';
+            const QUICKTYPE_PINNED_KEY = 'famille:chat:quicktype_pinned_v1';
+            const QUICKTYPE_HIDDEN_KEY = 'famille:chat:quicktype_hidden_v1';
+            const QUICKTYPE_MAX_ITEMS = 12;
+            const QUICKTYPE_DEBOUNCE_MS = 110;
+
+            const quickTypeUi = {
+                mobile: {
+                    root: document.getElementById('chatQuickType'),
+                    list: document.getElementById('chatQuickTypeList'),
+                },
+                desktop: {
+                    root: document.getElementById('chatQuickTypeDesktop'),
+                    list: document.getElementById('chatQuickTypeListDesktop'),
+                },
+            };
+
+            const quickTypeState = {
+                activeKey: activeComposerKey,
+                composing: false,
+                selectedIndex: 0,
+                suggestions: [],
+                timer: null,
+            };
+
+            const QUICKTYPE_PRESETS = [
+                'OK',
+                'Merci',
+                'Super',
+                'Je regarde et je te dis',
+                'Je suis en route',
+                'J’arrive',
+                'Je suis là',
+                'On se call ?',
+                'Tu peux préciser ?',
+                'Bonne idée',
+            ];
+
+            const quickTypeMenu = {
+                root: document.getElementById('chatQuickTypeMenu'),
+                panel: document.getElementById('chatQuickTypeMenuPanel'),
+                backdrop: document.getElementById('chatQuickTypeMenuBackdrop'),
+                main: document.getElementById('chatQuickTypeMenuMain'),
+                hidden: document.getElementById('chatQuickTypeMenuHidden'),
+                hiddenList: document.getElementById('chatQuickTypeHiddenList'),
+                open: false,
+                key: 'mobile',
+                index: 0,
+                label: '',
+                x: 0,
+                y: 0,
+            };
+
+            const quickTypeToastEl = document.getElementById('chatQuickTypeToast');
+            let quickTypeToastTimer = null;
+
+            function showQuickTypeToast(text) {
+                if (!quickTypeToastEl) return;
+                const label = String(text || '').trim() || 'OK';
+                const inner = quickTypeToastEl.querySelector('div');
+                if (inner) inner.textContent = label;
+                quickTypeToastEl.classList.remove('hidden');
+                if (quickTypeToastTimer) {
+                    clearTimeout(quickTypeToastTimer);
+                    quickTypeToastTimer = null;
+                }
+                quickTypeToastTimer = setTimeout(() => {
+                    quickTypeToastEl.classList.add('hidden');
+                }, 1200);
+            }
+
+            function loadStringList(key) {
+                try {
+                    const raw = localStorage.getItem(key);
+                    const arr = raw ? JSON.parse(raw) : [];
+                    return Array.isArray(arr) ? arr.filter((s) => typeof s === 'string' && s.trim() !== '') : [];
+                } catch {
+                    return [];
+                }
+            }
+
+            function saveStringList(key, arr) {
+                try {
+                    localStorage.setItem(key, JSON.stringify(arr));
+                } catch {}
+            }
+
+            function loadQuickTypePinned() {
+                return loadStringList(QUICKTYPE_PINNED_KEY);
+            }
+
+            function loadQuickTypeHidden() {
+                return loadStringList(QUICKTYPE_HIDDEN_KEY);
+            }
+
+            function unhideSuggestion(text) {
+                const v = String(text || '').trim();
+                if (!v) return;
+                const arr = loadQuickTypeHidden();
+                const next = arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v));
+                saveStringList(QUICKTYPE_HIDDEN_KEY, next);
+            }
+
+            function clearHiddenSuggestions() {
+                saveStringList(QUICKTYPE_HIDDEN_KEY, []);
+            }
+
+            function isHiddenSuggestion(text) {
+                const v = normalizeForMatch(text);
+                return loadQuickTypeHidden().some((s) => normalizeForMatch(s) === v);
+            }
+
+            function isPinnedSuggestion(text) {
+                const v = normalizeForMatch(text);
+                return loadQuickTypePinned().some((s) => normalizeForMatch(s) === v);
+            }
+
+            function pinSuggestion(text) {
+                const v = String(text || '').trim();
+                if (!v) return;
+                if (isHiddenSuggestion(v)) return;
+                const arr = loadQuickTypePinned();
+                const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, QUICKTYPE_MAX_ITEMS);
+                saveStringList(QUICKTYPE_PINNED_KEY, next);
+            }
+
+            function unpinSuggestion(text) {
+                const v = String(text || '').trim();
+                if (!v) return;
+                const arr = loadQuickTypePinned();
+                const next = arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v));
+                saveStringList(QUICKTYPE_PINNED_KEY, next);
+            }
+
+            function hideSuggestion(text) {
+                const v = String(text || '').trim();
+                if (!v) return;
+                unpinSuggestion(v);
+                const arr = loadQuickTypeHidden();
+                const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, 200);
+                saveStringList(QUICKTYPE_HIDDEN_KEY, next);
+            }
+
+            function removeRecent(text) {
+                const v = String(text || '').trim();
+                if (!v) return;
+                const arr = loadQuickTypeRecents();
+                const next = arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v));
+                try {
+                    localStorage.setItem(QUICKTYPE_RECENTS_KEY, JSON.stringify(next));
+                } catch {}
+            }
+
+            function loadQuickTypeRecents() {
+                try {
+                    const raw = localStorage.getItem(QUICKTYPE_RECENTS_KEY);
+                    const arr = raw ? JSON.parse(raw) : [];
+                    return Array.isArray(arr) ? arr.filter((s) => typeof s === 'string' && s.trim() !== '') : [];
+                } catch {
+                    return [];
+                }
+            }
+
+            function saveQuickTypeRecent(text) {
+                const v = String(text || '').trim();
+                if (!v) return;
+                if (isHiddenSuggestion(v)) return;
+                const arr = loadQuickTypeRecents();
+                const next = [v, ...arr.filter((x) => x !== v)].slice(0, QUICKTYPE_MAX_ITEMS);
+                try {
+                    localStorage.setItem(QUICKTYPE_RECENTS_KEY, JSON.stringify(next));
+                } catch {}
+            }
+
+            function getCaretToken(textarea) {
+                const value = String(textarea?.value || '');
+                const pos = Math.max(0, Math.min(value.length, Number(textarea?.selectionStart ?? value.length)));
+                const before = value.slice(0, pos);
+                const m = before.match(/(^|[\s\n])([^\s\n]*)$/u);
+                return {
+                    token: (m ? m[2] : ''),
+                    pos,
+                };
+            }
+
+            function normalizeForMatch(s) {
+                return String(s || '').toLocaleLowerCase();
+            }
+
+            function computeQuickTypeSuggestions(textarea) {
+                const value = String(textarea?.value || '').trim();
+                const { token } = getCaretToken(textarea);
+                const needle = normalizeForMatch(token);
+
+                const pinned = loadQuickTypePinned();
+                const recents = loadQuickTypeRecents();
+
+                // Context nudges (very lightweight)
+                const context = [];
+                if (!value) {
+                    context.push('Bonjour', 'Coucou');
+                } else if (/\bmerci\b/i.test(value)) {
+                    context.push('De rien');
+                } else if (/\?\s*$/u.test(value)) {
+                    context.push('Je te dis ça', 'Oui', 'Non');
+                }
+
+                // Order: pinned → context → recents → presets
+                const base = [...pinned, ...context, ...recents, ...QUICKTYPE_PRESETS];
+
+                const seen = new Set();
+                const hidden = loadQuickTypeHidden().map(normalizeForMatch);
+
+                let out = base
+                    .map((s) => String(s || '').trim())
+                    .filter((s) => s.length > 0)
+                    .filter((s) => !hidden.includes(normalizeForMatch(s)))
+                    .filter((s) => {
+                        const key = normalizeForMatch(s);
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    });
+
+                if (needle) {
+                    out = out
+                        .filter((s) => normalizeForMatch(s).startsWith(needle))
+                        .slice(0, 8);
+                } else {
+                    out = out.slice(0, 8);
+                }
+
+                return out;
+            }
+
+            function renderQuickType(key, suggestions, selectedIndex) {
+                const ui = quickTypeUi[key];
+                if (!ui?.root || !ui?.list) return;
+
+                const has = Array.isArray(suggestions) && suggestions.length > 0;
+                ui.root.classList.toggle('hidden', !has);
+                if (!has) {
+                    ui.list.innerHTML = '';
+                    return;
+                }
+
+                const idx = Math.max(0, Math.min(suggestions.length - 1, Number(selectedIndex || 0)));
+
+                ui.list.innerHTML = suggestions
+                    .map((label, i) => {
+                        const selected = i === idx;
+                        const pinned = isPinnedSuggestion(label);
+                        const cls = selected
+                            ? 'bg-slate-900 text-white border-slate-900'
+                            : (pinned ? 'bg-amber-50 text-slate-900 border-amber-200 hover:bg-amber-100' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50');
+                        const esc = String(label)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#039;');
+                        return `
+                            <button
+                                type="button"
+                                role="option"
+                                aria-selected="${selected ? 'true' : 'false'}"
+                                data-qt-index="${i}"
+                                class="inline-flex shrink-0 items-center rounded-full border px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900/20 ${cls}"
+                                title="Insérer"
+                            >${pinned ? '<span class=\"mr-1\" aria-hidden=\"true\">📌</span>' : ''}${esc}</button>
+                        `;
+                    })
+                    .join('');
+            }
+
+            async function copyToClipboard(text) {
+                const v = String(text || '');
+                if (!v) return;
+                try {
+                    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                        await navigator.clipboard.writeText(v);
+                        return;
+                    }
+                } catch {}
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = v;
+                    ta.setAttribute('readonly', 'true');
+                    ta.style.position = 'fixed';
+                    ta.style.left = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                } catch {}
+            }
+
+            function closeQuickTypeMenu() {
+                if (!quickTypeMenu.root) return;
+                quickTypeMenu.open = false;
+                quickTypeMenu.root.classList.add('hidden');
+                quickTypeMenu.root.setAttribute('aria-hidden', 'true');
+            }
+
+            function showQuickTypeMenuView(view) {
+                if (!quickTypeMenu.main || !quickTypeMenu.hidden) return;
+                const v = String(view || 'main');
+                quickTypeMenu.main.classList.toggle('hidden', v !== 'main');
+                quickTypeMenu.hidden.classList.toggle('hidden', v !== 'hidden');
+            }
+
+            function renderHiddenSuggestions() {
+                if (!quickTypeMenu.hiddenList) return;
+                const hidden = loadQuickTypeHidden();
+                if (!hidden.length) {
+                    quickTypeMenu.hiddenList.innerHTML = '<div class="px-3 py-3 text-sm text-slate-500">Aucune suggestion masquée.</div>';
+                    return;
+                }
+                quickTypeMenu.hiddenList.innerHTML = hidden
+                    .slice(0, 200)
+                    .map((label) => {
+                        const esc = String(label)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/\"/g, '&quot;')
+                            .replace(/'/g, '&#039;');
+                        return `
+                            <div class="flex items-center justify-between gap-2 px-2 py-1">
+                                <div class="text-sm text-slate-900 truncate max-w-[12rem]">${esc}</div>
+                                <button type="button" data-qt-action="unhide" class="shrink-0 rounded-xl px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-50">Rétablir</button>
+                            </div>
+                        `;
+                    })
+                    .join('');
+            }
+
+            function positionQuickTypeMenu(x, y) {
+                if (!quickTypeMenu.panel) return;
+                const pad = 12;
+                const vw = window.innerWidth || 0;
+                const vh = window.innerHeight || 0;
+                const rect = quickTypeMenu.panel.getBoundingClientRect();
+                const w = rect.width || 240;
+                const h = rect.height || 260;
+                const left = Math.max(pad, Math.min(vw - w - pad, x));
+                const top = Math.max(pad, Math.min(vh - h - pad, y));
+                quickTypeMenu.panel.style.left = `${left}px`;
+                quickTypeMenu.panel.style.top = `${top}px`;
+            }
+
+            function openQuickTypeMenu({ key, index, label, x, y }) {
+                if (!quickTypeMenu.root || !quickTypeMenu.panel) return;
+                quickTypeMenu.open = true;
+                quickTypeMenu.key = key;
+                quickTypeMenu.index = index;
+                quickTypeMenu.label = label;
+                quickTypeMenu.x = x;
+                quickTypeMenu.y = y;
+
+                showQuickTypeMenuView('main');
+
+                const pinned = isPinnedSuggestion(label);
+                const isRecent = loadQuickTypeRecents().some((s) => normalizeForMatch(s) === normalizeForMatch(label));
+                const hasHidden = loadQuickTypeHidden().length > 0;
+
+                const pinBtn = quickTypeMenu.panel.querySelector('button[data-qt-action="pin"]');
+                const unpinBtn = quickTypeMenu.panel.querySelector('button[data-qt-action="unpin"]');
+                const removeRecentBtn = quickTypeMenu.panel.querySelector('button[data-qt-action="remove_recent"]');
+                const manageHiddenBtn = quickTypeMenu.panel.querySelector('button[data-qt-action="manage_hidden"]');
+                if (pinBtn) pinBtn.classList.toggle('hidden', pinned);
+                if (unpinBtn) unpinBtn.classList.toggle('hidden', !pinned);
+                if (removeRecentBtn) removeRecentBtn.classList.toggle('hidden', !isRecent);
+                if (manageHiddenBtn) manageHiddenBtn.classList.toggle('hidden', !hasHidden);
+
+                quickTypeMenu.root.classList.remove('hidden');
+                quickTypeMenu.root.setAttribute('aria-hidden', 'false');
+                // Let it render before measuring.
+                requestAnimationFrame(() => {
+                    positionQuickTypeMenu(x, y);
+                });
+            }
+
+            if (quickTypeMenu.root && quickTypeMenu.backdrop) {
+                quickTypeMenu.backdrop.addEventListener('click', closeQuickTypeMenu);
+            }
+            window.addEventListener('keydown', (e) => {
+                if (!quickTypeMenu.open) return;
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    closeQuickTypeMenu();
+                }
+            });
+
+            if (quickTypeMenu.panel) {
+                quickTypeMenu.panel.addEventListener('click', async (e) => {
+                    const btn = e.target && e.target.closest ? e.target.closest('button[data-qt-action]') : null;
+                    if (!btn) return;
+                    const action = btn.getAttribute('data-qt-action');
+                    const label = quickTypeMenu.label;
+                    const c = composer[quickTypeMenu.key] || getActiveComposer();
+
+                    if (action === 'manage_hidden') {
+                        renderHiddenSuggestions();
+                        showQuickTypeMenuView('hidden');
+                        return;
+                    }
+                    if (action === 'hidden_back') {
+                        showQuickTypeMenuView('main');
+                        return;
+                    }
+                    if (action === 'hidden_clear') {
+                        clearHiddenSuggestions();
+                        renderHiddenSuggestions();
+                        scheduleQuickTypeUpdate(quickTypeMenu.key);
+                        return;
+                    }
+
+                    if (action === 'insert') {
+                        applyQuickTypeSuggestion(c?.textarea, label);
+                    } else if (action === 'copy') {
+                        await copyToClipboard(label);
+                        showQuickTypeToast('Copié');
+                    } else if (action === 'pin') {
+                        pinSuggestion(label);
+                    } else if (action === 'unpin') {
+                        unpinSuggestion(label);
+                    } else if (action === 'hide') {
+                        hideSuggestion(label);
+                    } else if (action === 'remove_recent') {
+                        removeRecent(label);
+                    } else if (action === 'unhide') {
+                        const row = btn.parentElement;
+                        const labelEl = row ? row.querySelector('div') : null;
+                        const v = labelEl ? (labelEl.textContent || '') : '';
+                        unhideSuggestion(v);
+                        renderHiddenSuggestions();
+                        scheduleQuickTypeUpdate(quickTypeMenu.key);
+                        return;
+                    }
+
+                    closeQuickTypeMenu();
+                    scheduleQuickTypeUpdate(quickTypeMenu.key);
+                    try { c?.textarea?.focus(); } catch {}
+                });
+            }
+
+            // hidden list actions are handled by the panel click handler
+
+            function applyQuickTypeSuggestion(textarea, suggestion) {
+                if (!textarea) return;
+                const value = String(textarea.value || '');
+                let start = Number(textarea.selectionStart ?? value.length);
+                let end = Number(textarea.selectionEnd ?? value.length);
+                start = Math.max(0, Math.min(value.length, start));
+                end = Math.max(0, Math.min(value.length, end));
+
+                let replaceFrom = start;
+                let replaceTo = end;
+
+                if (start === end) {
+                    const before = value.slice(0, start);
+                    const m = before.match(/(^|[\s\n])([^\s\n]*)$/u);
+                    const tokenLen = m ? (m[2] || '').length : 0;
+                    replaceFrom = start - tokenLen;
+                    replaceTo = start;
+                }
+
+                const left = value.slice(0, replaceFrom);
+                const right = value.slice(replaceTo);
+                let insert = String(suggestion || '').trim();
+                if (!insert) return;
+
+                // Smart spacing
+                if (left && !/[\s\n]$/u.test(left) && !/^[,.:;!?]/u.test(insert)) {
+                    insert = ' ' + insert;
+                }
+                if (right && !/^[\s\n]/u.test(right) && !/[\s\n]$/u.test(insert) && !/["'“”‘’\(\[]$/u.test(insert)) {
+                    insert = insert + ' ';
+                }
+                if (!right && !/[\s\n]$/u.test(insert) && !/[.!?…]$/u.test(insert)) {
+                    insert = insert + ' ';
+                }
+
+                const nextValue = left + insert + right;
+                textarea.value = nextValue;
+                const newPos = (left + insert).length;
+                try {
+                    textarea.setSelectionRange(newPos, newPos);
+                } catch {}
+
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                saveQuickTypeRecent(String(suggestion || ''));
+            }
+
+            function scheduleQuickTypeUpdate(forcedKey) {
+                if (quickTypeState.timer) {
+                    clearTimeout(quickTypeState.timer);
+                    quickTypeState.timer = null;
+                }
+                quickTypeState.timer = setTimeout(() => {
+                    const c = forcedKey ? composer[forcedKey] : getActiveComposer();
+                    const key = c?.key || activeComposerKey;
+                    const textarea = c?.textarea;
+                    if (!textarea) return;
+                    if (quickTypeState.composing) return;
+
+                    quickTypeState.activeKey = key;
+                    quickTypeState.suggestions = computeQuickTypeSuggestions(textarea);
+                    quickTypeState.selectedIndex = Math.max(0, Math.min(quickTypeState.suggestions.length - 1, quickTypeState.selectedIndex));
+                    renderQuickType(key, quickTypeState.suggestions, quickTypeState.selectedIndex);
+                }, QUICKTYPE_DEBOUNCE_MS);
+            }
+
+            function hideQuickType(key) {
+                const ui = quickTypeUi[key];
+                if (!ui?.root || !ui?.list) return;
+                ui.root.classList.add('hidden');
+                ui.list.innerHTML = '';
+            }
+
+            function bindQuickTypeForComposer(key) {
+                const c = composer[key];
+                const ui = quickTypeUi[key];
+                if (!c?.textarea || !ui?.root || !ui?.list) return;
+
+                const longPress = {
+                    timer: null,
+                    active: false,
+                    index: -1,
+                };
+
+                c.textarea.addEventListener('compositionstart', () => {
+                    quickTypeState.composing = true;
+                });
+                c.textarea.addEventListener('compositionend', () => {
+                    quickTypeState.composing = false;
+                    scheduleQuickTypeUpdate(key);
+                });
+
+                c.textarea.addEventListener('focus', () => {
+                    setActiveComposerKey(key);
+                    scheduleQuickTypeUpdate(key);
+                });
+                c.textarea.addEventListener('input', () => scheduleQuickTypeUpdate(key));
+
+                c.textarea.addEventListener('keydown', (e) => {
+                    if (quickTypeState.composing) return;
+                    if (key !== activeComposerKey) return;
+
+                    const suggestions = quickTypeState.suggestions || [];
+                    if (!suggestions.length) return;
+
+                    const isMenuKey = (e.key === 'ContextMenu') || (e.shiftKey && e.key === 'F10');
+                    if (isMenuKey) {
+                        e.preventDefault();
+                        const idx = Math.max(0, Math.min(suggestions.length - 1, quickTypeState.selectedIndex));
+                        const label = suggestions[idx];
+                        if (!label) return;
+                        // Place the menu near the QuickType bar.
+                        const anchorBtn = ui.list.querySelector(`button[data-qt-index="${idx}"]`);
+                        if (anchorBtn) {
+                            const r = anchorBtn.getBoundingClientRect();
+                            openQuickTypeMenu({ key, index: idx, label, x: r.left + r.width / 2, y: r.top + r.height });
+                        } else {
+                            openQuickTypeMenu({ key, index: idx, label, x: (e.clientX || 20), y: (e.clientY || 20) });
+                        }
+                        return;
+                    }
+
+                    if (e.key === 'Tab' && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
+                        e.preventDefault();
+                        const s = suggestions[Math.max(0, Math.min(suggestions.length - 1, quickTypeState.selectedIndex))];
+                        applyQuickTypeSuggestion(c.textarea, s);
+                        scheduleQuickTypeUpdate(key);
+                        return;
+                    }
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        quickTypeState.selectedIndex = (quickTypeState.selectedIndex + 1) % suggestions.length;
+                        renderQuickType(key, suggestions, quickTypeState.selectedIndex);
+                        return;
+                    }
+                    if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        quickTypeState.selectedIndex = (quickTypeState.selectedIndex - 1 + suggestions.length) % suggestions.length;
+                        renderQuickType(key, suggestions, quickTypeState.selectedIndex);
+                        return;
+                    }
+                });
+
+                // Allow clicking chips without losing focus.
+                ui.root.addEventListener('mousedown', (e) => {
+                    if (e.target && e.target.closest && e.target.closest('button[data-qt-index]')) {
+                        e.preventDefault();
+                    }
+                });
+
+                ui.root.addEventListener('contextmenu', (e) => {
+                    const btn = e.target && e.target.closest ? e.target.closest('button[data-qt-index]') : null;
+                    if (!btn) return;
+                    e.preventDefault();
+                    const idx = Number(btn.getAttribute('data-qt-index') || 0);
+                    const suggestions = quickTypeState.suggestions || [];
+                    const label = suggestions[idx];
+                    if (!label) return;
+                    openQuickTypeMenu({ key, index: idx, label, x: e.clientX, y: e.clientY });
+                });
+
+                ui.root.addEventListener('keydown', (e) => {
+                    const btn = e.target && e.target.closest ? e.target.closest('button[data-qt-index]') : null;
+                    if (!btn) return;
+                    const isMenuKey = (e.key === 'ContextMenu') || (e.shiftKey && e.key === 'F10');
+                    if (!isMenuKey) return;
+                    e.preventDefault();
+                    const idx = Number(btn.getAttribute('data-qt-index') || 0);
+                    const suggestions = quickTypeState.suggestions || [];
+                    const label = suggestions[idx];
+                    if (!label) return;
+                    const r = btn.getBoundingClientRect();
+                    openQuickTypeMenu({ key, index: idx, label, x: r.left + r.width / 2, y: r.top + r.height });
+                });
+
+                ui.root.addEventListener('pointerdown', (e) => {
+                    const btn = e.target && e.target.closest ? e.target.closest('button[data-qt-index]') : null;
+                    if (!btn) return;
+                    if (e.pointerType === 'mouse') return; // long-press mainly for touch/pen
+
+                    const idx = Number(btn.getAttribute('data-qt-index') || 0);
+                    longPress.active = true;
+                    longPress.index = idx;
+                    if (longPress.timer) clearTimeout(longPress.timer);
+                    longPress.timer = setTimeout(() => {
+                        if (!longPress.active) return;
+                        const suggestions = quickTypeState.suggestions || [];
+                        const label = suggestions[idx];
+                        if (!label) return;
+                        const r = btn.getBoundingClientRect();
+                        openQuickTypeMenu({ key, index: idx, label, x: r.left + r.width / 2, y: r.top + r.height });
+                    }, 520);
+                });
+
+                function cancelLongPress() {
+                    longPress.active = false;
+                    longPress.index = -1;
+                    if (longPress.timer) {
+                        clearTimeout(longPress.timer);
+                        longPress.timer = null;
+                    }
+                }
+                ui.root.addEventListener('pointerup', cancelLongPress);
+                ui.root.addEventListener('pointercancel', cancelLongPress);
+                ui.root.addEventListener('pointermove', cancelLongPress);
+
+                ui.root.addEventListener('click', (e) => {
+                    const btn = e.target && e.target.closest ? e.target.closest('button[data-qt-index]') : null;
+                    if (!btn) return;
+                    const idx = Number(btn.getAttribute('data-qt-index') || 0);
+                    const suggestions = quickTypeState.suggestions || [];
+                    const s = suggestions[idx];
+                    if (!s) return;
+                    quickTypeState.selectedIndex = idx;
+                    applyQuickTypeSuggestion(c.textarea, s);
+                    scheduleQuickTypeUpdate(key);
+                    try { c.textarea.focus(); } catch {}
+                });
+
+                // Hide after blur (small delay to allow chip click)
+                c.textarea.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        if (document.activeElement === c.textarea) return;
+                        hideQuickType(key);
+                    }, 120);
+                });
+            }
+
+            bindQuickTypeForComposer('mobile');
+            bindQuickTypeForComposer('desktop');
 
             function getAnyForm() {
                 return composer.mobile.form || composer.desktop.form || null;
