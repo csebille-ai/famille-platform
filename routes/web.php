@@ -49,6 +49,10 @@ Route::get('/api/uploads/quota', [UploadsController::class, 'quota'])
 Route::post('/api/uploads/presign', [UploadsController::class, 'presign'])
     ->middleware(['auth', 'verified', 'throttle:30,1']);
 
+Route::put('/api/uploads/local/put', [UploadsController::class, 'localPut'])
+    ->middleware(['auth', 'verified', 'throttle:30,1'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::post('/api/uploads/multipart/init', [UploadsController::class, 'multipartInit'])
     ->middleware(['auth', 'verified', 'throttle:30,1']);
 

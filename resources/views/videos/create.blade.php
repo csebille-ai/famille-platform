@@ -449,21 +449,49 @@
 
                         let key = '';
                         let publicUrl = null;
+                        let storageDisk = 'r2';
 
                         if (size > MULTIPART_THRESHOLD_BYTES) {
-                            const init = await postJson(mpInitUrl, {
-                                filename: file.name || 'video',
-                                mime,
-                                size,
-                                kind: 'video',
-                                context: 'media',
-                            });
+                            let init = null;
+                            try {
+                                init = await postJson(mpInitUrl, {
+                                    filename: file.name || 'video',
+                                    mime,
+                                    size,
+                                    kind: 'video',
+                                    context: 'media',
+                                });
+                            } catch (e) {
+                                init = null;
+                            }
+
+                            if (!init || !init.upload_id || !init.key || !init.part_size || !Array.isArray(init.parts) || init.parts.length === 0) {
+                                const presign = await postJson(presignUrl, {
+                                    filename: file.name || 'video',
+                                    mime,
+                                    size,
+                                    kind: 'video',
+                                    context: 'media',
+                                });
+                                const uploadUrl = String(presign?.upload_url || '');
+                                key = String(presign?.key || '');
+                                publicUrl = presign?.public_url || null;
+                                storageDisk = String(presign?.storage_disk || 'r2');
+                                if (!uploadUrl || !key) throw new Error('Presign invalide.');
+
+                                await putWithProgress(uploadUrl, file, mime, (loaded, total) => {
+                                    const pct = Math.max(0, Math.min(99, Math.round((loaded / (total || size)) * 100)));
+                                    setUploadStatus(`Upload… ${pct}%`);
+                                    setUploadProgress(pct);
+                                });
+                            } else {
 
                             const partSize = Number(init?.part_size || 0);
                             const parts = Array.isArray(init?.parts) ? init.parts : [];
                             const uploadId = String(init?.upload_id || '');
                             key = String(init?.key || '');
                             publicUrl = init?.public_url || null;
+                            storageDisk = 'r2';
 
                             if (!uploadId || !key || !partSize || parts.length === 0) {
                                 throw new Error('Multipart init invalide.');
@@ -546,6 +574,8 @@
                                 context: 'media',
                             });
                             publicUrl = complete?.public_url || publicUrl;
+
+                            }
                         } else {
                             const presign = await postJson(presignUrl, {
                                 filename: file.name || 'video',
@@ -557,6 +587,7 @@
                             const uploadUrl = String(presign?.upload_url || '');
                             key = String(presign?.key || '');
                             publicUrl = presign?.public_url || null;
+                            storageDisk = String(presign?.storage_disk || 'r2');
                             if (!uploadUrl || !key) throw new Error('Presign invalide.');
 
                             await putWithProgress(uploadUrl, file, mime, (loaded, total) => {
@@ -576,6 +607,7 @@
                         finForm.append('size', String(size));
                         finForm.append('kind', 'video');
                         finForm.append('context', 'media');
+                        finForm.append('storage_disk', storageDisk);
                         finForm.append('scope', IS_PERSONAL ? 'personal' : 'library');
                         if (file.name) finForm.append('filename', String(file.name));
                         if (title) finForm.append('title', String(title));

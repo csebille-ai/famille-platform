@@ -2603,13 +2603,70 @@
                         const imageMetaPromise = (kind === 'photo') ? buildImageMeta(file) : Promise.resolve(null);
 
                         if (size > MULTIPART_THRESHOLD_BYTES) {
-                            const init = await postJson(mpInitUrl, {
-                                filename: file.name || 'file',
-                                mime,
-                                size,
-                                kind,
-                                context: 'chat',
-                            });
+                            let init = null;
+                            try {
+                                init = await postJson(mpInitUrl, {
+                                    filename: file.name || 'file',
+                                    mime,
+                                    size,
+                                    kind,
+                                    context: 'chat',
+                                });
+                            } catch (e) {
+                                init = null;
+                            }
+
+                            if (!init || !init.upload_id || !init.key || !init.part_size || !Array.isArray(init.parts) || init.parts.length === 0) {
+                                const presign = await postJson(presignUrl, {
+                                    filename: file.name || 'file',
+                                    mime,
+                                    size,
+                                    kind,
+                                    context: 'chat',
+                                });
+
+                                const uploadUrl = String(presign?.upload_url || '');
+                                const key = String(presign?.key || '');
+                                const storageDisk = String(presign?.storage_disk || 'r2');
+                                if (!uploadUrl || !key) throw new Error('Presign invalide.');
+
+                                await putWithProgress(uploadUrl, file, mime, (loaded, total) => {
+                                    const pct = Math.max(0, Math.min(100, Math.round((loaded / (total || size)) * 100)));
+                                    updateUploadPlaceholder(tempId, pct);
+                                });
+
+                                const finPublicUrl = presign?.public_url || null;
+                                if (kind === 'video') {
+                                    const fd = new FormData();
+                                    fd.append('key', key);
+                                    if (finPublicUrl) fd.append('public_url', String(finPublicUrl));
+                                    fd.append('mime', mime);
+                                    fd.append('size', String(size));
+                                    fd.append('kind', kind);
+                                    fd.append('context', 'chat');
+                                    fd.append('storage_disk', storageDisk);
+                                    if (file.name) fd.append('filename', String(file.name));
+                                    fd.append('chat_thread_id', 'default');
+
+                                    const posterInfo = await posterPromise;
+                                    const posterBlob = posterInfo && typeof posterInfo === 'object' ? posterInfo.blob : null;
+                                    if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
+
+                                    finalized = await postForm(finalizeUrl, fd);
+                                } else {
+                                    finalized = await postJson(finalizeUrl, {
+                                        key,
+                                        public_url: finPublicUrl,
+                                        mime,
+                                        size,
+                                        kind,
+                                        context: 'chat',
+                                        storage_disk: storageDisk,
+                                        filename: file.name || null,
+                                        chat_thread_id: 'default',
+                                    });
+                                }
+                            } else {
 
                             const partSize = Number(init?.part_size || 0);
                             const parts = Array.isArray(init?.parts) ? init.parts : [];
@@ -2705,6 +2762,7 @@
                                 fd.append('size', String(size));
                                 fd.append('kind', kind);
                                 fd.append('context', 'chat');
+                                fd.append('storage_disk', 'r2');
                                 if (file.name) fd.append('filename', String(file.name));
                                 fd.append('chat_thread_id', 'default');
 
@@ -2721,9 +2779,12 @@
                                     size,
                                     kind,
                                     context: 'chat',
+                                    storage_disk: 'r2',
                                     filename: file.name || null,
                                     chat_thread_id: 'default',
                                 });
+                            }
+
                             }
                         } else {
                             const presign = await postJson(presignUrl, {
@@ -2736,6 +2797,7 @@
 
                             const uploadUrl = String(presign?.upload_url || '');
                             const key = String(presign?.key || '');
+                            const storageDisk = String(presign?.storage_disk || 'r2');
                             if (!uploadUrl || !key) throw new Error('Presign invalide.');
 
                             await putWithProgress(uploadUrl, file, mime, (loaded, total) => {
@@ -2752,6 +2814,7 @@
                                 fd.append('size', String(size));
                                 fd.append('kind', kind);
                                 fd.append('context', 'chat');
+                                fd.append('storage_disk', storageDisk);
                                 if (file.name) fd.append('filename', String(file.name));
                                 fd.append('chat_thread_id', 'default');
 
@@ -2768,6 +2831,7 @@
                                     size,
                                     kind,
                                     context: 'chat',
+                                    storage_disk: storageDisk,
                                     filename: file.name || null,
                                     chat_thread_id: 'default',
                                 });

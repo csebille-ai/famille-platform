@@ -14,10 +14,117 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class UploadsController extends Controller
 {
     private const ATTACH_PREFIX = '[[ATTACHMENT]]';
+
+    private function allowLocalFallback(): bool
+    {
+        return (bool) config('uploads.allow_local_fallback', false);
+    }
+
+    private function base64UrlEncode(string $raw): string
+    {
+        return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+    }
+
+    private function base64UrlDecode(string $raw): string
+    {
+        $pad = strlen($raw) % 4;
+        if ($pad > 0) {
+            $raw .= str_repeat('=', 4 - $pad);
+        }
+        return (string) base64_decode(strtr($raw, '-_', '+/'));
+    }
+
+    private function signingKey(): string
+    {
+        $key = (string) config('app.key', '');
+        if (str_starts_with($key, 'base64:')) {
+            $decoded = base64_decode(substr($key, 7), true);
+            return $decoded !== false ? $decoded : $key;
+        }
+        return $key;
+    }
+
+    /** @param array<string,mixed> $payload */
+    private function makeUploadToken(array $payload): string
+    {
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $json = $json === false ? '{}' : $json;
+        $sig = hash_hmac('sha256', $json, $this->signingKey(), true);
+        return $this->base64UrlEncode($json) . '.' . $this->base64UrlEncode($sig);
+    }
+
+    /** @return array<string,mixed>|null */
+    private function parseUploadToken(string $token): ?array
+    {
+        $token = trim($token);
+        if ($token === '' || !str_contains($token, '.')) return null;
+        [$p, $s] = explode('.', $token, 2);
+        $json = $this->base64UrlDecode($p);
+        $sig = $this->base64UrlDecode($s);
+        if ($json === '' || $sig === '') return null;
+
+        $expected = hash_hmac('sha256', $json, $this->signingKey(), true);
+        if (!hash_equals($expected, $sig)) return null;
+
+        $data = json_decode($json, true);
+        if (!is_array($data)) return null;
+
+        $exp = (int) ($data['exp'] ?? 0);
+        if ($exp > 0 && time() > $exp) return null;
+
+        return $data;
+    }
+
+    public function localPut(Request $request)
+    {
+        if (!$this->allowLocalFallback()) {
+            return response()->json(['message' => 'Local upload fallback is disabled.'], 403);
+        }
+
+        $token = (string) $request->query('token', '');
+        $data = $this->parseUploadToken($token);
+        if (!$data) {
+            return response()->json(['message' => 'Upload token invalide ou expiré.'], 403);
+        }
+
+        $key = (string) ($data['key'] ?? '');
+        $mime = (string) ($data['mime'] ?? 'application/octet-stream');
+
+        if ($key === '' || !str_starts_with($key, 'uploads/')) {
+            return response()->json(['message' => 'Clé upload invalide.'], 422);
+        }
+        if (str_contains($key, '..')) {
+            return response()->json(['message' => 'Clé upload invalide.'], 422);
+        }
+
+        // Best-effort: validate content type, but don't hard-fail on odd browsers.
+        $reqType = (string) $request->headers->get('Content-Type', '');
+        if ($reqType !== '' && $mime !== '' && !str_starts_with(strtolower($reqType), strtolower($mime))) {
+            // Keep permissive: some clients append charset.
+        }
+
+        try {
+            $stream = fopen('php://input', 'rb');
+            if ($stream === false) {
+                return response()->json(['message' => 'Impossible de lire le flux upload.'], 500);
+            }
+            try {
+                Storage::disk('local')->put($key, $stream);
+            } finally {
+                try { fclose($stream); } catch (\Throwable $e) {}
+            }
+        } catch (\Throwable $e) {
+            Log::error('uploads.local_put.failed', ['key' => $key, 'error' => $e->getMessage()]);
+            return response()->json(['message' => 'Erreur serveur pendant l’upload local.'], 500);
+        }
+
+        return response()->noContent(200);
+    }
 
     private function requireMigrations(): ?\Illuminate\Http\JsonResponse
     {
@@ -108,9 +215,30 @@ class UploadsController extends Controller
 
         $bucket = trim($r2->bucket());
         if ($bucket === '') {
+            if (!$this->allowLocalFallback()) {
+                return response()->json(['message' => 'R2 bucket is not configured.'], 500);
+            }
+
+            $key = $r2->buildObjectKey((string) $validated['context'], (string) $validated['kind'], (string) $validated['filename']);
+            $token = $this->makeUploadToken([
+                'key' => $key,
+                'mime' => $mime,
+                'size' => $size,
+                'uid' => (int) Auth::id(),
+                'exp' => time() + 15 * 60,
+            ]);
+
             return response()->json([
-                'message' => 'R2 bucket is not configured.',
-            ], 500);
+                'method' => 'PUT',
+                'upload_url' => url('/api/uploads/local/put') . '?token=' . urlencode($token),
+                'key' => $key,
+                'public_url' => null,
+                'storage_disk' => 'local',
+                'expires_at' => now()->addMinutes(15)->toIso8601String(),
+                'required_headers' => [
+                    'Content-Type' => $mime,
+                ],
+            ]);
         }
 
         $key = $r2->buildObjectKey((string) $validated['context'], (string) $validated['kind'], (string) $validated['filename']);
@@ -123,6 +251,7 @@ class UploadsController extends Controller
             'upload_url' => $uploadUrl,
             'key' => $key,
             'public_url' => $publicUrl,
+            'storage_disk' => 'r2',
             'expires_at' => now()->addMinutes(15)->toIso8601String(),
             'required_headers' => [
                 'Content-Type' => $mime,
@@ -159,7 +288,10 @@ class UploadsController extends Controller
 
         $bucket = trim($r2->bucket());
         if ($bucket === '') {
-            return response()->json(['message' => 'R2 bucket is not configured.'], 500);
+            if (!$this->allowLocalFallback()) {
+                return response()->json(['message' => 'R2 bucket is not configured.'], 500);
+            }
+            return response()->json(['message' => 'Multipart requires R2 configuration.'], 422);
         }
 
         // Clamp part size between 5MiB and 200MiB.
@@ -223,7 +355,10 @@ class UploadsController extends Controller
 
         $bucket = trim($r2->bucket());
         if ($bucket === '') {
-            return response()->json(['message' => 'R2 bucket is not configured.'], 500);
+            if (!$this->allowLocalFallback()) {
+                return response()->json(['message' => 'R2 bucket is not configured.'], 500);
+            }
+            return response()->json(['message' => 'Multipart requires R2 configuration.'], 422);
         }
 
         $key = (string) $validated['key'];
@@ -266,6 +401,7 @@ class UploadsController extends Controller
             'size' => ['required', 'integer', 'min:1'],
             'kind' => ['required', 'string', 'in:photo,video'],
             'context' => ['required', 'string', 'in:media,chat'],
+            'storage_disk' => ['nullable', 'string', 'in:r2,local'],
             // Optional: helps us enforce correct category conventions.
             // - personal => docs
             // - library  => films|series
@@ -314,11 +450,21 @@ class UploadsController extends Controller
 
         $userId = (int) Auth::id();
         $key = (string) $validated['key'];
-        $publicUrl = $r2->publicUrlForKey($key) ?: (string) ($validated['public_url'] ?? '');
+        $storageDisk = (string) ($validated['storage_disk'] ?? 'r2');
+        if (!in_array($storageDisk, ['r2', 'local'], true)) {
+            $storageDisk = 'r2';
+        }
+
+        $provider = $storageDisk === 'local' ? 'local' : 'r2';
+
+        $publicUrl = '';
+        if ($storageDisk === 'r2') {
+            $publicUrl = (string) ($r2->publicUrlForKey($key) ?: (string) ($validated['public_url'] ?? ''));
+        }
 
         try {
             $asset = UploadAsset::withTrashed()->firstOrNew([
-                'provider' => 'r2',
+                'provider' => $provider,
                 'key' => $key,
             ]);
 
@@ -382,8 +528,8 @@ class UploadsController extends Controller
                 'type' => 'file',
                 'name' => $name,
                 'stored_path' => $key,
-                'storage_disk' => 'r2',
-                'public_url' => $publicUrl !== '' ? $publicUrl : null,
+                'storage_disk' => $storageDisk,
+                'public_url' => ($storageDisk === 'r2' && $publicUrl !== '') ? $publicUrl : null,
                 'mime' => $mime,
                 'size' => $size,
                 'uploaded_by' => $userId,
@@ -404,7 +550,8 @@ class UploadsController extends Controller
                     'url' => $mediaUrl,
                     'open_url' => $openUrl,
                     'thumb_url' => $thumbUrl,
-                    'public_url' => $publicUrl,
+                    'public_url' => $storageDisk === 'r2' ? $publicUrl : null,
+                    'storage_disk' => $storageDisk,
                 ];
 
                 $msg = ChatMessage::create([
@@ -439,7 +586,7 @@ class UploadsController extends Controller
                 'description' => (string) ($validated['description'] ?? null),
                 'created_by' => $userId,
                 'video_path' => $key,
-                'storage_disk' => 'r2',
+                'storage_disk' => $storageDisk === 'local' ? 'local' : 'r2',
                 'poster_path' => null,
             ]);
 
@@ -476,7 +623,8 @@ class UploadsController extends Controller
                     'url' => $mediaUrl,
                     'open_url' => $openUrl,
                     'thumb_url' => $thumbUrl,
-                    'public_url' => $publicUrl,
+                    'public_url' => $storageDisk === 'r2' ? $publicUrl : null,
+                    'storage_disk' => $storageDisk,
                 ];
 
                 $msg = ChatMessage::create([

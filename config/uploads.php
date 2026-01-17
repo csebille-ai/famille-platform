@@ -13,6 +13,10 @@ return [
     // Cloudflare R2 public URL base (custom domain or worker).
     'r2_public_base_url' => (string) env('R2_PUBLIC_BASE_URL', ''),
 
+    // Dev-friendly fallback: if R2 is not configured, allow uploading to local disk
+    // through the app (same API shape as presigned uploads).
+    'allow_local_fallback' => (bool) env('UPLOADS_ALLOW_LOCAL_FALLBACK', in_array((string) env('APP_ENV', 'production'), ['local', 'development', 'testing'], true)),
+
     // Simple storage quota display (bytes). Cloudflare free tier: 10GB.
     'quota_bytes' => (int) env('UPLOAD_QUOTA_BYTES', 10 * 1024 * 1024 * 1024),
 ];
