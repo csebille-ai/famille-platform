@@ -199,6 +199,49 @@ php artisan astro:engine-check --url="https://astro-engine.exemple.tld" --verify
 
 Note : `-k` est uniquement pour diagnostiquer côté shell. Côté Laravel, c'est `ASTRO_ENGINE_VERIFY_SSL=false` qui évite l'échec TLS.
 
+## 6) Cron (Scheduler Laravel) — requis pour l’Actu
+
+L’import des actus locales est planifié via le scheduler Laravel (voir `routes/console.php`) :
+
+- `news:import-rss` tourne toutes les 15 minutes.
+
+Sur o2switch, **rien ne se lance tout seul** si tu ne crées pas un cron.
+
+### 6.1 Tester en SSH (manuel)
+
+```bash
+cd ~/apps/famille-platform
+
+# Lance un import immédiatement (doit mettre à jour latest_fetched_at)
+php artisan news:import-rss
+
+# Vérifie les tâches planifiées
+php artisan schedule:list
+```
+
+Si ton serveur utilise un binaire PHP spécifique : remplace `php` par `php82` / `php83`.
+
+### 6.2 Ajouter le cron (cPanel > Cron Jobs)
+
+Ajoute un cron qui exécute le scheduler **chaque minute** :
+
+```bash
+* * * * * cd ~/apps/famille-platform && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Si besoin (selon ton hébergement) :
+
+```bash
+* * * * * cd ~/apps/famille-platform && php82 artisan schedule:run >> /dev/null 2>&1
+```
+
+Après ajout/modif du `.env` :
+
+```bash
+php artisan optimize:clear
+php artisan config:cache
+```
+
 ### Backfill / Recompute (pour enlever “À calculer”)
 
 Après déploiement + migration, relance le calcul du profil astro :
