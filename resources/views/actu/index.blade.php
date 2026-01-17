@@ -9,7 +9,7 @@
 
 <x-app-layout pageBgClass="fam-page-bg">
     <div class="max-w-3xl mx-auto">
-        <div id="actu-sticky" class="sticky z-[55] bg-slate-50/95 backdrop-blur border-b border-slate-200" style="top: 0px">
+        <div id="actu-sticky" class="sticky z-[55] bg-[#F6F2EC]/95 supports-[backdrop-filter]:bg-[#F6F2EC]/85 supports-[backdrop-filter]:backdrop-blur-xl border-b border-black/10" style="top: 0px">
             <div class="px-6 pt-4 pb-3">
                 <div id="actu-buckets" class="mt-3 -mx-6 px-6 pb-1 overflow-x-auto">
                     <div class="flex items-center gap-2 min-w-max">

@@ -57,7 +57,7 @@
 @endphp
 
 <nav
-    class="sm:hidden {{ $fixed ? 'fixed inset-x-0 bottom-0 z-40' : 'w-full' }} border-t border-[color:rgba(17,24,39,0.10)] bg-[rgba(255,255,255,0.92)] pb-[env(safe-area-inset-bottom)]"
+    class="sm:hidden {{ $fixed ? 'fixed bottom-0 left-0 right-0 z-50' : 'w-full' }} bg-white/95 supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-xl border-t border-black/10 shadow-[0_-10px_25px_rgba(0,0,0,0.10)] pb-[env(safe-area-inset-bottom)]"
     style="--mobile-bottom-nav-h: 4rem;"
     aria-label="Navigation principale"
 >
@@ -66,7 +66,7 @@
             @foreach($items as $item)
                 <a
                     href="{{ $item['href'] }}"
-                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-bold {{ $item['active'] ? 'text-[color:var(--fam-primary)] bg-[rgba(14,165,160,0.10)]' : 'text-[#374151]' }}"
+                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold {{ $item['active'] ? 'text-[color:var(--fam-primary)] bg-[color:rgba(14,165,160,0.12)]' : 'text-slate-700' }}"
                     aria-label="{{ $item['label'] }}"
                     aria-current="{{ $item['active'] ? 'page' : 'false' }}"
                 >

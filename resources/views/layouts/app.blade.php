@@ -364,11 +364,11 @@
         </style>
     </head>
     <body
-        class="font-sans antialiased"
+        class="font-sans antialiased min-h-dvh bg-[#F6F2EC] text-[#0F172A]"
         x-data="{ addOpen: false }"
         @open-add.window="addOpen = true"
     >
-        <div class="min-h-screen {{ $attributes->get('pageBgClass', 'fam-page-bg') }}">
+        <div class="min-h-dvh {{ $attributes->get('pageBgClass', 'bg-transparent') }}">
             @unless($attributes->get('hideNavigation'))
                 <div class="{{ $attributes->get('navigationClass', '') }}">
                     @include('layouts.navigation')
@@ -429,7 +429,7 @@
                 @isset($bottomDock)
                     <!-- Mobile: single bottom dock (composer + nav) -->
                     <div id="mobileBottomDock" class="sm:hidden fixed inset-x-0 bottom-0 z-40">
-                        <div class="bg-[color:var(--fam-surface)]/95 backdrop-blur border-t border-[color:var(--fam-border)]">
+                        <div class="bg-white/95 supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-xl border-t border-black/10 shadow-[0_-10px_25px_rgba(0,0,0,0.10)]">
                             {{ $bottomDock }}
                         </div>
                         <x-mobile-primary-nav :fixed="false" />
