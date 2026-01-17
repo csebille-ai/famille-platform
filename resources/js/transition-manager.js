@@ -141,7 +141,7 @@
 		const d = document.createElement('div');
 		d.style.position = 'absolute';
 		d.style.inset = '0';
-		d.style.background = 'rgba(0,0,0,1)';
+		d.style.background = 'var(--fam-bg, #F6F2EC)';
 		d.style.opacity = String(opacity);
 		return d;
 	};
