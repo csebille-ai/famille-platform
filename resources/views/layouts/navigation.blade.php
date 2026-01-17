@@ -36,8 +36,8 @@
     $userName = Auth::user()->name ?? '';
     $userInitial = strtoupper(substr(trim($userName), 0, 1));
 
-    $hasAvatarAstro = trim((string) (Auth::user()->avatar_image_url ?? '')) !== '';
-    $avatarAstroV = optional(Auth::user()->avatar_updated_at)->getTimestamp() ?? time();
+    $hasAvatarAstro = Auth::user()->hasAvatarAstroImage();
+    $avatarAstroV = Auth::user()->avatarAstroVersion();
 
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);

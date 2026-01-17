@@ -109,7 +109,7 @@
                     : route('avatar.astro.imagePublic', $user);
             }
 
-            $v = optional($user->avatar_updated_at)->getTimestamp() ?? time();
+            $v = $user->avatarAstroVersion();
             if ($displayUrl !== '') {
                 $displayUrl .= (str_contains($displayUrl, '?') ? '&' : '?') . 'v=' . $v;
             }

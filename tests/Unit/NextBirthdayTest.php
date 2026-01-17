@@ -73,4 +73,23 @@ class NextBirthdayTest extends TestCase
         $this->assertSame(6, $next['days_remaining']);
         $this->assertSame(10, $next['turning_age']);
     }
+
+    public function test_dashboard_for_users_does_not_return_avatar_url_when_missing(): void
+    {
+        $svc = new NextBirthday();
+
+        $today = CarbonImmutable::create(2026, 1, 14, 12, 0, 0, 'Europe/Paris');
+
+        $u = new User(['name' => 'Alice']);
+        $u->id = 123;
+        $u->date_of_birth = CarbonImmutable::create(1990, 1, 24, 0, 0, 0, 'Europe/Paris');
+        $u->avatar_image_url = null;
+
+        $lists = $svc->dashboardForUsers(new Collection([$u]), $today, 10);
+        $upcoming = $lists['upcomingBirthdays'] ?? [];
+
+        $this->assertCount(1, $upcoming);
+        $this->assertArrayHasKey('avatar_url', $upcoming[0]);
+        $this->assertNull($upcoming[0]['avatar_url']);
+    }
 }

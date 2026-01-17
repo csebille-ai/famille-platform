@@ -14,8 +14,8 @@
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : 'bg-amber-50 text-amber-900 border-amber-200';
 
-            $hasAvatar = trim((string) ($user->avatar_image_url ?? '')) !== '';
-            $avatarV = optional($user->avatar_updated_at)->getTimestamp() ?? time();
+            $hasAvatar = $user->hasAvatarAstroImage();
+            $avatarV = $user->avatarAstroVersion();
             $avatarUrl = route('avatar.astro.imageForUser', ['user' => $user, 'v' => $avatarV]);
         @endphp
 

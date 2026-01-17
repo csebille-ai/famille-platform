@@ -22,8 +22,8 @@
             }
         }
 
-        $hasAvatar = trim((string) ($user->avatar_image_url ?? '')) !== '';
-        $avatarV = optional($user->avatar_updated_at)->getTimestamp() ?? time();
+        $hasAvatar = $user->hasAvatarAstroImage();
+        $avatarV = $user->avatarAstroVersion();
         $avatarImageUrl = isset($avatarImageUrl)
             ? (string) $avatarImageUrl
             : route('avatar.astro.image', ['v' => $avatarV]);

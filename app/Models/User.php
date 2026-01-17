@@ -144,4 +144,15 @@ class User extends Authenticatable
 
         return $palette[$index];
     }
+
+    public function hasAvatarAstroImage(): bool
+    {
+        return trim((string) ($this->avatar_image_url ?? '')) !== '';
+    }
+
+    public function avatarAstroVersion(): int
+    {
+        $ts = optional($this->avatar_updated_at)->getTimestamp();
+        return is_int($ts) && $ts > 0 ? $ts : time();
+    }
 }

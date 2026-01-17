@@ -134,11 +134,8 @@ class NextBirthday
             // 1) user.avatar_image_url (explicit portrait)
             // 2) local generated avatar route
             $avatarUrl = null;
-            $rawAvatar = trim((string) ($user->avatar_image_url ?? ''));
-            if ($rawAvatar !== '') {
-                $avatarUrl = $rawAvatar;
-            } elseif ($id > 0) {
-                $avatarUrl = route('avatar.astro.imagePublic', ['user' => $id]);
+            if ($user instanceof \App\Models\User && $user->hasAvatarAstroImage()) {
+                $avatarUrl = trim((string) $user->avatar_image_url);
             }
 
             $items[] = [
