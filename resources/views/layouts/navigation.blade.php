@@ -79,7 +79,7 @@
                     </div>
 
                     <div class="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-center px-24">
-                        <div class="text-[0.95rem] font-semibold text-[#0F172A] truncate max-w-[55vw]">{{ $mobileTitle }}</div>
+                        <div class="text-[0.95rem] font-semibold text-[color:var(--fam-text)] truncate max-w-[55vw]">{{ $mobileTitle }}</div>
                     </div>
 
                     <div class="shrink-0 flex items-center gap-2 z-10">
@@ -136,7 +136,7 @@
                         <div class="flex items-center me-2">
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-900/20"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-[color:var(--fam-text)] hover:bg-[color:var(--fam-surface-2)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25"
                                 aria-label="Retour"
                                 onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                             >
@@ -187,7 +187,7 @@
                                 <span class="inline-flex items-center">
                                     Tarot
                                     @if($hasTarotDraft)
-                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-accent)]" aria-hidden="true"></span>
+                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary)]" aria-hidden="true"></span>
                                     @endif
                                 </span>
                             </x-nav-link>
@@ -196,7 +196,7 @@
                                 <span class="inline-flex items-center">
                                     Actu locale
                                     @if($hasNewActu)
-                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-accent)]" aria-hidden="true"></span>
+                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary)]" aria-hidden="true"></span>
                                     @endif
                                 </span>
                             </x-nav-link>

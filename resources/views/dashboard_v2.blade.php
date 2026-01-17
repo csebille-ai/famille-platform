@@ -65,7 +65,7 @@
             content: "";
             position: absolute;
             inset: 0;
-            background: linear-gradient(90deg, rgba(246,247,249,1) 0%, rgba(238,240,244,1) 50%, rgba(246,247,249,1) 100%);
+            background: linear-gradient(90deg, rgba(247,244,239,1) 0%, rgba(231,227,218,1) 50%, rgba(247,244,239,1) 100%);
             background-size: 200% 100%;
             animation: dashShimmer 900ms linear infinite;
         }
@@ -93,7 +93,7 @@
 
         @if($upcomingCount > 0)
             <section class="dash-fade">
-                <div class="rounded-2xl bg-[color:var(--fam-surface)] px-3 py-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)]">
+                <div class="rounded-2xl bg-[color:var(--fam-surface)] px-3 py-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)]">
                     <div class="flex items-center justify-between gap-3">
                         <div class="text-sm font-semibold text-[color:var(--fam-text)]">Anniversaires</div>
                         <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
@@ -116,7 +116,7 @@
                                         $ageLabel = $b['age_label'] ?? null;
                                     @endphp
 
-                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border)] px-3 py-2.5 hover:bg-[color:var(--fam-surface)] hover:shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
+                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border)] px-3 py-2.5 hover:bg-[color:var(--fam-surface)] hover:shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
                                         <div class="flex items-center justify-between gap-3">
                                             <div class="min-w-0 flex items-center gap-3">
                                                 <div class="relative h-9 w-9 shrink-0">
@@ -147,7 +147,7 @@
                                             </div>
 
                                             <div class="shrink-0 text-right">
-                                                <div class="text-lg font-extrabold tracking-tight leading-none text-[color:var(--fam-text)]">J-{{ $days }}</div>
+                                                <div class="inline-flex items-center rounded-full bg-[color:var(--fam-tint)] px-2 py-1 text-xs font-extrabold text-[color:var(--fam-primary-hover)] border border-[color:rgba(14,165,160,0.18)]">J-{{ $days }}</div>
                                             </div>
                                         </div>
                                     </a>
@@ -161,7 +161,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 dash-fade">
 
-            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)]">
+            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)]">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Actu famille</div>
                     <a href="{{ route('moments.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
@@ -187,7 +187,7 @@
                             @endphp
 
                             <a href="{{ $href }}" class="block">
-                                <div class="group rounded-2xl bg-[color:var(--fam-surface-2)] px-3 py-2.5 border border-[color:var(--fam-border)] hover:bg-[color:var(--fam-surface)] hover:shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)] transition active:scale-[0.995]">
+                                <div class="group rounded-2xl bg-[color:var(--fam-surface-2)] px-3 py-2.5 border border-[color:var(--fam-border)] hover:bg-[color:var(--fam-surface)] hover:shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)] transition active:scale-[0.995]">
                                     <div class="flex items-start gap-3">
                                         <div class="mt-2 h-2.5 w-2.5 rounded-full {{ $dot }}"></div>
 
@@ -209,7 +209,7 @@
                 @endif
             </div>
 
-            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)]">
+            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(17,24,39,0.04),0_12px_28px_rgba(17,24,39,0.06)]">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Photos récentes</div>
                     <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>

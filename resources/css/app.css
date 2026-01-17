@@ -4,18 +4,18 @@
 
 @layer base {
 	:root {
-		/* Famille Teal — official palette */
-		--fam-bg: #FBF7F0;
+		/* Famille Teal — warm + family (Jan 2026 palette) */
+		--fam-bg: #F7F4EF;
 		--fam-surface: #FFFFFF;
 		--fam-surface-2: #F6F4EF;
-		--fam-border: #E7E1D8;
-		--fam-text: #1B1B1F;
+		--fam-border: #E7E3DA;
+		--fam-text: #111827;
 		--fam-muted: #6B7280;
-		--fam-primary: #128A79;
-		--fam-primary-hover: #0F6E62;
-		--fam-tint: #E8F7F4;
-		--fam-accent: #FF5A6A;
-		--fam-accent-hover: #E94B5B;
+		--fam-primary: #0EA5A0;
+		--fam-primary-hover: #0B8F8A;
+		--fam-tint: #E6F7F6;
+		--fam-accent: #0EA5A0;
+		--fam-accent-hover: #0B8F8A;
 
 		/* Back-compat tokens used by existing UI helpers */
 		--ui-bg: var(--fam-bg);
@@ -54,7 +54,7 @@
 		background: var(--fam-surface);
 		border: 1px solid var(--fam-border);
 		border-radius: 1rem;
-		box-shadow: 0 1px 1px rgba(15, 23, 42, 0.03), 0 10px 30px rgba(15, 23, 42, 0.06);
+		box-shadow: 0 1px 1px rgba(17, 24, 39, 0.04), 0 12px 28px rgba(17, 24, 39, 0.06);
 	}
 
 	.fam-card-soft {
@@ -81,7 +81,7 @@
 		border-radius: 9999px;
 		background: var(--fam-tint);
 		color: var(--fam-primary-hover);
-		border: 1px solid rgba(18, 138, 121, 0.12);
+		border: 1px solid rgba(14, 165, 160, 0.14);
 	}
 }
 

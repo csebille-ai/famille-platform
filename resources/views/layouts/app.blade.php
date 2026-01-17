@@ -8,7 +8,7 @@
             <meta name="vapid-public-key" content="{{ config('services.webpush.public_key') }}">
         @endif
 
-        <meta name="theme-color" content="#128A79">
+        <meta name="theme-color" content="#0EA5A0">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <meta name="apple-mobile-web-app-title" content="{{ config('app.name', 'Famille') }}">
@@ -222,9 +222,9 @@
             }
 
             .ui-badge--brand {
-                border-color: rgba(79, 70, 229, 0.25);
-                background: rgba(79, 70, 229, 0.08);
-                color: #3730a3;
+                border-color: rgba(14, 165, 160, 0.22);
+                background: rgba(14, 165, 160, 0.12);
+                color: var(--ui-brand-hover);
             }
 
             .ui-badge--warning {
@@ -254,11 +254,11 @@
 
             .ui-nav-link:hover {
                 color: var(--ui-brand-hover);
-                border-bottom-color: rgba(79, 70, 229, 0.35);
+                border-bottom-color: rgba(14, 165, 160, 0.35);
             }
 
             .ui-nav-link--active {
-                color: var(--ui-text);
+                color: var(--ui-brand);
                 border-bottom-color: var(--ui-brand);
             }
 
@@ -267,7 +267,7 @@
             }
 
             .ui-nav-link:focus-visible {
-                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+                box-shadow: 0 0 0 3px rgba(14, 165, 160, 0.20);
                 border-radius: 0.5rem;
             }
 
@@ -284,15 +284,15 @@
             }
 
             .ui-nav-link-mobile:hover {
-                color: #1f2937;
-                background: #f8fafc;
-                border-left-color: #cbd5e1;
+                color: var(--ui-text);
+                background: rgba(14, 165, 160, 0.08);
+                border-left-color: rgba(14, 165, 160, 0.18);
             }
 
             .ui-nav-link-mobile--active {
-                color: #3730a3;
-                background: rgba(79, 70, 229, 0.08);
-                border-left-color: rgba(79, 70, 229, 0.55);
+                color: var(--ui-brand-hover);
+                background: rgba(14, 165, 160, 0.10);
+                border-left-color: rgba(14, 165, 160, 0.55);
             }
 
             .ui-nav-link-mobile:focus {
@@ -300,7 +300,7 @@
             }
 
             .ui-nav-link-mobile:focus-visible {
-                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+                box-shadow: 0 0 0 3px rgba(14, 165, 160, 0.20);
                 border-radius: 0.75rem;
             }
 
@@ -323,8 +323,8 @@
             }
 
             .ui-dropdown-link:hover {
-                background: rgba(79, 70, 229, 0.08);
-                color: #3730a3;
+                background: rgba(14, 165, 160, 0.10);
+                color: var(--ui-brand-hover);
             }
 
             .ui-dropdown-link:focus {
