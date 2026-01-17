@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" style="background: #F6F2EC;">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -364,11 +364,12 @@
         </style>
     </head>
     <body
-        class="font-sans antialiased min-h-dvh bg-[#F6F2EC] text-[#0F172A]"
+        class="font-sans antialiased"
+        style="min-height: 100dvh; background: #F6F2EC; color: #0F172A;"
         x-data="{ addOpen: false }"
         @open-add.window="addOpen = true"
     >
-        <div class="min-h-dvh {{ $attributes->get('pageBgClass', 'bg-transparent') }}">
+        <div class="{{ $attributes->get('pageBgClass', '') }}" style="min-height: 100dvh; background: transparent;">
             @unless($attributes->get('hideNavigation'))
                 <div class="{{ $attributes->get('navigationClass', '') }}">
                     @include('layouts.navigation')
