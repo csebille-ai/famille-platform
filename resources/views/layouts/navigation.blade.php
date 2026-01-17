@@ -65,8 +65,7 @@
                             </button>
                         @else
                             <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 rounded-full border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2" aria-label="Accueil">
-                                <x-application-logo class="h-6 w-6" />
-                                <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="mobile-brand-wordmark h-5 w-auto" loading="lazy" />
+                                <img src="{{ asset('images/brand/famovale.png') }}" alt="Famille" class="h-6 w-auto" loading="lazy" decoding="async" />
                             </a>
                         @endif
                     </div>
@@ -141,8 +140,7 @@
                     <div class="shrink-0 flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2" aria-label="Accueil">
                             <span class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
-                                <img src="{{ asset('images/brand/icon.svg') }}" alt="" class="h-7 w-7" loading="lazy" />
-                                <img src="{{ asset('images/brand/wordmark.svg') }}" alt="La Famille" class="hidden lg:block h-5 w-auto" loading="lazy" />
+                                <img src="{{ asset('images/brand/famovale.png') }}" alt="Famille" class="h-7 w-auto" loading="lazy" decoding="async" />
                             </span>
                         </a>
                     </div>
