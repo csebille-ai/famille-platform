@@ -65,7 +65,15 @@
                             </button>
                         @else
                             <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 px-0 py-0.5" aria-label="Accueil">
-                                <img src="{{ asset('images/brand/famovale.png') }}?v=2" alt="Famille" class="h-11 w-auto object-contain" loading="lazy" decoding="async" />
+                                <img
+                                    src="{{ asset('images/icon-192.png') }}?v=3"
+                                    srcset="{{ asset('images/icon-192.png') }}?v=3 192w, {{ asset('images/icon-512.png') }}?v=3 512w"
+                                    sizes="44px"
+                                    alt="Famille"
+                                    class="h-11 w-11 object-contain"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
                             </a>
                         @endif
                     </div>
@@ -140,7 +148,15 @@
                     <div class="shrink-0 flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2" aria-label="Accueil">
                             <span class="inline-flex items-center px-0 py-0.5">
-                                <img src="{{ asset('images/brand/famovale.png') }}?v=2" alt="Famille" class="h-12 w-auto object-contain" loading="lazy" decoding="async" />
+                                <img
+                                    src="{{ asset('images/icon-192.png') }}?v=3"
+                                    srcset="{{ asset('images/icon-192.png') }}?v=3 192w, {{ asset('images/icon-512.png') }}?v=3 512w"
+                                    sizes="48px"
+                                    alt="Famille"
+                                    class="h-12 w-12 object-contain"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
                             </span>
                         </a>
                     </div>
