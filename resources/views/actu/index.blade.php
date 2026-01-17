@@ -7,7 +7,7 @@
     ];
 @endphp
 
-<x-app-layout pageBgClass="bg-slate-50">
+<x-app-layout pageBgClass="fam-page-bg">
     <div class="max-w-3xl mx-auto">
         <div id="actu-sticky" class="sticky z-[55] bg-slate-50/95 backdrop-blur border-b border-slate-200" style="top: 0px">
             <div class="px-6 pt-4 pb-3">

@@ -2,7 +2,7 @@
     $spreadLabel = fn (string $s) => $s === 'five' ? '5 cartes' : '3 cartes';
 @endphp
 
-<x-app-layout pageBgClass="bg-slate-50">
+<x-app-layout pageBgClass="fam-page-bg">
     <div class="max-w-3xl mx-auto px-6 py-6 space-y-6">
         <div class="flex items-end justify-between gap-4">
             <div>

@@ -5,7 +5,7 @@
     }
 @endphp
 
-<x-app-layout pageBgClass="bg-slate-50">
+<x-app-layout pageBgClass="fam-page-bg">
     <script type="application/json" id="mediatheque-initial-tab">@json($initialTab)</script>
     <script type="application/json" id="mediatheque-films-items">@json($filmsItems ?? [])</script>
     <script type="application/json" id="mediatheque-series-items">@json($seriesItems ?? [])</script>

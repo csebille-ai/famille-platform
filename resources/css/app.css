@@ -5,10 +5,10 @@
 @layer base {
 	:root {
 		/* Famille Teal — warm + family (Jan 2026 palette) */
-		--fam-bg: #F7F4EF;
+		--fam-bg: #F6F2EC;
 		--fam-surface: #FFFFFF;
 		--fam-surface-2: #F6F4EF;
-		--fam-border: #E7E3DA;
+		--fam-border: #E8E2D8;
 		--fam-text: #111827;
 		--fam-muted: #6B7280;
 		--fam-primary: #0EA5A0;

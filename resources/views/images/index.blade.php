@@ -21,7 +21,7 @@
     };
 @endphp
 
-<x-app-layout pageBgClass="bg-slate-50">
+<x-app-layout pageBgClass="fam-page-bg">
     <div
         class="max-w-6xl mx-auto px-6 py-6 space-y-6"
         x-data="{

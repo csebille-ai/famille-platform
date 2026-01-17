@@ -7,7 +7,7 @@
     $meId = (int) (auth()->id() ?? 0);
 @endphp
 
-<x-app-layout pageBgClass="bg-slate-50">
+<x-app-layout pageBgClass="fam-page-bg">
     <div class="max-w-4xl mx-auto px-6 py-6 space-y-4">
         <div class="flex items-center justify-between gap-3">
             <h1 class="text-xl font-bold text-gray-900">Famille</h1>

@@ -57,7 +57,7 @@
 @endphp
 
 <nav
-    class="sm:hidden {{ $fixed ? 'fixed inset-x-0 bottom-0 z-40' : 'w-full' }} border-t border-[color:var(--fam-border)] bg-[color:var(--fam-surface)]/90 pb-[env(safe-area-inset-bottom)]"
+    class="sm:hidden {{ $fixed ? 'fixed inset-x-0 bottom-0 z-40' : 'w-full' }} border-t border-[color:rgba(17,24,39,0.10)] bg-[rgba(255,255,255,0.92)] pb-[env(safe-area-inset-bottom)]"
     style="--mobile-bottom-nav-h: 4rem;"
     aria-label="Navigation principale"
 >
@@ -66,7 +66,7 @@
             @foreach($items as $item)
                 <a
                     href="{{ $item['href'] }}"
-                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold {{ $item['active'] ? 'text-[color:var(--fam-primary)]' : 'text-[color:var(--fam-muted)]' }}"
+                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-bold {{ $item['active'] ? 'text-[color:var(--fam-primary)] bg-[rgba(14,165,160,0.10)]' : 'text-[#374151]' }}"
                     aria-label="{{ $item['label'] }}"
                     aria-current="{{ $item['active'] ? 'page' : 'false' }}"
                 >
@@ -74,7 +74,7 @@
                         @if(($item['key'] ?? '') === 'tarot')
                             <img src="{{ asset('images/crystal.png') }}" alt="" class="h-6 w-6 object-contain" aria-hidden="true" />
                         @else
-                            <i class="ph ph-{{ $item['icon'] }} text-[20px]" aria-hidden="true"></i>
+                            <i class="ph ph-{{ $item['icon'] }} text-[22px]" aria-hidden="true"></i>
                         @endif
 
                         @if(!empty($item['badge']))

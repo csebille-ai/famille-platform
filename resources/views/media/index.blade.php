@@ -8,7 +8,7 @@
     }
 @endphp
 
-<x-app-layout pageBgClass="bg-slate-50">
+<x-app-layout pageBgClass="fam-page-bg">
     <script type="application/json" id="media-initial-tab">@json($initialTab)</script>
     <script type="application/json" id="media-images-items">@json($imagesItems ?? [])</script>
     <script type="application/json" id="media-videos-items">@json($videosItems ?? [])</script>

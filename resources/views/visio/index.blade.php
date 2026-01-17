@@ -1,4 +1,4 @@
-<x-app-layout pageBgClass="bg-slate-50">
+<x-app-layout pageBgClass="fam-page-bg">
     @php
         $provider = (string) (config('visio.provider') ?? 'link');
         $visioUrl = (string) (config('visio.url') ?? '');
