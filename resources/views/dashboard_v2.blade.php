@@ -1,4 +1,4 @@
-<x-app-layout pageBgClass="bg-[#F6F7F9]">
+<x-app-layout pageBgClass="fam-page-bg">
     @php
         $fmtDuration = function (?int $seconds): string {
             $s = (int) ($seconds ?? 0);
@@ -93,15 +93,15 @@
 
         @if($upcomingCount > 0)
             <section class="dash-fade">
-                <div class="rounded-2xl bg-white px-3 py-3 ring-1 ring-black/5 shadow-sm">
+                <div class="rounded-2xl bg-[color:var(--fam-surface)] px-3 py-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)]">
                     <div class="flex items-center justify-between gap-3">
-                        <div class="text-sm font-semibold text-[#0F172A]">Anniversaires</div>
-                        <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
+                        <div class="text-sm font-semibold text-[color:var(--fam-text)]">Anniversaires</div>
+                        <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
                     </div>
 
                     <div class="mt-2 relative">
-                        <div class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white to-transparent"></div>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent"></div>
+                        <div class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[color:var(--fam-surface)] to-transparent"></div>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[color:var(--fam-surface)] to-transparent"></div>
 
                         <div class="no-scrollbar overflow-x-auto snap-x snap-mandatory">
                             <div class="flex gap-2 pr-2">
@@ -116,7 +116,7 @@
                                         $ageLabel = $b['age_label'] ?? null;
                                     @endphp
 
-                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-[#F8FAFC] ring-1 ring-black/5 px-3 py-2.5 hover:bg-white hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A]/30" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
+                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border)] px-3 py-2.5 hover:bg-[color:var(--fam-surface)] hover:shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
                                         <div class="flex items-center justify-between gap-3">
                                             <div class="min-w-0 flex items-center gap-3">
                                                 <div class="relative h-9 w-9 shrink-0">
@@ -124,30 +124,30 @@
                                                         <img
                                                             src="{{ $avatarUrl }}"
                                                             alt=""
-                                                            class="h-9 w-9 rounded-full bg-[#0F172A]/5 ring-1 ring-black/5 object-cover"
+                                                            class="h-9 w-9 rounded-full bg-black/5 border border-[color:var(--fam-border)] object-cover"
                                                             loading="lazy"
                                                             onerror="this.style.display='none';var fb=this.parentElement.querySelector('[data-fallback]');if(fb){fb.style.display='flex';}"
                                                         />
                                                     @endif
-                                                    <div data-fallback class="h-9 w-9 rounded-full bg-[#0F172A] text-white flex items-center justify-center" style="{{ (is_string($avatarUrl) && trim($avatarUrl) !== '') ? 'display:none' : 'display:flex' }}">
+                                                    <div data-fallback class="h-9 w-9 rounded-full bg-[color:var(--fam-primary)] text-white flex items-center justify-center" style="{{ (is_string($avatarUrl) && trim($avatarUrl) !== '') ? 'display:none' : 'display:flex' }}">
                                                         <i class="ph ph-user text-[18px]" aria-hidden="true"></i>
                                                         <span class="sr-only">{{ $initials }}</span>
                                                     </div>
                                                 </div>
 
                                                 <div class="min-w-0">
-                                                    <div class="text-sm font-semibold text-[#0F172A] truncate">{{ $name }}</div>
-                                                    <div class="mt-0.5 text-xs font-semibold text-[#64748B] truncate">
+                                                    <div class="text-sm font-semibold text-[color:var(--fam-text)] truncate">{{ $name }}</div>
+                                                    <div class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)] truncate">
                                                         {{ $dateLabel }}
                                                         @if(is_string($ageLabel) && trim($ageLabel) !== '')
-                                                            <span class="text-[#94A3B8]">·</span> {{ $ageLabel }}
+                                                            <span class="text-[color:var(--fam-muted)]/60">·</span> {{ $ageLabel }}
                                                         @endif
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div class="shrink-0 text-right">
-                                                <div class="text-lg font-extrabold tracking-tight leading-none text-[#0F172A]">J-{{ $days }}</div>
+                                                <div class="text-lg font-extrabold tracking-tight leading-none text-[color:var(--fam-text)]">J-{{ $days }}</div>
                                             </div>
                                         </div>
                                     </a>
@@ -161,10 +161,10 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 dash-fade">
 
-            <div class="rounded-2xl bg-white p-3 ring-1 ring-black/5 shadow-sm">
+            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)]">
                 <div class="flex items-center justify-between gap-3">
-                    <div class="text-sm font-semibold text-[#0F172A]">Actu famille</div>
-                    <a href="{{ route('moments.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[#0F172A]/70 hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
+                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">Actu famille</div>
+                    <a href="{{ route('moments.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
                 </div>
 
                 @if(count($activityItems))
@@ -186,16 +186,16 @@
                             @endphp
 
                             <a href="{{ $href }}" class="block">
-                                <div class="group rounded-2xl bg-[#F8FAFC] px-3 py-2.5 ring-1 ring-black/5 hover:bg-white hover:shadow-sm transition active:scale-[0.995]">
+                                <div class="group rounded-2xl bg-[color:var(--fam-surface-2)] px-3 py-2.5 border border-[color:var(--fam-border)] hover:bg-[color:var(--fam-surface)] hover:shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)] transition active:scale-[0.995]">
                                     <div class="flex items-start gap-3">
                                         <div class="mt-2 h-2.5 w-2.5 rounded-full {{ $dot }}"></div>
 
                                         <div class="min-w-0 flex-1">
-                                            <div class="text-sm font-semibold text-[#0F172A] leading-snug">
+                                            <div class="text-sm font-semibold text-[color:var(--fam-text)] leading-snug">
                                                 {{ $sentence }}
                                             </div>
                                             @if($when !== '')
-                                                <div class="mt-1 text-xs font-semibold text-[#64748B]">{{ $when }}</div>
+                                                <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">{{ $when }}</div>
                                             @endif
                                         </div>
                                     </div>
@@ -204,7 +204,7 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="mt-2 text-sm text-[#64748B]">Rien de neuf pour l’instant.</div>
+                    <div class="mt-2 text-sm text-[color:var(--fam-muted)]">Rien de neuf pour l’instant.</div>
                 @endif
             </div>
 

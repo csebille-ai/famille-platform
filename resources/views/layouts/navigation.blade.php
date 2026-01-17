@@ -46,18 +46,18 @@
 @if(request()->routeIs('chat.*'))
     {{-- Chat is conversation-first and provides its own sticky header. --}}
 @else
-<nav id="appTopNav" class="bg-white border-b border-gray-100 fixed top-0 inset-x-0 z-50">
+<nav id="appTopNav" class="bg-[color:var(--fam-surface)] border-b border-[color:var(--fam-border)] fixed top-0 inset-x-0 z-50">
     <!-- Mobile: single sticky top bar -->
     <div class="sm:hidden">
         <!-- App bar (iOS-clean) -->
-        <div class="bg-white/95 backdrop-blur border-b border-[#EEF0F4]" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem)">
+        <div class="bg-[color:var(--fam-surface)]/95 backdrop-blur border-b border-[color:var(--fam-border)]" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem)">
             <div class="px-4 pb-1">
                 <div class="relative flex items-center justify-between gap-3">
                     <div class="shrink-0 z-10">
                         @if($showBack)
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[#EEF0F4] bg-white text-[#0F172A] hover:bg-[#F6F7F9]"
+                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-[color:var(--fam-text)] hover:bg-[color:var(--fam-surface-2)]"
                                 aria-label="Retour"
                                 onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                             >

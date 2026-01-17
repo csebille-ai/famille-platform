@@ -8,7 +8,7 @@
             <meta name="vapid-public-key" content="{{ config('services.webpush.public_key') }}">
         @endif
 
-        <meta name="theme-color" content="#14b8a6">
+        <meta name="theme-color" content="#128A79">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <meta name="apple-mobile-web-app-title" content="{{ config('app.name', 'Famille') }}">
@@ -80,19 +80,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <style id="ui-tokens">
-            :root {
-                --ui-bg: #F6F7F9;
-                --ui-surface: #ffffff;
-                --ui-text: #0f172a;
-                --ui-muted: #64748b;
-                --ui-border: #e2e8f0;
-                --ui-brand: #4f46e5;
-                --ui-brand-hover: #4338ca;
-                --ui-danger: #dc2626;
-                --ui-danger-hover: #b91c1c;
-                --ui-success: #16a34a;
-                --ui-warning: #d97706;
-            }
+            /* Color tokens are centralized in resources/css/app.css (:root --fam-* / --ui-*). */
 
             /* Mobile header brand: show wordmark only when there's room (never truncate/crop). */
             .mobile-brand-wordmark {
@@ -129,7 +117,7 @@
             }
 
             .ui-btn:focus-visible {
-                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+                box-shadow: 0 0 0 3px rgba(18, 138, 121, 0.22);
             }
 
             .ui-btn[disabled],
@@ -150,12 +138,12 @@
             .ui-btn--secondary {
                 background: var(--ui-surface);
                 border-color: var(--ui-border);
-                color: #334155;
+                color: var(--ui-text);
                 box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
             }
 
             .ui-btn--secondary:hover {
-                background: #f8fafc;
+                background: var(--fam-surface-2);
             }
 
             .ui-btn--danger {
@@ -186,8 +174,8 @@
 
             .ui-input:focus {
                 outline: none;
-                border-color: rgba(79, 70, 229, 0.9);
-                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+                border-color: rgba(18, 138, 121, 0.9);
+                box-shadow: 0 0 0 3px rgba(18, 138, 121, 0.18);
             }
 
             .ui-input[disabled],
@@ -344,7 +332,7 @@
             }
 
             .ui-dropdown-link:focus-visible {
-                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+                box-shadow: 0 0 0 3px rgba(18, 138, 121, 0.18);
             }
 
             .ui-chip {
@@ -355,14 +343,14 @@
                 border-radius: 9999px;
                 border: 1px solid var(--ui-border);
                 background: var(--ui-surface);
-                color: #334155;
+                color: var(--ui-text);
                 box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
                 transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
                 -webkit-tap-highlight-color: transparent;
             }
 
             .ui-chip:hover {
-                background: #f8fafc;
+                background: var(--fam-surface-2);
                 color: var(--ui-text);
             }
 
@@ -371,7 +359,7 @@
             }
 
             .ui-chip:focus-visible {
-                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+                box-shadow: 0 0 0 3px rgba(18, 138, 121, 0.18);
             }
         </style>
     </head>
@@ -380,7 +368,7 @@
         x-data="{ addOpen: false }"
         @open-add.window="addOpen = true"
     >
-        <div class="min-h-screen {{ $attributes->get('pageBgClass', 'bg-[#F6F7F9]') }}">
+        <div class="min-h-screen {{ $attributes->get('pageBgClass', 'fam-page-bg') }}">
             @unless($attributes->get('hideNavigation'))
                 <div class="{{ $attributes->get('navigationClass', '') }}">
                     @include('layouts.navigation')
@@ -427,7 +415,7 @@
             >
                 <!-- Page Heading (must be below fixed top nav) -->
                 @isset($header)
-                    <header class="bg-white shadow">
+                    <header class="bg-[color:var(--fam-surface)] border-b border-[color:var(--fam-border)]">
                         <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                             {{ $header }}
                         </div>
@@ -441,7 +429,7 @@
                 @isset($bottomDock)
                     <!-- Mobile: single bottom dock (composer + nav) -->
                     <div id="mobileBottomDock" class="sm:hidden fixed inset-x-0 bottom-0 z-40">
-                        <div class="bg-white/95 backdrop-blur border-t border-slate-100">
+                        <div class="bg-[color:var(--fam-surface)]/95 backdrop-blur border-t border-[color:var(--fam-border)]">
                             {{ $bottomDock }}
                         </div>
                         <x-mobile-primary-nav :fixed="false" />
