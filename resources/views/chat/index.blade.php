@@ -594,6 +594,7 @@
             const QUICKTYPE_HIDDEN_KEY = 'famille:chat:quicktype_hidden_v1';
             const QUICKTYPE_MAX_ITEMS = 12;
             const QUICKTYPE_DEBOUNCE_MS = 110;
+            const QUICKTYPE_SHOW_ON_EMPTY = false;
 
             const quickTypeUi = {
                 mobile: {
@@ -609,6 +610,7 @@
             const quickTypeState = {
                 activeKey: activeComposerKey,
                 composing: false,
+                hasInteracted: { mobile: false, desktop: false },
                 selectedIndex: 0,
                 suggestions: [],
                 timer: null,
@@ -618,6 +620,11 @@
                 'OK',
                 'Merci',
                 'Super',
+                'Salut',
+                'Sans souci',
+                'Ça marche',
+                'Ça roule',
+                'Ça marche pour moi',
                 'Je regarde et je te dis',
                 'Je suis en route',
                 'J’arrive',
@@ -775,13 +782,29 @@
             }
 
             function normalizeForMatch(s) {
-                return String(s || '').toLocaleLowerCase();
+                let v = String(s || '').toLocaleLowerCase();
+                // Accent-insensitive matching for FR (ça/ç/cà → ca)
+                try {
+                    v = v.normalize('NFD');
+                } catch {}
+                try {
+                    v = v.replace(/\p{Diacritic}+/gu, '');
+                } catch {
+                    v = v.replace(/[\u0300-\u036f]+/g, '');
+                }
+                v = v.replace(/œ/g, 'oe').replace(/æ/g, 'ae');
+                return v;
             }
 
-            function computeQuickTypeSuggestions(textarea) {
+            function computeQuickTypeSuggestions(textarea, key) {
                 const value = String(textarea?.value || '').trim();
                 const { token } = getCaretToken(textarea);
                 const needle = normalizeForMatch(token);
+
+                const hasInteracted = !!quickTypeState.hasInteracted?.[key];
+                if (!value && !hasInteracted && !QUICKTYPE_SHOW_ON_EMPTY) {
+                    return [];
+                }
 
                 const pinned = loadQuickTypePinned();
                 const recents = loadQuickTypeRecents();
@@ -813,15 +836,32 @@
                         return true;
                     });
 
-                if (needle) {
-                    out = out
-                        .filter((s) => normalizeForMatch(s).startsWith(needle))
-                        .slice(0, 8);
-                } else {
-                    out = out.slice(0, 8);
+                const limit = 8;
+
+                // Helper: fallback when no prefix match (avoid empty bar/jank)
+                const fallbackBase = [...pinned, ...context, ...recents, ...QUICKTYPE_PRESETS]
+                    .map((s) => String(s || '').trim())
+                    .filter((s) => s.length > 0)
+                    .filter((s) => !hidden.includes(normalizeForMatch(s)));
+
+                const fallback = [];
+                const fallbackSeen = new Set();
+                for (const s of fallbackBase) {
+                    const k = normalizeForMatch(s);
+                    if (fallbackSeen.has(k)) continue;
+                    fallbackSeen.add(k);
+                    fallback.push(s);
+                    if (fallback.length >= limit) break;
                 }
 
-                return out;
+                if (needle) {
+                    const matches = out.filter((s) => normalizeForMatch(s).startsWith(needle)).slice(0, limit);
+                    if (matches.length > 0) return matches;
+                    return fallback.slice(0, Math.min(6, fallback.length));
+                }
+
+                // Empty token: show limited fallback when we are allowed to show.
+                return (out.length ? out.slice(0, limit) : fallback.slice(0, Math.min(6, fallback.length)));
             }
 
             function renderQuickType(key, suggestions, selectedIndex) {
@@ -1097,7 +1137,7 @@
                     if (quickTypeState.composing) return;
 
                     quickTypeState.activeKey = key;
-                    quickTypeState.suggestions = computeQuickTypeSuggestions(textarea);
+                    quickTypeState.suggestions = computeQuickTypeSuggestions(textarea, key);
                     quickTypeState.selectedIndex = Math.max(0, Math.min(quickTypeState.suggestions.length - 1, quickTypeState.selectedIndex));
                     renderQuickType(key, quickTypeState.suggestions, quickTypeState.selectedIndex);
                 }, QUICKTYPE_DEBOUNCE_MS);
@@ -1133,11 +1173,20 @@
                     setActiveComposerKey(key);
                     scheduleQuickTypeUpdate(key);
                 });
-                c.textarea.addEventListener('input', () => scheduleQuickTypeUpdate(key));
+                c.textarea.addEventListener('input', () => {
+                    if (String(c.textarea.value || '').trim().length > 0) {
+                        quickTypeState.hasInteracted[key] = true;
+                    }
+                    scheduleQuickTypeUpdate(key);
+                });
 
                 c.textarea.addEventListener('keydown', (e) => {
                     if (quickTypeState.composing) return;
                     if (key !== activeComposerKey) return;
+
+                    if (typeof e.key === 'string' && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                        quickTypeState.hasInteracted[key] = true;
+                    }
 
                     const suggestions = quickTypeState.suggestions || [];
                     if (!suggestions.length) return;
