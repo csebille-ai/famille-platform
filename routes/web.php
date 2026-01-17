@@ -343,10 +343,21 @@ Route::get('/home', function () {
             $todayBirthdays = $lists['todayBirthdays'] ?? [];
             $upcomingBirthdays = $lists['upcomingBirthdays'] ?? [];
         } elseif (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
+            $cols = ['id', 'name', 'date_of_birth'];
+            if (Schema::hasColumn('users', 'avatar_image_url')) {
+                $cols[] = 'avatar_image_url';
+            }
+            if (Schema::hasColumn('users', 'avatar_updated_at')) {
+                $cols[] = 'avatar_updated_at';
+            }
+            if (Schema::hasColumn('users', 'avatar_astro_status')) {
+                $cols[] = 'avatar_astro_status';
+            }
+
             $usersWithDob = User::query()
                 ->whereNotNull('date_of_birth')
                 ->orderBy('name')
-                ->get(['id', 'name', 'date_of_birth']);
+                ->get($cols);
 
             $lists = app(NextBirthday::class)->dashboardForUsers($usersWithDob, null, 10);
             $todayBirthdays = $lists['todayBirthdays'] ?? [];
