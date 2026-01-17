@@ -462,31 +462,50 @@
             </div>
         </div>
 
-        <div id="chatAttachSheet" class="fixed inset-0 z-50 hidden">
-            <div id="chatAttachBackdrop" class="absolute inset-0 bg-black/40"></div>
-            <div class="absolute inset-x-0 bottom-0 bg-white rounded-t-3xl p-4 shadow-2xl">
-                <div class="text-sm font-semibold text-gray-900 px-2">Ajouter</div>
-                <div id="chatAttachQuota" class="mt-1 text-xs text-slate-500 px-2"></div>
-                <div class="mt-3 grid gap-2">
-                    <button
-                        type="button"
-                        id="chatAttachPickMedia"
-                        class="w-full inline-flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900"
-                    >
-                        <span>Photo / Vidéo</span>
-                        <i class="ph ph-image" aria-hidden="true"></i>
-                    </button>
+        <div id="chatAttachSheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+            <div id="chatAttachBackdrop" class="absolute inset-0 bg-black/30 backdrop-blur-sm opacity-0 transition-opacity duration-[220ms] ease-out motion-reduce:transition-none"></div>
+            <div class="absolute inset-x-0 bottom-0 flex justify-center">
+                <div
+                    id="chatAttachPanel"
+                    class="w-full max-w-[560px] rounded-t-3xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] shadow-[0_-18px_55px_rgba(15,23,42,0.18)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] opacity-0 translate-y-6 transition-[transform,opacity] duration-[220ms] ease-out motion-reduce:transition-none motion-reduce:transform-none"
+                    role="dialog"
+                    aria-label="Ajouter"
+                >
+                    <div class="mx-auto h-1 w-9 rounded-full bg-black/10"></div>
+
+                    <div class="mt-3">
+                        <div class="text-sm font-semibold text-[color:var(--fam-text)]">Ajouter</div>
+                        <div id="chatAttachQuota" class="mt-1 text-xs text-slate-600"></div>
+                    </div>
+
+                    <div class="mt-3 grid gap-2">
+                        <button
+                            type="button"
+                            id="chatAttachPickMedia"
+                            class="group w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] transition-[transform,background-color,border-color] hover:bg-[color:var(--fam-tint)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.35)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
+                        >
+                            <span>Photo / Vidéo</span>
+                            <i class="ph ph-image text-[22px] text-slate-500 transition-colors group-active:text-[color:var(--fam-primary)] group-focus-visible:text-[color:var(--fam-primary)]" aria-hidden="true"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            id="chatAttachPickVoice"
+                            class="group w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] transition-[transform,background-color,border-color] hover:bg-[color:var(--fam-tint)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.35)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
+                        >
+                            <span>Dicter</span>
+                            <i class="ph ph-microphone text-[22px] text-slate-500 transition-colors group-active:text-[color:var(--fam-primary)] group-focus-visible:text-[color:var(--fam-primary)]" aria-hidden="true"></i>
+                        </button>
+                    </div>
 
                     <button
                         type="button"
-                        id="chatAttachPickVoice"
-                        class="w-full inline-flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900"
+                        id="chatAttachCancel"
+                        class="mt-3 w-full h-11 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-white/60 active:bg-white/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.30)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
                     >
-                        <span>Dicter</span>
-                        <i class="ph ph-microphone" aria-hidden="true"></i>
+                        Annuler
                     </button>
                 </div>
-                <button type="button" id="chatAttachCancel" class="mt-3 w-full text-sm text-slate-600 py-2">Annuler</button>
             </div>
         </div>
 
@@ -2321,11 +2340,69 @@
                 }
             }
 
+            let attachSheetCloseTimer = null;
+
             function setAttachSheetOpen(open) {
                 if (!attachSheet) return;
-                attachSheet.classList.toggle('hidden', !open);
+
+                const panel = document.getElementById('chatAttachPanel');
+                const reduceMotion = (() => {
+                    try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+                    catch { return false; }
+                })();
+                const DURATION_MS = 220;
+
+                if (attachSheetCloseTimer) {
+                    clearTimeout(attachSheetCloseTimer);
+                    attachSheetCloseTimer = null;
+                }
+
                 if (open) {
+                    attachSheet.classList.remove('hidden');
+                    attachSheet.setAttribute('aria-hidden', 'false');
+
+                    // Ensure initial state then animate in.
+                    if (attachBackdrop) {
+                        attachBackdrop.classList.add('opacity-0');
+                        attachBackdrop.classList.remove('opacity-100');
+                    }
+                    if (panel) {
+                        panel.classList.add('opacity-0', 'translate-y-6');
+                        panel.classList.remove('opacity-100', 'translate-y-0');
+                    }
+
+                    requestAnimationFrame(() => {
+                        if (attachBackdrop) {
+                            attachBackdrop.classList.remove('opacity-0');
+                            attachBackdrop.classList.add('opacity-100');
+                        }
+                        if (panel) {
+                            panel.classList.remove('opacity-0', 'translate-y-6');
+                            panel.classList.add('opacity-100', 'translate-y-0');
+                        }
+                    });
+
                     refreshQuota().catch(() => {});
+                    return;
+                }
+
+                attachSheet.setAttribute('aria-hidden', 'true');
+                if (attachBackdrop) {
+                    attachBackdrop.classList.add('opacity-0');
+                    attachBackdrop.classList.remove('opacity-100');
+                }
+                if (panel) {
+                    panel.classList.add('opacity-0', 'translate-y-6');
+                    panel.classList.remove('opacity-100', 'translate-y-0');
+                }
+
+                if (reduceMotion) {
+                    attachSheet.classList.add('hidden');
+                } else {
+                    attachSheetCloseTimer = setTimeout(() => {
+                        attachSheet.classList.add('hidden');
+                        attachSheetCloseTimer = null;
+                    }, DURATION_MS);
                 }
             }
 
