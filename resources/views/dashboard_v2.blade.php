@@ -81,6 +81,12 @@
             $familyActivity = $familyActivity ?? [];
             $activityItems = is_array($familyActivity) ? array_slice($familyActivity, 0, 3) : [];
 
+            /** @var \Illuminate\Support\Collection<int,\App\Models\Event>|array<int,\App\Models\Event> $upcomingEvents */
+            $upcomingEvents = $upcomingEvents ?? collect();
+            if (is_array($upcomingEvents)) {
+                $upcomingEvents = collect($upcomingEvents);
+            }
+
             /** @var array<int,array{name:string,initials:string,birthday_date:\Carbon\CarbonImmutable,days_until:int,date_label:string,age_label:string|null,profile_url:string,avatar_url:string|null}> $todayBirthdays */
             $todayBirthdays = is_array($todayBirthdays ?? null) ? $todayBirthdays : [];
 
@@ -163,40 +169,56 @@
 
             <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
                 <div class="flex items-center justify-between gap-3">
-                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">Actu famille</div>
-                    <a href="{{ route('moments.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
+                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">Événements</div>
+                    <a href="{{ route('events.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
                 </div>
 
-                @if(count($activityItems))
+                @if($upcomingEvents->count())
                     <div class="mt-2 space-y-2">
-                        @foreach($activityItems as $it)
+                        @foreach($upcomingEvents as $ev)
                             @php
-                                $kind = (string) ($it['kind'] ?? '');
-                                $href = (string) ($it['href'] ?? '#');
-                                $sentence = (string) ($it['sentence'] ?? '');
-                                $at = $it['at'] ?? null;
-                                $when = $fmtRelative($at);
+                                /** @var \App\Models\Event $ev */
+                                $tz = $ev->timezone ?: config('app.timezone');
+                                $start = $ev->start_at ?? ($ev->starts_on ?? null);
+                                $start = $start instanceof \Carbon\CarbonInterface ? $start->copy()->timezone($tz) : null;
 
-                                // Keep the UI warm: teal + neutrals only (coral reserved for urgent/notif).
-                                $dot = match ($kind) {
-                                    'chat' => 'bg-[color:var(--fam-primary)]',
-                                    'event' => 'bg-[color:var(--fam-primary-hover)]',
-                                    'actu' => 'bg-[color:var(--fam-primary)]',
-                                    default => 'bg-[color:var(--fam-border)]',
-                                };
+                                $isPrivate = ($ev->visibility ?? 'family') === 'private';
+                                $isImportant = (bool) ($ev->is_important ?? false);
+
+                                $dayLabel = '';
+                                if ($start) {
+                                    if ($start->isToday()) $dayLabel = 'Aujourd’hui';
+                                    elseif ($start->isTomorrow()) $dayLabel = 'Demain';
+                                    else $dayLabel = $start->translatedFormat('D j M');
+                                }
+
+                                $timeLabel = '';
+                                if (!$ev->all_day && $start) {
+                                    $timeLabel = $start->format('H:i');
+                                }
+
+                                $meta = trim($dayLabel . ($timeLabel !== '' ? (' · ' . $timeLabel) : '') . ($ev->location ? (' · ' . $ev->location) : ''));
+                                $dot = 'bg-[color:var(--fam-primary)]';
                             @endphp
 
-                            <a href="{{ $href }}" class="block">
+                            <a href="{{ route('events.show', $ev) }}" class="block">
                                 <div class="group rounded-2xl bg-white px-3 py-2.5 border border-[color:var(--fam-border-soft)] hover:shadow-sm transition active:scale-[0.995]">
                                     <div class="flex items-start gap-3">
                                         <div class="mt-2 h-2.5 w-2.5 rounded-full {{ $dot }}"></div>
 
                                         <div class="min-w-0 flex-1">
-                                            <div class="text-sm font-semibold text-[color:var(--fam-text)] leading-snug">
-                                                {{ $sentence }}
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <div class="text-sm font-semibold text-[color:var(--fam-text)] leading-snug break-words">{{ $ev->title }}</div>
+                                                @if($isImportant)
+                                                    <span class="inline-flex items-center h-5 px-2 rounded-full bg-amber-50 text-amber-900 text-[0.7rem] font-extrabold border border-amber-200">Important</span>
+                                                @endif
+                                                @if($isPrivate)
+                                                    <span class="inline-flex items-center h-5 px-2 rounded-full bg-slate-50 text-slate-800 text-[0.7rem] font-extrabold border border-slate-200">Privé</span>
+                                                @endif
                                             </div>
-                                            @if($when !== '')
-                                                <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">{{ $when }}</div>
+
+                                            @if($meta !== '')
+                                                <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">{{ $meta }}</div>
                                             @endif
                                         </div>
                                     </div>
@@ -205,7 +227,7 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="mt-2 text-sm text-[color:var(--fam-muted)]">Rien de neuf pour l’instant.</div>
+                    <div class="mt-2 text-sm text-[color:var(--fam-muted)]">Aucun événement à venir.</div>
                 @endif
             </div>
 

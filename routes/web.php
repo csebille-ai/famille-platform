@@ -12,6 +12,7 @@ use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
 use App\Http\Controllers\FamilyController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
@@ -85,6 +86,16 @@ Route::get('/famille/enfants/{person}/modifier', [FamilyController::class, 'edit
 Route::patch('/famille/enfants/{person}', [FamilyController::class, 'updateChild'])
     ->middleware(['auth', 'verified'])
     ->name('family.children.update');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/creer', [EventController::class, 'create'])->name('events.create');
+    Route::post('/events', [EventController::class, 'store'])->name('events.store');
+    Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
+    Route::get('/events/{event}/modifier', [EventController::class, 'edit'])->name('events.edit');
+    Route::patch('/events/{event}', [EventController::class, 'update'])->name('events.update');
+    Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+});
 
 // Home (mobile-first). Keep route name 'dashboard' for backward compatibility.
 Route::get('/home', function () {
@@ -226,19 +237,40 @@ Route::get('/home', function () {
         try {
             if (Schema::hasTable('events')) {
                 $today = now();
-                $next = Event::query()
-                    ->whereDate('starts_on', '>=', $today->toDateString())
-                    ->orderBy('starts_on')
-                    ->first();
+                $user = auth()->user();
 
+                $hasStartAt = Schema::hasColumn('events', 'start_at');
+                $hasStartsOn = Schema::hasColumn('events', 'starts_on');
+
+                $next = Event::query();
+                if ($user) {
+                    $next = $next->visibleTo($user);
+                }
+
+                if (Schema::hasColumn('events', 'status')) {
+                    $next = $next->where('status', 'active');
+                }
+
+                if ($hasStartAt) {
+                    $next = $next
+                        ->where('start_at', '>=', $today->copy()->subMinutes(1))
+                        ->orderBy('start_at');
+                } elseif ($hasStartsOn) {
+                    $next = $next
+                        ->whereDate('starts_on', '>=', $today->toDateString())
+                        ->orderBy('starts_on');
+                } else {
+                    $next = null;
+                }
+
+                $next = $next ? $next->first() : null;
                 if ($next) {
-                    $label = $next->type ?: 'Événement';
-
+                    $at = $hasStartAt ? $next->start_at : $next->starts_on;
                     $items->push([
                         'kind' => 'event',
-                        'at' => $next->starts_on,
-                        'sentence' => $label . ' : ' . (string) $next->title,
-                        'href' => route('moments.index'),
+                        'at' => $at,
+                        'sentence' => 'Événement : ' . (string) $next->title,
+                        'href' => route('events.show', $next),
                     ]);
                 }
             }
@@ -396,6 +428,46 @@ Route::get('/home', function () {
         $upcomingBirthdays = [];
     }
 
+    $upcomingEvents = collect();
+    try {
+        if (Schema::hasTable('events')) {
+            $user = auth()->user();
+            $hasStartAt = Schema::hasColumn('events', 'start_at');
+            $hasStartsOn = Schema::hasColumn('events', 'starts_on');
+
+            $q = Event::query();
+            if ($user) {
+                $q = $q->visibleTo($user);
+            }
+
+            if (Schema::hasColumn('events', 'status')) {
+                $q = $q->where('status', 'active');
+            }
+
+            $today = now();
+            if ($hasStartAt) {
+                $q = $q
+                    ->whereNotNull('start_at')
+                    ->where('start_at', '>=', $today->copy()->startOfDay())
+                    ->orderBy('start_at');
+            } elseif ($hasStartsOn) {
+                $q = $q
+                    ->whereDate('starts_on', '>=', $today->toDateString())
+                    ->orderBy('starts_on');
+            } else {
+                $q = null;
+            }
+
+            if ($q) {
+                $upcomingEvents = $q
+                    ->limit(3)
+                    ->get();
+            }
+        }
+    } catch (Throwable $e) {
+        $upcomingEvents = collect();
+    }
+
     $buildFamilyMoments = function (): array {
         $today = now();
 
@@ -439,23 +511,45 @@ Route::get('/home', function () {
         // 1) Upcoming family event (if close).
         try {
             if (Schema::hasTable('events')) {
-                $next = Event::query()
-                    ->whereDate('starts_on', '>=', $today->toDateString())
-                    ->whereDate('starts_on', '<=', $today->copy()->addDays(7)->toDateString())
-                    ->orderBy('starts_on')
-                    ->first();
+                $user = auth()->user();
+                $hasStartAt = Schema::hasColumn('events', 'start_at');
+                $hasStartsOn = Schema::hasColumn('events', 'starts_on');
 
+                $q = Event::query();
+                if ($user) {
+                    $q = $q->visibleTo($user);
+                }
+                if (Schema::hasColumn('events', 'status')) {
+                    $q = $q->where('status', 'active');
+                }
+
+                if ($hasStartAt) {
+                    $q = $q
+                        ->whereNotNull('start_at')
+                        ->where('start_at', '>=', $today->copy()->startOfDay())
+                        ->where('start_at', '<=', $today->copy()->addDays(7)->endOfDay())
+                        ->orderBy('start_at');
+                } elseif ($hasStartsOn) {
+                    $q = $q
+                        ->whereDate('starts_on', '>=', $today->toDateString())
+                        ->whereDate('starts_on', '<=', $today->copy()->addDays(7)->toDateString())
+                        ->orderBy('starts_on');
+                } else {
+                    $q = null;
+                }
+
+                $next = $q ? $q->first() : null;
                 if ($next) {
-                    $days = (int) $today->copy()->startOfDay()->diffInDays($next->starts_on, false);
+                    $at = $hasStartAt ? $next->start_at : $next->starts_on;
+                    $days = $at ? (int) $today->copy()->startOfDay()->diffInDays($at, false) : 0;
                     $when = $days === 0 ? 'aujourd’hui' : ('dans ' . $days . ' jour' . ($days > 1 ? 's' : ''));
-                    $label = $next->type ?: 'Événement';
 
                     return [[
                         'kind' => 'event',
                         'title' => $next->title,
-                        'text' => $label . ' ' . $when,
+                        'text' => 'Événement ' . $when,
                         'image_url' => null,
-                        'href' => route('moments.index'),
+                        'href' => route('events.show', $next),
                         'cta' => 'Voir',
                     ]];
                 }
@@ -611,6 +705,7 @@ Route::get('/home', function () {
         'todayBirthdays' => $todayBirthdays,
         'upcomingBirthdays' => $upcomingBirthdays,
         'familyActivity' => $familyActivity,
+        'upcomingEvents' => $upcomingEvents ?? collect(),
     ]);
 
     // Avoid stale HTML being served by proxies (LiteSpeed) after deploy.
@@ -1012,22 +1107,42 @@ Route::get('/moments', function () {
     $moments = collect();
     try {
         if (Schema::hasTable('events')) {
-            $moments = Event::query()
-                ->whereDate('starts_on', '>=', now()->toDateString())
-                ->orderBy('starts_on')
-                ->limit(50)
-                ->get();
+            $user = auth()->user();
+            $hasStartAt = Schema::hasColumn('events', 'start_at');
+            $hasStartsOn = Schema::hasColumn('events', 'starts_on');
+
+            $q = Event::query();
+            if ($user) {
+                $q = $q->visibleTo($user);
+            }
+            if (Schema::hasColumn('events', 'status')) {
+                $q = $q->where('status', 'active');
+            }
+
+            if ($hasStartAt) {
+                $q = $q->whereNotNull('start_at')
+                    ->where('start_at', '>=', now()->copy()->startOfDay())
+                    ->orderBy('start_at');
+            } elseif ($hasStartsOn) {
+                $q = $q->whereDate('starts_on', '>=', now()->toDateString())
+                    ->orderBy('starts_on');
+            } else {
+                $q = null;
+            }
+
+            $moments = $q ? $q->limit(50)->get() : collect();
         }
     } catch (Throwable $e) {
         $moments = collect();
     }
 
     $momentsForUi = $moments->map(function (Event $e) {
-        $date = $e->starts_on;
+        $date = $e->start_at ?? ($e->starts_on ?? null);
+        $subtitle = $e->category ?? ($e->type ?? null);
         return [
             'date_label' => $date ? $date->translatedFormat('j M Y') : '',
             'title' => $e->title,
-            'subtitle' => $e->type,
+            'subtitle' => $subtitle,
         ];
     });
 

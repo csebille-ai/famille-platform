@@ -13,3 +13,8 @@ Schedule::command('news:import-rss')
     ->withoutOverlapping(30)
     ->appendOutputTo(storage_path('logs/news-import-rss.log'));
 
+Schedule::command('events:send-reminders')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->appendOutputTo(storage_path('logs/events-send-reminders.log'));
+

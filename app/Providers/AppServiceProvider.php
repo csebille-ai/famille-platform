@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Event;
 use App\Models\Person;
 use App\Observers\UserObserver;
+use App\Policies\EventPolicy;
 use App\Policies\PersonPolicy;
 use App\Services\Astro\Images\CloudflareWorkersAiImageProvider;
 use App\Services\Astro\Images\ImageProvider;
@@ -53,6 +55,7 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UserObserver::class);
 
         Gate::policy(Person::class, PersonPolicy::class);
+        Gate::policy(Event::class, EventPolicy::class);
 
         RateLimiter::for('tarot-draw', function ($request) {
             $userId = (string) optional($request->user())->id;
