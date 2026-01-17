@@ -594,7 +594,7 @@
             const QUICKTYPE_HIDDEN_KEY = 'famille:chat:quicktype_hidden_v1';
             const QUICKTYPE_MAX_ITEMS = 12;
             const QUICKTYPE_DEBOUNCE_MS = 110;
-            const QUICKTYPE_SHOW_ON_EMPTY = false;
+            const QUICKTYPE_MIN_CHARS = 2;
 
             const quickTypeUi = {
                 mobile: {
@@ -610,10 +610,10 @@
             const quickTypeState = {
                 activeKey: activeComposerKey,
                 composing: false,
-                hasInteracted: { mobile: false, desktop: false },
                 selectedIndex: 0,
                 suggestions: [],
                 timer: null,
+                seq: 0,
             };
 
             const QUICKTYPE_PRESETS = [
@@ -796,15 +796,10 @@
                 return v;
             }
 
-            function computeQuickTypeSuggestions(textarea, key) {
+            function computeQuickTypeSuggestions(textarea) {
                 const value = String(textarea?.value || '').trim();
                 const { token } = getCaretToken(textarea);
                 const needle = normalizeForMatch(token);
-
-                const hasInteracted = !!quickTypeState.hasInteracted?.[key];
-                if (!value && !hasInteracted && !QUICKTYPE_SHOW_ON_EMPTY) {
-                    return [];
-                }
 
                 const pinned = loadQuickTypePinned();
                 const recents = loadQuickTypeRecents();
@@ -1124,30 +1119,60 @@
                 saveQuickTypeRecent(String(suggestion || ''));
             }
 
-            function scheduleQuickTypeUpdate(forcedKey) {
-                if (quickTypeState.timer) {
-                    clearTimeout(quickTypeState.timer);
-                    quickTypeState.timer = null;
-                }
-                quickTypeState.timer = setTimeout(() => {
-                    const c = forcedKey ? composer[forcedKey] : getActiveComposer();
-                    const key = c?.key || activeComposerKey;
-                    const textarea = c?.textarea;
-                    if (!textarea) return;
-                    if (quickTypeState.composing) return;
-
-                    quickTypeState.activeKey = key;
-                    quickTypeState.suggestions = computeQuickTypeSuggestions(textarea, key);
-                    quickTypeState.selectedIndex = Math.max(0, Math.min(quickTypeState.suggestions.length - 1, quickTypeState.selectedIndex));
-                    renderQuickType(key, quickTypeState.suggestions, quickTypeState.selectedIndex);
-                }, QUICKTYPE_DEBOUNCE_MS);
-            }
-
             function hideQuickType(key) {
                 const ui = quickTypeUi[key];
                 if (!ui?.root || !ui?.list) return;
                 ui.root.classList.add('hidden');
                 ui.list.innerHTML = '';
+            }
+
+            function resetQuickType(key) {
+                quickTypeState.suggestions = [];
+                quickTypeState.selectedIndex = 0;
+                hideQuickType(key);
+            }
+
+            function scheduleQuickTypeUpdate(forcedKey) {
+                if (quickTypeState.timer) {
+                    clearTimeout(quickTypeState.timer);
+                    quickTypeState.timer = null;
+                }
+
+                const c = forcedKey ? composer[forcedKey] : getActiveComposer();
+                const key = c?.key || activeComposerKey;
+                const textarea = c?.textarea;
+                if (!textarea) return;
+                if (quickTypeState.composing) return;
+
+                const qSnapshot = String(textarea.value || '').trim();
+                const mySeq = ++quickTypeState.seq;
+
+                // Strict rule: never show anything if input is empty or too short.
+                if (qSnapshot.length < QUICKTYPE_MIN_CHARS) {
+                    resetQuickType(key);
+                    return;
+                }
+
+                quickTypeState.timer = setTimeout(() => {
+                    const c2 = forcedKey ? composer[forcedKey] : getActiveComposer();
+                    const key2 = c2?.key || activeComposerKey;
+                    const textarea2 = c2?.textarea;
+                    if (!textarea2) return;
+                    if (quickTypeState.composing) return;
+
+                    const qNow = String(textarea2.value || '').trim();
+                    if (mySeq !== quickTypeState.seq) return; // newer update queued
+                    if (qNow !== qSnapshot) return; // stale debounce result
+                    if (qNow.length < QUICKTYPE_MIN_CHARS) {
+                        resetQuickType(key2);
+                        return;
+                    }
+
+                    quickTypeState.activeKey = key2;
+                    quickTypeState.suggestions = computeQuickTypeSuggestions(textarea2);
+                    quickTypeState.selectedIndex = Math.max(0, Math.min(quickTypeState.suggestions.length - 1, quickTypeState.selectedIndex));
+                    renderQuickType(key2, quickTypeState.suggestions, quickTypeState.selectedIndex);
+                }, QUICKTYPE_DEBOUNCE_MS);
             }
 
             function bindQuickTypeForComposer(key) {
@@ -1174,8 +1199,14 @@
                     scheduleQuickTypeUpdate(key);
                 });
                 c.textarea.addEventListener('input', () => {
-                    if (String(c.textarea.value || '').trim().length > 0) {
-                        quickTypeState.hasInteracted[key] = true;
+                    const q = String(c.textarea.value || '').trim();
+                    if (q.length < QUICKTYPE_MIN_CHARS) {
+                        if (quickTypeState.timer) {
+                            clearTimeout(quickTypeState.timer);
+                            quickTypeState.timer = null;
+                        }
+                        resetQuickType(key);
+                        return;
                     }
                     scheduleQuickTypeUpdate(key);
                 });
@@ -1184,8 +1215,20 @@
                     if (quickTypeState.composing) return;
                     if (key !== activeComposerKey) return;
 
-                    if (typeof e.key === 'string' && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
-                        quickTypeState.hasInteracted[key] = true;
+                    // If input becomes empty/too short (e.g. backspace), reset immediately.
+                    if (e.key === 'Backspace' || e.key === 'Delete') {
+                        const q = String(c.textarea.value || '').trim();
+                        // value here is pre-keypress; schedule a microtask to read the updated value.
+                        queueMicrotask(() => {
+                            const q2 = String(c.textarea.value || '').trim();
+                            if (q2.length < QUICKTYPE_MIN_CHARS) {
+                                if (quickTypeState.timer) {
+                                    clearTimeout(quickTypeState.timer);
+                                    quickTypeState.timer = null;
+                                }
+                                resetQuickType(key);
+                            }
+                        });
                     }
 
                     const suggestions = quickTypeState.suggestions || [];
