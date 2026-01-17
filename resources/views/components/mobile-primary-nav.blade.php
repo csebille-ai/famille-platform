@@ -57,7 +57,7 @@
 @endphp
 
 <nav
-    class="sm:hidden {{ $fixed ? 'fixed inset-x-0 bottom-0 z-40' : 'w-full' }} border-t border-[#EEF0F4] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+    class="sm:hidden {{ $fixed ? 'fixed inset-x-0 bottom-0 z-40' : 'w-full' }} border-t border-[color:var(--fam-border)] bg-[color:var(--fam-surface)]/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
     style="--mobile-bottom-nav-h: 4rem;"
     aria-label="Navigation principale"
 >
@@ -66,7 +66,7 @@
             @foreach($items as $item)
                 <a
                     href="{{ $item['href'] }}"
-                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold {{ $item['active'] ? 'text-[#0B1220]' : 'text-[#64748B]' }}"
+                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold {{ $item['active'] ? 'text-[color:var(--fam-text)]' : 'text-[color:var(--fam-muted)]' }}"
                     aria-label="{{ $item['label'] }}"
                     aria-current="{{ $item['active'] ? 'page' : 'false' }}"
                 >
@@ -78,14 +78,14 @@
                         @endif
 
                         @if(!empty($item['badge']))
-                            <span class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[#EF4444] ring-2 ring-white" aria-hidden="true"></span>
+                            <span class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[color:var(--fam-accent)] ring-2 ring-[color:var(--fam-surface)]" aria-hidden="true"></span>
                         @endif
                     </span>
 
                     <span class="leading-none">{{ $item['label'] }}</span>
 
                     @if($item['active'])
-                        <span class="absolute bottom-1 left-0 right-0 mx-auto h-0.5 w-10 rounded-full bg-[#0B1220]" aria-hidden="true"></span>
+                        <span class="absolute bottom-1 left-0 right-0 mx-auto h-0.5 w-10 rounded-full bg-[color:var(--fam-primary)]" aria-hidden="true"></span>
                     @endif
                 </a>
             @endforeach

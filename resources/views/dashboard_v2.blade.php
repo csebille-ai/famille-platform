@@ -177,11 +177,12 @@
                                 $at = $it['at'] ?? null;
                                 $when = $fmtRelative($at);
 
+                                // Keep the UI warm: teal + neutrals only (coral reserved for urgent/notif).
                                 $dot = match ($kind) {
-                                    'chat' => 'bg-[#0F172A]',
-                                    'event' => 'bg-[#2563EB]',
-                                    'actu' => 'bg-[#16A34A]',
-                                    default => 'bg-[#94A3B8]',
+                                    'chat' => 'bg-[color:var(--fam-primary)]',
+                                    'event' => 'bg-[color:var(--fam-primary-hover)]',
+                                    'actu' => 'bg-[color:var(--fam-primary)]',
+                                    default => 'bg-[color:var(--fam-border)]',
                                 };
                             @endphp
 
@@ -208,10 +209,10 @@
                 @endif
             </div>
 
-            <div class="rounded-2xl bg-white p-3 ring-1 ring-black/5 shadow-sm">
+            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)]">
                 <div class="flex items-center justify-between gap-3">
-                    <div class="text-sm font-semibold text-[#0F172A]">Photos récentes</div>
-                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[#0F172A]/70 hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
+                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">Photos récentes</div>
+                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
                 </div>
 
                 @php $photos = ($latestImages ?? collect())->take(6); @endphp
@@ -226,21 +227,21 @@
                                 data-shared-id="media:{{ (int) $img->id }}"
                                 data-shared-src="{{ route('images.view', $img) }}"
                             >
-                                <div class="aspect-square overflow-hidden rounded-2xl bg-[#F6F7F9] ring-1 ring-black/5" data-skel="img" data-loaded="0">
+                                <div class="aspect-square overflow-hidden rounded-2xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border)]" data-skel="img" data-loaded="0">
                                     <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover opacity-0 transition-opacity duration-200" style="object-position: 50% 35%;" loading="lazy" onload="try{const w=this.closest('[data-skel=img]');if(w){w.dataset.loaded='1';this.style.opacity='1';}}catch(e){}" data-shared-id="media:{{ (int) $img->id }}" />
                                 </div>
                             </a>
                         @endforeach
                     </div>
                 @else
-                    <div class="mt-2 text-sm text-[#64748B]">Aucune photo pour l’instant.</div>
+                    <div class="mt-2 text-sm text-[color:var(--fam-muted)]">Aucune photo pour l’instant.</div>
                 @endif
             </div>
 
-            <div class="rounded-2xl bg-white p-3 md:col-span-2 ring-1 ring-black/5 shadow-sm">
+            <div class="rounded-2xl bg-[color:var(--fam-surface)] p-3 md:col-span-2 border border-[color:var(--fam-border)] shadow-[0_1px_1px_rgba(15,23,42,0.03),0_10px_30px_rgba(15,23,42,0.06)]">
                 <div class="flex items-center justify-between gap-3">
-                    <div class="text-sm font-semibold text-[#0F172A]">Vidéos récentes</div>
-                    <a href="{{ route('mediatheque.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[#0F172A]/70 hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
+                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">Vidéos récentes</div>
+                    <a href="{{ route('mediatheque.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-surface-2)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:var(--fam-tint)]">Voir tout</a>
                 </div>
 
                 @php $videos = ($latestVideos ?? collect())->take(6); @endphp
@@ -250,7 +251,7 @@
                         @foreach($videos as $v)
                             @php $dur = $fmtDuration($v->duration_seconds ?? null); @endphp
                             <a href="{{ route('videos.show', $v) }}" class="block" aria-label="Ouvrir vidéo">
-                                <div class="relative aspect-video overflow-hidden rounded-2xl bg-[#F6F7F9]">
+                                <div class="relative aspect-video overflow-hidden rounded-2xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border)]">
                                     <img src="{{ route('videos.poster', $v) }}" alt="" class="block h-full w-full object-cover" style="object-position: 50% 35%;" loading="lazy" />
 
                                     <div class="absolute inset-0 flex items-center justify-center">
