@@ -8,7 +8,7 @@
             <meta name="vapid-public-key" content="{{ config('services.webpush.public_key') }}">
         @endif
 
-        <meta name="theme-color" content="#ffffff">
+        <meta name="theme-color" content="#14b8a6">
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <meta name="apple-mobile-web-app-title" content="{{ config('app.name', 'Famille') }}">
@@ -16,11 +16,12 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
-        <link rel="icon" href="{{ asset('favicon.ico') }}">
-        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}">
-        <link rel="icon" type="image/svg+xml" href="{{ asset('images/brand/icon.svg') }}">
-        <link rel="apple-touch-icon" sizes="192x192" href="{{ asset('images/brand/icon-192.png') }}">
+        <link rel="manifest" href="{{ asset('manifest.webmanifest') }}?v=2">
+        <link rel="icon" href="{{ asset('favicon.ico') }}?v=2">
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32.png') }}?v=2">
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16.png') }}?v=2">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}?v=2">
+        <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}?v=2">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

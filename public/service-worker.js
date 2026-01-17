@@ -10,9 +10,20 @@ const OFFLINE_URL = '/offline.html';
 
 function isNoCachePath(pathname) {
   if (pathname.startsWith('/images/brand/')) return true;
+  if (pathname === '/apple-touch-icon.png') return true;
+  if (pathname === '/favicon-16.png') return true;
   if (pathname === '/favicon.ico') return true;
   if (pathname === '/favicon-32.png') return true;
   if (pathname === '/manifest.webmanifest') return true;
+
+  // PWA icons under /images/: do not cache (avoid stale icons after install).
+  if (pathname === '/images/apple-touch-icon.png') return true;
+  if (pathname === '/images/favicon-16.png') return true;
+  if (pathname === '/images/favicon-32.png') return true;
+  if (pathname === '/images/icon-192.png') return true;
+  if (pathname === '/images/icon-512.png') return true;
+  if (pathname === '/images/icon-192-maskable.png') return true;
+  if (pathname === '/images/icon-512-maskable.png') return true;
   return false;
 }
 
@@ -114,8 +125,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Famille';
   const options = {
     body: data.body || '',
-    icon: data.icon || '/images/brand/icon-192.png',
-    badge: data.badge || '/images/brand/icon-192.png',
+    icon: data.icon || '/images/icon-192.png',
+    badge: data.badge || '/images/icon-192.png',
     data: {
       url: data.url || '/',
     },
