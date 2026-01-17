@@ -92,4 +92,33 @@ class NextBirthdayTest extends TestCase
         $this->assertArrayHasKey('avatar_url', $upcoming[0]);
         $this->assertNull($upcoming[0]['avatar_url']);
     }
+
+    public function test_dashboard_for_people_uses_linked_user_avatar_astro_when_available(): void
+    {
+        $svc = new NextBirthday();
+
+        $today = CarbonImmutable::create(2026, 1, 14, 12, 0, 0, 'Europe/Paris');
+
+        $p = new Person(['first_name' => 'Christophe', 'last_name' => '']);
+        $p->id = 1;
+        $p->user_id = 123;
+        $p->birth_date = CarbonImmutable::create(1990, 5, 4, 0, 0, 0, 'Europe/Paris');
+        $p->is_child = false;
+        $p->avatar_path = null;
+
+        $u = new User(['name' => 'Christophe']);
+        $u->id = 123;
+        $u->avatar_image_url = 'https://example.test/avatar.png';
+        $u->avatar_updated_at = CarbonImmutable::create(2026, 1, 1, 0, 0, 0, 'Europe/Paris');
+
+        $usersById = (new Collection([$u]))->keyBy('id');
+
+        $lists = $svc->dashboardForPeople(new Collection([$p]), $today, 10, $usersById);
+        $upcoming = $lists['upcomingBirthdays'] ?? [];
+
+        $this->assertCount(1, $upcoming);
+        $this->assertIsString($upcoming[0]['avatar_url']);
+        $this->assertStringContainsString('/users/123/avatar-astro/image', (string) $upcoming[0]['avatar_url']);
+        $this->assertStringContainsString('v=', (string) $upcoming[0]['avatar_url']);
+    }
 }

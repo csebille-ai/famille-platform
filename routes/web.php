@@ -339,7 +339,31 @@ Route::get('/home', function () {
                 ->orderBy('last_name')
                 ->get(['id', 'user_id', 'first_name', 'last_name', 'birth_date', 'is_child', 'avatar_path']);
 
-            $lists = app(NextBirthday::class)->dashboardForPeople($peopleWithDob, null, 10);
+            $usersById = null;
+            try {
+                $userIds = $peopleWithDob->pluck('user_id')->filter()->unique()->values();
+                if ($userIds->isNotEmpty() && Schema::hasTable('users')) {
+                    $uCols = ['id'];
+                    if (Schema::hasColumn('users', 'avatar_image_url')) {
+                        $uCols[] = 'avatar_image_url';
+                    }
+                    if (Schema::hasColumn('users', 'avatar_updated_at')) {
+                        $uCols[] = 'avatar_updated_at';
+                    }
+                    if (Schema::hasColumn('users', 'avatar_astro_status')) {
+                        $uCols[] = 'avatar_astro_status';
+                    }
+
+                    $usersById = User::query()
+                        ->whereIn('id', $userIds)
+                        ->get($uCols)
+                        ->keyBy('id');
+                }
+            } catch (Throwable $e) {
+                $usersById = null;
+            }
+
+            $lists = app(NextBirthday::class)->dashboardForPeople($peopleWithDob, null, 10, $usersById);
             $todayBirthdays = $lists['todayBirthdays'] ?? [];
             $upcomingBirthdays = $lists['upcomingBirthdays'] ?? [];
         } elseif (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {

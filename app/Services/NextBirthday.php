@@ -15,9 +15,10 @@ class NextBirthday
      * Build birthday lists for the dashboard.
      *
      * @param  Collection<int,Person>  $people
+     * @param  Collection<int,User>|null  $usersById keyed by user id
      * @return array{todayBirthdays: array<int,array{name:string,initials:string,birthday_date:CarbonImmutable,days_until:int,date_label:string,age_label:string|null,profile_url:string,avatar_url:string|null}>, upcomingBirthdays: array<int,array{name:string,initials:string,birthday_date:CarbonImmutable,days_until:int,date_label:string,age_label:string|null,profile_url:string,avatar_url:string|null}>}
      */
-    public function dashboardForPeople(Collection $people, ?CarbonInterface $today = null, int $upcomingLimit = 10): array
+    public function dashboardForPeople(Collection $people, ?CarbonInterface $today = null, int $upcomingLimit = 10, ?Collection $usersById = null): array
     {
         $today = $today ? CarbonImmutable::instance($today) : CarbonImmutable::now(config('app.timezone'));
         $today = $today->startOfDay();
@@ -53,6 +54,17 @@ class NextBirthday
                     $avatarUrl = Storage::url($path);
                 } catch (\Throwable $e) {
                     $avatarUrl = null;
+                }
+            }
+
+            // If the person is linked to a user, prefer the user's Avatar Astro (same avatar as top-right menu).
+            if ($avatarUrl === null && $usersById instanceof Collection) {
+                $userId = (int) ($b['user_id'] ?? 0);
+                if ($userId > 0 && $usersById->has($userId)) {
+                    $u = $usersById->get($userId);
+                    if ($u instanceof User && $u->hasAvatarAstroImage()) {
+                        $avatarUrl = route('avatar.astro.imagePublic', ['user' => $userId, 'v' => $u->avatarAstroVersion()]);
+                    }
                 }
             }
 
