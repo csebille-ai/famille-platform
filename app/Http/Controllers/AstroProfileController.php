@@ -62,7 +62,7 @@ class AstroProfileController extends Controller
         }
 
         $tab = (string) $request->query('tab', 'profile');
-        if (!in_array($tab, ['profile', 'chart'], true)) {
+        if (!in_array($tab, ['profile', 'theme', 'chart'], true)) {
             $tab = 'profile';
         }
 

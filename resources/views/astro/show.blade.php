@@ -176,11 +176,16 @@
 
         $tabs = [
             'profile' => 'Synthèse',
+            'theme' => 'Thème astral',
             'chart' => 'Carte du ciel',
         ];
     @endphp
 
-    <div x-data="{ show: false, openTalents: false, openPlanet: false, planet: null }" x-init="requestAnimationFrame(() => show = true)" class="pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]">
+    <div
+        x-data="{ show: false, openTalents: false, openPlanet: false, planet: null }"
+        x-init="requestAnimationFrame(() => { show = true; if (window.location.hash === '#theme-astral') { setTimeout(() => { const el = document.getElementById('theme-astral'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); } })"
+        class="pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
+    >
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-4">
             @if (session('status'))
                 <div class="mx-4 sm:mx-0 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
@@ -303,7 +308,7 @@
                     <div class="inline-flex bg-slate-100/60 border border-slate-200 rounded-full p-1">
                         @foreach($tabs as $key => $label)
                             <a
-                                href="{{ route('astro.show', ['tab' => $key]) }}"
+                                href="{{ route('astro.show', ['tab' => $key]) }}{{ $key === 'theme' ? '#theme-astral' : '' }}"
                                 class="px-4 text-center h-9 inline-flex items-center justify-center rounded-full text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900' }}"
                             >
                                 {{ $label }}
@@ -454,6 +459,33 @@
                         </div>
                     </div>
                 </div>
+            @elseif($tab === 'theme')
+                <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="bg-white shadow sm:rounded-2xl">
+                    <div id="theme-astral" class="p-4 sm:p-6 space-y-4 scroll-mt-24">
+                        <div class="text-sm font-semibold text-slate-900">Thème astral</div>
+
+                        @php
+                            $natal = is_array($astro['natal'] ?? null) ? (array) $astro['natal'] : null;
+                            $firstName = trim((string) (explode(' ', $displayName)[0] ?? ''));
+                            $natalNarrative = app(\App\Services\Astro\Natal\NatalNarrativeGenerator::class)->generate($natal, $firstName);
+                        @endphp
+
+                        @if(empty($natalNarrative))
+                            <div class="rounded-xl border border-black/10 bg-white p-4">
+                                <div class="text-sm font-semibold text-slate-900">Le thème astral n’est pas disponible pour le moment.</div>
+                                <div class="mt-1 text-xs text-slate-500">Vérifie l’heure et le lieu de naissance pour activer le calcul complet.</div>
+                                <div class="mt-3">
+                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">Modifier</a>
+                                </div>
+                            </div>
+                        @else
+                            <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                                <div class="whitespace-pre-line text-sm leading-relaxed text-slate-700">{{ $natalNarrative }}</div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
             @elseif($tab === 'chart')
                 <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="bg-white shadow sm:rounded-2xl">
                     <div class="p-4 sm:p-6 space-y-4">
@@ -527,9 +559,6 @@
                                     'lon' => is_numeric($lon) ? (float) $lon : null,
                                 ];
                             }
-
-                            $firstName = trim((string) (explode(' ', $displayName)[0] ?? ''));
-                            $natalNarrative = app(\App\Services\Astro\Natal\NatalNarrativeGenerator::class)->generate($natal, $firstName);
                         @endphp
 
                         @if($missingCoords)
@@ -632,13 +661,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            @if(!empty($natalNarrative))
-                                <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                                    <div class="text-sm font-semibold text-slate-900">Thème astral (résumé)</div>
-                                    <div class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">{{ $natalNarrative }}</div>
-                                </div>
-                            @endif
 
                             <div x-show="openPlanet" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
                                 <button type="button" @click="openPlanet = false" class="absolute inset-0 bg-black/30" aria-label="Fermer"></button>
