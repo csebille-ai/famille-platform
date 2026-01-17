@@ -51,6 +51,9 @@ final class NatalNarrativeGenerator
         if ($asc) {
             $essentialLines[] = 'Ascendant ' . $this->posLabel($asc, includeHouse: false) . ' : ' . $this->oneLine('c’est ta manière d’entrer en relation avec le monde.', 'tu peux donner cette première impression.');
         }
+        if ($mc) {
+            $essentialLines[] = 'Milieu du Ciel en ' . $this->posLabel($mc, includeHouse: false) . ' : ' . $this->oneLine('c’est ton axe public, ta direction et tes repères de réalisation.', 'tu avances mieux quand tu as un cap.');
+        }
         if ($essentialLines !== []) {
             $sections[] = "1) Essentiel\n- " . implode("\n- ", $essentialLines);
         }
@@ -68,6 +71,10 @@ final class NatalNarrativeGenerator
 
         // 3) Grandes dynamiques
         $dyn = [];
+        $houseFocus = $this->houseFocusLine($planets);
+        if ($houseFocus !== null) {
+            $dyn[] = $houseFocus;
+        }
         foreach (self::OUTER_PLANET_KEYS as $key) {
             $p = $planets[$key] ?? null;
             if (!$p) continue;
@@ -82,10 +89,12 @@ final class NatalNarrativeGenerator
         if ($asc) $pointsForAspects['asc'] = $asc;
         if ($mc) $pointsForAspects['mc'] = $mc;
 
-        $aspects = $this->computeAspects($pointsForAspects);
+        $aspectsAll = $this->computeAspects($pointsForAspects);
+        $aspectLimit = $this->pickAspectCount(count($aspectsAll));
+        $aspects = array_slice($aspectsAll, 0, $aspectLimit);
         $aspectLines = [];
         foreach ($aspects as $a) {
-            $aspectLines[] = $a['label'] . ' : ' . $a['meaning'];
+            $aspectLines[] = $a['label'] . ' (orb ' . $this->fmtOrb($a['delta']) . ') : ' . $a['meaning'];
         }
         if ($aspectLines !== []) {
             $sections[] = "4) Aspects clés\n- " . implode("\n- ", $aspectLines);
@@ -96,8 +105,8 @@ final class NatalNarrativeGenerator
 
         $text = $title . "\n\n" . implode("\n\n", $sections);
 
-        // Length control (target 900–1400 chars)
-        $text = $this->shrinkToTarget($text, $title, $sections, $pointsForAspects);
+        // Length control (target 900–1400 chars) deterministically.
+        $text = $this->enforceLengthTarget($text, $title, $sections, $pointsForAspects, $aspectsAll);
 
         return trim($text);
     }
@@ -188,6 +197,64 @@ final class NatalNarrativeGenerator
         return sprintf('%d°%02d', $d, $m);
     }
 
+    private function fmtOrb(float $delta): string
+    {
+        $delta = max(0.0, $delta);
+        $d = (int) floor($delta);
+        $m = (int) round(($delta - $d) * 60);
+        if ($m >= 60) {
+            $d += 1;
+            $m = 0;
+        }
+        return sprintf('%d°%02d', $d, $m);
+    }
+
+    /**
+     * @param array<string,array{key:string,name:string,lon:float,sign:string,deg_in_sign:float,house:?int}> $planets
+     */
+    private function houseFocusLine(array $planets): ?string
+    {
+        $counts = [];
+        foreach ($planets as $p) {
+            $h = $p['house'] ?? null;
+            if (!$h) continue;
+            $counts[$h] = ($counts[$h] ?? 0) + 1;
+        }
+        if ($counts === []) {
+            return null;
+        }
+
+        arsort($counts);
+        $top = array_keys($counts);
+        $top = array_slice($top, 0, 2);
+
+        $parts = [];
+        foreach ($top as $h) {
+            $parts[] = 'maison ' . $h . ' (' . $this->houseTheme((int) $h) . ')';
+        }
+
+        return 'Maisons mises en avant : ' . implode(' · ', $parts) . '.';
+    }
+
+    private function houseTheme(int $house): string
+    {
+        return match ($house) {
+            1 => 'identité, élan personnel',
+            2 => 'valeurs, sécurité matérielle',
+            3 => 'échanges, curiosité, proches',
+            4 => 'racines, intimité, foyer',
+            5 => 'créativité, joie, expression',
+            6 => 'habitudes, santé de base, organisation',
+            7 => 'relations, contrats, équilibre',
+            8 => 'transformation, profondeur, liens',
+            9 => 'sens, voyages, apprentissages',
+            10 => 'cap, vocation, image',
+            11 => 'amis, projets, collectif',
+            12 => 'retrait, intuition, coulisses',
+            default => 'thématique de vie',
+        };
+    }
+
     private function planetLabel(string $key): string
     {
         return match ($key) {
@@ -267,8 +334,23 @@ final class NatalNarrativeGenerator
             return strcmp($x['label'], $y['label']);
         });
 
-        // Limit to 10 max.
-        return array_slice($pairs, 0, 10);
+        return $pairs;
+    }
+
+    private function pickAspectCount(int $available): int
+    {
+        if ($available <= 0) return 0;
+
+        $max = min(10, $available);
+        $min = min(5, $available);
+
+        // Prefer 8 when possible; otherwise fall back to [min..max].
+        $preferred = min(8, $max);
+        if ($preferred < $min) {
+            $preferred = $min;
+        }
+
+        return $preferred;
     }
 
     private function angleDistance(float $a, float $b): float
@@ -327,53 +409,99 @@ final class NatalNarrativeGenerator
     }
 
     /**
-     * @param string $full
-     * @param string $title
      * @param array<int,string> $sections
-     * @param array<string,mixed> $points
+     * @param array<string,array{key:string,name:string,lon:float,sign:string,deg_in_sign:float,house:?int}> $points
+     * @param array<int,array{label:string,meaning:string,score:int,delta:float}> $aspectsAll
      */
-    private function shrinkToTarget(string $full, string $title, array $sections, array $points): string
+    private function enforceLengthTarget(string $full, string $title, array $sections, array $points, array $aspectsAll): string
     {
         $min = 900;
         $max = 1400;
 
-        if (mb_strlen($full) <= $max) {
-            return $full;
-        }
+        $txt = $full;
 
-        // If too long, reduce aspects count progressively.
-        $natal = ['planets' => []];
-        foreach ($points as $k => $p) {
-            if ($k === 'asc' || $k === 'mc') continue;
-            $natal['planets'][] = $p;
-        }
+        // If too long: reduce aspect count progressively down to 5.
+        if (mb_strlen($txt) > $max) {
+            $available = count($aspectsAll);
+            $limit = min(8, min(10, $available));
+            for ($try = $limit; $try >= 5; $try--) {
+                $aspectLines = [];
+                foreach (array_slice($aspectsAll, 0, min($try, $available)) as $a) {
+                    $aspectLines[] = $a['label'] . ' (orb ' . $this->fmtOrb($a['delta']) . ') : ' . $a['meaning'];
+                }
 
-        $aspectsAll = $this->computeAspects($points);
-        foreach ([7, 5] as $limit) {
-            $aspectLines = [];
-            foreach (array_slice($aspectsAll, 0, $limit) as $a) {
-                $aspectLines[] = $a['label'] . ' : ' . $a['meaning'];
-            }
+                $re = [];
+                foreach ($sections as $s) {
+                    if (str_starts_with($s, '4) Aspects')) {
+                        if ($aspectLines === []) continue;
+                        $re[] = "4) Aspects clés\n- " . implode("\n- ", $aspectLines);
+                    } else {
+                        $re[] = $s;
+                    }
+                }
 
-            $re = [];
-            foreach ($sections as $s) {
-                if (str_starts_with($s, '4) Aspects')) {
-                    if ($aspectLines === []) continue;
-                    $re[] = "4) Aspects clés\n- " . implode("\n- ", $aspectLines);
-                } else {
-                    $re[] = $s;
+                $candidate = $title . "\n\n" . implode("\n\n", $re);
+                if (mb_strlen($candidate) <= $max) {
+                    $txt = $candidate;
+                    break;
                 }
             }
+        }
 
-            $txt = $title . "\n\n" . implode("\n\n", $re);
-            if (mb_strlen($txt) <= $max) {
-                return $txt;
+        // If still too long: trim to max length without cutting mid-word too harshly.
+        if (mb_strlen($txt) > $max) {
+            $cut = mb_substr($txt, 0, $max - 1);
+            $cut = preg_replace('/\s+\S*$/u', '', (string) $cut) ?: $cut;
+            $txt = rtrim($cut) . '…';
+        }
+
+        // If too short: pad deterministically by enriching the conclusion.
+        if (mb_strlen($txt) < $min) {
+            $addons = [];
+
+            $sun = $points['sun'] ?? null;
+            $moon = $points['moon'] ?? null;
+            $asc = $points['asc'] ?? null;
+
+            $elements = [];
+            foreach ([$sun, $moon, $asc] as $p) {
+                if (!is_array($p)) continue;
+                $el = $this->elementFromSign((string) ($p['sign'] ?? ''));
+                if ($el !== '') $elements[] = $el;
+            }
+            if ($elements !== []) {
+                $counts = array_count_values($elements);
+                arsort($counts);
+                $dominant = (string) array_key_first($counts);
+                $addons[] = 'Une couleur élémentaire ressort (' . $dominant . '), ce qui influence ton rythme et ta manière d’aborder les situations.';
+            }
+
+            $houseFocus = $this->houseFocusLine($points);
+            if ($houseFocus !== null) {
+                $addons[] = 'Lis aussi la répartition par maisons: elle montre où ton attention se pose le plus spontanément.';
+            }
+
+            $addons[] = 'Si tu veux, on peut décliner ce résumé en 3 axes concrets: relations, travail/projets, et équilibre émotionnel (sans fatalisme).';
+
+            foreach ($addons as $extra) {
+                if (mb_strlen($txt) >= $min) break;
+                if (mb_strlen($txt . ' ' . $extra) > $max) break;
+                $txt .= "\n" . $extra;
             }
         }
 
-        // Last resort: trim to max length without cutting mid-word too harshly.
-        $cut = mb_substr($full, 0, $max - 1);
-        $cut = preg_replace('/\s+\S*$/u', '', (string) $cut) ?: $cut;
-        return rtrim($cut) . '…';
+        return $txt;
+    }
+
+    private function elementFromSign(string $sign): string
+    {
+        $sign = mb_strtolower(trim($sign));
+        return match ($sign) {
+            'bélier', 'lion', 'sagittaire' => 'Feu',
+            'taureau', 'vierge', 'capricorne' => 'Terre',
+            'gémeaux', 'balance', 'verseau' => 'Air',
+            'cancer', 'scorpion', 'poissons' => 'Eau',
+            default => '',
+        };
     }
 }
