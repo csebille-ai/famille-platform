@@ -216,11 +216,19 @@ function chartHandler(req, res) {
       house: houseForLongitudeEqual(moonLon, anglesRaw.asc_deg),
     });
 
-    // Personal planets.
+    // Planets.
     for (const [key, bodyName, name] of [
+      // Personal planets.
       ['mercury', 'Mercury', 'Mercure'],
       ['venus', 'Venus', 'Vénus'],
       ['mars', 'Mars', 'Mars'],
+
+      // Outer planets.
+      ['jupiter', 'Jupiter', 'Jupiter'],
+      ['saturn', 'Saturn', 'Saturne'],
+      ['uranus', 'Uranus', 'Uranus'],
+      ['neptune', 'Neptune', 'Neptune'],
+      ['pluto', 'Pluto', 'Pluton'],
     ]) {
       const vec = Astronomy.GeoVector(bodyName, timeObj, true);
       const ecl = Astronomy.Ecliptic(vec);

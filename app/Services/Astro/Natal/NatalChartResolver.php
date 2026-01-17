@@ -10,6 +10,11 @@ class NatalChartResolver
 {
     private const DEFAULT_TZ = 'Europe/Paris';
 
+    /**
+     * Keys expected in astro-engine planets[] payload.
+     */
+    private const OUTER_PLANET_KEYS = ['jupiter', 'saturn', 'uranus', 'neptune', 'pluto'];
+
     public function __construct(private NatalChartEngineClient $client)
     {
     }
@@ -47,6 +52,7 @@ class NatalChartResolver
             && $existingProfile->natal_hash === $hash
             && is_array($existingProfile->natal)
             && $existingProfile->natal !== []
+            && self::hasOuterPlanets((array) $existingProfile->natal)
         ) {
             return [
                 'natal' => (array) $existingProfile->natal,
@@ -68,5 +74,31 @@ class NatalChartResolver
             'natal_hash' => $hash,
             'natal_computed_at' => now(),
         ];
+    }
+
+    /**
+     * @param array<string,mixed> $natal
+     */
+    private static function hasOuterPlanets(array $natal): bool
+    {
+        $planets = $natal['planets'] ?? null;
+        if (!is_array($planets) || $planets === []) {
+            return false;
+        }
+
+        $keys = [];
+        foreach ($planets as $p) {
+            if (is_array($p) && isset($p['key']) && is_string($p['key'])) {
+                $keys[strtolower($p['key'])] = true;
+            }
+        }
+
+        foreach (self::OUTER_PLANET_KEYS as $k) {
+            if (!isset($keys[$k])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
