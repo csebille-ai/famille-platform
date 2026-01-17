@@ -95,22 +95,32 @@ class NextBirthday
         $today = $today ? CarbonImmutable::instance($today) : CarbonImmutable::now(config('app.timezone'));
         $today = $today->startOfDay();
 
-        $raw = $this->upcomingForUsers($users, $today);
+        $items = [];
 
-        $todayBirthdays = [];
-        $upcomingBirthdays = [];
-
-        foreach ($raw as $b) {
-            $days = (int) ($b['days_remaining'] ?? -1);
-            $nextDate = $b['next_date'] ?? null;
-            if (!($nextDate instanceof CarbonImmutable)) {
+        foreach ($users as $user) {
+            $dob = $user->date_of_birth;
+            if (!$dob instanceof CarbonInterface) {
                 continue;
             }
+
+            $nextDate = $this->nextOccurrence($dob, $today);
+            $days = (int) $today->diffInDays($nextDate, false);
             if ($days < 0) {
                 continue;
             }
 
-            $id = (int) ($b['id'] ?? 0);
+            $age = null;
+            try {
+                $age = $nextDate->year - (int) $dob->year;
+                if ($age < 0) {
+                    $age = null;
+                }
+            } catch (\Throwable $e) {
+                $age = null;
+            }
+
+            $id = (int) ($user->id ?? 0);
+
             $profileUrl = route('family.index');
             if ($id > 0) {
                 if (\Illuminate\Support\Facades\Gate::allows('manage-users')) {
@@ -120,28 +130,33 @@ class NextBirthday
                 }
             }
 
+            // Avatar priority:
+            // 1) user.avatar_image_url (explicit portrait)
+            // 2) local generated avatar route
             $avatarUrl = null;
-            if ($id > 0) {
+            $rawAvatar = trim((string) ($user->avatar_image_url ?? ''));
+            if ($rawAvatar !== '') {
+                $avatarUrl = $rawAvatar;
+            } elseif ($id > 0) {
                 $avatarUrl = route('avatar.astro.imagePublic', ['user' => $id]);
             }
 
-            $item = [
-                'name' => trim((string) ($b['name'] ?? '')) !== '' ? (string) $b['name'] : 'Quelqu’un',
-                'initials' => (string) ($b['initials'] ?? '?'),
+            $items[] = [
+                'name' => $this->firstName((string) ($user->name ?? '')),
+                'initials' => $user->initials(),
                 'birthday_date' => $nextDate,
                 'days_until' => $days,
                 'date_label' => $this->shortFrDate($nextDate),
-                'age_label' => $this->ageLabel($b['turning_age'] ?? null, true),
+                'age_label' => $this->ageLabel($age, true),
                 'profile_url' => $profileUrl,
                 'avatar_url' => $avatarUrl,
             ];
-
-            if ($days === 0) {
-                $todayBirthdays[] = $item;
-            } elseif ($days > 0) {
-                $upcomingBirthdays[] = $item;
-            }
         }
+
+        usort($items, fn ($a, $b) => (int) $a['days_until'] <=> (int) $b['days_until']);
+
+        $todayBirthdays = array_values(array_filter($items, fn ($it) => (int) ($it['days_until'] ?? -1) === 0));
+        $upcomingBirthdays = array_values(array_filter($items, fn ($it) => (int) ($it['days_until'] ?? -1) > 0));
 
         if ($upcomingLimit > 0) {
             $upcomingBirthdays = array_slice($upcomingBirthdays, 0, $upcomingLimit);

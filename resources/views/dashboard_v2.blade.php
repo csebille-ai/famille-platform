@@ -91,135 +91,76 @@
             $upcomingCount = count($upcomingBirthdays);
         @endphp
 
-        <section class="dash-fade">
-            <div class="rounded-2xl bg-white px-3 py-3 ring-1 ring-black/5 shadow-sm">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
+        @if($upcomingCount > 0)
+            <section class="dash-fade">
+                <div class="rounded-2xl bg-white px-3 py-3 ring-1 ring-black/5 shadow-sm">
+                    <div class="flex items-center justify-between gap-3">
                         <div class="text-sm font-semibold text-[#0F172A]">Anniversaires</div>
-                        <div class="mt-0.5 text-xs font-semibold text-[#64748B]">
-                            @if($todayCount > 0)
-                                Aujourd’hui {{ $todayCount }} · À venir {{ $upcomingCount }}
-                            @else
-                                À venir {{ $upcomingCount }}
-                            @endif
-                        </div>
+                        <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
                     </div>
 
-                    <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[#0F172A] hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
-                </div>
+                    <div class="mt-2 relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white to-transparent"></div>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent"></div>
 
-                @if($todayCount === 0 && $upcomingCount === 0)
-                    <div class="mt-2 text-sm text-[#64748B]">Aucun anniversaire à venir.</div>
-                    <div class="mt-2">
-                        <a href="{{ route('family.index') }}" class="inline-flex items-center justify-center rounded-xl border border-[#EEF0F4] bg-white px-3 py-2 text-sm font-semibold text-[#0F172A]">Voir la famille</a>
-                    </div>
-                @else
-                    @if($todayCount > 0)
-                        <div class="mt-3">
-                            <div class="text-[11px] font-semibold text-[#64748B]">Aujourd’hui</div>
-                            <div class="mt-2 no-scrollbar overflow-x-auto">
-                                <div class="flex gap-2 pr-1">
-                                    @foreach($todayBirthdays as $b)
-                                        @php
-                                            $name = (string) ($b['name'] ?? 'Quelqu’un');
-                                            $initials = (string) ($b['initials'] ?? '?');
-                                            $href = (string) ($b['profile_url'] ?? route('family.index'));
-                                            $avatarUrl = $b['avatar_url'] ?? null;
-                                        @endphp
+                        <div class="no-scrollbar overflow-x-auto snap-x snap-mandatory">
+                            <div class="flex gap-2 pr-2">
+                                @foreach($upcomingBirthdays as $b)
+                                    @php
+                                        $name = (string) ($b['name'] ?? 'Quelqu’un');
+                                        $initials = (string) ($b['initials'] ?? '?');
+                                        $href = (string) ($b['profile_url'] ?? route('family.index'));
+                                        $avatarUrl = $b['avatar_url'] ?? null;
+                                        $days = (int) ($b['days_until'] ?? 0);
+                                        $dateLabel = (string) ($b['date_label'] ?? '');
+                                        $ageLabel = $b['age_label'] ?? null;
+                                    @endphp
 
-                                        <a href="{{ $href }}" class="shrink-0 inline-flex items-center gap-2 rounded-full bg-[#F8FAFC] px-2.5 py-1.5 ring-1 ring-black/5 hover:bg-white hover:shadow-sm transition" aria-label="Anniversaire de {{ $name }} aujourd’hui">
-                                            @if(is_string($avatarUrl) && trim($avatarUrl) !== '')
-                                                <img src="{{ $avatarUrl }}" alt="" class="h-7 w-7 rounded-full bg-[#0F172A]/5 ring-1 ring-black/5 object-cover" loading="lazy" />
-                                            @else
-                                                <div class="h-7 w-7 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-[11px] font-bold">
-                                                    {{ $initials }}
+                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-[#F8FAFC] ring-1 ring-black/5 px-3 py-2.5 hover:bg-white hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A]/30" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div class="min-w-0 flex items-center gap-3">
+                                                <div class="relative h-9 w-9 shrink-0">
+                                                    @if(is_string($avatarUrl) && trim($avatarUrl) !== '')
+                                                        <img
+                                                            src="{{ $avatarUrl }}"
+                                                            alt=""
+                                                            class="h-9 w-9 rounded-full bg-[#0F172A]/5 ring-1 ring-black/5 object-cover"
+                                                            loading="lazy"
+                                                            onerror="this.style.display='none';var fb=this.parentElement.querySelector('[data-fallback]');if(fb){fb.style.display='flex';}"
+                                                        />
+                                                    @endif
+                                                    <div data-fallback class="h-9 w-9 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-xs font-bold" style="{{ (is_string($avatarUrl) && trim($avatarUrl) !== '') ? 'display:none' : 'display:flex' }}">
+                                                        {{ $initials }}
+                                                    </div>
                                                 </div>
-                                            @endif
-                                            <div class="text-sm font-semibold text-[#0F172A]">{{ $name }}</div>
-                                            <span class="inline-flex items-center rounded-full bg-emerald-600/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-900 ring-1 ring-emerald-600/20">Aujourd’hui</span>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    @endif
 
-                    @if($upcomingCount > 0)
-                        <div class="mt-3">
-                            <div class="text-[11px] font-semibold text-[#64748B]">À venir</div>
-
-                            <div class="mt-2 relative">
-                                <div class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white to-transparent"></div>
-                                <div class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent"></div>
-
-                                <div class="no-scrollbar overflow-x-auto snap-x snap-mandatory">
-                                    <div class="flex gap-2 pr-2">
-                                        @foreach($upcomingBirthdays as $b)
-                                            @php
-                                                $name = (string) ($b['name'] ?? 'Quelqu’un');
-                                                $initials = (string) ($b['initials'] ?? '?');
-                                                $href = (string) ($b['profile_url'] ?? route('family.index'));
-                                                $avatarUrl = $b['avatar_url'] ?? null;
-                                                $days = (int) ($b['days_until'] ?? 0);
-                                                $dateLabel = (string) ($b['date_label'] ?? '');
-                                                $ageLabel = $b['age_label'] ?? null;
-                                                $when = 'dans ' . $days . ' jour' . ($days > 1 ? 's' : '');
-                                            @endphp
-
-                                            <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-[#F8FAFC] ring-1 ring-black/5 px-3 py-2.5 hover:bg-white hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F172A]/30" aria-label="Anniversaire de {{ $name }} {{ $when }}">
-                                                <div class="flex items-center justify-between gap-3">
-                                                    <div class="min-w-0 flex items-center gap-3">
-                                                        @if(is_string($avatarUrl) && trim($avatarUrl) !== '')
-                                                            <img src="{{ $avatarUrl }}" alt="" class="h-9 w-9 rounded-full bg-[#0F172A]/5 ring-1 ring-black/5 object-cover shrink-0" loading="lazy" />
-                                                        @else
-                                                            <div class="h-9 w-9 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                                                                {{ $initials }}
-                                                            </div>
+                                                <div class="min-w-0">
+                                                    <div class="text-sm font-semibold text-[#0F172A] truncate">{{ $name }}</div>
+                                                    <div class="mt-0.5 text-xs font-semibold text-[#64748B] truncate">
+                                                        {{ $dateLabel }}
+                                                        @if(is_string($ageLabel) && trim($ageLabel) !== '')
+                                                            <span class="text-[#94A3B8]">·</span> {{ $ageLabel }}
                                                         @endif
-
-                                                        <div class="min-w-0">
-                                                            <div class="text-sm font-semibold text-[#0F172A] truncate">{{ $name }}</div>
-                                                            <div class="mt-0.5 text-xs font-semibold text-[#64748B] truncate">
-                                                                {{ $dateLabel }}
-                                                                @if(is_string($ageLabel) && trim($ageLabel) !== '')
-                                                                    <span class="text-[#94A3B8]">·</span> {{ $ageLabel }}
-                                                                @endif
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="shrink-0 text-right">
-                                                        <div class="text-lg font-extrabold tracking-tight leading-none text-[#0F172A]">J-{{ $days }}</div>
-                                                        <div class="mt-0.5 text-[11px] font-semibold text-[#64748B]">{{ $when }}</div>
                                                     </div>
                                                 </div>
-                                            </a>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-                @endif
-            </div>
-        </section>
+                                            </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 dash-fade">
-            <div class="md:col-span-1 md:col-start-3 md:row-span-3">
-                <div class="rounded-2xl bg-white p-3 md:sticky md:top-4 ring-1 ring-black/5 shadow-sm hover:shadow-md transition-shadow">
-                    <div class="rounded-2xl bg-[#F8FAFC] p-3 ring-1 ring-black/5">
-                        <div class="flex items-center justify-between gap-3">
-                            <div class="min-w-0">
-                                <div class="text-sm font-semibold text-[#0F172A] truncate">👨‍👩‍👧‍👦 Famille</div>
-                                <div class="mt-0.5 text-xs font-semibold text-[#64748B] truncate">Profils adultes & enfants</div>
+                                            <div class="shrink-0 text-right">
+                                                <div class="text-lg font-extrabold tracking-tight leading-none text-[#0F172A]">J-{{ $days }}</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
                             </div>
-                            <a href="{{ route('family.index') }}" class="inline-flex items-center justify-center rounded-xl bg-[#0F172A] px-3 py-2 text-xs font-semibold text-white">Ouvrir</a>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
+        @endif
 
-            <div class="rounded-2xl bg-white p-3 md:col-span-2 ring-1 ring-black/5 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 dash-fade">
+
+            <div class="rounded-2xl bg-white p-3 ring-1 ring-black/5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[#0F172A]">Actu famille</div>
                     <a href="{{ route('moments.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[#0F172A]/70 hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
@@ -266,7 +207,7 @@
                 @endif
             </div>
 
-            <div class="rounded-2xl bg-white p-3 md:col-span-2 ring-1 ring-black/5 shadow-sm">
+            <div class="rounded-2xl bg-white p-3 ring-1 ring-black/5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[#0F172A]">Photos récentes</div>
                     <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[#0F172A]/70 hover:bg-[#F8FAFC] active:bg-[#EEF0F4]">Voir tout</a>
