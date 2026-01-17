@@ -259,7 +259,7 @@
                         <span>Nouveau</span>
                     </button>
 
-                    <div id="chatMessages" class="flex flex-col gap-3 p-4 sm:p-6">
+                    <div id="chatMessages" class="flex flex-col gap-2.5 sm:gap-3 p-4 sm:p-6">
                         <div id="chatNotifBanner" class="hidden rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
@@ -314,8 +314,13 @@
                                 @endphp
                             @endif
 
+                            @php
+                                $att = $parseAttachment($m->body);
+                                $link = $att ? null : $parseLinkCard($m->body);
+                            @endphp
+
                             <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }}" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}">
-                                <div class="max-w-[90%] sm:max-w-[80%]">
+                                <div class="{{ $att ? 'w-[clamp(240px,72vw,420px)] max-w-[92vw] sm:w-[clamp(320px,48vw,520px)] sm:max-w-[520px]' : 'max-w-[72%] sm:max-w-[68%]' }}">
                                     @if($isGroupStart)
                                         <div class="mb-1 text-xs text-slate-500 {{ $isMe ? 'text-right' : '' }}">
                                             {{ $firstName }} · {{ $m->created_at?->format('H:i') }}
@@ -329,11 +334,6 @@
                                             </div>
                                         </div>
 
-                                        @php
-                                            $att = $parseAttachment($m->body);
-                                            $link = $att ? null : $parseLinkCard($m->body);
-                                        @endphp
-
                                         <div class="{{ $att ? 'p-0 border-0 bg-transparent' : 'px-4 py-3 border' }} {{ $att ? '' : ($isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md') }}" data-bubble>
                                             @if ($att)
                                                 @php
@@ -342,10 +342,17 @@
                                                     $attOpenUrl = (string) ($att['open_url'] ?? $attUrl);
                                                     $attThumb = (string) ($att['thumb_url'] ?? '');
                                                     $attName = (string) ($att['name'] ?? ($attType === 'video' ? 'Vidéo' : 'Photo'));
+                                                    $attCaption = trim((string) ($att['caption'] ?? $att['text'] ?? ''));
+                                                    $attW = (int) ($att['width'] ?? 0);
+                                                    $attH = (int) ($att['height'] ?? 0);
+                                                    $attLandscape = ($attW > 0 && $attH > 0) ? ($attW > $attH) : false;
+                                                    $attMediaH = $attType === 'video'
+                                                        ? ($attLandscape ? 'h-[clamp(10rem,30vh,36vh)]' : 'h-[clamp(14rem,46vh,52vh)]')
+                                                        : ($attLandscape ? 'h-[clamp(10rem,28vh,36vh)]' : 'h-[clamp(14rem,40vh,52vh)]');
                                                 @endphp
                                                 <button
                                                     type="button"
-                                                    class="block text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                                                    class="group block w-full text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                                                     style="-webkit-tap-highlight-color: transparent;"
                                                     aria-label="Ouvrir {{ $attName }}"
                                                     data-chat-media-open="1"
@@ -355,22 +362,30 @@
                                                     data-name="{{ $attName }}"
                                                     data-thumb="{{ $attThumb }}"
                                                 >
-                                                    <div class="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm" style="width: min(15rem, 100%); height: 8rem;">
-                                                        @if ($attThumb !== '')
-                                                            <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-cover" loading="lazy" />
-                                                        @else
-                                                            <div class="w-full h-full flex items-center justify-center text-xs {{ $isMe ? 'text-white/80' : 'text-slate-500' }}">{{ $attName }}</div>
-                                                        @endif
+                                                    <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                                                        <div class="relative w-full {{ $attMediaH }} bg-slate-100 animate-pulse" data-chat-media-card>
+                                                            @if ($attThumb !== '')
+                                                                <img src="{{ $attThumb }}" alt="{{ $attName }}" class="block w-full h-full object-cover" loading="lazy" data-chat-media-thumb />
+                                                            @else
+                                                                <div class="w-full h-full flex items-center justify-center text-xs text-slate-500">{{ $attName }}</div>
+                                                            @endif
 
-                                                        <div class="absolute top-2 right-2 pointer-events-none">
-                                                            <div class="w-9 h-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white">
-                                                                <i class="ph ph-arrows-out" aria-hidden="true"></i>
+                                                            <div class="absolute top-2 right-2 pointer-events-none opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                                                <div class="w-9 h-9 rounded-full bg-black/35 backdrop-blur flex items-center justify-center text-white">
+                                                                    <i class="ph ph-arrows-out" aria-hidden="true"></i>
+                                                                </div>
                                                             </div>
+
+                                                            @if ($attType === 'video')
+                                                                <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                                    <div class="w-11 h-11 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center text-white text-lg">▶</div>
+                                                                </div>
+                                                            @endif
                                                         </div>
 
-                                                        @if ($attType === 'video')
-                                                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                                <div class="w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white text-xl">▶</div>
+                                                        @if ($attCaption !== '')
+                                                            <div class="px-4 py-3 text-sm text-slate-600 bg-white">
+                                                                {{ $attCaption }}
                                                             </div>
                                                         @endif
                                                     </div>
@@ -1813,22 +1828,30 @@
                     if (!(img instanceof HTMLImageElement)) return;
                     if (img.dataset.pinBound === '1') return;
                     img.dataset.pinBound = '1';
+
+                    const card = img.closest('[data-chat-media-card]');
+                    const markLoaded = () => {
+                        if (card) card.classList.remove('animate-pulse');
+                    };
                     if (img.complete) {
                         // Cached images might not fire 'load', but decoding can still complete later.
                         try {
                             if (typeof img.decode === 'function') {
                                 img.decode().then(() => {
+                                    markLoaded();
                                     pinToBottom(900);
                                     scrollToBottom({ force: true });
                                 }).catch(() => {});
                             }
                         } catch {}
+                        markLoaded();
                         return;
                     }
 
                     img.addEventListener('load', () => {
                         // Thumbnails can load after initial scroll, changing layout;
                         // keep the bottom pinned while this happens.
+                        markLoaded();
                         pinToBottom(900);
                         scrollToBottom({ force: true });
                     }, { once: true });
@@ -2033,6 +2056,7 @@
                 const uid = payload?.user?.id ?? payload?.user_id ?? null;
                 const name = payload?.user?.name ?? '—';
                 const body = payload?.body ?? '';
+                const att = parseAttachmentBody(body);
                 const createdISO = payload?.created_at ?? null;
                 const whenTime = createdISO ? timeLabelFromISO(createdISO) : '';
 
@@ -2067,7 +2091,9 @@
                 if (id != null) outer.dataset.messageId = String(id);
 
                 const width = document.createElement('div');
-                width.className = 'max-w-[90%] sm:max-w-[80%]';
+                width.className = att
+                    ? 'w-[clamp(240px,72vw,420px)] max-w-[92vw] sm:w-[clamp(320px,48vw,520px)] sm:max-w-[520px]'
+                    : 'max-w-[72%] sm:max-w-[68%]';
 
                 if (!sameAuthorAsPrev) {
                     const meta = document.createElement('div');
@@ -2087,8 +2113,6 @@
                 avatar.textContent = initials;
                 avatarWrap.appendChild(avatar);
 
-                const att = parseAttachmentBody(body);
-
                 const wrapper = document.createElement('div');
                 if (att) {
                     wrapper.className = 'p-0 border-0 bg-transparent';
@@ -2102,22 +2126,32 @@
                     bodyEl.className = 'text-sm';
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'block text-left rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
+                    btn.className = 'group block w-full text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white';
                     btn.style.webkitTapHighlightColor = 'transparent';
                     btn.dataset.chatMediaOpen = '1';
                     btn.dataset.url = String(att.url || '#');
                     btn.dataset.openUrl = String(att.open_url || '');
                     btn.dataset.type = String(att.media_type || '');
 
+                    const rawW = Number(att.width || 0);
+                    const rawH = Number(att.height || 0);
+                    const isLandscape = rawW > 0 && rawH > 0 ? rawW > rawH : false;
+                    const isVideo = String(att.media_type) === 'video';
+                    const mediaH = isVideo
+                        ? (isLandscape ? 'h-[clamp(10rem,30vh,36vh)]' : 'h-[clamp(14rem,46vh,52vh)]')
+                        : (isLandscape ? 'h-[clamp(10rem,28vh,36vh)]' : 'h-[clamp(14rem,40vh,52vh)]');
+
                     const card = document.createElement('div');
-                    card.className = 'relative overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm';
-                    card.style.width = 'min(15rem, 100%)';
-                    card.style.height = '8rem';
+                    card.className = 'overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm';
 
                     const thumb = String(att.thumb_url || '');
                     const nameLabel = String(att.name || (att.media_type === 'video' ? 'Vidéo' : 'Photo'));
                     btn.dataset.name = nameLabel;
                     btn.dataset.thumb = thumb;
+
+                    const mediaBox = document.createElement('div');
+                    mediaBox.className = `relative w-full ${mediaH} bg-slate-100 animate-pulse`;
+                    mediaBox.dataset.chatMediaCard = '1';
 
                     if (thumb) {
                         const img = document.createElement('img');
@@ -2125,32 +2159,44 @@
                         img.alt = nameLabel;
                         img.loading = 'lazy';
                         img.className = 'block w-full h-full object-cover';
+                        img.dataset.chatMediaThumb = '1';
                         // When the image loads, the bubble height changes; if we're at the bottom,
                         // keep it pinned so the new upload looks "properly placed".
                         img.addEventListener('load', () => {
+                            mediaBox.classList.remove('animate-pulse');
                             if (isPinnedToBottom() || isNearBottom()) scrollToBottom({ force: true });
                         }, { once: true });
-                        card.appendChild(img);
+                        mediaBox.appendChild(img);
                     } else {
                         const ph = document.createElement('div');
                         ph.className = `w-full h-full flex items-center justify-center text-xs ${isMe ? 'text-white/80' : 'text-slate-500'}`;
                         ph.textContent = nameLabel;
-                        card.appendChild(ph);
+                        mediaBox.appendChild(ph);
                     }
 
                     const expand = document.createElement('div');
-                    expand.className = 'absolute top-2 right-2 pointer-events-none';
-                    expand.innerHTML = '<div class="w-9 h-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white"><i class="ph ph-arrows-out" aria-hidden="true"></i></div>';
-                    card.appendChild(expand);
+                    expand.className = 'absolute top-2 right-2 pointer-events-none opacity-60 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity';
+                    expand.innerHTML = '<div class="w-9 h-9 rounded-full bg-black/35 backdrop-blur flex items-center justify-center text-white"><i class="ph ph-arrows-out" aria-hidden="true"></i></div>';
+                    mediaBox.appendChild(expand);
 
                     if (String(att.media_type) === 'video') {
                         const overlay = document.createElement('div');
                         overlay.className = 'absolute inset-0 flex items-center justify-center pointer-events-none';
                         const pill = document.createElement('div');
-                        pill.className = 'w-12 h-12 rounded-full bg-black/40 flex items-center justify-center text-white text-xl';
+                        pill.className = 'w-11 h-11 rounded-full bg-black/35 backdrop-blur-sm flex items-center justify-center text-white text-lg';
                         pill.textContent = '▶';
                         overlay.appendChild(pill);
-                        card.appendChild(overlay);
+                        mediaBox.appendChild(overlay);
+                    }
+
+                    card.appendChild(mediaBox);
+
+                    const caption = String(att.caption || att.text || '').trim();
+                    if (caption) {
+                        const cap = document.createElement('div');
+                        cap.className = 'px-4 py-3 text-sm text-slate-600 bg-white';
+                        cap.textContent = caption;
+                        card.appendChild(cap);
                     }
 
                     btn.appendChild(card);
@@ -2426,9 +2472,47 @@
                             canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.75);
                         });
 
-                        return blob || null;
+                        const out = blob || null;
+                        if (!out) return null;
+                        return { blob: out, width: w, height: h };
                     } finally {
                         try { URL.revokeObjectURL(url); } catch (e) {}
+                    }
+                } catch {
+                    return null;
+                }
+            }
+
+            async function buildImageMeta(file) {
+                try {
+                    if (!file) return null;
+                    if (!('URL' in window) || !('createObjectURL' in URL)) return null;
+
+                    const url = URL.createObjectURL(file);
+                    try {
+                        const img = new Image();
+                        img.decoding = 'async';
+                        img.loading = 'eager';
+                        img.src = url;
+
+                        await new Promise((resolve, reject) => {
+                            const t = setTimeout(() => reject(new Error('timeout:image_meta')), 6000);
+                            img.onload = () => {
+                                clearTimeout(t);
+                                resolve();
+                            };
+                            img.onerror = () => {
+                                clearTimeout(t);
+                                reject(new Error('error:image_meta'));
+                            };
+                        });
+
+                        const w = Number(img.naturalWidth || 0);
+                        const h = Number(img.naturalHeight || 0);
+                        if (!w || !h) return null;
+                        return { width: w, height: h };
+                    } finally {
+                        try { URL.revokeObjectURL(url); } catch {}
                     }
                 } catch {
                     return null;
@@ -2516,6 +2600,7 @@
                     try {
                         let finalized = null;
                         const posterPromise = (kind === 'video') ? buildVideoPosterBlob(file) : Promise.resolve(null);
+                        const imageMetaPromise = (kind === 'photo') ? buildImageMeta(file) : Promise.resolve(null);
 
                         if (size > MULTIPART_THRESHOLD_BYTES) {
                             const init = await postJson(mpInitUrl, {
@@ -2623,7 +2708,8 @@
                                 if (file.name) fd.append('filename', String(file.name));
                                 fd.append('chat_thread_id', 'default');
 
-                                const posterBlob = await posterPromise;
+                                const posterInfo = await posterPromise;
+                                const posterBlob = posterInfo && typeof posterInfo === 'object' ? posterInfo.blob : null;
                                 if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
 
                                 finalized = await postForm(finalizeUrl, fd);
@@ -2669,7 +2755,8 @@
                                 if (file.name) fd.append('filename', String(file.name));
                                 fd.append('chat_thread_id', 'default');
 
-                                const posterBlob = await posterPromise;
+                                const posterInfo = await posterPromise;
+                                const posterBlob = posterInfo && typeof posterInfo === 'object' ? posterInfo.blob : null;
                                 if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
 
                                 finalized = await postForm(finalizeUrl, fd);
@@ -2695,6 +2782,12 @@
                         const openUrl = String(finalized?.open_url || '');
                         const mediaUrl = String(finalized?.media_url || finalized?.stream_url || '');
                         if (chatMessageId && (mediaUrl || openUrl)) {
+                            const posterInfo = await posterPromise;
+                            const imageMeta = await imageMetaPromise;
+                            const dims = (kind === 'video')
+                                ? (posterInfo && typeof posterInfo === 'object' ? { width: Number(posterInfo.width || 0), height: Number(posterInfo.height || 0) } : null)
+                                : (imageMeta && typeof imageMeta === 'object' ? { width: Number(imageMeta.width || 0), height: Number(imageMeta.height || 0) } : null);
+
                             const attachment = {
                                 media_type: kind === 'video' ? 'video' : 'image',
                                 media_id: Number(finalized?.media_id || 0) || null,
@@ -2703,6 +2796,8 @@
                                 open_url: openUrl || undefined,
                                 thumb_url: String(finalized?.thumb_url || ''),
                                 public_url: String(finalized?.public_url || ''),
+                                width: dims && dims.width ? dims.width : undefined,
+                                height: dims && dims.height ? dims.height : undefined,
                             };
 
                             appendMessage({
