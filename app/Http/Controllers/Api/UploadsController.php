@@ -216,7 +216,10 @@ class UploadsController extends Controller
         $bucket = trim($r2->bucket());
         if ($bucket === '') {
             if (!$this->allowLocalFallback()) {
-                return response()->json(['message' => 'R2 bucket is not configured.'], 500);
+                return response()->json([
+                    'message' => 'R2 bucket is not configured.',
+                    'hint' => 'Configure R2_* in .env or enable local fallback with UPLOADS_ALLOW_LOCAL_FALLBACK=true then clear cache (php artisan optimize:clear && php artisan config:cache).',
+                ], 500);
             }
 
             $key = $r2->buildObjectKey((string) $validated['context'], (string) $validated['kind'], (string) $validated['filename']);
@@ -289,7 +292,10 @@ class UploadsController extends Controller
         $bucket = trim($r2->bucket());
         if ($bucket === '') {
             if (!$this->allowLocalFallback()) {
-                return response()->json(['message' => 'R2 bucket is not configured.'], 500);
+                return response()->json([
+                    'message' => 'R2 bucket is not configured.',
+                    'hint' => 'Configure R2_* in .env or enable local fallback with UPLOADS_ALLOW_LOCAL_FALLBACK=true then clear cache (php artisan optimize:clear && php artisan config:cache).',
+                ], 500);
             }
             return response()->json(['message' => 'Multipart requires R2 configuration.'], 422);
         }
@@ -356,7 +362,10 @@ class UploadsController extends Controller
         $bucket = trim($r2->bucket());
         if ($bucket === '') {
             if (!$this->allowLocalFallback()) {
-                return response()->json(['message' => 'R2 bucket is not configured.'], 500);
+                return response()->json([
+                    'message' => 'R2 bucket is not configured.',
+                    'hint' => 'Configure R2_* in .env or enable local fallback with UPLOADS_ALLOW_LOCAL_FALLBACK=true then clear cache (php artisan optimize:clear && php artisan config:cache).',
+                ], 500);
             }
             return response()->json(['message' => 'Multipart requires R2 configuration.'], 422);
         }

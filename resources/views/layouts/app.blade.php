@@ -924,15 +924,32 @@
                                     window.location.reload();
                                 };
 
-                                if (videoId && file && file.type && String(file.type).startsWith('video/')) {
-                                    setProgress(100, 'Création du poster…');
-                                    Promise.resolve(maybeGenerateAndUploadPoster(file, videoId, token))
-                                        .catch(() => {})
-                                        .finally(finishNav);
-                                    return;
-                                }
+                                // Safety net: if navigation is blocked (mobile/PWA quirks), don't leave the user stuck.
+                                const ensureNotStuck = () => {
+                                    try {
+                                        if (overlay && !overlay.classList.contains('hidden')) {
+                                            window.location.reload();
+                                        }
+                                    } catch (e) {
+                                        try { window.location.reload(); } catch (e2) {}
+                                    }
+                                };
+                                window.setTimeout(ensureNotStuck, 1500);
 
-                                finishNav();
+                                try {
+                                    if (videoId && file && file.type && String(file.type).startsWith('video/')) {
+                                        setProgress(100, 'Création du poster…');
+                                        Promise.resolve(maybeGenerateAndUploadPoster(file, videoId, token))
+                                            .catch(() => {})
+                                            .finally(finishNav);
+                                        return;
+                                    }
+
+                                    finishNav();
+                                } catch (e) {
+                                    // Last resort: never keep overlay forever.
+                                    ensureNotStuck();
+                                }
                             };
 
                             xhr.onerror = function () {
