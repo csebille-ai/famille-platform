@@ -64,8 +64,8 @@
                                 <i class="ph ph-caret-left" aria-hidden="true"></i>
                             </button>
                         @else
-                            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 px-2 py-1" aria-label="Accueil">
-                                <img src="{{ asset('images/brand/famovale.png') }}" alt="Famille" class="h-9 w-auto object-contain" loading="lazy" decoding="async" />
+                            <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 px-0 py-0.5" aria-label="Accueil">
+                                <img src="{{ asset('images/brand/famovale.png') }}" alt="Famille" class="h-11 w-auto object-contain" loading="lazy" decoding="async" />
                             </a>
                         @endif
                     </div>
@@ -139,8 +139,8 @@
 
                     <div class="shrink-0 flex items-center">
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2" aria-label="Accueil">
-                            <span class="inline-flex items-center px-2 py-1">
-                                <img src="{{ asset('images/brand/famovale.png') }}" alt="Famille" class="h-10 w-auto object-contain" loading="lazy" decoding="async" />
+                            <span class="inline-flex items-center px-0 py-0.5">
+                                <img src="{{ asset('images/brand/famovale.png') }}" alt="Famille" class="h-12 w-auto object-contain" loading="lazy" decoding="async" />
                             </span>
                         </a>
                     </div>
