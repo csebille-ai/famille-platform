@@ -129,8 +129,9 @@
                                                             onerror="this.style.display='none';var fb=this.parentElement.querySelector('[data-fallback]');if(fb){fb.style.display='flex';}"
                                                         />
                                                     @endif
-                                                    <div data-fallback class="h-9 w-9 rounded-full bg-[#0F172A] text-white flex items-center justify-center text-xs font-bold" style="{{ (is_string($avatarUrl) && trim($avatarUrl) !== '') ? 'display:none' : 'display:flex' }}">
-                                                        {{ $initials }}
+                                                    <div data-fallback class="h-9 w-9 rounded-full bg-[#0F172A] text-white flex items-center justify-center" style="{{ (is_string($avatarUrl) && trim($avatarUrl) !== '') ? 'display:none' : 'display:flex' }}">
+                                                        <i class="ph ph-user text-[18px]" aria-hidden="true"></i>
+                                                        <span class="sr-only">{{ $initials }}</span>
                                                     </div>
                                                 </div>
 
