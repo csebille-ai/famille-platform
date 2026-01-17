@@ -595,6 +595,7 @@
             const QUICKTYPE_MAX_ITEMS = 12;
             const QUICKTYPE_DEBOUNCE_MS = 110;
             const QUICKTYPE_MIN_CHARS = 2;
+            const QUICKTYPE_DEBUG = false;
 
             const quickTypeUi = {
                 mobile: {
@@ -625,6 +626,7 @@
                 'Ça marche',
                 'Ça roule',
                 'Ça marche pour moi',
+                'Koala',
                 'Je regarde et je te dis',
                 'Je suis en route',
                 'J’arrive',
@@ -633,6 +635,14 @@
                 'Tu peux préciser ?',
                 'Bonne idée',
             ];
+
+            function qtLog(event, data) {
+                if (!QUICKTYPE_DEBUG) return;
+                try {
+                    // eslint-disable-next-line no-console
+                    console.log('[QuickType]', event, data);
+                } catch {}
+            }
 
             const quickTypeMenu = {
                 root: document.getElementById('chatQuickTypeMenu'),
@@ -801,6 +811,11 @@
                 const { token } = getCaretToken(textarea);
                 const needle = normalizeForMatch(token);
 
+                // Strict: require a real token; no off-topic fallbacks.
+                if (!needle || needle.length < QUICKTYPE_MIN_CHARS) {
+                    return [];
+                }
+
                 const pinned = loadQuickTypePinned();
                 const recents = loadQuickTypeRecents();
 
@@ -832,31 +847,10 @@
                     });
 
                 const limit = 8;
+                const matches = out.filter((s) => normalizeForMatch(s).startsWith(needle)).slice(0, limit);
 
-                // Helper: fallback when no prefix match (avoid empty bar/jank)
-                const fallbackBase = [...pinned, ...context, ...recents, ...QUICKTYPE_PRESETS]
-                    .map((s) => String(s || '').trim())
-                    .filter((s) => s.length > 0)
-                    .filter((s) => !hidden.includes(normalizeForMatch(s)));
-
-                const fallback = [];
-                const fallbackSeen = new Set();
-                for (const s of fallbackBase) {
-                    const k = normalizeForMatch(s);
-                    if (fallbackSeen.has(k)) continue;
-                    fallbackSeen.add(k);
-                    fallback.push(s);
-                    if (fallback.length >= limit) break;
-                }
-
-                if (needle) {
-                    const matches = out.filter((s) => normalizeForMatch(s).startsWith(needle)).slice(0, limit);
-                    if (matches.length > 0) return matches;
-                    return fallback.slice(0, Math.min(6, fallback.length));
-                }
-
-                // Empty token: show limited fallback when we are allowed to show.
-                return (out.length ? out.slice(0, limit) : fallback.slice(0, Math.min(6, fallback.length)));
+                // Safety filter: never show suggestions that don't match the current query.
+                return matches;
             }
 
             function renderQuickType(key, suggestions, selectedIndex) {
@@ -1171,6 +1165,14 @@
                     quickTypeState.activeKey = key2;
                     quickTypeState.suggestions = computeQuickTypeSuggestions(textarea2);
                     quickTypeState.selectedIndex = Math.max(0, Math.min(quickTypeState.suggestions.length - 1, quickTypeState.selectedIndex));
+                    qtLog('update', {
+                        key: key2,
+                        seq: mySeq,
+                        input: qNow,
+                        token: getCaretToken(textarea2).token,
+                        matches: quickTypeState.suggestions.length,
+                        top: quickTypeState.suggestions.slice(0, 5),
+                    });
                     renderQuickType(key2, quickTypeState.suggestions, quickTypeState.selectedIndex);
                 }, QUICKTYPE_DEBOUNCE_MS);
             }
