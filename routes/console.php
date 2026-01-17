@@ -10,5 +10,6 @@ Artisan::command('inspire', function () {
 
 Schedule::command('news:import-rss')
     ->everyFifteenMinutes()
-    ->withoutOverlapping();
+    ->withoutOverlapping(30)
+    ->appendOutputTo(storage_path('logs/news-import-rss.log'));
 

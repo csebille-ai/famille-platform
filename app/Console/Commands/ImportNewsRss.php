@@ -53,6 +53,11 @@ class ImportNewsRss extends Command
 
         if (count($sources) === 0) {
             $this->error('No feeds configured. Use NEWS_SOURCES_JSON or NEWS_FEEDS_JSON (or NEWS_FEEDS) in .env.');
+            Log::warning('news.import.no_feeds_configured', [
+                'has_news_sources_json' => trim((string) env('NEWS_SOURCES_JSON', '')) !== '',
+                'has_news_feeds_json' => trim((string) env('NEWS_FEEDS_JSON', '')) !== '',
+                'has_news_feeds_csv' => trim((string) env('NEWS_FEEDS', '')) !== '',
+            ]);
             return self::FAILURE;
         }
 
