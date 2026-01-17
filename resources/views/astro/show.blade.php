@@ -479,8 +479,57 @@
                                 </div>
                             </div>
                         @else
+                            @php
+                                $lines = preg_split("/\r\n|\n|\r/", (string) $natalNarrative) ?: [];
+                                $inList = false;
+                            @endphp
+
                             <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                                <div class="whitespace-pre-line text-sm leading-relaxed text-slate-700">{{ $natalNarrative }}</div>
+                                <div class="max-h-[62vh] overflow-y-auto pr-2">
+                                    <div class="space-y-3">
+                                        @foreach($lines as $raw)
+                                            @php
+                                                $line = trim((string) $raw);
+                                                if ($line === '') { continue; }
+                                                $isHeading = (bool) preg_match('/^\d+\)\s+/', $line);
+                                                $isTitle = str_starts_with($line, 'Thème astral de ');
+                                                $isBullet = str_starts_with($line, '- ');
+                                            @endphp
+
+                                            @if($isTitle)
+                                                @php $inList = false; @endphp
+                                                <div class="text-base font-extrabold tracking-tight text-slate-900">{{ $line }}</div>
+
+                                            @elseif($isHeading)
+                                                @php $inList = false; @endphp
+                                                <div class="pt-1 text-sm font-semibold text-slate-900">{{ $line }}</div>
+
+                                            @elseif($isBullet)
+                                                @if(!$inList)
+                                                    @php $inList = true; @endphp
+                                                    <ul class="space-y-2 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.9)]">
+                                                @endif
+                                                <li class="text-sm leading-relaxed text-slate-700">{{ ltrim(substr($line, 1)) }}</li>
+
+                                            @else
+                                                @if($inList)
+                                                    </ul>
+                                                    @php $inList = false; @endphp
+                                                @endif
+                                                <p class="text-sm leading-relaxed text-slate-700">{{ $line }}</p>
+                                            @endif
+                                        @endforeach
+
+                                        @if($inList)
+                                            </ul>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 flex items-center justify-between gap-2">
+                                    <div class="text-xs text-slate-500">Astuce: tu peux défiler à l’intérieur du cadre.</div>
+                                    <a href="{{ route('astro.show', ['tab' => 'chart']) }}" class="text-xs font-semibold text-[color:rgba(14,165,160,1)] hover:underline">Voir la carte du ciel</a>
+                                </div>
                             </div>
                         @endif
                     </div>
