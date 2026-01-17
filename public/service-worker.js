@@ -16,6 +16,11 @@ function isNoCachePath(pathname) {
   if (pathname === '/favicon-32.png') return true;
   if (pathname === '/manifest.webmanifest') return true;
 
+  // UI icons that may change and are sensitive to stale SW caches.
+  if (pathname === '/images/carte.png') return true;
+  if (pathname === '/images/crystal.png') return true;
+  if (pathname === '/images/tarot.png') return true;
+
   // PWA icons under /images/: do not cache (avoid stale icons after install).
   if (pathname === '/images/apple-touch-icon.png') return true;
   if (pathname === '/images/favicon-16.png') return true;

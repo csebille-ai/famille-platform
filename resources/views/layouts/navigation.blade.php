@@ -41,6 +41,16 @@
 
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
+
+    $tarotIconUrl = asset('images/carte.png');
+    try {
+        $tarotIconPath = public_path('images/carte.png');
+        if (is_string($tarotIconPath) && is_file($tarotIconPath)) {
+            $tarotIconUrl .= '?v=' . (string) filemtime($tarotIconPath);
+        }
+    } catch (\Throwable $e) {
+        // ignore
+    }
 @endphp
 
 @if(request()->routeIs('chat.*'))
@@ -185,7 +195,13 @@
                         <div class="flex items-center gap-8 ms-10">
                             <x-nav-link :href="route('tarot.index')" :active="request()->routeIs('tarot.*')">
                                 <span class="inline-flex items-center gap-2">
-                                    <img src="{{ asset('images/carte.png') }}" alt="" class="h-5 w-5 object-contain drop-shadow-sm" aria-hidden="true" />
+                                    <img
+                                        src="{{ $tarotIconUrl }}"
+                                        alt=""
+                                        class="h-5 w-5 object-contain drop-shadow-sm"
+                                        aria-hidden="true"
+                                        onerror="this.onerror=null;this.src='{{ asset('images/crystal.png') }}';"
+                                    />
                                     Tarot
                                     @if($hasTarotDraft)
                                         <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary)]" aria-hidden="true"></span>

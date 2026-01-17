@@ -56,6 +56,18 @@
     ];
 @endphp
 
+@php
+    $tarotIconUrl = asset('images/carte.png');
+    try {
+        $tarotIconPath = public_path('images/carte.png');
+        if (is_string($tarotIconPath) && is_file($tarotIconPath)) {
+            $tarotIconUrl .= '?v=' . (string) filemtime($tarotIconPath);
+        }
+    } catch (\Throwable $e) {
+        // ignore
+    }
+@endphp
+
 <nav
     class="sm:hidden {{ $fixed ? 'fixed bottom-0 left-0 right-0 z-50' : 'w-full' }} bg-white/95 supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-xl border-t border-black/10 shadow-[0_-10px_25px_rgba(0,0,0,0.10)] pb-[env(safe-area-inset-bottom)]"
     style="--mobile-bottom-nav-h: 4rem;"
@@ -72,7 +84,13 @@
                 >
                     <span class="relative inline-flex h-6 w-6 items-center justify-center">
                         @if(($item['key'] ?? '') === 'tarot')
-                            <img src="{{ asset('images/carte.png') }}" alt="" class="h-6 w-6 object-contain drop-shadow-sm" aria-hidden="true" />
+                            <img
+                                src="{{ $tarotIconUrl }}"
+                                alt=""
+                                class="h-6 w-6 object-contain drop-shadow-sm"
+                                aria-hidden="true"
+                                onerror="this.onerror=null;this.src='{{ asset('images/crystal.png') }}';"
+                            />
                         @else
                             <i class="ph ph-{{ $item['icon'] }} text-[22px]" aria-hidden="true"></i>
                         @endif
