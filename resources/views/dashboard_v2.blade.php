@@ -241,7 +241,7 @@
             <div class="rounded-2xl bg-white p-3 md:col-span-2 border border-[color:var(--fam-border)] shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Vidéos récentes</div>
-                    <a href="{{ route('mediatheque.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
+                    <a href="{{ route('media.index', ['tab' => 'videos']) }}#videos" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
                 </div>
 
                 @php $videos = ($latestVideos ?? collect())->take(6); @endphp

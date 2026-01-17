@@ -111,7 +111,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Dernières vidéos</div>
-                    <a href="{{ route('videos.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
+                    <a href="{{ route('media.index', ['tab' => 'videos']) }}#videos" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
                 </div>
 
                 <div class="mt-4">
