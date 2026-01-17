@@ -184,7 +184,8 @@
 
                         <div class="flex items-center gap-8 ms-10">
                             <x-nav-link :href="route('tarot.index')" :active="request()->routeIs('tarot.*')">
-                                <span class="inline-flex items-center">
+                                <span class="inline-flex items-center gap-2">
+                                    <img src="{{ asset('images/carte.png') }}" alt="" class="h-5 w-5 object-contain drop-shadow-sm" aria-hidden="true" />
                                     Tarot
                                     @if($hasTarotDraft)
                                         <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary)]" aria-hidden="true"></span>
