@@ -42,3 +42,6 @@ Thumbs.db
 .phpactor.json
 Homestead.json
 Homestead.yaml
+
+# Local-only assets
+/public/images/carte.png

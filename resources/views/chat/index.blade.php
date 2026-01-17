@@ -589,12 +589,17 @@
             }
 
             // --- QuickType (suggestion bar) ---
-            const QUICKTYPE_RECENTS_KEY = 'famille:chat:quicktype_recents_v1';
+            const QUICKTYPE_RECENTS_KEY_LEGACY = 'famille:chat:quicktype_recents_v1';
+            const QUICKTYPE_MRU_KEY = 'famille:chat:quicktype_mru_v1';
             const QUICKTYPE_PINNED_KEY = 'famille:chat:quicktype_pinned_v1';
             const QUICKTYPE_HIDDEN_KEY = 'famille:chat:quicktype_hidden_v1';
-            const QUICKTYPE_MAX_ITEMS = 12;
+            const QUICKTYPE_MAX_PINNED = 12;
+            const QUICKTYPE_MAX_HIDDEN = 200;
+            const QUICKTYPE_MAX_MRU = 400;
+            const QUICKTYPE_MAX_SUGGESTIONS = 6;
             const QUICKTYPE_DEBOUNCE_MS = 110;
             const QUICKTYPE_MIN_CHARS = 2;
+            const QUICKTYPE_DICT_URL = '/dict/fr_words_min.txt';
             const QUICKTYPE_DEBUG = false;
 
             const quickTypeUi = {
@@ -617,24 +622,30 @@
                 seq: 0,
             };
 
-            const QUICKTYPE_PRESETS = [
-                'OK',
-                'Merci',
-                'Super',
-                'Salut',
-                'Sans souci',
-                'Ça marche',
-                'Ça roule',
-                'Ça marche pour moi',
-                'Koala',
-                'Je regarde et je te dis',
-                'Je suis en route',
-                'J’arrive',
-                'Je suis là',
-                'On se call ?',
-                'Tu peux préciser ?',
-                'Bonne idée',
+            const quickTypeIndex = {
+                dictReady: false,
+                dictBuckets: new Map(),
+                phraseBuckets: new Map(),
+                nameBuckets: new Map(),
+            };
+
+            const QUICKTYPE_PHRASES = [
+                'ça va',
+                'comment ça va',
+                'ça marche',
+                'ça roule',
+                'sans souci',
+                'de rien',
+                'bonne idée',
+                'j’arrive',
+                'je suis en route',
+                'je suis là',
+                'on se call',
+                'tu peux préciser',
+                'je regarde et je te dis',
             ];
+
+            const QUICKTYPE_NAME_CANDIDATES = @json($onlineList->pluck('name')->values());
 
             function qtLog(event, data) {
                 if (!QUICKTYPE_DEBUG) return;
@@ -728,7 +739,7 @@
                 if (!v) return;
                 if (isHiddenSuggestion(v)) return;
                 const arr = loadQuickTypePinned();
-                const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, QUICKTYPE_MAX_ITEMS);
+                const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, QUICKTYPE_MAX_PINNED);
                 saveStringList(QUICKTYPE_PINNED_KEY, next);
             }
 
@@ -745,7 +756,7 @@
                 if (!v) return;
                 unpinSuggestion(v);
                 const arr = loadQuickTypeHidden();
-                const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, 200);
+                const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, QUICKTYPE_MAX_HIDDEN);
                 saveStringList(QUICKTYPE_HIDDEN_KEY, next);
             }
 
@@ -755,15 +766,38 @@
                 const arr = loadQuickTypeRecents();
                 const next = arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v));
                 try {
-                    localStorage.setItem(QUICKTYPE_RECENTS_KEY, JSON.stringify(next));
+                    localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
                 } catch {}
             }
 
             function loadQuickTypeRecents() {
                 try {
-                    const raw = localStorage.getItem(QUICKTYPE_RECENTS_KEY);
-                    const arr = raw ? JSON.parse(raw) : [];
-                    return Array.isArray(arr) ? arr.filter((s) => typeof s === 'string' && s.trim() !== '') : [];
+                    const rawNew = localStorage.getItem(QUICKTYPE_MRU_KEY);
+                    const rawLegacy = localStorage.getItem(QUICKTYPE_RECENTS_KEY_LEGACY);
+                    const arrNew = rawNew ? JSON.parse(rawNew) : [];
+                    const arrLegacy = rawLegacy ? JSON.parse(rawLegacy) : [];
+
+                    const merged = [...(Array.isArray(arrNew) ? arrNew : []), ...(Array.isArray(arrLegacy) ? arrLegacy : [])]
+                        .filter((s) => typeof s === 'string' && s.trim() !== '');
+
+                    // De-dupe by normalized form, preserving recency.
+                    const out = [];
+                    const seen = new Set();
+                    for (const s of merged) {
+                        const k = normalizeForMatch(s);
+                        if (!k) continue;
+                        if (seen.has(k)) continue;
+                        seen.add(k);
+                        out.push(String(s).trim());
+                        if (out.length >= QUICKTYPE_MAX_MRU) break;
+                    }
+
+                    // Best-effort migration.
+                    try {
+                        localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(out));
+                    } catch {}
+
+                    return out;
                 } catch {
                     return [];
                 }
@@ -774,21 +808,141 @@
                 if (!v) return;
                 if (isHiddenSuggestion(v)) return;
                 const arr = loadQuickTypeRecents();
-                const next = [v, ...arr.filter((x) => x !== v)].slice(0, QUICKTYPE_MAX_ITEMS);
+                const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, QUICKTYPE_MAX_MRU);
                 try {
-                    localStorage.setItem(QUICKTYPE_RECENTS_KEY, JSON.stringify(next));
+                    localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
                 } catch {}
             }
 
-            function getCaretToken(textarea) {
+            function learnQuickTypeFromMessage(body) {
+                const text = String(body || '').trim();
+                if (!text) return;
+
+                // Extract words (letters + apostrophes/hyphens). Keep original accents/case.
+                const words = [];
+                try {
+                    const re = /[\p{L}][\p{L}'’\-]*/gu;
+                    let m;
+                    while ((m = re.exec(text))) {
+                        const w = String(m[0] || '').trim();
+                        if (w.length < QUICKTYPE_MIN_CHARS) continue;
+                        words.push(w);
+                    }
+                } catch {
+                    const rough = text.split(/\s+/g);
+                    for (const part of rough) {
+                        const w = String(part || '').replace(/^[^A-Za-zÀ-ÿ]+|[^A-Za-zÀ-ÿ]+$/g, '').trim();
+                        if (w.length < QUICKTYPE_MIN_CHARS) continue;
+                        words.push(w);
+                    }
+                }
+
+                if (!words.length) return;
+
+                // Most-recently-used: add unique words from the message, from end → start.
+                const current = loadQuickTypeRecents();
+                const seenMsg = new Set();
+                const additions = [];
+                for (let i = words.length - 1; i >= 0; i--) {
+                    const w = words[i];
+                    const k = normalizeForMatch(w);
+                    if (!k) continue;
+                    if (seenMsg.has(k)) continue;
+                    if (isHiddenSuggestion(w)) continue;
+                    seenMsg.add(k);
+                    additions.push(w);
+                }
+
+                if (!additions.length) return;
+
+                const next = [...additions, ...current.filter((x) => !seenMsg.has(normalizeForMatch(x)))]
+                    .slice(0, QUICKTYPE_MAX_MRU);
+                try {
+                    localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
+                } catch {}
+            }
+
+            function getLastTokenInfoFromValue(value, pos) {
+                const v = String(value || '');
+                const p = Math.max(0, Math.min(v.length, Number(pos ?? v.length)));
+                const before = v.slice(0, p);
+                const m = before.match(/(^|[\s\n])([^\s\n]*)$/u);
+                const rawToken = (m ? String(m[2] || '') : '');
+                const tokenStart = p - rawToken.length;
+
+                // Strip trailing punctuation from the token range.
+                const stripped = rawToken.replace(/[\.,;:!\?…]+$/u, '');
+                const tokenEnd = tokenStart + stripped.length;
+
+                return {
+                    raw: stripped,
+                    norm: normalizeForMatch(stripped),
+                    from: tokenStart,
+                    to: tokenEnd,
+                    pos: p,
+                };
+            }
+
+            function getLastTokenInfo(textarea) {
                 const value = String(textarea?.value || '');
                 const pos = Math.max(0, Math.min(value.length, Number(textarea?.selectionStart ?? value.length)));
-                const before = value.slice(0, pos);
-                const m = before.match(/(^|[\s\n])([^\s\n]*)$/u);
-                return {
-                    token: (m ? m[2] : ''),
-                    pos,
-                };
+                return getLastTokenInfoFromValue(value, pos);
+            }
+
+            function bucketKeyFor(norm) {
+                const n = String(norm || '');
+                return n.length >= 2 ? n.slice(0, 2) : '';
+            }
+
+            function addToBuckets(map, item) {
+                const raw = String(item || '').trim();
+                if (!raw) return;
+                const n = normalizeForMatch(raw);
+                if (!n || n.length < 2) return;
+                const key = bucketKeyFor(n);
+                if (!key) return;
+                if (!map.has(key)) map.set(key, []);
+                map.get(key).push(raw);
+            }
+
+            function buildBuckets(list) {
+                const map = new Map();
+                for (const item of (Array.isArray(list) ? list : [])) {
+                    addToBuckets(map, item);
+                }
+                return map;
+            }
+
+            async function loadQuickTypeDictionary() {
+                try {
+                    const res = await fetch(QUICKTYPE_DICT_URL, { credentials: 'same-origin' });
+                    if (!res.ok) throw new Error('dict fetch failed');
+                    const txt = await res.text();
+                    const lines = txt.split(/\r?\n/g);
+                    const words = [];
+                    const seen = new Set();
+                    for (const line of lines) {
+                        const w = String(line || '').trim();
+                        if (!w || w.startsWith('#')) continue;
+                        const k = normalizeForMatch(w);
+                        if (!k || k.length < 2) continue;
+                        if (seen.has(k)) continue;
+                        seen.add(k);
+                        words.push(w);
+                    }
+                    quickTypeIndex.dictBuckets = buildBuckets(words);
+                    quickTypeIndex.dictReady = true;
+                    qtLog('dict_loaded', { words: words.length, buckets: quickTypeIndex.dictBuckets.size });
+                } catch (e) {
+                    quickTypeIndex.dictReady = false;
+                    qtLog('dict_error', { message: e?.message || String(e) });
+                }
+            }
+
+            function initQuickTypeSources() {
+                quickTypeIndex.phraseBuckets = buildBuckets(QUICKTYPE_PHRASES);
+                quickTypeIndex.nameBuckets = buildBuckets(QUICKTYPE_NAME_CANDIDATES);
+                loadQuickTypeDictionary();
             }
 
             function normalizeForMatch(s) {
@@ -807,50 +961,61 @@
             }
 
             function computeQuickTypeSuggestions(textarea) {
-                const value = String(textarea?.value || '').trim();
-                const { token } = getCaretToken(textarea);
-                const needle = normalizeForMatch(token);
+                const info = getLastTokenInfo(textarea);
+                const needle = info.norm;
+                if (!needle || needle.length < QUICKTYPE_MIN_CHARS) return [];
 
-                // Strict: require a real token; no off-topic fallbacks.
-                if (!needle || needle.length < QUICKTYPE_MIN_CHARS) {
-                    return [];
-                }
-
-                const pinned = loadQuickTypePinned();
-                const recents = loadQuickTypeRecents();
-
-                // Context nudges (very lightweight)
-                const context = [];
-                if (!value) {
-                    context.push('Bonjour', 'Coucou');
-                } else if (/\bmerci\b/i.test(value)) {
-                    context.push('De rien');
-                } else if (/\?\s*$/u.test(value)) {
-                    context.push('Je te dis ça', 'Oui', 'Non');
-                }
-
-                // Order: pinned → context → recents → presets
-                const base = [...pinned, ...context, ...recents, ...QUICKTYPE_PRESETS];
-
+                const hidden = new Set(loadQuickTypeHidden().map(normalizeForMatch));
                 const seen = new Set();
-                const hidden = loadQuickTypeHidden().map(normalizeForMatch);
+                const out = [];
 
-                let out = base
-                    .map((s) => String(s || '').trim())
-                    .filter((s) => s.length > 0)
-                    .filter((s) => !hidden.includes(normalizeForMatch(s)))
-                    .filter((s) => {
-                        const key = normalizeForMatch(s);
-                        if (seen.has(key)) return false;
-                        seen.add(key);
-                        return true;
-                    });
+                function tryPush(candidate) {
+                    const s = String(candidate || '').trim();
+                    if (!s) return;
+                    const k = normalizeForMatch(s);
+                    if (!k) return;
+                    if (hidden.has(k)) return;
+                    if (!k.startsWith(needle)) return;
+                    if (seen.has(k)) return;
+                    seen.add(k);
+                    out.push(s);
+                }
 
-                const limit = 8;
-                const matches = out.filter((s) => normalizeForMatch(s).startsWith(needle)).slice(0, limit);
+                // Priority 0: pinned (still strict startsWith)
+                for (const s of loadQuickTypePinned()) {
+                    tryPush(s);
+                    if (out.length >= QUICKTYPE_MAX_SUGGESTIONS) return out;
+                }
 
-                // Safety filter: never show suggestions that don't match the current query.
-                return matches;
+                // Priority 1: MRU (learned from sent messages + accepted suggestions)
+                for (const s of loadQuickTypeRecents()) {
+                    tryPush(s);
+                    if (out.length >= QUICKTYPE_MAX_SUGGESTIONS) return out;
+                }
+
+                // Priority 2: names
+                const bKey = bucketKeyFor(needle);
+                const nameBucket = quickTypeIndex.nameBuckets.get(bKey) || [];
+                for (const s of nameBucket) {
+                    tryPush(s);
+                    if (out.length >= QUICKTYPE_MAX_SUGGESTIONS) return out;
+                }
+
+                // Priority 3: frequent phrases
+                const phraseBucket = quickTypeIndex.phraseBuckets.get(bKey) || [];
+                for (const s of phraseBucket) {
+                    tryPush(s);
+                    if (out.length >= QUICKTYPE_MAX_SUGGESTIONS) return out;
+                }
+
+                // Priority 4: dictionary words (bucketed by first 2 letters)
+                const dictBucket = quickTypeIndex.dictBuckets.get(bKey) || [];
+                for (const s of dictBucket) {
+                    tryPush(s);
+                    if (out.length >= QUICKTYPE_MAX_SUGGESTIONS) return out;
+                }
+
+                return out;
             }
 
             function renderQuickType(key, suggestions, selectedIndex) {
@@ -1070,20 +1235,16 @@
             function applyQuickTypeSuggestion(textarea, suggestion) {
                 if (!textarea) return;
                 const value = String(textarea.value || '');
-                let start = Number(textarea.selectionStart ?? value.length);
-                let end = Number(textarea.selectionEnd ?? value.length);
-                start = Math.max(0, Math.min(value.length, start));
-                end = Math.max(0, Math.min(value.length, end));
+                const start = Math.max(0, Math.min(value.length, Number(textarea.selectionStart ?? value.length)));
+                const end = Math.max(0, Math.min(value.length, Number(textarea.selectionEnd ?? value.length)));
 
                 let replaceFrom = start;
                 let replaceTo = end;
 
                 if (start === end) {
-                    const before = value.slice(0, start);
-                    const m = before.match(/(^|[\s\n])([^\s\n]*)$/u);
-                    const tokenLen = m ? (m[2] || '').length : 0;
-                    replaceFrom = start - tokenLen;
-                    replaceTo = start;
+                    const info = getLastTokenInfoFromValue(value, start);
+                    replaceFrom = Math.max(0, Math.min(value.length, info.from));
+                    replaceTo = Math.max(0, Math.min(value.length, info.to));
                 }
 
                 const left = value.slice(0, replaceFrom);
@@ -1091,16 +1252,8 @@
                 let insert = String(suggestion || '').trim();
                 if (!insert) return;
 
-                // Smart spacing
-                if (left && !/[\s\n]$/u.test(left) && !/^[,.:;!?]/u.test(insert)) {
-                    insert = ' ' + insert;
-                }
-                if (right && !/^[\s\n]/u.test(right) && !/[\s\n]$/u.test(insert) && !/["'“”‘’\(\[]$/u.test(insert)) {
-                    insert = insert + ' ';
-                }
-                if (!right && !/[\s\n]$/u.test(insert) && !/[.!?…]$/u.test(insert)) {
-                    insert = insert + ' ';
-                }
+                // Autocomplete UX: replace last token and append a trailing space.
+                insert = insert.replace(/\s+$/g, '') + ' ';
 
                 const nextValue = left + insert + right;
                 textarea.value = nextValue;
@@ -1138,11 +1291,13 @@
                 if (!textarea) return;
                 if (quickTypeState.composing) return;
 
-                const qSnapshot = String(textarea.value || '').trim();
+                const valueSnapshot = String(textarea.value || '');
+                const selSnapshot = Math.max(0, Math.min(valueSnapshot.length, Number(textarea.selectionStart ?? valueSnapshot.length)));
+                const tokenSnapshot = getLastTokenInfoFromValue(valueSnapshot, selSnapshot);
                 const mySeq = ++quickTypeState.seq;
 
-                // Strict rule: never show anything if input is empty or too short.
-                if (qSnapshot.length < QUICKTYPE_MIN_CHARS) {
+                // Strict rule: only show when last token is long enough.
+                if (!tokenSnapshot.norm || tokenSnapshot.norm.length < QUICKTYPE_MIN_CHARS) {
                     resetQuickType(key);
                     return;
                 }
@@ -1154,10 +1309,14 @@
                     if (!textarea2) return;
                     if (quickTypeState.composing) return;
 
-                    const qNow = String(textarea2.value || '').trim();
+                    const valueNow = String(textarea2.value || '');
+                    const selNow = Math.max(0, Math.min(valueNow.length, Number(textarea2.selectionStart ?? valueNow.length)));
                     if (mySeq !== quickTypeState.seq) return; // newer update queued
-                    if (qNow !== qSnapshot) return; // stale debounce result
-                    if (qNow.length < QUICKTYPE_MIN_CHARS) {
+                    if (valueNow !== valueSnapshot) return; // stale debounce result
+                    if (selNow !== selSnapshot) return; // caret moved
+
+                    const tokenNow = getLastTokenInfoFromValue(valueNow, selNow);
+                    if (!tokenNow.norm || tokenNow.norm.length < QUICKTYPE_MIN_CHARS) {
                         resetQuickType(key2);
                         return;
                     }
@@ -1168,8 +1327,8 @@
                     qtLog('update', {
                         key: key2,
                         seq: mySeq,
-                        input: qNow,
-                        token: getCaretToken(textarea2).token,
+                        input: valueNow,
+                        token: tokenNow.raw,
                         matches: quickTypeState.suggestions.length,
                         top: quickTypeState.suggestions.slice(0, 5),
                     });
@@ -1201,8 +1360,8 @@
                     scheduleQuickTypeUpdate(key);
                 });
                 c.textarea.addEventListener('input', () => {
-                    const q = String(c.textarea.value || '').trim();
-                    if (q.length < QUICKTYPE_MIN_CHARS) {
+                    const info = getLastTokenInfo(c.textarea);
+                    if (!info.norm || info.norm.length < QUICKTYPE_MIN_CHARS) {
                         if (quickTypeState.timer) {
                             clearTimeout(quickTypeState.timer);
                             quickTypeState.timer = null;
@@ -1219,11 +1378,10 @@
 
                     // If input becomes empty/too short (e.g. backspace), reset immediately.
                     if (e.key === 'Backspace' || e.key === 'Delete') {
-                        const q = String(c.textarea.value || '').trim();
                         // value here is pre-keypress; schedule a microtask to read the updated value.
                         queueMicrotask(() => {
-                            const q2 = String(c.textarea.value || '').trim();
-                            if (q2.length < QUICKTYPE_MIN_CHARS) {
+                            const info = getLastTokenInfo(c.textarea);
+                            if (!info.norm || info.norm.length < QUICKTYPE_MIN_CHARS) {
                                 if (quickTypeState.timer) {
                                     clearTimeout(quickTypeState.timer);
                                     quickTypeState.timer = null;
@@ -1362,6 +1520,8 @@
 
             bindQuickTypeForComposer('mobile');
             bindQuickTypeForComposer('desktop');
+
+            initQuickTypeSources();
 
             function getAnyForm() {
                 return composer.mobile.form || composer.desktop.form || null;
@@ -2867,6 +3027,9 @@
                         }
 
                         ensureBottom(1200);
+
+                        // QuickType learning (MRU) on successful send
+                        learnQuickTypeFromMessage(body);
 
                         c.textarea.value = '';
                         autoGrowTextarea(c.textarea);
