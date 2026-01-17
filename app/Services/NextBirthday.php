@@ -7,9 +7,152 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class NextBirthday
 {
+    /**
+     * Build birthday lists for the dashboard.
+     *
+     * @param  Collection<int,Person>  $people
+     * @return array{todayBirthdays: array<int,array{name:string,initials:string,birthday_date:CarbonImmutable,days_until:int,date_label:string,age_label:string|null,profile_url:string,avatar_url:string|null}>, upcomingBirthdays: array<int,array{name:string,initials:string,birthday_date:CarbonImmutable,days_until:int,date_label:string,age_label:string|null,profile_url:string,avatar_url:string|null}>}
+     */
+    public function dashboardForPeople(Collection $people, ?CarbonInterface $today = null, int $upcomingLimit = 10): array
+    {
+        $today = $today ? CarbonImmutable::instance($today) : CarbonImmutable::now(config('app.timezone'));
+        $today = $today->startOfDay();
+
+        $raw = $this->upcomingForPeople($people, $today);
+
+        $todayBirthdays = [];
+        $upcomingBirthdays = [];
+
+        foreach ($raw as $b) {
+            $days = (int) ($b['days_remaining'] ?? -1);
+            $nextDate = $b['next_date'] ?? null;
+            if (!($nextDate instanceof CarbonImmutable)) {
+                continue;
+            }
+            if ($days < 0) {
+                continue;
+            }
+
+            $name = trim((string) ($b['name'] ?? ''));
+            $initials = (string) ($b['initials'] ?? '?');
+
+            $profileUrl = route('family.index');
+            $personId = (int) ($b['id'] ?? 0);
+            if ($personId > 0 && (bool) ($b['is_child'] ?? false)) {
+                $profileUrl = route('family.children.edit', ['person' => $personId]);
+            }
+
+            $avatarUrl = null;
+            $path = trim((string) ($b['avatar_path'] ?? ''));
+            if ($path !== '') {
+                try {
+                    $avatarUrl = Storage::url($path);
+                } catch (\Throwable $e) {
+                    $avatarUrl = null;
+                }
+            }
+
+            $ageLabel = $this->ageLabel($b['turning_age'] ?? null, (bool) ($b['is_child'] ?? false));
+
+            $item = [
+                'name' => $name !== '' ? $name : 'Quelqu’un',
+                'initials' => $initials,
+                'birthday_date' => $nextDate,
+                'days_until' => $days,
+                'date_label' => $this->shortFrDate($nextDate),
+                'age_label' => $ageLabel,
+                'profile_url' => $profileUrl,
+                'avatar_url' => $avatarUrl,
+            ];
+
+            if ($days === 0) {
+                $todayBirthdays[] = $item;
+            } elseif ($days > 0) {
+                $upcomingBirthdays[] = $item;
+            }
+        }
+
+        if ($upcomingLimit > 0) {
+            $upcomingBirthdays = array_slice($upcomingBirthdays, 0, $upcomingLimit);
+        }
+
+        return [
+            'todayBirthdays' => $todayBirthdays,
+            'upcomingBirthdays' => $upcomingBirthdays,
+        ];
+    }
+
+    /**
+     * @param  Collection<int,User>  $users
+     * @return array{todayBirthdays: array<int,array{name:string,initials:string,birthday_date:CarbonImmutable,days_until:int,date_label:string,age_label:string|null,profile_url:string,avatar_url:string|null}>, upcomingBirthdays: array<int,array{name:string,initials:string,birthday_date:CarbonImmutable,days_until:int,date_label:string,age_label:string|null,profile_url:string,avatar_url:string|null}>}
+     */
+    public function dashboardForUsers(Collection $users, ?CarbonInterface $today = null, int $upcomingLimit = 10): array
+    {
+        $today = $today ? CarbonImmutable::instance($today) : CarbonImmutable::now(config('app.timezone'));
+        $today = $today->startOfDay();
+
+        $raw = $this->upcomingForUsers($users, $today);
+
+        $todayBirthdays = [];
+        $upcomingBirthdays = [];
+
+        foreach ($raw as $b) {
+            $days = (int) ($b['days_remaining'] ?? -1);
+            $nextDate = $b['next_date'] ?? null;
+            if (!($nextDate instanceof CarbonImmutable)) {
+                continue;
+            }
+            if ($days < 0) {
+                continue;
+            }
+
+            $id = (int) ($b['id'] ?? 0);
+            $profileUrl = route('family.index');
+            if ($id > 0) {
+                if (\Illuminate\Support\Facades\Gate::allows('manage-users')) {
+                    $profileUrl = route('admin.users.show', ['user' => $id]);
+                } elseif (auth()->check() && auth()->id() === $id) {
+                    $profileUrl = route('profile.edit');
+                }
+            }
+
+            $avatarUrl = null;
+            if ($id > 0) {
+                $avatarUrl = route('avatar.astro.imagePublic', ['user' => $id]);
+            }
+
+            $item = [
+                'name' => trim((string) ($b['name'] ?? '')) !== '' ? (string) $b['name'] : 'Quelqu’un',
+                'initials' => (string) ($b['initials'] ?? '?'),
+                'birthday_date' => $nextDate,
+                'days_until' => $days,
+                'date_label' => $this->shortFrDate($nextDate),
+                'age_label' => $this->ageLabel($b['turning_age'] ?? null, true),
+                'profile_url' => $profileUrl,
+                'avatar_url' => $avatarUrl,
+            ];
+
+            if ($days === 0) {
+                $todayBirthdays[] = $item;
+            } elseif ($days > 0) {
+                $upcomingBirthdays[] = $item;
+            }
+        }
+
+        if ($upcomingLimit > 0) {
+            $upcomingBirthdays = array_slice($upcomingBirthdays, 0, $upcomingLimit);
+        }
+
+        return [
+            'todayBirthdays' => $todayBirthdays,
+            'upcomingBirthdays' => $upcomingBirthdays,
+        ];
+    }
+
     /**
      * @param  Collection<int,User>  $users
     * @return array{kind:'user',id:int,name:string, initials:string, next_date:CarbonImmutable, days_remaining:int, turning_age:int|null}|null
@@ -261,5 +404,47 @@ class NextBirthday
 
         $parts = preg_split('/\s+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         return (string) ($parts[0] ?? $name);
+    }
+
+    private function shortFrDate(CarbonImmutable $date): string
+    {
+        $day = str_pad((string) ((int) $date->day), 2, '0', STR_PAD_LEFT);
+        $month = (int) $date->month;
+
+        $months = [
+            1 => 'jan',
+            2 => 'fév',
+            3 => 'mar',
+            4 => 'avr',
+            5 => 'mai',
+            6 => 'juin',
+            7 => 'juil',
+            8 => 'août',
+            9 => 'sept',
+            10 => 'oct',
+            11 => 'nov',
+            12 => 'déc',
+        ];
+
+        $m = $months[$month] ?? '';
+        return trim($day . ' ' . $m);
+    }
+
+    private function ageLabel($turningAge, bool $isChild): ?string
+    {
+        if (!is_int($turningAge)) {
+            return null;
+        }
+
+        // “Premium” rule of thumb: show age only when it’s meaningful (kids).
+        if (!$isChild && $turningAge >= 18) {
+            return null;
+        }
+
+        if ($turningAge <= 0) {
+            return null;
+        }
+
+        return $turningAge . ' ' . ($turningAge === 1 ? 'an' : 'ans');
     }
 }
