@@ -11,7 +11,7 @@
         <form method="POST" action="{{ route('events.store') }}">
             @csrf
 
-            @include('events._form')
+            @include('events._form', ['defaults' => $defaults ?? []])
 
             <div class="sticky bottom-[calc(env(safe-area-inset-bottom)+0.75rem)]">
                 <div class="mt-3 rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-3 flex items-center justify-between gap-3">

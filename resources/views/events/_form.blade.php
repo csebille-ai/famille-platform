@@ -1,8 +1,11 @@
 @php
-    $isEdit = isset($event) && $event instanceof \App\Models\Event;
-    $v = function (string $key, $fallback = '') use ($isEdit, $event) {
+    $event = $event ?? null;
+    $defaults = $defaults ?? [];
+
+    $isEdit = $event instanceof \App\Models\Event;
+    $v = function (string $key, $fallback = '') use ($event, $defaults) {
         if (old($key) !== null) return old($key);
-        if ($isEdit) {
+        if ($event instanceof \App\Models\Event) {
             return match ($key) {
                 'title' => $event->title,
                 'description' => $event->description,
@@ -22,6 +25,11 @@
                 default => $fallback,
             };
         }
+
+        if (is_array($defaults) && array_key_exists($key, $defaults)) {
+            return $defaults[$key];
+        }
+
         return $fallback;
     };
 
