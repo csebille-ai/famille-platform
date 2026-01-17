@@ -125,12 +125,16 @@ class NewsIndexController extends Controller
             $latestFetchedAt = null;
         }
 
-        return response()->json([
+        return response()
+            ->json([
             'ok' => true,
             'items' => $itemsForUi,
             'next_cursor' => $nextCursor,
             'latest_fetched_at' => $latestFetchedAt,
-        ]);
+        ])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     private static function encodeCursor(Carbon $publishedAt, int $id): string

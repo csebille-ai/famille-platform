@@ -394,12 +394,18 @@
                 u.searchParams.set('limit', String(LIMIT));
                 if (selectedBucket && selectedBucket !== 'all') u.searchParams.set('bucket', selectedBucket);
                 if (cursor) u.searchParams.set('cursor', cursor);
+                // Avoid browser/proxy caching: Actu is time-sensitive.
+                u.searchParams.set('_ts', String(Date.now()));
                 return u.toString();
             };
 
             const fetchFirstPageData = async () => {
                 const url = buildUrl(null);
-                const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const resp = await fetch(url, {
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                });
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const data = await resp.json();
                 if (!data || data.ok !== true || !Array.isArray(data.items)) throw new Error('Bad payload');
@@ -455,7 +461,11 @@
 
                 try {
                     const url = buildUrl(reset ? null : nextCursor);
-                    const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                    const resp = await fetch(url, {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                        cache: 'no-store',
+                    });
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                     const data = await resp.json();
                     if (!data || data.ok !== true || !Array.isArray(data.items)) throw new Error('Bad payload');
