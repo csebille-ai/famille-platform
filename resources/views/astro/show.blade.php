@@ -498,6 +498,11 @@
                                     'mercury' => '☿',
                                     'venus' => '♀',
                                     'mars' => '♂',
+                                    'jupiter' => '♃',
+                                    'saturn' => '♄',
+                                    'uranus' => '♅',
+                                    'neptune' => '♆',
+                                    'pluto' => '♇',
                                     default => '•',
                                 };
                             };
@@ -522,6 +527,9 @@
                                     'lon' => is_numeric($lon) ? (float) $lon : null,
                                 ];
                             }
+
+                            $firstName = trim((string) (explode(' ', $displayName)[0] ?? ''));
+                            $natalNarrative = app(\App\Services\Astro\Natal\NatalNarrativeGenerator::class)->generate($natal, $firstName);
                         @endphp
 
                         @if($missingCoords)
@@ -624,6 +632,13 @@
                                     </div>
                                 </div>
                             </div>
+
+                            @if(!empty($natalNarrative))
+                                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                                    <div class="text-sm font-semibold text-slate-900">Thème astral (résumé)</div>
+                                    <div class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-700">{{ $natalNarrative }}</div>
+                                </div>
+                            @endif
 
                             <div x-show="openPlanet" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
                                 <button type="button" @click="openPlanet = false" class="absolute inset-0 bg-black/30" aria-label="Fermer"></button>
