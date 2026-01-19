@@ -28,16 +28,20 @@
 @if($N > 0)
     @php
         $masterMaxHeight = 'max-height: 55vh;';
+
+        $roles = $N === 3
+            ? ['Passé', 'Présent', 'Tendance']
+            : ['Passé', 'Présent', 'Défi', 'Conseil', 'Issue probable'];
     @endphp
     <div id="{{ $idPrefix }}-cards-ui" class="space-y-4" data-tarot-cards-ui data-count="{{ $N }}" data-supports-rituel="{{ $supportsRituel ? '1' : '0' }}">
         @if(!$supportsRituel)
             <div class="fam-card p-4 text-sm text-slate-600">
-                Rituel disponible uniquement pour 3 ou 5 cartes.
+                Affichage disponible uniquement pour 3 ou 5 cartes.
             </div>
         @else
             <div class="fam-card p-4">
                 <div class="mt-4 -mx-4 px-4">
-                    <div class="flex items-center gap-2 overflow-x-auto pb-1" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-thumbs-strip>
+                    <div class="flex items-start gap-3 overflow-x-auto pb-1" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-thumbs-strip>
                         @foreach($cards as $i => $c)
                             @php
                                 $file = (string) ($c['file'] ?? '');
@@ -48,11 +52,13 @@
                                 $orientation = (string) ($c['orientation'] ?? ($reversed ? 'reversed' : 'upright'));
                                 $img = $file !== '' ? ('https://opanoma.fr/tarot/' . ltrim($file, '/')) : '';
                                 $kws = $normalizeKeywords($c['keywords'] ?? '');
+                                $roleFull = $roles[$i] ?? '';
+                                $roleShort = ($N === 5 && (int) $i === 4) ? 'Issue' : $roleFull;
                             @endphp
                             <button
                                 type="button"
-                                class="relative shrink-0 rounded-xl border border-black/10 bg-white shadow-sm transition-[transform,box-shadow] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.35)]"
-                                style="width: 64px; height: 96px; scroll-snap-align: center;"
+                                class="relative shrink-0 rounded-xl bg-transparent transition-[transform] duration-150 ease-out focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.22)]"
+                                style="width: 66px; scroll-snap-align: center;"
                                 data-thumb
                                 data-index="{{ (int) $i }}"
                                 data-img="{{ e($img) }}"
@@ -62,9 +68,13 @@
                                 data-orientation="{{ e($orientation) }}"
                                 data-reversed="{{ $reversed ? '1' : '0' }}"
                                 data-kws="{{ e(json_encode($kws, JSON_UNESCAPED_UNICODE)) }}"
-                                aria-label="Choisir la carte {{ (int) $i + 1 }}"
+                                data-role="{{ e($roleFull) }}"
+                                data-role-short="{{ e($roleShort) }}"
+                                title="{{ e($roleFull) }}"
+                                aria-label="Choisir la carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
                             >
-                                <div class="h-full w-full overflow-hidden rounded-xl bg-transparent">
+                                <div class="h-4 text-[11px] leading-4 font-medium text-slate-500 whitespace-nowrap" data-role-label>{{ $roleShort }}</div>
+                                <div class="mt-1 h-[96px] w-full overflow-hidden rounded-xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]" data-thumb-box>
                                     @if($img !== '')
                                         <img
                                             src="{{ $img }}"
@@ -76,7 +86,6 @@
                                         />
                                     @endif
                                 </div>
-                                <div class="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-transparent" data-thumb-ring></div>
                             </button>
                         @endforeach
                     </div>
@@ -84,7 +93,7 @@
 
                 <div class="mt-3">
                     <button type="button" class="mx-auto block w-[clamp(240px,72vw,420px)]" data-master-btn aria-label="Ouvrir la carte en plein écran">
-                        <div class="relative w-full aspect-[2/3] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm" style="{{ $masterMaxHeight }}">
+                        <div class="relative w-full aspect-[2/3] overflow-hidden rounded-2xl bg-white shadow-sm" style="{{ $masterMaxHeight }}">
                             <div class="absolute inset-0 flex items-center justify-center" data-master-back>
                                 <div class="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100"></div>
                                 <div class="absolute inset-0 opacity-60" style="background-image: radial-gradient(circle at 20% 20%, rgba(14,165,160,0.18), transparent 45%), radial-gradient(circle at 80% 30%, rgba(99,102,241,0.14), transparent 50%), radial-gradient(circle at 50% 90%, rgba(244,63,94,0.10), transparent 55%);"></div>
@@ -98,9 +107,6 @@
                                 loading="eager"
                                 decoding="async"
                             />
-                            <div class="absolute inset-x-0 bottom-0 px-3 pb-3 pt-8" style="background: linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0));">
-                                <div class="text-center text-sm font-semibold text-white" data-master-title></div>
-                            </div>
                         </div>
                     </button>
                 </div>
@@ -124,11 +130,14 @@
                     </div>
                 </div>
 
-                <div class="mt-4 fam-card-soft p-4">
-                    <div class="min-w-0">
-                        <div class="text-sm font-semibold text-slate-900 truncate" data-active-name></div>
-                        <div class="mt-3 flex items-center gap-2 flex-wrap" data-active-kws></div>
+                <div class="mt-3 text-xs font-medium text-slate-600" data-card-reminder></div>
+
+                <div class="mt-2">
+                    <div class="flex items-center gap-2">
+                        <div class="text-base font-semibold text-slate-900 truncate" data-active-name></div>
+                        <span class="hidden fam-chip text-xs" data-active-reversed>Renversée</span>
                     </div>
+                    <div class="mt-2 flex items-center gap-2 flex-wrap" data-active-kws></div>
                 </div>
             </div>
         @endif
@@ -164,9 +173,10 @@
         const masterBtn = root.querySelector('[data-master-btn]');
         const masterImg = root.querySelector('[data-master-img]');
         const masterBack = root.querySelector('[data-master-back]');
-        const masterTitle = root.querySelector('[data-master-title]');
         const thumbs = Array.from(root.querySelectorAll('[data-thumb]'));
         const thumbsStrip = root.querySelector('[data-thumbs-strip]');
+        const reminderEl = root.querySelector('[data-card-reminder]');
+        const reversedBadge = root.querySelector('[data-active-reversed]');
 
         const zoomModal = root.querySelector('[data-zoom-modal]');
         const zoomBackdrop = root.querySelector('[data-zoom-backdrop]');
@@ -192,8 +202,13 @@
 
             const orientationLower = (orientation || '').toLowerCase();
             const isReversed = (anyBtn.getAttribute('data-reversed') === '1') || (orientationLower === 'reversed');
-            if (masterTitle) {
-                masterTitle.textContent = isReversed ? `${name} renversé` : name;
+            if (reversedBadge) {
+                reversedBadge.classList.toggle('hidden', !isReversed);
+            }
+
+            const roleFull = anyBtn.getAttribute('data-role') || '';
+            if (reminderEl) {
+                reminderEl.textContent = roleFull ? `Carte ${activeIndex + 1}/${count} — ${roleFull}` : `Carte ${activeIndex + 1}/${count}`;
             }
 
             // Master image (no crop).
@@ -226,13 +241,19 @@
             thumbs.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
                 const isActive = idx === activeIndex;
-                const ring = btn.querySelector('[data-thumb-ring]');
-                if (ring) {
-                    ring.classList.toggle('ring-transparent', !isActive);
-                    ring.classList.toggle('ring-[color:rgba(14,165,160,0.45)]', isActive);
+                const label = btn.querySelector('[data-role-label]');
+                const box = btn.querySelector('[data-thumb-box]');
+
+                btn.style.transform = isActive ? 'translateY(-1px) scale(1.02)' : 'none';
+                if (box) {
+                    box.style.boxShadow = isActive
+                        ? '0 14px 28px rgba(15,23,42,0.14)'
+                        : '0 6px 16px rgba(15,23,42,0.10)';
                 }
-                btn.style.transform = isActive ? 'translateY(-2px) scale(1.03)' : 'none';
-                btn.style.boxShadow = isActive ? '0 10px 22px rgba(15,23,42,0.14)' : '';
+                if (label) {
+                    label.classList.toggle('text-slate-500', !isActive);
+                    label.classList.toggle('text-slate-800', isActive);
+                }
             });
         };
 
@@ -312,7 +333,7 @@
         if (ro && thumbsStrip) ro.observe(thumbsStrip);
 
         const reveal = () => {
-            // Optional light rituel intro: fade the master card in, then the thumbs.
+            // Light intro: fade the master card in, then the thumbs.
             activeIndex = 0;
             syncActiveCardPanels();
             applyThumbActiveStyles();
