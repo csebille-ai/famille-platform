@@ -37,11 +37,19 @@
         $deckBySlug = [];
         $deckByN = [];
         $deckByNameKey = [];
+        $deckByFileKey = [];
         $nameKey = function ($v): string {
             $s = mb_strtolower(trim((string) $v));
             // Keep it simple and resilient to punctuation / apostrophes / spaces.
             $s = preg_replace("/[^\p{L}\p{N}]+/u", '', $s) ?? $s;
             return $s;
+        };
+        $fileKey = function ($v): string {
+            $s = trim((string) $v);
+            if ($s === '') return '';
+            $s = str_replace('\\', '/', $s);
+            $s = basename($s);
+            return mb_strtolower($s);
         };
         foreach ($deck as $dc) {
             if (is_array($dc)) {
@@ -53,6 +61,12 @@
                 }
                 if (!empty($dc['name']) && is_string($dc['name'])) {
                     $deckByNameKey[$nameKey($dc['name'])] = $dc;
+                }
+                if (!empty($dc['file']) && is_string($dc['file'])) {
+                    $fk = $fileKey($dc['file']);
+                    if ($fk !== '') {
+                        $deckByFileKey[$fk] = $dc;
+                    }
                 }
             }
         }
@@ -77,7 +91,10 @@
                                 $img = $file !== '' ? ('https://opanoma.fr/tarot/' . ltrim($file, '/')) : '';
 
                                 $deckCard = null;
-                                if ($slug !== '' && isset($deckBySlug[$slug]) && is_array($deckBySlug[$slug])) {
+                                $fk = $fileKey($file);
+                                if ($fk !== '' && isset($deckByFileKey[$fk]) && is_array($deckByFileKey[$fk])) {
+                                    $deckCard = $deckByFileKey[$fk];
+                                } elseif ($slug !== '' && isset($deckBySlug[$slug]) && is_array($deckBySlug[$slug])) {
                                     $deckCard = $deckBySlug[$slug];
                                 } elseif ($n !== null && isset($deckByN[$n]) && is_array($deckByN[$n])) {
                                     $deckCard = $deckByN[$n];
@@ -105,7 +122,7 @@
                                 data-n="{{ $n === null ? '' : (string) $n }}"
                                 data-orientation="{{ e($orientation) }}"
                                 data-reversed="{{ $reversed ? '1' : '0' }}"
-                                data-kws="{{ e(json_encode($kws, JSON_UNESCAPED_UNICODE)) }}"
+                                data-kws="{{ e(json_encode($kws, JSON_UNESCAPED_UNICODE) ?: '[]') }}"
                                 data-role="{{ e($roleFull) }}"
                                 data-role-short="{{ e($roleShort) }}"
                                 title="{{ e($roleFull) }}"
