@@ -39,9 +39,9 @@
             </div>
         @else
             <div class="fam-card p-4">
-                <div class="rounded-2xl border border-black/10 bg-transparent">
+                <div class="-mx-4">
                     <div class="w-full" style="height: {{ $fanHeight }};">
-                        <div class="relative h-full w-full overflow-hidden" data-spread>
+                        <div class="relative h-full w-full overflow-visible" data-spread>
                             <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
                                 <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
                                 <div class="absolute left-24 top-10 h-24 w-16 rounded-xl bg-emerald-300/80 ring-2 ring-emerald-500/60" style="z-index: 2"></div>
@@ -245,6 +245,42 @@
             const cardW = cardRect.width || 120;
             const cardH = cardRect.height || 180;
             const n = fanButtons.length;
+
+            if (n === 5) {
+                // 5-card fan: near half-circle with a shared bottom-left anchor point.
+                const anchorX = pad;
+                const anchorY = rect.height * 0.92;
+                // Requested opening: ~160 degrees.
+                const minAngle = -30;
+                const maxAngle = 130;
+                const step = (maxAngle - minAngle) / (n - 1);
+                const activeBoost = 0.08;
+
+                fanButtons.forEach((btn) => {
+                    const idx = Number(btn.getAttribute('data-index') || '0');
+                    const angle = minAngle + (idx * step);
+                    const isActive = idx === activeIndex;
+                    const t = idx / (n - 1);
+                    const scaleBase = 1 - (Math.abs(t - 0.55) * 0.035);
+                    const scale = isActive ? (scaleBase + activeBoost) : scaleBase;
+                    const shadow = isActive ? '0 16px 40px rgba(15,23,42,0.22)' : '0 6px 16px rgba(15,23,42,0.10)';
+
+                    btn.style.zIndex = String(isActive ? 500 : (200 - idx));
+                    btn.style.boxShadow = shadow;
+                    btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
+                    btn.style.left = `${anchorX}px`;
+                    btn.style.top = `${anchorY}px`;
+                    btn.style.transformOrigin = '0% 100%';
+                    btn.style.transform = `translate(0, -100%) rotate(${angle}deg) scale(${scale})`;
+
+                    if (DEBUG_RITUEL) {
+                        btn.style.outline = isActive ? '2px solid rgba(14,165,160,0.55)' : '1px dashed rgba(2,6,23,0.28)';
+                        btn.style.outlineOffset = '2px';
+                    }
+                });
+
+                return;
+            }
             const base = baseLayout(n);
             const maxX = Math.max(0, (rect.width / 2) - (cardW / 2) - pad);
 
