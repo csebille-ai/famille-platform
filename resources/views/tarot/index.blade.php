@@ -4,11 +4,6 @@
 
 <x-app-layout pageBgClass="fam-page-bg">
     <div class="max-w-3xl mx-auto px-6 py-6 space-y-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Tarot</h1>
-            <div class="microcopy text-sm text-slate-500 mt-1">Tirage fun et bienveillant (aide à la réflexion).</div>
-        </div>
-
         @if ($errors->any())
             <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {{ $errors->first() }}
@@ -28,7 +23,7 @@
                 <div>
                     <label for="question" class="block text-sm font-semibold text-gray-900">Ta question</label>
                     <input type="hidden" name="question" value="{{ old('question') }}" data-question-mirror>
-                    <textarea id="question" name="question" rows="3" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
+                    <textarea id="question" name="question" rows="3" autofocus class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
                     <div class="microcopy mt-1 text-xs text-slate-500">Max 500 caractères.</div>
 
                     <div class="mt-2 flex items-center gap-3">
@@ -317,6 +312,16 @@
         // Keep mirror updated as user types, so submit works even if the textarea is disabled.
         questionEl.addEventListener('input', syncQuestionMirror, { passive: true });
         syncQuestionMirror();
+
+        // Auto-focus the question field when opening Tarot.
+        // Use a small delay to avoid layout/scroll jumps on mobile.
+        setTimeout(() => {
+            try {
+                questionEl.focus({ preventScroll: true });
+            } catch (e) {
+                try { questionEl.focus(); } catch (e2) {}
+            }
+        }, 60);
     }
 
     const setSttStatus = (msg) => {
