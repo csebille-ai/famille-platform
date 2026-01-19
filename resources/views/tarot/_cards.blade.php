@@ -27,7 +27,7 @@
 
 @if($N > 0)
     @php
-        $fanHeight = $N === 5 ? 'clamp(260px, 70vw, 320px)' : 'clamp(240px, 64vw, 280px)';
+        $fanHeight = 'clamp(240px, 64vw, 280px)';
         $fanCardSize = $N === 5
             ? 'width: clamp(112px, 30vw, 130px); height: clamp(168px, 45vw, 195px);'
             : 'width: clamp(120px, 34vw, 140px); height: clamp(180px, 51vw, 210px);';
@@ -207,11 +207,40 @@
         }
 
         const baseLayout = (n) => {
-            // A "hand-held" fan: rotation + arc positioning.
-            // These values are tuned for small mobile screens.
-            if (n === 3) return { maxAngle: 22, scaleDrop: 0.032 };
-            if (n === 5) return { maxAngle: 34, scaleDrop: 0.026 };
-            return { maxAngle: 26, scaleDrop: 0.032 };
+            // "Main réelle": base serrée, haut ouvert, légère irrégularité.
+            if (n === 5) {
+                return {
+                    angles: [-28, -14, 0, 15, 30],
+                    stepX: 14,
+                    stepY: 12,
+                    arcX: 56,
+                    arcY: 165,
+                    scaleDrop: 0.028,
+                };
+            }
+            if (n === 3) {
+                return {
+                    angles: [-18, 1, 19],
+                    stepX: 16,
+                    stepY: 10,
+                    arcX: 40,
+                    arcY: 120,
+                    scaleDrop: 0.032,
+                };
+            }
+            // Fallback
+            const maxAngle = 24;
+            return {
+                angles: Array.from({ length: n }, (_, i) => {
+                    const u = (n === 1) ? 0 : (i / (n - 1)) * 2 - 1;
+                    return u * maxAngle;
+                }),
+                stepX: 14,
+                stepY: 10,
+                arcX: 44,
+                arcY: 140,
+                scaleDrop: 0.03,
+            };
         };
 
         const layoutFan = () => {
@@ -231,29 +260,35 @@
             const base = baseLayout(n);
 
             const center = (n - 1) / 2;
-            const tMax = (n - 1) / 2;
-            const activeBoost = 0.08;
+            const activeScaleBoost = 0.07;
+            const activeLift = -10;
 
-            const maxAngle = base.maxAngle;
-            const maxRad = Math.max(0.01, Math.abs(maxAngle) * Math.PI / 180);
-
-            // Limit using rotated card projected width so outer cards can get near edges.
+            // Fit to width: compute projected half-width at max |angle|.
+            const maxAbsAngle = Math.max(...base.angles.map((a) => Math.abs(a || 0)));
+            const maxRad = Math.max(0.01, (maxAbsAngle * Math.PI) / 180);
             const halfProjW = 0.5 * ((cardW * Math.cos(maxRad)) + (cardH * Math.sin(maxRad)));
             const xLimit = Math.max(0, (rect.width / 2) - halfProjW - pad);
-            const radius = xLimit / Math.sin(maxRad);
+
+            // Precompute desired X offsets (tight base + arc widening), then scale to touch edges.
+            const desiredXs = base.angles.map((deg, i) => {
+                const t = i - center;
+                const a = (deg * Math.PI) / 180;
+                return (t * base.stepX) + (Math.sin(a) * base.arcX);
+            });
+            const maxAbsDesiredX = Math.max(1, ...desiredXs.map((v) => Math.abs(v)));
+            const kx = xLimit / maxAbsDesiredX;
 
             fanButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
+
                 const t = idx - center;
-                const u = tMax ? (t / tMax) : 0; // -1..1
-
-                const angle = u * maxAngle;
-                const a = angle * Math.PI / 180;
-
-                // Arc position (regular fan).
-                const rawX = Math.sin(a) * radius;
-                const rawY = -(1 - Math.cos(a)) * radius;
+                const angle = base.angles[idx] ?? 0;
+                const a = (angle * Math.PI) / 180;
                 const isActive = idx === activeIndex;
+
+                // Centered "palm" anchor with natural curvature.
+                const rawX = desiredXs[idx] * kx;
+                const rawY = (Math.abs(t) * base.stepY) + ((1 - Math.cos(a)) * base.arcY);
 
                 // Clamp Y so the card top doesn't go above minTop.
                 let y = rawY;
@@ -268,11 +303,17 @@
                     y -= (bottomAfter - maxBottom);
                 }
 
+                if (isActive) {
+                    y += activeLift;
+                }
+
                 const scaleBase = 1 - (Math.abs(t) * base.scaleDrop);
-                const scale = isActive ? (scaleBase + activeBoost) : scaleBase;
+                const scale = isActive ? (scaleBase + activeScaleBoost) : scaleBase;
                 const shadow = isActive ? '0 16px 40px rgba(15,23,42,0.22)' : '0 6px 16px rgba(15,23,42,0.10)';
 
-                btn.style.zIndex = String(isActive ? 500 : (200 - idx));
+                // Z-order: extremes first, then toward center; active always on top.
+                const baseZ = 200 + Math.round((100 - (Math.abs(t) * 22)));
+                btn.style.zIndex = String(isActive ? 500 : baseZ);
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
