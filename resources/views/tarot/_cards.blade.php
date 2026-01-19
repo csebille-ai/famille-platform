@@ -144,8 +144,8 @@
                                         <img
                                             src="{{ $img }}"
                                             alt=""
-                                            class="h-full w-full object-contain bg-white"
-                                            style="transform: {{ $reversed ? 'rotate(180deg)' : 'none' }};"
+                                            class="h-full w-full object-contain bg-transparent"
+                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.10)' : 'scale(1.10)' }};"
                                             loading="lazy"
                                             decoding="async"
                                         />
