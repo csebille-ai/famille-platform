@@ -537,31 +537,17 @@
             const base = baseLayout(n);
             const maxX = Math.max(0, (rect.width / 2) - (cardW / 2) - pad);
 
-            // Map each card index to a visual "slot" around the active card:
-            // 0, +1, -1, +2, -2, ...
-            const slotSeq = [0];
-            for (let d = 1; d < n; d++) {
-                slotSeq.push(d);
-                slotSeq.push(-d);
-                if (slotSeq.length >= n) break;
-            }
-            const slotByIndex = new Map();
-            slotByIndex.set(activeIndex, 0);
-            let slotPos = 1;
-            for (let step = 1; step < n; step++) {
-                const idx = (activeIndex + step) % n;
-                slotByIndex.set(idx, slotSeq[slotPos] ?? step);
-                slotPos++;
-            }
-            const maxAbsSlot = Math.max(...Array.from(slotByIndex.values()).map((v) => Math.abs(Number(v) || 0)), 0) || 1;
+            // Fixed fan: positions do NOT change when active card changes.
+            const center = (n - 1) / 2;
+            const tMax = (n - 1) / 2;
 
             // Scale X/angles down if the spread would overflow.
-            const maxAbsX = Math.abs(maxAbsSlot * base.stepX) || 1;
+            const maxAbsX = Math.abs(tMax * base.stepX) || 1;
             const k = Math.min(1, maxX / maxAbsX);
 
             fanButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                const t = Number(slotByIndex.get(idx) ?? 0);
+                const t = idx - center;
                 const angle = (t * base.stepAngle) * k;
                 const rawX = (t * base.stepX) * k;
                 // Keep the bottom of cards near the baseline: outer cards rise slightly instead of going further down.
@@ -571,11 +557,8 @@
                 // Clamp X so cards stay within the frame.
                 const x = Math.max(-maxX, Math.min(maxX, rawX));
 
-                // Active lift (small): move up a bit.
-                const activeLift = isActive ? -8 : 0;
-
                 // Clamp Y so the card top doesn't go above minTop.
-                let y = rawY + activeLift;
+                let y = rawY;
                 const topAfter = baselineY - cardH + y;
                 if (topAfter < minTop) {
                     y += (minTop - topAfter);
@@ -588,11 +571,10 @@
                 }
 
                 const scaleBase = 1 - (Math.abs(t) * base.scaleDrop);
-                const scale = isActive ? (scaleBase + 0.07) : scaleBase;
+                const scale = scaleBase;
                 const shadow = isActive ? '0 10px 28px rgba(15,23,42,0.16)' : '0 6px 16px rgba(15,23,42,0.10)';
-                // Stack by fan depth (active on top, then closer cards).
-                const depth = Math.abs(t);
-                btn.style.zIndex = String(isActive ? 200 : (100 - Math.round(depth * 10)));
+                // Fixed stacking: left-most (index 0) on top, then 1, then 2...
+                btn.style.zIndex = String(200 - idx);
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
