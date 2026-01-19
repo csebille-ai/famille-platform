@@ -41,13 +41,36 @@
 
             @php
                 $interpretationText = (string) $reading->interpretation;
-                $maybeJson = trim($interpretationText);
 
-                if ($maybeJson !== '' && preg_match('/\{(?:[^{}]|(?R))*\}/s', $maybeJson, $m) === 1) {
-                    $decoded = json_decode($m[0], true);
-                    if (is_array($decoded) && isset($decoded['interpretation'])) {
-                        $interpretationText = (string) $decoded['interpretation'];
+                $extractInterpretation = function (string $payload): ?string {
+                    $payload = trim($payload);
+                    if ($payload === '') return null;
+
+                    $jsonCandidate = $payload;
+                    if (preg_match('/\{(?:[^{}]|(?R))*\}/s', $payload, $m) === 1) {
+                        $jsonCandidate = $m[0];
                     }
+
+                    $decoded = json_decode($jsonCandidate, true);
+                    if (is_array($decoded) && isset($decoded['interpretation']) && is_string($decoded['interpretation'])) {
+                        return $decoded['interpretation'];
+                    }
+
+                    if (preg_match('/"interpretation"\s*:\s*"((?:\\\\.|[^\"])*)"/s', $jsonCandidate, $mm) === 1) {
+                        $raw = (string) $mm[1];
+                        $raw = str_replace(["\r\n", "\r", "\n"], "\\n", $raw);
+                        $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $raw);
+                        $val = json_decode('"' . $escaped . '"');
+                        if (is_string($val)) return $val;
+                        return stripcslashes((string) $mm[1]);
+                    }
+
+                    return null;
+                };
+
+                $maybeInterpretation = $extractInterpretation($interpretationText);
+                if (is_string($maybeInterpretation) && trim($maybeInterpretation) !== '') {
+                    $interpretationText = $maybeInterpretation;
                 }
 
                 // Some stored payloads contain literal "\\n" sequences.
