@@ -288,7 +288,9 @@
             submitLoading.classList.add('inline-flex');
         }
 
-        drawForm.querySelectorAll('button, input:not([type="hidden"]), textarea, select').forEach((el) => {
+        // Do NOT disable inputs/textarea: disabled fields are not submitted.
+        // We only disable buttons to prevent double-submit while keeping values intact.
+        drawForm.querySelectorAll('button').forEach((el) => {
             el.disabled = true;
         });
 
