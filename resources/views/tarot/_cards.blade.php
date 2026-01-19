@@ -505,8 +505,8 @@
         const baseLayout = (n) => {
             if (n === 3) {
                 return {
-                    stepAngle: 13,
-                    stepX: 18,
+                    stepAngle: 15,
+                    stepX: 16,
                     stepY: 10,
                     scaleDrop: 0.04,
                 };
@@ -540,16 +540,33 @@
             const cardH = cardRect.height || 180;
             const n = fanButtons.length;
             const base = baseLayout(n);
-            const tMax = (n - 1) / 2;
             const maxX = Math.max(0, (rect.width / 2) - (cardW / 2) - pad);
-            const maxAbsX = Math.abs(tMax * base.stepX) || 1;
-            const k = Math.min(1, maxX / maxAbsX);
 
-            const center = (n - 1) / 2;
+            // Map each card index to a visual "slot" around the active card:
+            // 0, +1, -1, +2, -2, ...
+            const slotSeq = [0];
+            for (let d = 1; d < n; d++) {
+                slotSeq.push(d);
+                slotSeq.push(-d);
+                if (slotSeq.length >= n) break;
+            }
+            const slotByIndex = new Map();
+            slotByIndex.set(activeIndex, 0);
+            let slotPos = 1;
+            for (let step = 1; step < n; step++) {
+                const idx = (activeIndex + step) % n;
+                slotByIndex.set(idx, slotSeq[slotPos] ?? step);
+                slotPos++;
+            }
+            const maxAbsSlot = Math.max(...Array.from(slotByIndex.values()).map((v) => Math.abs(Number(v) || 0)), 0) || 1;
+
+            // Scale X/angles down if the spread would overflow.
+            const maxAbsX = Math.abs(maxAbsSlot * base.stepX) || 1;
+            const k = Math.min(1, maxX / maxAbsX);
 
             fanButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                const t = idx - center;
+                const t = Number(slotByIndex.get(idx) ?? 0);
                 const angle = (t * base.stepAngle) * k;
                 const rawX = (t * base.stepX) * k;
                 // Keep the bottom of cards near the baseline: outer cards rise slightly instead of going further down.
