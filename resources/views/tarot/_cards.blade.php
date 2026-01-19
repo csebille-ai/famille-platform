@@ -505,9 +505,9 @@
         const baseLayout = (n) => {
             if (n === 3) {
                 return {
-                    stepAngle: 14,
-                    stepX: 16,
-                    stepY: 13,
+                    stepAngle: 13,
+                    stepX: 18,
+                    stepY: 10,
                     scaleDrop: 0.04,
                 };
             }
@@ -531,14 +531,19 @@
 
             const rect = spread.getBoundingClientRect();
             const pad = 16;
+            const baselineY = rect.height * 0.90;
+            const minTop = rect.height * 0.10;
+
+            // Use computed size from the first card (width/height are explicitly set in markup).
             const cardRect = fanButtons[0].getBoundingClientRect();
             const cardW = cardRect.width || 120;
+            const cardH = cardRect.height || 180;
             const n = fanButtons.length;
             const base = baseLayout(n);
             const tMax = (n - 1) / 2;
+            const maxX = Math.max(0, (rect.width / 2) - (cardW / 2) - pad);
             const maxAbsX = Math.abs(tMax * base.stepX) || 1;
-            const usableHalf = Math.max(0, (rect.width / 2) - (cardW / 2) - pad);
-            const k = Math.min(1, usableHalf / maxAbsX);
+            const k = Math.min(1, maxX / maxAbsX);
 
             const center = (n - 1) / 2;
 
@@ -546,9 +551,29 @@
                 const idx = Number(btn.getAttribute('data-index') || '0');
                 const t = idx - center;
                 const angle = (t * base.stepAngle) * k;
-                const x = (t * base.stepX) * k;
-                const y = (Math.abs(t) * base.stepY) * k;
+                const rawX = (t * base.stepX) * k;
+                // Keep the bottom of cards near the baseline: outer cards rise slightly instead of going further down.
+                const rawY = -(Math.abs(t) * base.stepY) * k;
                 const isActive = idx === activeIndex;
+
+                // Clamp X so cards stay within the frame.
+                const x = Math.max(-maxX, Math.min(maxX, rawX));
+
+                // Active lift (small): move up a bit.
+                const activeLift = isActive ? -8 : 0;
+
+                // Clamp Y so the card top doesn't go above minTop.
+                let y = rawY + activeLift;
+                const topAfter = baselineY - cardH + y;
+                if (topAfter < minTop) {
+                    y += (minTop - topAfter);
+                }
+                // Also prevent the bottom from going below the scene.
+                const bottomAfter = baselineY + y;
+                const maxBottom = rect.height - pad;
+                if (bottomAfter > maxBottom) {
+                    y -= (bottomAfter - maxBottom);
+                }
 
                 const scaleBase = 1 - (Math.abs(t) * base.scaleDrop);
                 const scale = isActive ? (scaleBase + 0.07) : scaleBase;
@@ -557,7 +582,8 @@
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
-                btn.style.transform = `translate(-50%, -100%) translate(${x}px, ${isActive ? (y - 8) : y}px) rotate(${angle}deg) scale(${scale})`;
+                btn.style.top = `${baselineY}px`;
+                btn.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px) rotate(${angle}deg) scale(${scale})`;
 
                 if (DEBUG_RITUEL) {
                     btn.style.outline = isActive ? '2px solid rgba(14,165,160,0.55)' : '1px dashed rgba(2,6,23,0.28)';
