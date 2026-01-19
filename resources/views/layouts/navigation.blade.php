@@ -101,22 +101,35 @@
                         @if($isHome && !$showBack && is_array($ephemeris))
                             <a
                                 href="{{ route('ephemeris.show') }}"
-                                class="pointer-events-auto w-full max-w-[62vw] rounded-2xl border border-[color:var(--fam-border)] bg-white/90 px-3 py-2 text-left shadow-[0_1px_1px_rgba(15,23,42,0.04)]"
+                                class="group pointer-events-auto w-full max-w-[68vw] rounded-2xl border border-[color:var(--fam-border)] bg-white/80 px-3 py-2 text-left shadow-[0_1px_1px_rgba(15,23,42,0.04),0_10px_24px_rgba(15,23,42,0.06)] backdrop-blur-sm transition hover:bg-white/90"
                                 aria-label="Éphéméride"
                             >
-                                <div class="text-[11px] font-medium text-slate-600 flex items-center gap-2 whitespace-nowrap">
-                                    <span class="font-semibold text-[color:var(--fam-text)]">{{ $ephemeris['date_label'] ?? '—' }}</span>
-                                    <span class="inline-flex items-center gap-1">
-                                        <i class="ph ph-sun" aria-hidden="true"></i>
-                                        <span>{{ $ephemeris['sunrise_time'] ?? '' }}</span>
-                                    </span>
-                                    <span class="inline-flex items-center gap-1">
-                                        <i class="ph ph-moon" aria-hidden="true"></i>
-                                        <span>{{ $ephemeris['sunset_time'] ?? '' }}</span>
-                                    </span>
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="min-w-0 text-[11px] font-semibold text-[color:var(--fam-text)] truncate">
+                                        {{ $ephemeris['date_label'] ?? '—' }}
+                                    </div>
+                                    <div class="flex shrink-0 items-center gap-1.5">
+                                        <span class="inline-flex items-center gap-1 rounded-full border border-[color:rgba(14,165,160,0.14)] bg-[color:var(--fam-tint)] px-2 py-0.5 text-[11px] font-semibold text-[color:var(--fam-primary-hover)]">
+                                            <i class="ph ph-sun text-[16px]" aria-hidden="true"></i>
+                                            <span>{{ $ephemeris['sunrise_time'] ?? '' }}</span>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 rounded-full border border-[color:rgba(14,165,160,0.14)] bg-[color:var(--fam-tint)] px-2 py-0.5 text-[11px] font-semibold text-[color:var(--fam-primary-hover)]">
+                                            <i class="ph ph-moon text-[16px]" aria-hidden="true"></i>
+                                            <span>{{ $ephemeris['sunset_time'] ?? '' }}</span>
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="mt-1 text-[13px] font-semibold text-[color:var(--fam-text)] leading-tight truncate">{{ $ephemeris['saint_name'] ?? '—' }}</div>
-                                <div class="mt-0.5 text-[11px] text-slate-600 truncate">{{ $ephemeris['proverb_text'] ?? '' }}</div>
+
+                                <div class="mt-1 flex items-baseline gap-2 min-w-0">
+                                    <div class="text-[13px] font-semibold text-[color:var(--fam-text)] leading-tight truncate">
+                                        {{ $ephemeris['saint_name'] ?? '—' }}
+                                    </div>
+                                    @if(!empty($ephemeris['proverb_text']))
+                                        <div class="text-[11px] text-slate-600 truncate">
+                                            — {{ $ephemeris['proverb_text'] }}
+                                        </div>
+                                    @endif
+                                </div>
                             </a>
                         @else
                             <div class="text-[0.95rem] font-semibold text-[color:var(--fam-text)] truncate max-w-[55vw]">{{ $mobileTitle }}</div>
