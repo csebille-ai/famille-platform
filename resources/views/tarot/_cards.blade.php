@@ -41,7 +41,7 @@
             <div class="fam-card p-4">
                 <div class="-mx-4">
                     <div class="w-full" style="height: {{ $fanHeight }};">
-                                    <div class="relative h-full w-full overflow-hidden" data-spread>
+                                    <div class="relative h-full w-full overflow-visible" data-spread>
                             <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
                                 <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
                                 <div class="absolute left-24 top-10 h-24 w-16 rounded-xl bg-emerald-300/80 ring-2 ring-emerald-500/60" style="z-index: 2"></div>
@@ -207,25 +207,11 @@
         }
 
         const baseLayout = (n) => {
-            if (n === 3) {
-                return {
-                    maxAngle: 18,
-                    rise: 14,
-                    scaleDrop: 0.035,
-                };
-            }
-            if (n === 5) {
-                return {
-                    maxAngle: 28,
-                    rise: 20,
-                    scaleDrop: 0.028,
-                };
-            }
-            return {
-                maxAngle: 20,
-                rise: 16,
-                scaleDrop: 0.035,
-            };
+            // A "hand-held" fan: rotation + arc positioning.
+            // These values are tuned for small mobile screens.
+            if (n === 3) return { maxAngle: 22, scaleDrop: 0.032 };
+            if (n === 5) return { maxAngle: 34, scaleDrop: 0.026 };
+            return { maxAngle: 26, scaleDrop: 0.032 };
         };
 
         const layoutFan = () => {
@@ -240,33 +226,34 @@
             // Use computed size from the first card (width/height are explicitly set in markup).
             const cardRect = fanButtons[0].getBoundingClientRect();
             const cardW = cardRect.width || 120;
-            }
+            const cardH = cardRect.height || 180;
+            const n = fanButtons.length;
+            const base = baseLayout(n);
 
-            // Regular "hand" fan: same anchor (center/baseline) for all cards.
             const center = (n - 1) / 2;
             const tMax = (n - 1) / 2;
             const activeBoost = 0.08;
 
-            // Choose an angle span then compute the max horizontal offset that keeps
-            // the rotated card inside the frame, so outer cards can nearly touch edges.
             const maxAngle = base.maxAngle;
-            const theta = Math.abs(maxAngle) * Math.PI / 180;
-            const halfProjW = 0.5 * ((cardW * Math.cos(theta)) + (cardH * Math.sin(theta)));
-            const xMax = Math.max(0, (rect.width / 2) - halfProjW - pad);
-            const activeBoost = 0.08;
+            const maxRad = Math.max(0.01, Math.abs(maxAngle) * Math.PI / 180);
+
+            // Limit using rotated card projected width so outer cards can get near edges.
+            const halfProjW = 0.5 * ((cardW * Math.cos(maxRad)) + (cardH * Math.sin(maxRad)));
+            const xLimit = Math.max(0, (rect.width / 2) - halfProjW - pad);
+            const radius = xLimit / Math.sin(maxRad);
 
             fanButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                const u = tMax ? (t / tMax) : 0;
-                const angle = u * maxAngle;
-                const rawX = u * xMax;
-                // Outer cards rise a bit to create a semi-circle feel.
-                const rawY = -Math.pow(Math.abs(u), 1.55) * base.rise;
-                const rawY = -(Math.abs(t) * base.stepY) * k;
+                const t = idx - center;
+                const u = tMax ? (t / tMax) : 0; // -1..1
 
-                // X stays within computed range.
-                const x = Math.max(-xMax, Math.min(xMax, rawX));
-                const x = Math.max(-maxX, Math.min(maxX, rawX));
+                const angle = u * maxAngle;
+                const a = angle * Math.PI / 180;
+
+                // Arc position (regular fan).
+                const rawX = Math.sin(a) * radius;
+                const rawY = -(1 - Math.cos(a)) * radius;
+                const isActive = idx === activeIndex;
 
                 // Clamp Y so the card top doesn't go above minTop.
                 let y = rawY;
@@ -284,14 +271,14 @@
                 const scaleBase = 1 - (Math.abs(t) * base.scaleDrop);
                 const scale = isActive ? (scaleBase + activeBoost) : scaleBase;
                 const shadow = isActive ? '0 16px 40px rgba(15,23,42,0.22)' : '0 6px 16px rgba(15,23,42,0.10)';
-                // Active card comes on top so the zoom is visible.
+
                 btn.style.zIndex = String(isActive ? 500 : (200 - idx));
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
                 btn.style.left = `${centerX}px`;
                 btn.style.top = `${baselineY}px`;
-                btn.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px) rotate(${angle}deg) scale(${scale})`;
+                btn.style.transform = `translate(-50%, -100%) translate(${rawX}px, ${y}px) rotate(${angle}deg) scale(${scale})`;
 
                 if (DEBUG_RITUEL) {
                     btn.style.outline = isActive ? '2px solid rgba(14,165,160,0.55)' : '1px dashed rgba(2,6,23,0.28)';
