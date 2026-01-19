@@ -41,12 +41,7 @@
             <div class="fam-card p-4">
                 <div class="-mx-4">
                     <div class="w-full" style="height: {{ $fanHeight }};">
-                                    <div class="relative h-full w-full overflow-visible" data-spread>
-                            <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
-                                <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
-                                <div class="absolute left-24 top-10 h-24 w-16 rounded-xl bg-emerald-300/80 ring-2 ring-emerald-500/60" style="z-index: 2"></div>
-                                <div class="absolute left-44 top-16 h-24 w-16 rounded-xl bg-sky-300/80 ring-2 ring-sky-500/60" style="z-index: 3"></div>
-                            </div>
+                        <div class="relative h-full w-full overflow-hidden rounded-2xl border border-black/10 bg-white" data-carousel-scene>
 
                             @foreach($cards as $i => $c)
                                 @php
@@ -61,9 +56,9 @@
                                 @endphp
                                 <button
                                     type="button"
-                                    class="absolute left-1/2 top-[90%] origin-bottom rounded-2xl bg-transparent shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
-                                    style="{{ $fanCardSize }}"
-                                    data-card-fan
+                                    class="absolute left-1/2 top-1/2 rounded-2xl bg-transparent shadow-sm transition-[transform,filter,box-shadow,opacity] duration-300 ease-out"
+                                    style="{{ $fanCardSize }}; transform: translate(-50%, -50%) scale(0.96); opacity: 0;"
+                                    data-card-carousel
                                     data-index="{{ (int) $i }}"
                                     data-name="{{ e($name) }}"
                                     data-slug="{{ e($slug) }}"
@@ -109,13 +104,7 @@
 
         const supportsRituel = root.getAttribute('data-supports-rituel') === '1';
         const count = Number(root.getAttribute('data-count') || '0');
-        const DEBUG_RITUEL = (() => {
-            try {
-                return new URLSearchParams(window.location.search).has('debugRituel');
-            } catch (e) {
-                return false;
-            }
-        })();
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         // Active index shared.
         let activeIndex = 0;
@@ -159,7 +148,7 @@
         const getCardBtnByIndex = (selector, idx) => root.querySelector(`${selector}[data-index="${idx}"]`);
 
         const syncActiveCardPanels = () => {
-            const anyBtn = getCardBtnByIndex('[data-card-fan]', activeIndex);
+            const anyBtn = getCardBtnByIndex('[data-card-carousel]', activeIndex);
             if (!anyBtn) return;
 
             const name = anyBtn.getAttribute('data-name') || '';
@@ -182,183 +171,170 @@
             const next = Math.max(0, Math.min(count - 1, idx));
             activeIndex = next;
             syncActiveCardPanels();
-            layoutFan();
+            applyCarouselLayout(activeIndex, { instant: false, stepMode: 'final' });
         };
 
-        root.querySelectorAll('[data-card-fan]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const idx = Number(btn.getAttribute('data-index') || '0');
-                // Rituel: tap = focus/zoom in place (no modal).
-                setActiveIndex(idx);
-            });
-        });
+        const scene = root.querySelector('[data-carousel-scene]');
+        const cardButtons = Array.from(root.querySelectorAll('[data-card-carousel]'));
 
-        // Fan layout
-        const spread = root.querySelector('[data-spread]');
-        const fanButtons = Array.from(root.querySelectorAll('[data-card-fan]'));
-        const debugLayer = root.querySelector('[data-rituel-debug]');
-
-        if (DEBUG_RITUEL && spread) {
-            spread.style.overflow = 'visible';
-            spread.style.backgroundImage = 'linear-gradient(0deg, rgba(2,6,23,0.06), rgba(2,6,23,0.06))';
-        }
-        if (DEBUG_RITUEL && debugLayer) {
-            debugLayer.classList.remove('hidden');
-        }
-
-        const baseLayout = (n) => {
-            // "Main réelle": base serrée, haut ouvert, légère irrégularité.
-            if (n === 5) {
-                return {
-                    angles: [-28, -14, 0, 15, 30],
-                    stepX: 14,
-                    stepY: 12,
-                    arcX: 56,
-                    arcY: 165,
-                    scaleDrop: 0.028,
-                };
-            }
-            if (n === 3) {
-                return {
-                    angles: [-18, 1, 19],
-                    stepX: 16,
-                    stepY: 10,
-                    arcX: 40,
-                    arcY: 120,
-                    scaleDrop: 0.032,
-                };
-            }
-            // Fallback
-            const maxAngle = 24;
+        const getCardSize = () => {
+            const rect = cardButtons[0]?.getBoundingClientRect();
             return {
-                angles: Array.from({ length: n }, (_, i) => {
-                    const u = (n === 1) ? 0 : (i / (n - 1)) * 2 - 1;
-                    return u * maxAngle;
-                }),
-                stepX: 14,
-                stepY: 10,
-                arcX: 44,
-                arcY: 140,
-                scaleDrop: 0.03,
+                w: rect?.width || 120,
+                h: rect?.height || 180,
             };
         };
 
-        const layoutFan = () => {
-            if (!spread || fanButtons.length === 0) return;
+        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-            const rect = spread.getBoundingClientRect();
-            const pad = 16;
-            const centerX = rect.width / 2;
-            const baselineY = rect.height * 0.90;
-            const minTop = rect.height * 0.10;
+        const computeStepX = (mode, centerIdx, visibleUntil) => {
+            const sceneRect = scene?.getBoundingClientRect();
+            const sceneW = sceneRect?.width || 360;
+            const pad = 18;
+            const { w: cardW } = getCardSize();
+            const halfAvail = Math.max(0, (sceneW / 2) - pad - (cardW / 2));
 
-            // Use computed size from the first card (width/height are explicitly set in markup).
-            const cardRect = fanButtons[0].getBoundingClientRect();
-            const cardW = cardRect.width || 120;
-            const cardH = cardRect.height || 180;
-            const n = fanButtons.length;
-            const base = baseLayout(n);
+            // How many cards exist on each side of the center for the *currently visible* set.
+            const leftCount = Math.max(0, centerIdx);
+            const rightCount = Math.max(0, visibleUntil - centerIdx);
+            const maxSide = Math.max(leftCount, rightCount);
 
-            const center = (n - 1) / 2;
-            const activeScaleBoost = 0.07;
-            const activeLift = -10;
+            // If only one card (or no side), spacing can be any reasonable default.
+            if (maxSide === 0) {
+                return mode === 'deal'
+                    ? clamp(cardW * 0.92, 92, 170)
+                    : clamp(cardW * 0.64, 70, 130);
+            }
 
-            // Fit to width: compute projected half-width at max |angle|.
-            const maxAbsAngle = Math.max(...base.angles.map((a) => Math.abs(a || 0)));
-            const maxRad = Math.max(0.01, (maxAbsAngle * Math.PI) / 180);
-            const halfProjW = 0.5 * ((cardW * Math.cos(maxRad)) + (cardH * Math.sin(maxRad)));
-            const xLimit = Math.max(0, (rect.width / 2) - halfProjW - pad);
+            // Ensure the farthest visible card stays inside the scene.
+            const fitStep = halfAvail / maxSide;
 
-            // Precompute desired X offsets (tight base + arc widening), then scale to touch edges.
-            const desiredXs = base.angles.map((deg, i) => {
-                const t = i - center;
-                const a = (deg * Math.PI) / 180;
-                return (t * base.stepX) + (Math.sin(a) * base.arcX);
-            });
-            const maxAbsDesiredX = Math.max(1, ...desiredXs.map((v) => Math.abs(v)));
-            const kx = xLimit / maxAbsDesiredX;
+            // Target aesthetics.
+            const target = mode === 'deal'
+                ? clamp(cardW * 0.92, 92, 170)
+                : clamp(cardW * 0.64, 70, 130);
 
-            fanButtons.forEach((btn) => {
+            return clamp(Math.min(target, fitStep), 56, target);
+        };
+
+        const applyCarouselLayout = (centerIdx, opts = {}) => {
+            const { instant = false, stepMode = 'final', visibleUntil = (count - 1) } = opts;
+            const stepX = computeStepX(stepMode, centerIdx, visibleUntil);
+
+            cardButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
+                const isVisible = idx <= visibleUntil;
+                const rel = idx - centerIdx;
 
-                const t = idx - center;
-                const angle = base.angles[idx] ?? 0;
-                const a = (angle * Math.PI) / 180;
-                const isActive = idx === activeIndex;
+                btn.style.transitionDuration = instant ? '0ms' : (stepMode === 'deal' ? '260ms' : '320ms');
+                btn.style.transitionTimingFunction = 'cubic-bezier(.2,.9,.2,1)';
 
-                // Centered "palm" anchor with natural curvature.
-                const rawX = desiredXs[idx] * kx;
-                const rawY = (Math.abs(t) * base.stepY) + ((1 - Math.cos(a)) * base.arcY);
-
-                // Clamp Y so the card top doesn't go above minTop.
-                let y = rawY;
-                const topAfter = baselineY - cardH + y;
-                if (topAfter < minTop) {
-                    y += (minTop - topAfter);
-                }
-                // Also prevent the bottom from going below the scene.
-                const bottomAfter = baselineY + y;
-                const maxBottom = rect.height - pad;
-                if (bottomAfter > maxBottom) {
-                    y -= (bottomAfter - maxBottom);
+                if (!isVisible) {
+                    btn.style.opacity = '0';
+                    btn.style.pointerEvents = 'none';
+                    btn.style.zIndex = '0';
+                    btn.style.transform = 'translate(-50%, -50%) scale(0.96)';
+                    return;
                 }
 
-                if (isActive) {
-                    y += activeLift;
-                }
+                const x = rel * stepX;
+                const rot = clamp(rel * 2.2, -10, 10);
+                const isActive = idx === centerIdx;
+                const scale = isActive ? 1.06 : 1.0;
+                const y = isActive ? -8 : 0;
+                const z = isActive ? 500 : (200 - Math.abs(rel) * 10);
 
-                const scaleBase = 1 - (Math.abs(t) * base.scaleDrop);
-                const scale = isActive ? (scaleBase + activeScaleBoost) : scaleBase;
-                const shadow = isActive ? '0 16px 40px rgba(15,23,42,0.22)' : '0 6px 16px rgba(15,23,42,0.10)';
-
-                // Z-order: extremes first, then toward center; active always on top.
-                const baseZ = 200 + Math.round((100 - (Math.abs(t) * 22)));
-                btn.style.zIndex = String(isActive ? 500 : baseZ);
-                btn.style.boxShadow = shadow;
-                btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
-                btn.style.transformOrigin = '50% 100%';
-                btn.style.left = `${centerX}px`;
-                btn.style.top = `${baselineY}px`;
-                btn.style.transform = `translate(-50%, -100%) translate(${rawX}px, ${y}px) rotate(${angle}deg) scale(${scale})`;
-
-                if (DEBUG_RITUEL) {
-                    btn.style.outline = isActive ? '2px solid rgba(14,165,160,0.55)' : '1px dashed rgba(2,6,23,0.28)';
-                    btn.style.outlineOffset = '2px';
-                }
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+                btn.style.zIndex = String(z);
+                btn.style.filter = isActive ? 'none' : 'saturate(0.94) contrast(0.99)';
+                btn.style.transformOrigin = '50% 50%';
+                btn.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rot}deg) scale(${scale})`;
             });
         };
 
-        // Simple swipe fallback
-        if (spread) {
+        // Tap any card to focus it.
+        cardButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-index') || '0');
+                activeIndex = idx;
+                syncActiveCardPanels();
+                applyCarouselLayout(activeIndex, { instant: false, stepMode: 'final', visibleUntil: count - 1 });
+            });
+        });
+
+        // Swipe navigation.
+        if (scene) {
             let startX = null;
             let startY = null;
-            spread.addEventListener('pointerdown', (e) => {
+            scene.addEventListener('pointerdown', (e) => {
                 startX = e.clientX;
                 startY = e.clientY;
             });
-            spread.addEventListener('pointerup', (e) => {
+            scene.addEventListener('pointerup', (e) => {
                 if (startX == null || startY == null) return;
                 const dx = e.clientX - startX;
                 const dy = e.clientY - startY;
                 startX = null;
                 startY = null;
                 if (Math.abs(dx) < 30 || Math.abs(dx) < Math.abs(dy)) return;
-                setActiveIndex(activeIndex + (dx < 0 ? 1 : -1));
+                const next = Math.max(0, Math.min(count - 1, activeIndex + (dx < 0 ? 1 : -1)));
+                activeIndex = next;
+                syncActiveCardPanels();
+                applyCarouselLayout(activeIndex, { instant: false, stepMode: 'final', visibleUntil: count - 1 });
             });
         }
 
-        const ro = (window.ResizeObserver && spread) ? new ResizeObserver(() => {
-            layoutFan();
+        const ro = (window.ResizeObserver && scene) ? new ResizeObserver(() => {
+            applyCarouselLayout(activeIndex, { instant: true, stepMode: 'final', visibleUntil: count - 1 });
         }) : null;
-        if (ro && spread) ro.observe(spread);
+        if (ro && scene) ro.observe(scene);
 
         window.addEventListener('resize', () => {
-            layoutFan();
+            applyCarouselLayout(activeIndex, { instant: true, stepMode: 'final', visibleUntil: count - 1 });
         });
 
+        const runDealAnimation = () => {
+            // Deal sequence: 0 shows center, then 1 shows center (0 shifts left), etc.
+            // After last card is dealt, we re-center the whole group on the middle card.
+            const finalCenter = Math.floor(count / 2);
+
+            // First frame: only card 0 visible at center.
+            activeIndex = 0;
+            syncActiveCardPanels();
+            applyCarouselLayout(0, { instant: true, stepMode: 'deal', visibleUntil: 0 });
+
+            if (prefersReducedMotion) {
+                activeIndex = finalCenter;
+                syncActiveCardPanels();
+                applyCarouselLayout(finalCenter, { instant: true, stepMode: 'final', visibleUntil: count - 1 });
+                return;
+            }
+
+            let step = 1;
+            const dealNext = () => {
+                if (step >= count) {
+                    // Focus slide: center the group on the middle card.
+                    setTimeout(() => {
+                        activeIndex = finalCenter;
+                        syncActiveCardPanels();
+                        applyCarouselLayout(finalCenter, { instant: false, stepMode: 'final', visibleUntil: count - 1 });
+                    }, 320);
+                    return;
+                }
+
+                activeIndex = step;
+                syncActiveCardPanels();
+                applyCarouselLayout(step, { instant: false, stepMode: 'deal', visibleUntil: step });
+                step += 1;
+                setTimeout(dealNext, 360);
+            };
+
+            setTimeout(dealNext, 260);
+        };
+
         // Init
-        setActiveIndex(0);
-        requestAnimationFrame(() => layoutFan());
+        requestAnimationFrame(() => runDealAnimation());
     })();
     </script>
 @endif
