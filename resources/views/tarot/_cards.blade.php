@@ -167,18 +167,15 @@
                 </div>
 
                 <div class="mt-3 rounded-2xl border border-black/10 bg-white/70 shadow-sm">
-                    <div
-                        class="relative w-full"
-                        data-spread
-                        style="height: clamp(240px, 64vw, 280px);"
-                    >
-                        <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
-                            <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
-                            <div class="absolute left-24 top-10 h-24 w-16 rounded-xl bg-emerald-300/80 ring-2 ring-emerald-500/60" style="z-index: 2"></div>
-                            <div class="absolute left-44 top-16 h-24 w-16 rounded-xl bg-sky-300/80 ring-2 ring-sky-500/60" style="z-index: 3"></div>
-                        </div>
+                    <div class="w-full" style="height: clamp(240px, 64vw, 280px);">
+                        <div class="relative h-full w-full" data-spread>
+                            <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
+                                <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
+                                <div class="absolute left-24 top-10 h-24 w-16 rounded-xl bg-emerald-300/80 ring-2 ring-emerald-500/60" style="z-index: 2"></div>
+                                <div class="absolute left-44 top-16 h-24 w-16 rounded-xl bg-sky-300/80 ring-2 ring-sky-500/60" style="z-index: 3"></div>
+                            </div>
 
-                        @foreach($cards as $i => $c)
+                            @foreach($cards as $i => $c)
                             @php
                                 $file = (string) ($c['file'] ?? '');
                                 $name = (string) ($c['name'] ?? '');
@@ -188,7 +185,8 @@
                             @endphp
                             <button
                                 type="button"
-                                class="absolute left-1/2 top-[88%] origin-bottom w-[9.5rem] h-[14.25rem] md:w-[10.5rem] md:h-[15.75rem] rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
+                                class="absolute left-1/2 top-[88%] origin-bottom rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
+                                style="width: clamp(120px, 34vw, 140px); height: clamp(180px, 51vw, 210px);"
                                 data-card-fan
                                 data-index="{{ (int) $i }}"
                                 data-name="{{ e($name) }}"
@@ -211,6 +209,7 @@
                                 </div>
                             </button>
                         @endforeach
+                        </div>
                     </div>
                 </div>
 
@@ -298,6 +297,11 @@
                 }
             });
             try { localStorage.setItem(STORAGE_KEY, allowed); } catch (e) {}
+
+            if (allowed === 'rituel') {
+                // Run layout after the view becomes visible so getBoundingClientRect() is non-zero.
+                requestAnimationFrame(() => layoutFan());
+            }
         };
 
         // Active index shared.
@@ -518,6 +522,12 @@
         const layoutFan = () => {
             if (!spread || fanButtons.length === 0) return;
             if (!canUseRituelNow()) return;
+
+            // Ensure the active card is painted last (on top) in addition to z-index.
+            const activeBtn = root.querySelector(`[data-card-fan][data-index="${activeIndex}"]`);
+            if (activeBtn && activeBtn.parentElement === spread) {
+                spread.appendChild(activeBtn);
+            }
 
             const rect = spread.getBoundingClientRect();
             const pad = 16;
