@@ -168,7 +168,7 @@
 
                 <div class="mt-3 rounded-2xl border border-black/10 bg-white/70 shadow-sm">
                     <div class="w-full" style="height: clamp(240px, 64vw, 280px);">
-                        <div class="relative h-full w-full" data-spread>
+                        <div class="relative h-full w-full overflow-hidden" data-spread>
                             <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
                                 <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
                                 <div class="absolute left-24 top-10 h-24 w-16 rounded-xl bg-emerald-300/80 ring-2 ring-emerald-500/60" style="z-index: 2"></div>
@@ -185,7 +185,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="absolute left-1/2 top-[88%] origin-bottom rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
+                                class="absolute left-1/2 top-[90%] origin-bottom rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
                                 style="width: clamp(120px, 34vw, 140px); height: clamp(180px, 51vw, 210px);"
                                 data-card-fan
                                 data-index="{{ (int) $i }}"
@@ -505,9 +505,9 @@
         const baseLayout = (n) => {
             if (n === 3) {
                 return {
-                    stepAngle: 12,
-                    stepX: 22,
-                    stepY: 10,
+                    stepAngle: 14,
+                    stepX: 16,
+                    stepY: 13,
                     scaleDrop: 0.04,
                 };
             }
@@ -557,7 +557,7 @@
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
-                btn.style.transform = `translate(-50%, -100%) translate(${x}px, ${isActive ? (y - 10) : y}px) rotate(${angle}deg) scale(${scale})`;
+                btn.style.transform = `translate(-50%, -100%) translate(${x}px, ${isActive ? (y - 8) : y}px) rotate(${angle}deg) scale(${scale})`;
 
                 if (DEBUG_RITUEL) {
                     btn.style.outline = isActive ? '2px solid rgba(14,165,160,0.55)' : '1px dashed rgba(2,6,23,0.28)';
