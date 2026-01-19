@@ -65,29 +65,55 @@
                     </div>
                 </div>
 
-                <div class="mt-3 flex justify-center">
-                    <button type="button" class="group relative" data-zoom-active aria-label="Zoom">
-                        <div class="rounded-2xl border border-black/10 bg-white shadow-sm overflow-hidden">
-                            <div class="w-[min(70vw,18rem)] aspect-[2/3] bg-white">
-                                <img
-                                    data-active-img
-                                    src=""
-                                    alt=""
-                                    class="h-full w-full object-contain bg-white"
-                                    loading="lazy"
-                                    decoding="async"
-                                />
-                            </div>
-                        </div>
-                        <div class="mt-3 text-center">
-                            <div class="text-sm font-semibold text-slate-900" data-active-name></div>
-                            <div class="mt-2 flex items-center justify-center gap-2 flex-wrap" data-active-kws></div>
-                        </div>
-                    </button>
-                </div>
+                <div class="mt-3">
+                    <div
+                        class="flex gap-4 overflow-x-auto snap-x snap-mandatory scroll-smooth px-2 py-2"
+                        style="-webkit-overflow-scrolling: touch"
+                        data-carousel
+                        aria-label="Carrousel"
+                    >
+                        @foreach($cards as $i => $c)
+                            @php
+                                $file = (string) ($c['file'] ?? '');
+                                $name = (string) ($c['name'] ?? '');
+                                $reversed = !empty($c['reversed']);
+                                $img = $file !== '' ? ('https://opanoma.fr/tarot/' . ltrim($file, '/')) : '';
+                                $kws = $normalizeKeywords($c['keywords'] ?? '');
+                            @endphp
+                            <button
+                                type="button"
+                                class="snap-center shrink-0 w-[72%] max-w-[18rem] transition-[transform,opacity] duration-200 ease-out scale-[0.92] opacity-90"
+                                data-card-slide
+                                data-index="{{ (int) $i }}"
+                                data-name="{{ e($name) }}"
+                                data-img="{{ e($img) }}"
+                                data-reversed="{{ $reversed ? '1' : '0' }}"
+                                data-kws="{{ e(json_encode($kws, JSON_UNESCAPED_UNICODE)) }}"
+                                aria-label="Carte {{ (int) $i + 1 }}"
+                            >
+                                <div class="rounded-2xl border border-black/10 bg-white shadow-sm overflow-hidden">
+                                    <div class="w-full aspect-[2/3] bg-white">
+                                        @if($img !== '')
+                                            <img
+                                                src="{{ $img }}"
+                                                alt="{{ e($name) }}"
+                                                class="h-full w-full object-contain bg-white"
+                                                style="transform: {{ $reversed ? 'rotate(180deg)' : 'none' }};"
+                                                loading="lazy"
+                                                decoding="async"
+                                            />
+                                        @endif
+                                    </div>
+                                </div>
+                            </button>
+                        @endforeach
+                    </div>
 
-                <div class="mt-4 flex items-center justify-center">
-                    <div class="text-xs text-slate-500">Tap carte = zoom</div>
+                    <div class="mt-3 text-center">
+                        <div class="text-sm font-semibold text-slate-900" data-active-name></div>
+                        <div class="mt-2 flex items-center justify-center gap-2 flex-wrap" data-active-kws></div>
+                        <div class="mt-3 text-xs text-slate-500">Swipe pour naviguer • Tap carte active = zoom</div>
+                    </div>
                 </div>
             </div>
 
@@ -144,7 +170,7 @@
                     <div
                         class="relative w-full overflow-hidden"
                         data-spread
-                        style="height: min(54vw, 18rem);"
+                        style="height: clamp(240px, 64vw, 280px);"
                     >
                         @foreach($cards as $i => $c)
                             @php
@@ -156,7 +182,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
+                                class="absolute left-1/2 top-[88%] origin-bottom rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
                                 data-card-fan
                                 data-index="{{ (int) $i }}"
                                 data-name="{{ e($name) }}"
@@ -263,6 +289,7 @@
 
         // Active index shared.
         let activeIndex = 0;
+        let syncingFromScroll = false;
 
         const updateActiveLabels = () => {
             root.querySelectorAll('[data-active-pos]').forEach((el) => {
@@ -281,12 +308,12 @@
             });
         };
 
-        const getCardBtnByIndex = (selector, idx) => {
-            return root.querySelector(`${selector}[data-index="${idx}"]`);
-        };
+        const getCardBtnByIndex = (selector, idx) => root.querySelector(`${selector}[data-index="${idx}"]`);
 
         const syncActiveCardPanels = () => {
-            const anyBtn = getCardBtnByIndex('[data-card-thumb]', activeIndex) || getCardBtnByIndex('[data-card-fan]', activeIndex);
+            const anyBtn = getCardBtnByIndex('[data-card-slide]', activeIndex)
+                || getCardBtnByIndex('[data-card-thumb]', activeIndex)
+                || getCardBtnByIndex('[data-card-fan]', activeIndex);
             if (!anyBtn) return;
 
             const name = anyBtn.getAttribute('data-name') || '';
@@ -298,11 +325,6 @@
             } catch (e) {}
 
             root.querySelectorAll('[data-active-name]').forEach((el) => { el.textContent = name; });
-            root.querySelectorAll('[data-active-img]').forEach((el) => {
-                el.src = img;
-                el.alt = name;
-                el.style.transform = reversed ? 'rotate(180deg)' : 'none';
-            });
             root.querySelectorAll('[data-active-kws]').forEach((el) => renderKeywords(el, kws));
             updateActiveLabels();
 
@@ -319,6 +341,9 @@
             activeIndex = next;
             syncActiveCardPanels();
             layoutFan();
+            if (viewMode === 'focus') {
+                scrollToSlide(activeIndex);
+            }
         };
 
         // Modal
@@ -344,6 +369,79 @@
 
         root.querySelectorAll('[data-zoom-close]').forEach((el) => el.addEventListener('click', closeModal));
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+        // Focus carousel
+        const carousel = root.querySelector('[data-carousel]');
+        const slides = Array.from(root.querySelectorAll('[data-card-slide]'));
+
+        const updateSlideStyles = () => {
+            slides.forEach((b) => {
+                const idx = Number(b.getAttribute('data-index') || '0');
+                const isActive = idx === activeIndex;
+                b.classList.toggle('scale-100', isActive);
+                b.classList.toggle('opacity-100', isActive);
+                b.classList.toggle('scale-[0.92]', !isActive);
+                b.classList.toggle('opacity-90', !isActive);
+            });
+        };
+
+        const scrollToSlide = (idx, behavior = 'smooth') => {
+            if (!carousel || !slides[idx]) return;
+            try {
+                syncingFromScroll = true;
+                slides[idx].scrollIntoView({ behavior, block: 'nearest', inline: 'center' });
+            } catch (e) {
+                // ignore
+            } finally {
+                setTimeout(() => { syncingFromScroll = false; }, 180);
+            }
+            updateSlideStyles();
+        };
+
+        const pickNearestSlide = () => {
+            if (!carousel || slides.length === 0) return;
+            const center = carousel.scrollLeft + (carousel.clientWidth / 2);
+            let bestIdx = 0;
+            let bestDist = Infinity;
+            for (const b of slides) {
+                const idx = Number(b.getAttribute('data-index') || '0');
+                const mid = b.offsetLeft + (b.clientWidth / 2);
+                const d = Math.abs(mid - center);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestIdx = idx;
+                }
+            }
+            if (bestIdx !== activeIndex) {
+                activeIndex = bestIdx;
+                syncActiveCardPanels();
+                layoutFan();
+            }
+            updateSlideStyles();
+        };
+
+        let scrollTimer = null;
+        if (carousel) {
+            carousel.addEventListener('scroll', () => {
+                if (syncingFromScroll) return;
+                if (scrollTimer) window.clearTimeout(scrollTimer);
+                scrollTimer = window.setTimeout(pickNearestSlide, 80);
+            }, { passive: true });
+        }
+
+        slides.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const idx = Number(btn.getAttribute('data-index') || '0');
+                if (idx === activeIndex) {
+                    openModal(btn);
+                } else {
+                    activeIndex = idx;
+                    syncActiveCardPanels();
+                    updateSlideStyles();
+                    scrollToSlide(idx);
+                }
+            });
+        });
 
         // Hook up buttons
         root.querySelectorAll('[data-view-btn]').forEach((btn) => {
@@ -372,13 +470,7 @@
             });
         });
 
-        const zoomActiveBtn = root.querySelector('[data-zoom-active]');
-        if (zoomActiveBtn) {
-            zoomActiveBtn.addEventListener('click', () => {
-                const btn = getCardBtnByIndex('[data-card-thumb]', activeIndex) || getCardBtnByIndex('[data-card-fan]', activeIndex);
-                openModal(btn);
-            });
-        }
+        // (Zoom is handled by tapping the active slide/fan card)
 
         // Fan layout
         const spread = root.querySelector('[data-spread]');
@@ -387,15 +479,17 @@
         const baseLayout = (n) => {
             if (n === 3) {
                 return {
-                    angles: [-14, 0, 14],
-                    xs: [-80, 0, 80],
-                    ys: [18, 0, 18],
+                    stepAngle: 12,
+                    stepX: 22,
+                    stepY: 10,
+                    scaleDrop: 0.04,
                 };
             }
             return {
-                angles: [-18, -9, 0, 9, 18],
-                xs: [-150, -75, 0, 75, 150],
-                ys: [32, 18, 0, 18, 32],
+                stepAngle: 9,
+                stepX: 18,
+                stepY: 10,
+                scaleDrop: 0.04,
             };
         };
 
@@ -409,23 +503,29 @@
             const cardW = cardRect.width || 120;
             const n = fanButtons.length;
             const base = baseLayout(n);
-            const maxAbsX = Math.max(...base.xs.map((v) => Math.abs(v))) || 1;
+            const tMax = (n - 1) / 2;
+            const maxAbsX = Math.abs(tMax * base.stepX) || 1;
             const usableHalf = Math.max(0, (rect.width / 2) - (cardW / 2) - pad);
             const k = Math.min(1, usableHalf / maxAbsX);
 
+            const center = (n - 1) / 2;
+
             fanButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                const angle = (base.angles[idx] || 0);
-                const x = (base.xs[idx] || 0) * k;
-                const y = (base.ys[idx] || 0) * k;
+                const t = idx - center;
+                const angle = (t * base.stepAngle) * k;
+                const x = (t * base.stepX) * k;
+                const y = (Math.abs(t) * base.stepY) * k;
                 const isActive = idx === activeIndex;
 
-                const scale = isActive ? 1.08 : 0.98;
+                const scaleBase = 1 - (Math.abs(t) * base.scaleDrop);
+                const scale = isActive ? (scaleBase + 0.07) : scaleBase;
                 const shadow = isActive ? '0 10px 28px rgba(15,23,42,0.16)' : '0 6px 16px rgba(15,23,42,0.10)';
                 btn.style.zIndex = String(isActive ? 20 : 10 + idx);
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
-                btn.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${angle}deg) scale(${scale})`;
+                btn.style.transformOrigin = '50% 100%';
+                btn.style.transform = `translate(-50%, -100%) translate(${x}px, ${isActive ? (y - 10) : y}px) rotate(${angle}deg) scale(${scale})`;
             });
         };
 
@@ -464,6 +564,9 @@
         // Init
         setViewMode(viewMode);
         setActiveIndex(0);
+        updateSlideStyles();
+        // Ensure the first slide is centered on load.
+        scrollToSlide(0, 'auto');
     })();
     </script>
 @endif
