@@ -36,6 +36,13 @@
         $deck = (array) config('tarot.cards', []);
         $deckBySlug = [];
         $deckByN = [];
+        $deckByNameKey = [];
+        $nameKey = function ($v): string {
+            $s = mb_strtolower(trim((string) $v));
+            // Keep it simple and resilient to punctuation / apostrophes / spaces.
+            $s = preg_replace("/[^\p{L}\p{N}]+/u", '', $s) ?? $s;
+            return $s;
+        };
         foreach ($deck as $dc) {
             if (is_array($dc)) {
                 if (!empty($dc['slug']) && is_string($dc['slug'])) {
@@ -43,6 +50,9 @@
                 }
                 if (isset($dc['n']) && (is_int($dc['n']) || is_numeric($dc['n']))) {
                     $deckByN[(int) $dc['n']] = $dc;
+                }
+                if (!empty($dc['name']) && is_string($dc['name'])) {
+                    $deckByNameKey[$nameKey($dc['name'])] = $dc;
                 }
             }
         }
@@ -71,6 +81,11 @@
                                     $deckCard = $deckBySlug[$slug];
                                 } elseif ($n !== null && isset($deckByN[$n]) && is_array($deckByN[$n])) {
                                     $deckCard = $deckByN[$n];
+                                } elseif ($name !== '') {
+                                    $nk = $nameKey($name);
+                                    if ($nk !== '' && isset($deckByNameKey[$nk]) && is_array($deckByNameKey[$nk])) {
+                                        $deckCard = $deckByNameKey[$nk];
+                                    }
                                 }
                                 $deckKeywordsRaw = is_array($deckCard) ? ($deckCard['keywords'] ?? '') : '';
                                 $kws = $normalizeKeywords($deckKeywordsRaw !== '' ? $deckKeywordsRaw : ($c['keywords'] ?? ''));
@@ -172,6 +187,7 @@
                         <span class="hidden fam-chip text-xs" data-active-reversed>Renversée</span>
                     </div>
                     <div class="mt-2 flex items-center gap-2 flex-wrap" data-active-kws></div>
+                    <div class="hidden mt-1 text-xs text-slate-500" data-active-kws-inline></div>
                 </div>
             </div>
         @endif
@@ -198,8 +214,7 @@
             const all = Array.isArray(kws) ? kws.filter(Boolean) : [];
             if (all.length === 0) return;
 
-            const desktop = window.matchMedia && window.matchMedia('(min-width: 768px)').matches;
-            const limit = desktop ? 5 : 3;
+            const limit = 3;
 
             all.slice(0, limit).forEach((k) => {
                 const chip = document.createElement('span');
@@ -207,14 +222,6 @@
                 chip.textContent = k;
                 container.appendChild(chip);
             });
-
-            const rest = all.length - limit;
-            if (rest > 0) {
-                const chip = document.createElement('span');
-                chip.className = 'fam-chip text-xs';
-                chip.textContent = `+${rest}`;
-                container.appendChild(chip);
-            }
         };
 
         const getCardBtnByIndex = (selector, idx) => root.querySelector(`${selector}[data-index="${idx}"]`);
@@ -242,6 +249,11 @@
 
             root.querySelectorAll('[data-active-name]').forEach((el) => { el.textContent = name; });
             root.querySelectorAll('[data-active-kws]').forEach((el) => renderKeywords(el, kws));
+            root.querySelectorAll('[data-active-kws-inline]').forEach((el) => {
+                const list = Array.isArray(kws) ? kws.filter(Boolean).slice(0, 3) : [];
+                el.textContent = list.length ? list.join(' · ') : '';
+                el.classList.toggle('hidden', list.length === 0);
+            });
 
             const orientationLower = (orientation || '').toLowerCase();
             const isReversed = (anyBtn.getAttribute('data-reversed') === '1') || (orientationLower === 'reversed');
