@@ -32,6 +32,20 @@
         $roles = $N === 3
             ? ['Passé', 'Présent', 'Tendance']
             : ['Passé', 'Présent', 'Défi', 'Conseil', 'Issue probable'];
+
+        $deck = (array) config('tarot.cards', []);
+        $deckBySlug = [];
+        $deckByN = [];
+        foreach ($deck as $dc) {
+            if (is_array($dc)) {
+                if (!empty($dc['slug']) && is_string($dc['slug'])) {
+                    $deckBySlug[$dc['slug']] = $dc;
+                }
+                if (isset($dc['n']) && (is_int($dc['n']) || is_numeric($dc['n']))) {
+                    $deckByN[(int) $dc['n']] = $dc;
+                }
+            }
+        }
     @endphp
     <div id="{{ $idPrefix }}-cards-ui" class="space-y-4" data-tarot-cards-ui data-count="{{ $N }}" data-supports-rituel="{{ $supportsRituel ? '1' : '0' }}">
         @if(!$supportsRituel)
@@ -40,7 +54,7 @@
             </div>
         @else
             <div class="fam-card p-4">
-                <div class="mt-4 -mx-4 px-4">
+                <div class="mt-4 -mx-4 px-4 relative">
                     <div class="flex items-start gap-3 overflow-x-auto pb-1" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-thumbs-strip>
                         @foreach($cards as $i => $c)
                             @php
@@ -51,7 +65,16 @@
                                 $reversed = !empty($c['reversed']);
                                 $orientation = (string) ($c['orientation'] ?? ($reversed ? 'reversed' : 'upright'));
                                 $img = $file !== '' ? ('https://opanoma.fr/tarot/' . ltrim($file, '/')) : '';
-                                $kws = $normalizeKeywords($c['keywords'] ?? '');
+
+                                $deckCard = null;
+                                if ($slug !== '' && isset($deckBySlug[$slug]) && is_array($deckBySlug[$slug])) {
+                                    $deckCard = $deckBySlug[$slug];
+                                } elseif ($n !== null && isset($deckByN[$n]) && is_array($deckByN[$n])) {
+                                    $deckCard = $deckByN[$n];
+                                }
+                                $deckKeywordsRaw = is_array($deckCard) ? ($deckCard['keywords'] ?? '') : '';
+                                $kws = $normalizeKeywords($deckKeywordsRaw !== '' ? $deckKeywordsRaw : ($c['keywords'] ?? ''));
+
                                 $roleFull = $roles[$i] ?? '';
                                 $roleShort = ($N === 5 && (int) $i === 4) ? 'Issue' : $roleFull;
                             @endphp
@@ -89,6 +112,9 @@
                             </button>
                         @endforeach
                     </div>
+
+                    <div class="pointer-events-none absolute inset-y-0 left-0 w-6" style="background: linear-gradient(to right, rgba(255,255,255,1), rgba(255,255,255,0));"></div>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 w-6" style="background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));"></div>
                 </div>
 
                 <div class="mt-3">
@@ -160,12 +186,27 @@
         const renderKeywords = (container, kws) => {
             if (!container) return;
             container.innerHTML = '';
-            (kws || []).slice(0, 3).forEach((k) => {
+
+            const all = Array.isArray(kws) ? kws.filter(Boolean) : [];
+            if (all.length === 0) return;
+
+            const desktop = window.matchMedia && window.matchMedia('(min-width: 768px)').matches;
+            const limit = desktop ? 5 : 3;
+
+            all.slice(0, limit).forEach((k) => {
                 const chip = document.createElement('span');
                 chip.className = 'fam-chip text-xs';
                 chip.textContent = k;
                 container.appendChild(chip);
             });
+
+            const rest = all.length - limit;
+            if (rest > 0) {
+                const chip = document.createElement('span');
+                chip.className = 'fam-chip text-xs';
+                chip.textContent = `+${rest}`;
+                container.appendChild(chip);
+            }
         };
 
         const getCardBtnByIndex = (selector, idx) => root.querySelector(`${selector}[data-index="${idx}"]`);

@@ -10,6 +10,18 @@ class TarotDrawController extends Controller
 {
     public function __invoke(Request $request, TarotDeck $deck)
     {
+        $normalizeKeywords = function ($raw): array {
+            if (is_array($raw)) {
+                $items = $raw;
+            } else {
+                $s = trim((string) $raw);
+                if ($s === '') return [];
+                $items = preg_split('/\s*(?:,|;|\||•)\s*/u', $s) ?: [];
+            }
+            $items = array_values(array_filter(array_map(fn ($v) => trim((string) $v), $items), fn ($v) => $v !== ''));
+            return $items;
+        };
+
         $countRaw = $request->input('count', 3);
 
         if (!is_numeric($countRaw) || (string) (int) $countRaw !== (string) $countRaw) {
@@ -31,7 +43,7 @@ class TarotDrawController extends Controller
 
         $cards = $deck->draw($count);
 
-        $cards = array_map(function (array $card) use ($allowReversed): array {
+        $cards = array_map(function (array $card) use ($allowReversed, $normalizeKeywords): array {
             $reversed = $allowReversed ? (random_int(0, 1) === 1) : false;
 
             return [
@@ -39,6 +51,7 @@ class TarotDrawController extends Controller
                 'slug' => $card['slug'] ?? null,
                 'label' => $card['name'] ?? null,
                 'file' => $card['file'] ?? null,
+                'keywords' => $normalizeKeywords($card['keywords'] ?? null),
                 'orientation' => $reversed ? 'reversed' : 'upright',
                 'reversed' => $reversed,
             ];
