@@ -27,10 +27,7 @@
 
 @if($N > 0)
     @php
-        $fanHeight = 'clamp(240px, 64vw, 280px)';
-        $fanCardSize = $N === 5
-            ? 'width: clamp(112px, 30vw, 130px); height: clamp(168px, 45vw, 195px);'
-            : 'width: clamp(120px, 34vw, 140px); height: clamp(180px, 51vw, 210px);';
+        $masterMaxHeight = 'max-height: 55vh;';
     @endphp
     <div id="{{ $idPrefix }}-cards-ui" class="space-y-4" data-tarot-cards-ui data-count="{{ $N }}" data-supports-rituel="{{ $supportsRituel ? '1' : '0' }}">
         @if(!$supportsRituel)
@@ -39,50 +36,91 @@
             </div>
         @else
             <div class="fam-card p-4">
-                <div class="-mx-4">
-                    <div class="w-full" style="height: {{ $fanHeight }};">
-                        <div class="relative h-full w-full overflow-x-auto overflow-y-hidden rounded-2xl border border-black/10 bg-white" data-carousel-scene style="scroll-snap-type: x mandatory; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;">
-                            <div class="h-full w-max min-w-full flex items-center justify-center px-4" data-carousel-track>
+                <div class="flex items-center justify-between gap-3">
+                    <div class="text-sm font-semibold text-slate-900">Rituel</div>
+                    <div class="text-xs font-medium text-slate-700 fam-chip" data-card-indicator>Carte 1/{{ $N }}</div>
+                </div>
 
-                            @foreach($cards as $i => $c)
-                                @php
-                                    $file = (string) ($c['file'] ?? '');
-                                    $name = (string) ($c['name'] ?? '');
-                                    $slug = (string) ($c['slug'] ?? '');
-                                    $n = isset($c['n']) ? (int) $c['n'] : null;
-                                    $reversed = !empty($c['reversed']);
-                                    $orientation = (string) ($c['orientation'] ?? ($reversed ? 'reversed' : 'upright'));
-                                    $img = $file !== '' ? ('https://opanoma.fr/tarot/' . ltrim($file, '/')) : '';
-                                    $kws = $normalizeKeywords($c['keywords'] ?? '');
-                                @endphp
-                                <button
-                                    type="button"
-                                    class="relative shrink-0 snap-center rounded-2xl bg-transparent shadow-sm transition-[transform,filter,box-shadow,opacity] duration-300 ease-out"
-                                    style="{{ $fanCardSize }}; opacity: 0; {{ $i > 0 ? 'margin-left: -22px;' : '' }}"
-                                    data-card-carousel
-                                    data-index="{{ (int) $i }}"
-                                    data-name="{{ e($name) }}"
-                                    data-slug="{{ e($slug) }}"
-                                    data-n="{{ $n === null ? '' : (string) $n }}"
-                                    data-orientation="{{ e($orientation) }}"
-                                    data-reversed="{{ $reversed ? '1' : '0' }}"
-                                    data-kws="{{ e(json_encode($kws, JSON_UNESCAPED_UNICODE)) }}"
-                                    aria-label="Choisir la carte {{ (int) $i + 1 }}"
-                                >
-                                    <div class="h-full w-full overflow-hidden rounded-2xl bg-transparent">
-                                        @if($img !== '')
-                                            <img
-                                                src="{{ $img }}"
-                                                alt=""
-                                                class="h-full w-full object-contain bg-transparent"
-                                                style="transform: {{ $reversed ? 'rotate(180deg) scale(1.04)' : 'scale(1.04)' }}; clip-path: inset(0% 2.8%);"
-                                                loading="lazy"
-                                                decoding="async"
-                                            />
-                                        @endif
-                                    </div>
-                                </button>
-                            @endforeach
+                <div class="mt-3">
+                    <button type="button" class="mx-auto block w-[clamp(240px,72vw,420px)]" data-master-btn aria-label="Ouvrir la carte en plein écran">
+                        <div class="relative w-full aspect-[2/3] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm" style="{{ $masterMaxHeight }}">
+                            <div class="absolute inset-0 flex items-center justify-center" data-master-back>
+                                <div class="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100"></div>
+                                <div class="absolute inset-0 opacity-60" style="background-image: radial-gradient(circle at 20% 20%, rgba(14,165,160,0.18), transparent 45%), radial-gradient(circle at 80% 30%, rgba(99,102,241,0.14), transparent 50%), radial-gradient(circle at 50% 90%, rgba(244,63,94,0.10), transparent 55%);"></div>
+                                <img src="/images/tarot.png" alt="" class="absolute h-12 w-12 opacity-20" loading="lazy" decoding="async" />
+                            </div>
+                            <img
+                                src=""
+                                alt=""
+                                class="absolute inset-0 h-full w-full object-contain bg-transparent opacity-0 transition-opacity duration-200"
+                                data-master-img
+                                loading="eager"
+                                decoding="async"
+                            />
+                        </div>
+                    </button>
+                </div>
+
+                <div class="mt-4 -mx-4 px-4">
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-thumbs-strip>
+                        @foreach($cards as $i => $c)
+                            @php
+                                $file = (string) ($c['file'] ?? '');
+                                $name = (string) ($c['name'] ?? '');
+                                $slug = (string) ($c['slug'] ?? '');
+                                $n = isset($c['n']) ? (int) $c['n'] : null;
+                                $reversed = !empty($c['reversed']);
+                                $orientation = (string) ($c['orientation'] ?? ($reversed ? 'reversed' : 'upright'));
+                                $img = $file !== '' ? ('https://opanoma.fr/tarot/' . ltrim($file, '/')) : '';
+                                $kws = $normalizeKeywords($c['keywords'] ?? '');
+                            @endphp
+                            <button
+                                type="button"
+                                class="relative shrink-0 rounded-xl border border-black/10 bg-white shadow-sm transition-[transform,box-shadow] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.35)]"
+                                style="width: 64px; height: 96px; scroll-snap-align: center;"
+                                data-thumb
+                                data-index="{{ (int) $i }}"
+                                data-img="{{ e($img) }}"
+                                data-name="{{ e($name) }}"
+                                data-slug="{{ e($slug) }}"
+                                data-n="{{ $n === null ? '' : (string) $n }}"
+                                data-orientation="{{ e($orientation) }}"
+                                data-reversed="{{ $reversed ? '1' : '0' }}"
+                                data-kws="{{ e(json_encode($kws, JSON_UNESCAPED_UNICODE)) }}"
+                                aria-label="Choisir la carte {{ (int) $i + 1 }}"
+                            >
+                                <div class="h-full w-full overflow-hidden rounded-xl bg-transparent">
+                                    @if($img !== '')
+                                        <img
+                                            src="{{ $img }}"
+                                            alt=""
+                                            class="h-full w-full object-contain bg-transparent"
+                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.04)' : 'scale(1.04)' }}; clip-path: inset(0% 2.8%);"
+                                            loading="lazy"
+                                            decoding="async"
+                                        />
+                                    @endif
+                                </div>
+                                <div class="pointer-events-none absolute inset-0 rounded-xl ring-2 ring-transparent" data-thumb-ring></div>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="fixed inset-0 z-[70] hidden" data-zoom-modal aria-hidden="true">
+                    <div class="absolute inset-0 bg-black/70" data-zoom-backdrop></div>
+                    <div class="absolute inset-0 flex items-center justify-center p-4">
+                        <div class="relative w-full max-w-[92vw] max-h-[92vh] rounded-2xl bg-white shadow-2xl overflow-hidden">
+                            <button type="button" class="absolute right-2 top-2 z-10 rounded-full bg-black/60 text-white px-3 py-1.5 text-xs" data-zoom-close>Fermer</button>
+                            <div class="w-full h-full p-3">
+                                <img
+                                    src=""
+                                    alt=""
+                                    class="h-full w-full object-contain bg-transparent"
+                                    data-zoom-img
+                                    loading="eager"
+                                    decoding="async"
+                                />
                             </div>
                         </div>
                     </div>
@@ -149,8 +187,20 @@
 
         const getCardBtnByIndex = (selector, idx) => root.querySelector(`${selector}[data-index="${idx}"]`);
 
+        const indicatorEl = root.querySelector('[data-card-indicator]');
+        const masterBtn = root.querySelector('[data-master-btn]');
+        const masterImg = root.querySelector('[data-master-img]');
+        const masterBack = root.querySelector('[data-master-back]');
+        const thumbs = Array.from(root.querySelectorAll('[data-thumb]'));
+        const thumbsStrip = root.querySelector('[data-thumbs-strip]');
+
+        const zoomModal = root.querySelector('[data-zoom-modal]');
+        const zoomBackdrop = root.querySelector('[data-zoom-backdrop]');
+        const zoomClose = root.querySelector('[data-zoom-close]');
+        const zoomImg = root.querySelector('[data-zoom-img]');
+
         const syncActiveCardPanels = () => {
-            const anyBtn = getCardBtnByIndex('[data-card-carousel]', activeIndex);
+            const anyBtn = getCardBtnByIndex('[data-thumb]', activeIndex);
             if (!anyBtn) return;
 
             const name = anyBtn.getAttribute('data-name') || '';
@@ -166,6 +216,27 @@
             root.querySelectorAll('[data-active-name]').forEach((el) => { el.textContent = name; });
             root.querySelectorAll('[data-active-kws]').forEach((el) => renderKeywords(el, kws));
             root.querySelectorAll('[data-active-attrs]').forEach((el) => renderAttrs(el, { n, orientation, slug }));
+
+            if (indicatorEl) {
+                indicatorEl.textContent = `Carte ${activeIndex + 1}/${count}`;
+            }
+
+            // Master image (no crop).
+            const img = anyBtn.getAttribute('data-img') || '';
+            if (masterImg) {
+                if (img) {
+                    masterImg.src = img;
+                    const reversed = (anyBtn.getAttribute('data-reversed') === '1') || ((orientation || '').toLowerCase() === 'reversed');
+                    masterImg.style.transform = reversed ? 'rotate(180deg)' : 'none';
+                    masterImg.style.opacity = '1';
+                } else {
+                    masterImg.removeAttribute('src');
+                    masterImg.style.opacity = '0';
+                }
+            }
+            if (masterBack) {
+                masterBack.style.display = masterImg && masterImg.style.opacity === '1' ? 'none' : 'flex';
+            }
         };
 
         const setActiveIndex = (idx) => {
@@ -173,117 +244,130 @@
             const next = Math.max(0, Math.min(count - 1, idx));
             activeIndex = next;
             syncActiveCardPanels();
-            applyActiveStyles();
-            scrollActiveIntoView();
+            applyThumbActiveStyles();
+            scrollThumbIntoView();
         };
 
-        const scene = root.querySelector('[data-carousel-scene]');
-        const track = root.querySelector('[data-carousel-track]');
-        const cardButtons = Array.from(root.querySelectorAll('[data-card-carousel]'));
-
-        const applyActiveStyles = () => {
-            cardButtons.forEach((btn) => {
+        const applyThumbActiveStyles = () => {
+            thumbs.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
                 const isActive = idx === activeIndex;
-
-                btn.style.opacity = '1';
-                btn.style.pointerEvents = 'auto';
-                btn.style.zIndex = String(isActive ? 20 : 10);
-                btn.style.filter = isActive ? 'none' : 'saturate(0.94) contrast(0.99)';
-                btn.style.transformOrigin = '50% 60%';
-                btn.style.transform = isActive ? 'translateY(-8px) rotate(0deg) scale(1.06)' : 'translateY(0px) rotate(0deg) scale(1)';
-                btn.style.boxShadow = isActive ? '0 16px 40px rgba(15,23,42,0.20)' : '0 6px 16px rgba(15,23,42,0.10)';
+                const ring = btn.querySelector('[data-thumb-ring]');
+                if (ring) {
+                    ring.classList.toggle('ring-transparent', !isActive);
+                    ring.classList.toggle('ring-[color:rgba(14,165,160,0.45)]', isActive);
+                }
+                btn.style.transform = isActive ? 'translateY(-2px) scale(1.03)' : 'none';
+                btn.style.boxShadow = isActive ? '0 10px 22px rgba(15,23,42,0.14)' : '';
             });
         };
 
-        const scrollActiveIntoView = (instant = false) => {
-            const btn = getCardBtnByIndex('[data-card-carousel]', activeIndex);
+        const scrollThumbIntoView = (instant = false) => {
+            const btn = getCardBtnByIndex('[data-thumb]', activeIndex);
             if (!btn) return;
-            // If scroll snapping is supported, this is enough to perfectly center.
             try {
                 btn.scrollIntoView({ behavior: instant ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
             } catch (e) {}
         };
 
-        const updateActiveFromScroll = () => {
-            if (!scene) return;
-            const sceneRect = scene.getBoundingClientRect();
-            const centerX = sceneRect.left + (sceneRect.width / 2);
+        const openZoom = () => {
+            if (!zoomModal || !zoomImg) return;
+            const btn = getCardBtnByIndex('[data-thumb]', activeIndex);
+            if (!btn) return;
 
-            let bestIdx = activeIndex;
-            let bestDist = Infinity;
-            cardButtons.forEach((btn) => {
-                const rect = btn.getBoundingClientRect();
-                const btnCenterX = rect.left + (rect.width / 2);
-                const dist = Math.abs(btnCenterX - centerX);
-                if (dist < bestDist) {
-                    bestDist = dist;
-                    bestIdx = Number(btn.getAttribute('data-index') || '0');
-                }
-            });
+            const img = btn.getAttribute('data-img') || '';
+            const orientation = (btn.getAttribute('data-orientation') || '').toLowerCase();
+            const reversed = (btn.getAttribute('data-reversed') === '1') || (orientation === 'reversed');
 
-            if (bestIdx !== activeIndex) {
-                activeIndex = bestIdx;
-                syncActiveCardPanels();
-                applyActiveStyles();
-            }
+            zoomImg.src = img;
+            zoomImg.style.transform = reversed ? 'rotate(180deg)' : 'none';
+
+            zoomModal.classList.remove('hidden');
+            zoomModal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
         };
 
-        // Tap any card to focus it.
-        cardButtons.forEach((btn) => {
+        const closeZoom = () => {
+            if (!zoomModal) return;
+            zoomModal.classList.add('hidden');
+            zoomModal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        };
+
+        // Thumbnails: tap to set active.
+        thumbs.forEach((btn) => {
             btn.addEventListener('click', () => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
                 setActiveIndex(idx);
             });
         });
 
-        // Keep active card in sync with scroll position.
-        let scrollRaf = null;
-        if (scene) {
-            scene.addEventListener('scroll', () => {
-                if (scrollRaf) return;
-                scrollRaf = requestAnimationFrame(() => {
-                    scrollRaf = null;
-                    updateActiveFromScroll();
-                });
-            }, { passive: true });
+        // Master: swipe left/right changes active; tap opens zoom.
+        if (masterBtn) {
+            let startX = null;
+            let startY = null;
+            masterBtn.addEventListener('pointerdown', (e) => {
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+            masterBtn.addEventListener('pointerup', (e) => {
+                if (startX == null || startY == null) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                startX = null;
+                startY = null;
+
+                if (Math.abs(dx) >= 34 && Math.abs(dx) > Math.abs(dy)) {
+                    setActiveIndex(activeIndex + (dx < 0 ? 1 : -1));
+                }
+            });
+            masterBtn.addEventListener('click', () => {
+                openZoom();
+            });
         }
 
-        const ro = (window.ResizeObserver && scene) ? new ResizeObserver(() => {
-            applyActiveStyles();
-            scrollActiveIntoView(true);
-        }) : null;
-        if (ro && scene) ro.observe(scene);
-
-        window.addEventListener('resize', () => {
-            applyActiveStyles();
-            scrollActiveIntoView(true);
+        if (zoomBackdrop) zoomBackdrop.addEventListener('click', closeZoom);
+        if (zoomClose) zoomClose.addEventListener('click', closeZoom);
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeZoom();
         });
 
-        const revealCards = () => {
-            const finalCenter = Math.floor(count / 2);
+        const ro = (window.ResizeObserver && thumbsStrip) ? new ResizeObserver(() => {
+            scrollThumbIntoView(true);
+        }) : null;
+        if (ro && thumbsStrip) ro.observe(thumbsStrip);
 
-            // Start centered on the middle card.
-            activeIndex = finalCenter;
+        const reveal = () => {
+            // Optional light rituel intro: fade the master card in, then the thumbs.
+            activeIndex = 0;
             syncActiveCardPanels();
-            applyActiveStyles();
-            scrollActiveIntoView(true);
+            applyThumbActiveStyles();
+            scrollThumbIntoView(true);
 
             if (prefersReducedMotion) {
-                cardButtons.forEach((btn) => { btn.style.opacity = '1'; });
+                if (masterImg) masterImg.style.opacity = '1';
+                thumbs.forEach((t) => { t.style.opacity = '1'; });
                 return;
             }
 
-            cardButtons.forEach((btn, i) => {
-                btn.style.opacity = '0';
+            thumbs.forEach((t) => { t.style.opacity = '0'; });
+            if (masterImg) masterImg.style.opacity = '0';
+            if (masterBack) masterBack.style.display = 'flex';
+
+            setTimeout(() => {
+                if (masterBack) masterBack.style.display = 'none';
+                if (masterImg) masterImg.style.opacity = '1';
+            }, 160);
+
+            thumbs.forEach((t, i) => {
                 setTimeout(() => {
-                    btn.style.opacity = '1';
-                }, 90 + i * 70);
+                    t.style.opacity = '1';
+                }, 260 + i * 60);
             });
         };
 
         // Init
-        requestAnimationFrame(() => revealCards());
+        requestAnimationFrame(() => reveal());
     })();
     </script>
 @endif
