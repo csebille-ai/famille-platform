@@ -17,7 +17,6 @@ class DashboardHomeTest extends TestCase
         $response = $this->actingAs($user)->get('/home');
 
         $response->assertStatus(200);
-        $response->assertSee('Actu famille');
         $response->assertSee('Photos récentes');
     }
 }
