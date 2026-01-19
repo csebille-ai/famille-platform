@@ -3,7 +3,7 @@
 @endphp
 
 <x-app-layout pageBgClass="fam-page-bg">
-    <div class="max-w-3xl mx-auto px-6 py-6 space-y-6">
+    <div class="max-w-3xl mx-auto px-6 pt-3 pb-6 sm:py-6 space-y-6">
         @if ($errors->any())
             <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {{ $errors->first() }}
