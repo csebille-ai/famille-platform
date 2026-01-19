@@ -98,7 +98,7 @@
                                                 src="{{ $img }}"
                                                 alt="{{ e($name) }}"
                                                 class="h-full w-full object-contain bg-transparent"
-                                                style="transform: {{ $reversed ? 'rotate(180deg) scale(1.10)' : 'scale(1.10)' }}; clip-path: inset(2.5%);"
+                                                style="transform: {{ $reversed ? 'rotate(180deg) scale(1.06)' : 'scale(1.06)' }}; clip-path: inset(0% 2.8%);"
                                                 loading="lazy"
                                                 decoding="async"
                                             />
@@ -201,7 +201,7 @@
                                             src="{{ $img }}"
                                             alt=""
                                             class="h-full w-full object-contain bg-transparent"
-                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.10)' : 'scale(1.10)' }}; clip-path: inset(2.5%);"
+                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.06)' : 'scale(1.06)' }}; clip-path: inset(0% 2.8%);"
                                             loading="lazy"
                                             decoding="async"
                                         />
@@ -236,7 +236,7 @@
                     </button>
                     <div class="rounded-2xl bg-white overflow-hidden shadow-lg">
                         <div class="w-full aspect-[2/3] bg-white" style="touch-action: pinch-zoom;">
-                            <img data-zoom-img src="" alt="" class="h-full w-full object-contain bg-transparent" style="clip-path: inset(2.5%);" />
+                            <img data-zoom-img src="" alt="" class="h-full w-full object-contain bg-transparent" style="clip-path: inset(0% 2.8%);" />
                         </div>
                     </div>
                     <div class="mt-3 text-center text-xs text-white/80">Pincer pour zoomer • Tap pour fermer</div>
@@ -379,7 +379,7 @@
             const reversed = btn.getAttribute('data-reversed') === '1';
             modalImg.src = img;
             modalImg.alt = name;
-            modalImg.style.transform = reversed ? 'rotate(180deg) scale(1.10)' : 'scale(1.10)';
+            modalImg.style.transform = reversed ? 'rotate(180deg) scale(1.06)' : 'scale(1.06)';
             modal.classList.remove('hidden');
             modal.setAttribute('aria-hidden', 'false');
         };
