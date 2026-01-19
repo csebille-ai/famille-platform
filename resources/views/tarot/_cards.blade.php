@@ -221,7 +221,7 @@
                         </div>
                         <div class="text-xs font-semibold text-slate-500 shrink-0">Carte <span data-active-pos>1</span>/<span data-total>{{ $N }}</span></div>
                     </div>
-                    <div class="mt-2 text-xs text-slate-500">Tap carte = focus • Tap carte active = zoom</div>
+                    <div class="mt-2 text-xs text-slate-500">Tap carte = mettre en avant</div>
                 </div>
             </div>
         </div>
@@ -479,11 +479,8 @@
         root.querySelectorAll('[data-card-fan]').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                if (idx === activeIndex) {
-                    openModal(btn);
-                } else {
-                    setActiveIndex(idx);
-                }
+                // Rituel: tap = focus/zoom in place (no modal).
+                setActiveIndex(idx);
             });
         });
 
@@ -545,6 +542,8 @@
             const maxAbsX = Math.abs(tMax * base.stepX) || 1;
             const k = Math.min(1, maxX / maxAbsX);
 
+            const activeBoost = 0.08;
+
             fanButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
                 const t = idx - center;
@@ -571,10 +570,10 @@
                 }
 
                 const scaleBase = 1 - (Math.abs(t) * base.scaleDrop);
-                const scale = scaleBase;
-                const shadow = isActive ? '0 10px 28px rgba(15,23,42,0.16)' : '0 6px 16px rgba(15,23,42,0.10)';
-                // Fixed stacking: left-most (index 0) on top, then 1, then 2...
-                btn.style.zIndex = String(200 - idx);
+                const scale = isActive ? (scaleBase + activeBoost) : scaleBase;
+                const shadow = isActive ? '0 16px 40px rgba(15,23,42,0.22)' : '0 6px 16px rgba(15,23,42,0.10)';
+                // Active card comes on top so the zoom is visible.
+                btn.style.zIndex = String(isActive ? 500 : (200 - idx));
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
