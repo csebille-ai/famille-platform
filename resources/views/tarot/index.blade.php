@@ -27,6 +27,7 @@
 
                 <div>
                     <label for="question" class="block text-sm font-semibold text-gray-900">Ta question</label>
+                    <input type="hidden" name="question" value="{{ old('question') }}" data-question-mirror>
                     <textarea id="question" name="question" rows="3" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
                     <div class="microcopy mt-1 text-xs text-slate-500">Max 500 caractères.</div>
 
@@ -303,6 +304,18 @@
     const sttStopBtn = document.getElementById('tarot-stt-stop');
     const sttStatusEl = document.getElementById('tarot-stt-status');
     const questionEl = document.getElementById('question');
+    const questionMirrorEl = document.querySelector('[data-question-mirror]');
+
+    const syncQuestionMirror = () => {
+        if (!questionEl || !questionMirrorEl) return;
+        questionMirrorEl.value = questionEl.value || '';
+    };
+
+    if (questionEl) {
+        // Keep mirror updated as user types, so submit works even if the textarea is disabled.
+        questionEl.addEventListener('input', syncQuestionMirror, { passive: true });
+        syncQuestionMirror();
+    }
 
     const setSttStatus = (msg) => {
         if (!sttStatusEl) return;
@@ -361,6 +374,7 @@
 
             const combined = [baseText, finalText || interim].filter(Boolean).join(baseText ? ' ' : '');
             questionEl.value = combined;
+            syncQuestionMirror();
         };
 
         sttStopBtn.disabled = true;

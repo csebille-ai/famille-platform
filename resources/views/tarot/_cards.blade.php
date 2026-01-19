@@ -164,25 +164,6 @@
                     <div class="pointer-events-none absolute inset-y-0 right-0 w-7" style="background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));"></div>
                 </div>
 
-                <div class="fixed inset-0 z-[70] hidden" data-zoom-modal aria-hidden="true">
-                    <div class="absolute inset-0 bg-black/70" data-zoom-backdrop></div>
-                    <div class="absolute inset-0 flex items-center justify-center p-4">
-                        <div class="relative w-full max-w-[92vw] max-h-[92vh] rounded-2xl bg-white shadow-2xl overflow-hidden">
-                            <button type="button" class="absolute right-2 top-2 z-10 rounded-full bg-black/60 text-white px-3 py-1.5 text-xs" data-zoom-close>Fermer</button>
-                            <div class="w-full h-full p-3">
-                                <img
-                                    src=""
-                                    alt=""
-                                    class="h-full w-full object-contain bg-transparent"
-                                    data-zoom-img
-                                    loading="eager"
-                                    decoding="async"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="mt-3 text-xs font-medium text-slate-600" data-card-reminder></div>
 
                 <div class="mt-2">
@@ -244,11 +225,6 @@
         const heroSlides = Array.from(root.querySelectorAll('[data-hero-slide]'));
         const reminderEl = root.querySelector('[data-card-reminder]');
         const reversedBadge = root.querySelector('[data-active-reversed]');
-
-        const zoomModal = root.querySelector('[data-zoom-modal]');
-        const zoomBackdrop = root.querySelector('[data-zoom-backdrop]');
-        const zoomClose = root.querySelector('[data-zoom-close]');
-        const zoomImg = root.querySelector('[data-zoom-img]');
 
         const syncActiveCardPanels = () => {
             const anyBtn = getCardBtnByIndex('[data-thumb]', activeIndex);
@@ -336,30 +312,6 @@
             } catch (e) {}
         };
 
-        const openZoom = () => {
-            if (!zoomModal || !zoomImg) return;
-            const btn = getCardBtnByIndex('[data-thumb]', activeIndex);
-            if (!btn) return;
-
-            const img = btn.getAttribute('data-img') || '';
-            const orientation = (btn.getAttribute('data-orientation') || '').toLowerCase();
-            const reversed = (btn.getAttribute('data-reversed') === '1') || (orientation === 'reversed');
-
-            zoomImg.src = img;
-            zoomImg.style.transform = reversed ? 'rotate(180deg)' : 'none';
-
-            zoomModal.classList.remove('hidden');
-            zoomModal.setAttribute('aria-hidden', 'false');
-            document.body.style.overflow = 'hidden';
-        };
-
-        const closeZoom = () => {
-            if (!zoomModal) return;
-            zoomModal.classList.add('hidden');
-            zoomModal.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
-        };
-
         // Thumbnails: tap to set active.
         thumbs.forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -368,15 +320,11 @@
             });
         });
 
-        // Hero: tap to focus; tap active to zoom.
+        // Hero: tap to focus.
         heroSlides.forEach((btn) => {
             btn.addEventListener('click', () => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                if (idx === activeIndex) {
-                    openZoom();
-                } else {
-                    setActiveIndex(idx);
-                }
+                setActiveIndex(idx);
             });
         });
 
@@ -414,12 +362,6 @@
                 scrollTimer = setTimeout(updateFromScroll, 90);
             }, { passive: true });
         }
-
-        if (zoomBackdrop) zoomBackdrop.addEventListener('click', closeZoom);
-        if (zoomClose) zoomClose.addEventListener('click', closeZoom);
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeZoom();
-        });
 
         const ro = (window.ResizeObserver && thumbsStrip) ? new ResizeObserver(() => {
             scrollThumbIntoView(true);
