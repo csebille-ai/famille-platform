@@ -36,31 +36,6 @@
             </div>
         @else
             <div class="fam-card p-4">
-                <div class="flex items-center justify-between gap-3">
-                    <div class="text-sm font-semibold text-slate-900">Rituel</div>
-                    <div class="text-xs font-medium text-slate-700 fam-chip" data-card-indicator>Carte 1/{{ $N }}</div>
-                </div>
-
-                <div class="mt-3">
-                    <button type="button" class="mx-auto block w-[clamp(240px,72vw,420px)]" data-master-btn aria-label="Ouvrir la carte en plein écran">
-                        <div class="relative w-full aspect-[2/3] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm" style="{{ $masterMaxHeight }}">
-                            <div class="absolute inset-0 flex items-center justify-center" data-master-back>
-                                <div class="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100"></div>
-                                <div class="absolute inset-0 opacity-60" style="background-image: radial-gradient(circle at 20% 20%, rgba(14,165,160,0.18), transparent 45%), radial-gradient(circle at 80% 30%, rgba(99,102,241,0.14), transparent 50%), radial-gradient(circle at 50% 90%, rgba(244,63,94,0.10), transparent 55%);"></div>
-                                <img src="/images/tarot.png" alt="" class="absolute h-12 w-12 opacity-20" loading="lazy" decoding="async" />
-                            </div>
-                            <img
-                                src=""
-                                alt=""
-                                class="absolute inset-0 h-full w-full object-contain bg-transparent opacity-0 transition-opacity duration-200"
-                                data-master-img
-                                loading="eager"
-                                decoding="async"
-                            />
-                        </div>
-                    </button>
-                </div>
-
                 <div class="mt-4 -mx-4 px-4">
                     <div class="flex items-center gap-2 overflow-x-auto pb-1" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-thumbs-strip>
                         @foreach($cards as $i => $c)
@@ -107,6 +82,29 @@
                     </div>
                 </div>
 
+                <div class="mt-3">
+                    <button type="button" class="mx-auto block w-[clamp(240px,72vw,420px)]" data-master-btn aria-label="Ouvrir la carte en plein écran">
+                        <div class="relative w-full aspect-[2/3] overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm" style="{{ $masterMaxHeight }}">
+                            <div class="absolute inset-0 flex items-center justify-center" data-master-back>
+                                <div class="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100"></div>
+                                <div class="absolute inset-0 opacity-60" style="background-image: radial-gradient(circle at 20% 20%, rgba(14,165,160,0.18), transparent 45%), radial-gradient(circle at 80% 30%, rgba(99,102,241,0.14), transparent 50%), radial-gradient(circle at 50% 90%, rgba(244,63,94,0.10), transparent 55%);"></div>
+                                <img src="/images/tarot.png" alt="" class="absolute h-12 w-12 opacity-20" loading="lazy" decoding="async" />
+                            </div>
+                            <img
+                                src=""
+                                alt=""
+                                class="absolute inset-0 h-full w-full object-contain bg-transparent opacity-0 transition-opacity duration-200"
+                                data-master-img
+                                loading="eager"
+                                decoding="async"
+                            />
+                            <div class="absolute inset-x-0 bottom-0 px-3 pb-3 pt-8" style="background: linear-gradient(to top, rgba(15,23,42,0.88), rgba(15,23,42,0));">
+                                <div class="text-center text-sm font-semibold text-white" data-master-title></div>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+
                 <div class="fixed inset-0 z-[70] hidden" data-zoom-modal aria-hidden="true">
                     <div class="absolute inset-0 bg-black/70" data-zoom-backdrop></div>
                     <div class="absolute inset-0 flex items-center justify-center p-4">
@@ -129,8 +127,7 @@
                 <div class="mt-4 fam-card-soft p-4">
                     <div class="min-w-0">
                         <div class="text-sm font-semibold text-slate-900 truncate" data-active-name></div>
-                        <div class="mt-2 flex items-center gap-2 flex-wrap" data-active-kws></div>
-                        <div class="mt-3 flex items-center gap-2 flex-wrap" data-active-attrs></div>
+                        <div class="mt-3 flex items-center gap-2 flex-wrap" data-active-kws></div>
                     </div>
                 </div>
             </div>
@@ -162,35 +159,12 @@
             });
         };
 
-        const renderAttrs = (container, attrs) => {
-            if (!container) return;
-            container.innerHTML = '';
-            const items = [];
-
-            const n = attrs?.n;
-            const orientation = (attrs?.orientation || '').toLowerCase();
-            const slug = attrs?.slug || '';
-
-            if (Number.isFinite(n)) items.push(`Arcane #${n}`);
-            if (orientation) {
-                items.push(orientation === 'reversed' ? 'Renversée' : 'Droite');
-            }
-            if (slug) items.push(slug);
-
-            items.forEach((t) => {
-                const chip = document.createElement('span');
-                chip.className = 'fam-chip text-xs';
-                chip.textContent = t;
-                container.appendChild(chip);
-            });
-        };
-
         const getCardBtnByIndex = (selector, idx) => root.querySelector(`${selector}[data-index="${idx}"]`);
 
-        const indicatorEl = root.querySelector('[data-card-indicator]');
         const masterBtn = root.querySelector('[data-master-btn]');
         const masterImg = root.querySelector('[data-master-img]');
         const masterBack = root.querySelector('[data-master-back]');
+        const masterTitle = root.querySelector('[data-master-title]');
         const thumbs = Array.from(root.querySelectorAll('[data-thumb]'));
         const thumbsStrip = root.querySelector('[data-thumbs-strip]');
 
@@ -215,10 +189,11 @@
 
             root.querySelectorAll('[data-active-name]').forEach((el) => { el.textContent = name; });
             root.querySelectorAll('[data-active-kws]').forEach((el) => renderKeywords(el, kws));
-            root.querySelectorAll('[data-active-attrs]').forEach((el) => renderAttrs(el, { n, orientation, slug }));
 
-            if (indicatorEl) {
-                indicatorEl.textContent = `Carte ${activeIndex + 1}/${count}`;
+            const orientationLower = (orientation || '').toLowerCase();
+            const isReversed = (anyBtn.getAttribute('data-reversed') === '1') || (orientationLower === 'reversed');
+            if (masterTitle) {
+                masterTitle.textContent = isReversed ? `${name} renversé` : name;
             }
 
             // Master image (no crop).
@@ -226,8 +201,7 @@
             if (masterImg) {
                 if (img) {
                     masterImg.src = img;
-                    const reversed = (anyBtn.getAttribute('data-reversed') === '1') || ((orientation || '').toLowerCase() === 'reversed');
-                    masterImg.style.transform = reversed ? 'rotate(180deg)' : 'none';
+                    masterImg.style.transform = isReversed ? 'rotate(180deg)' : 'none';
                     masterImg.style.opacity = '1';
                 } else {
                     masterImg.removeAttribute('src');
