@@ -42,15 +42,6 @@
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
 
-    $ephemeris = null;
-    if ($isHome && !$showBack) {
-        try {
-            $ephemeris = app(\App\Services\Ephemeris\EphemerisService::class)->today();
-        } catch (\Throwable $e) {
-            $ephemeris = null;
-        }
-    }
-
     $tarotIconUrl = asset('images/carte.png');
     try {
         $tarotIconPath = public_path('images/carte.png');
@@ -98,22 +89,7 @@
                     </div>
 
                     <div class="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-center px-24">
-                        @if($isHome && !$showBack && is_array($ephemeris))
-                            <a
-                                href="{{ route('ephemeris.show') }}"
-                                class="group pointer-events-auto w-full max-w-[68vw] rounded-2xl border border-[color:var(--fam-border)] bg-white/80 px-3 py-2 text-left shadow-[0_1px_1px_rgba(15,23,42,0.04),0_10px_24px_rgba(15,23,42,0.06)] backdrop-blur-sm transition hover:bg-white/90"
-                                aria-label="Éphéméride"
-                            >
-                                <div class="text-[11px] font-semibold text-[color:var(--fam-text)] truncate">
-                                    {{ $ephemeris['date_label'] ?? '—' }}
-                                </div>
-                                <div class="mt-1 text-[12px] text-slate-700 leading-snug truncate">
-                                    {{ $ephemeris['proverb_text'] ?? '' }}
-                                </div>
-                            </a>
-                        @else
-                            <div class="text-[0.95rem] font-semibold text-[color:var(--fam-text)] truncate max-w-[55vw]">{{ $mobileTitle }}</div>
-                        @endif
+                        <div class="text-[0.95rem] font-semibold text-[color:var(--fam-text)] truncate max-w-[55vw]">{{ $mobileTitle }}</div>
                     </div>
 
                     <div class="shrink-0 flex items-center gap-2 z-10">
