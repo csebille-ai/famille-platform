@@ -22,7 +22,7 @@
         @endif
 
         <div class="bg-white rounded-2xl shadow-sm p-6">
-            <form method="POST" action="{{ route('tarot.draw') }}" class="space-y-4">
+            <form method="POST" action="{{ route('tarot.draw') }}" class="space-y-4" data-tarot-draw-form>
                 @csrf
 
                 <div>
@@ -50,8 +50,15 @@
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <x-primary-button>
-                        Tirer
+                    <x-primary-button data-tarot-submit>
+                        <span data-tarot-submit-label>Tirer</span>
+                        <span class="hidden items-center gap-2" data-tarot-submit-loading>
+                            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"></path>
+                            </svg>
+                            <span>Tirage en cours…</span>
+                        </span>
                     </x-primary-button>
 
                     <a href="{{ route('tarot.history') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir l’historique</a>
@@ -59,8 +66,27 @@
             </form>
         </div>
 
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4 hidden" data-tarot-result-skeleton aria-hidden="true">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <div class="text-sm text-slate-500">Résultat</div>
+                    <div class="mt-1 text-base font-semibold text-gray-900">Tirage en cours…</div>
+                    <div class="mt-1 text-xs text-slate-500">Je sélectionne les cartes et j’écris l’interprétation.</div>
+                </div>
+            </div>
+
+            <div class="h-10 rounded-xl bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
+            <div class="h-[300px] rounded-2xl bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
+            <div class="space-y-2">
+                <div class="h-4 w-2/3 rounded bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
+                <div class="h-4 w-1/2 rounded bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
+                <div class="h-4 w-5/6 rounded bg-[color:var(--fam-surface-alt)] animate-pulse"></div>
+                <div class="mt-2 text-xs text-slate-500">Interprétation en rédaction…</div>
+            </div>
+        </div>
+
         @if (is_array($draft ?? null))
-            <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" data-tarot-result>
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <div class="text-sm text-slate-500">Résultat ({{ $spreadLabel((string) ($draft['spread'] ?? 'one')) }})</div>
@@ -72,25 +98,27 @@
                     </form>
                 </div>
 
+                <div class="inline-flex items-center rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] p-1" role="tablist" aria-label="Affichage du résultat">
+                    <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition" data-tarot-tab="cards" role="tab">Cartes</button>
+                    <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition" data-tarot-tab="reading" role="tab">Lecture</button>
+                </div>
+
                 @php
                     $spread = (string) ($draft['spread'] ?? 'three');
                 @endphp
 
-                @include('tarot._cards', [
-                    'cards' => (array) ($draft['cards'] ?? []),
-                    'spread' => $spread,
-                    'idPrefix' => 'tarot-draft',
-                ])
+                <div data-tarot-panel="cards">
+                    @include('tarot._cards', [
+                        'cards' => (array) ($draft['cards'] ?? []),
+                        'spread' => $spread,
+                        'idPrefix' => 'tarot-draft',
+                    ])
 
-                <div class="flex items-center gap-3">
-                    <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
-                        <input type="checkbox" id="tarot-tts-toggle" class="sr-only peer" />
-                        <span class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors peer-checked:bg-indigo-600" aria-hidden="true">
-                            <span class="inline-block h-5 w-5 translate-x-1 rounded-full bg-white transition-transform" id="tarot-tts-toggle-dot"></span>
-                        </span>
-                        <span class="font-semibold">Audio</span>
-                    </label>
-                    <div id="tarot-tts-status" class="text-xs text-slate-500"></div>
+                    <div class="flex items-center justify-end">
+                        <button type="button" class="text-sm font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]" data-tarot-go-reading>
+                            Lire l’interprétation
+                        </button>
+                    </div>
                 </div>
 
                 @php
@@ -140,8 +168,27 @@
 
                 <div class="sr-only" id="tarot-tts-text">{{ $ttsText }}</div>
 
-                <div class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:my-3 [&_ul]:pl-5 [&_ul]:list-disc [&_ol]:my-3 [&_ol]:pl-5 [&_ol]:list-decimal [&_li]:mb-1 [&_strong]:font-semibold">
-                    {!! \Illuminate\Support\Str::markdown($interpretationText, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                <div data-tarot-panel="reading" class="hidden">
+                    <div class="flex items-center justify-between gap-3">
+                        <button type="button" class="text-sm font-semibold text-slate-600 hover:text-slate-800" data-tarot-go-cards>
+                            Voir les cartes
+                        </button>
+
+                        <div class="flex items-center gap-3">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                                <input type="checkbox" id="tarot-tts-toggle" class="sr-only peer" />
+                                <span class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors peer-checked:bg-indigo-600" aria-hidden="true">
+                                    <span class="inline-block h-5 w-5 translate-x-1 rounded-full bg-white transition-transform" id="tarot-tts-toggle-dot"></span>
+                                </span>
+                                <span class="font-semibold">Audio</span>
+                            </label>
+                            <div id="tarot-tts-status" class="text-xs text-slate-500"></div>
+                        </div>
+                    </div>
+
+                    <div id="tarot-reading" class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:my-3 [&_ul]:pl-5 [&_ul]:list-disc [&_ol]:my-3 [&_ol]:pl-5 [&_ol]:list-decimal [&_li]:mb-1 [&_strong]:font-semibold">
+                        {!! \Illuminate\Support\Str::markdown($interpretationText, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                    </div>
                 </div>
 
                 <form method="POST" action="{{ route('tarot.save') }}" class="flex items-center gap-3">
@@ -156,6 +203,99 @@
 
 <script>
 (() => {
+    // Result tabs (Cartes / Lecture)
+    const resultEl = document.querySelector('[data-tarot-result]');
+    const tabButtons = Array.from(document.querySelectorAll('[data-tarot-tab]'));
+    const cardsPanel = document.querySelector('[data-tarot-panel="cards"]');
+    const readingPanel = document.querySelector('[data-tarot-panel="reading"]');
+
+    const TAB_STORAGE_KEY = 'tarot.result.tab';
+    const applyTabUi = (tab) => {
+        const isCards = tab === 'cards';
+        if (cardsPanel) cardsPanel.classList.toggle('hidden', !isCards);
+        if (readingPanel) readingPanel.classList.toggle('hidden', isCards);
+
+        tabButtons.forEach((btn) => {
+            const isActive = btn.getAttribute('data-tarot-tab') === tab;
+            btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            btn.setAttribute('tabindex', isActive ? '0' : '-1');
+            btn.classList.toggle('bg-white', isActive);
+            btn.classList.toggle('shadow-sm', isActive);
+            btn.classList.toggle('text-slate-900', isActive);
+            btn.classList.toggle('text-slate-600', !isActive);
+        });
+    };
+
+    const setTab = (tab, { persist = true } = {}) => {
+        if (tab !== 'cards' && tab !== 'reading') tab = 'cards';
+        applyTabUi(tab);
+        if (persist) {
+            try { localStorage.setItem(TAB_STORAGE_KEY, tab); } catch (e) {}
+        }
+        try {
+            window.dispatchEvent(new CustomEvent('tarot:tab', { detail: { tab } }));
+        } catch (e) {}
+    };
+
+    if (resultEl && tabButtons.length) {
+        tabButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                setTab(btn.getAttribute('data-tarot-tab') || 'cards');
+            });
+        });
+
+        const hash = (window.location.hash || '').toLowerCase();
+        if (hash === '#tarot-reading' || hash === '#tarot-reading/'.toLowerCase()) {
+            setTab('reading', { persist: false });
+        } else if (hash === '#tarot-cards' || hash === '#tarot-cards/'.toLowerCase()) {
+            setTab('cards', { persist: false });
+        } else {
+            let initial = 'cards';
+            try {
+                const stored = localStorage.getItem(TAB_STORAGE_KEY);
+                if (stored === 'cards' || stored === 'reading') initial = stored;
+            } catch (e) {}
+            setTab(initial, { persist: false });
+        }
+
+        const goReadingBtn = document.querySelector('[data-tarot-go-reading]');
+        const goCardsBtn = document.querySelector('[data-tarot-go-cards]');
+        goReadingBtn?.addEventListener('click', () => {
+            setTab('reading');
+            setTimeout(() => document.getElementById('tarot-reading')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+        });
+        goCardsBtn?.addEventListener('click', () => {
+            setTab('cards');
+            setTimeout(() => document.getElementById('tarot-cards')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+        });
+    }
+
+    // Submit loading state for draw
+    const drawForm = document.querySelector('[data-tarot-draw-form]');
+    const submitBtn = document.querySelector('[data-tarot-submit]');
+    const submitLabel = document.querySelector('[data-tarot-submit-label]');
+    const submitLoading = document.querySelector('[data-tarot-submit-loading]');
+    const skeletonEl = document.querySelector('[data-tarot-result-skeleton]');
+
+    drawForm?.addEventListener('submit', () => {
+        try { drawForm.setAttribute('aria-busy', 'true'); } catch (e) {}
+        try { submitBtn?.setAttribute('aria-disabled', 'true'); } catch (e) {}
+
+        if (submitBtn) submitBtn.disabled = true;
+        if (submitLabel) submitLabel.classList.add('hidden');
+        if (submitLoading) {
+            submitLoading.classList.remove('hidden');
+            submitLoading.classList.add('inline-flex');
+        }
+
+        drawForm.querySelectorAll('button, input:not([type="hidden"]), textarea, select').forEach((el) => {
+            el.disabled = true;
+        });
+
+        if (skeletonEl) skeletonEl.classList.remove('hidden');
+        if (resultEl) resultEl.classList.add('hidden');
+    }, { passive: true });
+
     // Speech-to-text (mobile dictation)
     const sttStartBtn = document.getElementById('tarot-stt-start');
     const sttStopBtn = document.getElementById('tarot-stt-stop');
@@ -249,7 +389,9 @@
     const statusEl = document.getElementById('tarot-tts-status');
     const textEl = document.getElementById('tarot-tts-text');
 
-    if (!toggleEl || !textEl) return;
+    if (!toggleEl || !textEl) {
+        return;
+    }
 
     const STORAGE_KEY = 'tarot.tts.auto';
 
@@ -370,11 +512,29 @@
         setEnabled(!!toggleEl.checked).catch(() => {});
     });
 
-    // Auto-start on page load when enabled.
-    if (toggleEl.checked) {
+    const isReadingTabActive = () => {
+        const readingBtn = document.querySelector('[data-tarot-tab="reading"]');
+        return readingBtn?.getAttribute('aria-selected') === 'true';
+    };
+
+    const maybeAutoplay = () => {
+        if (!toggleEl.checked) return;
+        if (!isReadingTabActive()) return;
         setTimeout(() => {
             speakWithOpenAi().catch(() => {});
         }, 0);
-    }
+    };
+
+    // Auto-start only when the Lecture tab is active.
+    maybeAutoplay();
+
+    window.addEventListener('tarot:tab', (e) => {
+        const tab = e?.detail?.tab;
+        if (tab === 'reading') {
+            maybeAutoplay();
+        } else {
+            stopOpenAi();
+        }
+    });
 })();
 </script>

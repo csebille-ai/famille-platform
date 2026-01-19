@@ -117,7 +117,7 @@
                     <div class="pointer-events-none absolute inset-y-0 right-0 w-6" style="background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));"></div>
                 </div>
 
-                <div class="mt-3 -mx-4 px-4 relative">
+                <div class="mt-3 -mx-4 px-4 relative" id="tarot-cards">
                     <div class="flex items-center gap-4 overflow-x-auto py-2" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-hero-strip aria-label="Cartes (carrousel)">
                         @foreach($cards as $i => $c)
                             @php
