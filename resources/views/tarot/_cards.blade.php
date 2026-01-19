@@ -531,6 +531,7 @@
 
             const rect = spread.getBoundingClientRect();
             const pad = 16;
+            const centerX = rect.width / 2;
             const baselineY = rect.height * 0.90;
             const minTop = rect.height * 0.10;
 
@@ -599,6 +600,7 @@
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
+                btn.style.left = `${centerX}px`;
                 btn.style.top = `${baselineY}px`;
                 btn.style.transform = `translate(-50%, -100%) translate(${x}px, ${y}px) rotate(${angle}deg) scale(${scale})`;
 
