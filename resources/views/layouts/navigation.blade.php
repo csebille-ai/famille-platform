@@ -60,14 +60,14 @@
     <!-- Mobile: single sticky top bar -->
     <div class="sm:hidden">
         <!-- App bar (iOS-clean) -->
-        <div class="bg-[color:var(--fam-surface)]/95 backdrop-blur border-b border-[color:var(--fam-border)]" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem)">
-            <div class="px-4 pb-1">
+        <div class="bg-[color:var(--fam-surface)]/95 backdrop-blur border-b border-[color:var(--fam-border)]" style="padding-top: calc(env(safe-area-inset-top) + 0.25rem)">
+            <div class="px-4 pb-0.5">
                 <div class="relative flex items-center justify-between gap-3">
                     <div class="shrink-0 z-10">
                         @if($showBack)
                             <button
                                 type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]"
+                                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]"
                                 aria-label="Retour"
                                 onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                             >
@@ -80,7 +80,7 @@
                                     srcset="{{ asset('images/icon-192.png') }}?v=3 192w, {{ asset('images/icon-512.png') }}?v=3 512w"
                                     sizes="44px"
                                     alt="Famille"
-                                    class="h-11 w-11 object-contain"
+                                    class="h-10 w-10 object-contain"
                                     loading="lazy"
                                     decoding="async"
                                 />
