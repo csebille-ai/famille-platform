@@ -58,11 +58,8 @@ class TarotInterpreter
     - Carte renversée: blocage, excès, retard, angle mort ou "mode bug". Explique en 1 phrase claire.
 
     FORMAT EXACT (Markdown)
-    - Utilise des TITRES avec des dièses (##) et de VRAIS paragraphes (lignes séparées par une ligne vide).
+    - Utilise des TITRES (##) et de VRAIS paragraphes (lignes séparées par une ligne vide).
     - Aucun bloc compact tout collé : laisse une ligne vide entre les sections.
-
-    ## Annonce du tirage
-    1 phrase drôle.
 
     ## Passé
     2 phrases.
@@ -80,6 +77,7 @@ class TarotInterpreter
 
     ## Le twist final
     1 punchline surprise.
+    - Ne termine jamais par "..." ou "…".
 
     EN PLUS: SPOKEN_TEXT (pour lecture audio)
     - Génère aussi un champ spoken_text adapté à l’oral: 25–45 secondes.
@@ -116,7 +114,7 @@ TXT;
                 'type' => 'json_object',
             ],
             'temperature' => 0.7,
-            'max_tokens' => 450,
+            'max_tokens' => 650,
         ];
 
         try {
@@ -154,7 +152,13 @@ TXT;
         $interpretation = $this->normalizeInterpretationMarkdown($interpretation);
 
         if ($maxChars > 0 && mb_strlen($interpretation) > $maxChars) {
-            $interpretation = rtrim(mb_substr($interpretation, 0, $maxChars - 1)) . '…';
+            $cut = mb_substr($interpretation, 0, $maxChars);
+            $last = max(mb_strrpos($cut, '.') ?: 0, mb_strrpos($cut, '!') ?: 0, mb_strrpos($cut, '?') ?: 0);
+            if ($last > (int) max(200, $maxChars * 0.6)) {
+                $interpretation = trim(mb_substr($cut, 0, $last + 1));
+            } else {
+                $interpretation = rtrim(mb_substr($interpretation, 0, $maxChars - 1)) . '…';
+            }
         }
 
         return [
@@ -181,6 +185,9 @@ TXT;
         $t = preg_replace('/^\s*\*\*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:?\s*\*\*\s*$/mu', '## $1', $t) ?? $t;
         $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*$/mu', '## $1', $t) ?? $t;
         $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*(.+)$/mu', "## $1\n\n$2", $t) ?? $t;
+
+        // Drop the intro section entirely (users don't want it in UI).
+        $t = preg_replace('/^##\s*Annonce du tirage\s*\n+.*?(?=^##\s|\z)/ms', '', $t) ?? $t;
 
         // Ensure a blank line after headings.
         $t = preg_replace('/^(##\s+[^\n]+)\n(?!\n)/m', "$1\n\n", $t) ?? $t;
@@ -222,7 +229,32 @@ TXT;
             }
         }
 
+        // Fallback for truncated/invalid JSON: extract string fields by regex.
+        $out = [];
+        if (preg_match('/"interpretation"\s*:\s*"(?<val>.*?)(?="\s*,\s*"spoken_text"|"\s*\})/s', $content, $mm) === 1) {
+            $out['interpretation'] = $this->decodeJsonStringLoose((string) $mm['val']);
+        }
+        if (preg_match('/"spoken_text"\s*:\s*"(?<val>.*?)(?="\s*,\s*"interpretation"|"\s*\})/s', $content, $mm) === 1) {
+            $out['spoken_text'] = $this->decodeJsonStringLoose((string) $mm['val']);
+        }
+        if ($out !== []) {
+            return $out;
+        }
+
         return null;
+    }
+
+    private function decodeJsonStringLoose(string $raw): string
+    {
+        $raw = (string) $raw;
+        // Handle content that contains literal newlines inside a JSON string (invalid JSON).
+        $normalized = str_replace(["\r\n", "\r", "\n"], "\\n", $raw);
+        $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $normalized);
+        $val = json_decode('"' . $escaped . '"');
+        if (is_string($val)) {
+            return $val;
+        }
+        return stripcslashes($raw);
     }
 
     private function deriveSpokenText(string $interpretation): string

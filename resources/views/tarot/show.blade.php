@@ -58,13 +58,14 @@
                         return $decoded['interpretation'];
                     }
 
-                    if (preg_match('/"interpretation"\s*:\s*"((?:\\\\.|[^\"])*)"/s', $jsonCandidate, $mm) === 1) {
-                        $raw = (string) $mm[1];
+                    // Fallback for truncated/invalid JSON where newlines might not be escaped.
+                    if (preg_match('/"interpretation"\s*:\s*"(?<val>.*?)(?="\s*,\s*"spoken_text"|"\s*\})/s', $jsonCandidate, $mm) === 1) {
+                        $raw = (string) ($mm['val'] ?? '');
                         $raw = str_replace(["\r\n", "\r", "\n"], "\\n", $raw);
                         $escaped = str_replace(['\\', '"'], ['\\\\', '\\"'], $raw);
                         $val = json_decode('"' . $escaped . '"');
                         if (is_string($val)) return $val;
-                        return stripcslashes((string) $mm[1]);
+                        return stripcslashes((string) ($mm['val'] ?? ''));
                     }
 
                     return null;
@@ -80,6 +81,8 @@
                 $interpretationText = str_replace("\r\n", "\n", $interpretationText);
                 $interpretationText = preg_replace('/^\s*✅\s+/mu', '- ', $interpretationText) ?? $interpretationText;
                 $interpretationText = preg_replace('/^(Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:/mu', '**$1 :**', $interpretationText) ?? $interpretationText;
+                $interpretationText = preg_replace('/^##\s*Annonce du tirage\s*\n+.*?(?=^##\s|\z)/ms', '', $interpretationText) ?? $interpretationText;
+                $interpretationText = trim($interpretationText);
 
                 $spokenText = (string) ($reading->spoken_text ?? '');
                 $ttsText = trim($spokenText) !== '' ? $spokenText : $interpretationText;
