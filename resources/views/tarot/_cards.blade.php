@@ -166,12 +166,18 @@
                     <div class="text-xs font-semibold text-slate-600">Carte <span data-active-pos>1</span>/<span data-total>{{ $N }}</span></div>
                 </div>
 
-                <div class="mt-3 rounded-2xl border border-black/10 bg-white/70 shadow-sm overflow-hidden">
+                <div class="mt-3 rounded-2xl border border-black/10 bg-white/70 shadow-sm">
                     <div
-                        class="relative w-full overflow-hidden"
+                        class="relative w-full"
                         data-spread
                         style="height: clamp(240px, 64vw, 280px);"
                     >
+                        <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
+                            <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
+                            <div class="absolute left-24 top-10 h-24 w-16 rounded-xl bg-emerald-300/80 ring-2 ring-emerald-500/60" style="z-index: 2"></div>
+                            <div class="absolute left-44 top-16 h-24 w-16 rounded-xl bg-sky-300/80 ring-2 ring-sky-500/60" style="z-index: 3"></div>
+                        </div>
+
                         @foreach($cards as $i => $c)
                             @php
                                 $file = (string) ($c['file'] ?? '');
@@ -182,7 +188,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="absolute left-1/2 top-[88%] origin-bottom rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
+                                class="absolute left-1/2 top-[88%] origin-bottom w-[9.5rem] h-[14.25rem] md:w-[10.5rem] md:h-[15.75rem] rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
                                 data-card-fan
                                 data-index="{{ (int) $i }}"
                                 data-name="{{ e($name) }}"
@@ -191,7 +197,7 @@
                                 data-kws="{{ e(json_encode($kws, JSON_UNESCAPED_UNICODE)) }}"
                                 aria-label="Choisir la carte {{ (int) $i + 1 }}"
                             >
-                                <div class="w-[min(28vw,9.5rem)] aspect-[2/3] overflow-hidden rounded-2xl bg-white">
+                                <div class="h-full w-full overflow-hidden rounded-2xl bg-white">
                                     @if($img !== '')
                                         <img
                                             src="{{ $img }}"
@@ -248,6 +254,13 @@
         const STORAGE_KEY = 'tarot.viewMode';
         const supportsRituel = root.getAttribute('data-supports-rituel') === '1';
         const count = Number(root.getAttribute('data-count') || '0');
+        const DEBUG_RITUEL = (() => {
+            try {
+                return new URLSearchParams(window.location.search).has('debugRituel');
+            } catch (e) {
+                return false;
+            }
+        })();
 
         const canUseRituelNow = () => {
             if (!supportsRituel) return false;
@@ -475,6 +488,15 @@
         // Fan layout
         const spread = root.querySelector('[data-spread]');
         const fanButtons = Array.from(root.querySelectorAll('[data-card-fan]'));
+        const debugLayer = root.querySelector('[data-rituel-debug]');
+
+        if (DEBUG_RITUEL && spread) {
+            spread.style.overflow = 'visible';
+            spread.style.backgroundImage = 'linear-gradient(0deg, rgba(2,6,23,0.06), rgba(2,6,23,0.06))';
+        }
+        if (DEBUG_RITUEL && debugLayer) {
+            debugLayer.classList.remove('hidden');
+        }
 
         const baseLayout = (n) => {
             if (n === 3) {
@@ -526,6 +548,11 @@
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
                 btn.style.transform = `translate(-50%, -100%) translate(${x}px, ${isActive ? (y - 10) : y}px) rotate(${angle}deg) scale(${scale})`;
+
+                if (DEBUG_RITUEL) {
+                    btn.style.outline = isActive ? '2px solid rgba(14,165,160,0.55)' : '1px dashed rgba(2,6,23,0.28)';
+                    btn.style.outlineOffset = '2px';
+                }
             });
         };
 
