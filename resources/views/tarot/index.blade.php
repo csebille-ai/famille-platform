@@ -76,60 +76,11 @@
                     $spread = (string) ($draft['spread'] ?? 'three');
                 @endphp
 
-                @if ($spread === 'five')
-                    @php
-                        $pos = [
-                            ['row' => 1, 'col' => 2], // top
-                            ['row' => 2, 'col' => 1], // left
-                            ['row' => 2, 'col' => 2], // center
-                            ['row' => 2, 'col' => 3], // right
-                            ['row' => 3, 'col' => 2], // bottom
-                        ];
-                    @endphp
-
-                    <div class="grid grid-cols-3 gap-3">
-                        @foreach ((array) ($draft['cards'] ?? []) as $i => $c)
-                            @php
-                                $p = $pos[(int) $i] ?? ['row' => 1, 'col' => 1];
-                            @endphp
-                            <div class="rounded-xl border border-black/10 bg-white px-4 py-4" style="grid-row: {{ $p['row'] }}; grid-column: {{ $p['col'] }};">
-                                @if (!empty($c['file']))
-                                    <div class="flex justify-center">
-                                        <img
-                                            src="{{ 'https://opanoma.fr/tarot/' . $c['file'] }}"
-                                            alt="{{ $c['name'] ?? '' }}"
-                                            class="h-56 w-auto max-w-full rounded-lg border border-black/10 bg-white object-contain"
-                                            style="transform: {{ !empty($c['reversed']) ? 'rotate(180deg)' : 'none' }};"
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                @endif
-                                <div class="mt-3 text-sm font-semibold text-gray-900">{{ $c['name'] ?? '' }}</div>
-                                <div class="mt-1 text-xs text-slate-500">{{ $c['keywords'] ?? '' }}</div>
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="grid grid-cols-3 gap-3">
-                        @foreach ((array) ($draft['cards'] ?? []) as $c)
-                            <div class="rounded-xl border border-black/10 bg-white px-4 py-4">
-                            @if (!empty($c['file']))
-                                <div class="flex justify-center">
-                                    <img
-                                        src="{{ 'https://opanoma.fr/tarot/' . $c['file'] }}"
-                                        alt="{{ $c['name'] ?? '' }}"
-                                        class="h-56 w-auto max-w-full rounded-lg border border-black/10 bg-white object-contain"
-                                        style="transform: {{ !empty($c['reversed']) ? 'rotate(180deg)' : 'none' }};"
-                                        loading="lazy"
-                                    />
-                                </div>
-                            @endif
-                            <div class="mt-3 text-sm font-semibold text-gray-900">{{ $c['name'] ?? '' }}</div>
-                            <div class="mt-1 text-xs text-slate-500">{{ $c['keywords'] ?? '' }}</div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
+                @include('tarot._cards', [
+                    'cards' => (array) ($draft['cards'] ?? []),
+                    'spread' => $spread,
+                    'idPrefix' => 'tarot-draft',
+                ])
 
                 <div class="flex items-center gap-3">
                     <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">

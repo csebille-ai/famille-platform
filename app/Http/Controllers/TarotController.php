@@ -7,20 +7,14 @@ use App\Services\Tarot\TarotDeck;
 use App\Services\Tarot\TarotInterpreter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class TarotController extends Controller
 {
     public function index(Request $request): View
     {
-        $justDrew = (bool) $request->session()->get('tarot.just_drew', false);
-
-        if (!$justDrew) {
-            $request->session()->forget('tarot.draft');
-            $draft = null;
-        } else {
-            $draft = $request->session()->get('tarot.draft');
-        }
+        $draft = $request->session()->get('tarot.draft');
 
         return view('tarot.index', [
             'draft' => is_array($draft) ? $draft : null,
@@ -77,6 +71,7 @@ class TarotController extends Controller
         }
 
         $draft = [
+            'draw_id' => (string) Str::uuid(),
             'question' => $validated['question'],
             'spread' => $validated['spread'],
             'cards' => $cards,
@@ -86,7 +81,6 @@ class TarotController extends Controller
         ];
 
         $request->session()->put('tarot.draft', $draft);
-        $request->session()->flash('tarot.just_drew', true);
 
         return redirect()->route('tarot.index');
     }
