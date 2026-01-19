@@ -245,6 +245,7 @@
                 const box = btn.querySelector('[data-thumb-box]');
 
                 btn.style.transform = isActive ? 'translateY(-1px) scale(1.02)' : 'none';
+                btn.setAttribute('aria-current', isActive ? 'true' : 'false');
                 if (box) {
                     box.style.boxShadow = isActive
                         ? '0 14px 28px rgba(15,23,42,0.14)'
@@ -252,7 +253,7 @@
                 }
                 if (label) {
                     label.classList.toggle('text-slate-500', !isActive);
-                    label.classList.toggle('text-slate-800', isActive);
+                    label.style.color = isActive ? 'var(--fam-primary)' : '';
                 }
             });
         };
