@@ -23,7 +23,7 @@ class UserInviteMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Invitation – Accès au portail famille',
+            subject: 'Invitation à rejoindre La Famille',
         );
     }
 
