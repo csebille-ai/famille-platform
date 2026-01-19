@@ -41,7 +41,7 @@
             <div class="fam-card p-4">
                 <div class="-mx-4">
                     <div class="w-full" style="height: {{ $fanHeight }};">
-                        <div class="relative h-full w-full overflow-visible" data-spread>
+                                    <div class="relative h-full w-full overflow-hidden" data-spread>
                             <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
                                 <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
                                 <div class="absolute left-24 top-10 h-24 w-16 rounded-xl bg-emerald-300/80 ring-2 ring-emerald-500/60" style="z-index: 2"></div>
@@ -209,25 +209,22 @@
         const baseLayout = (n) => {
             if (n === 3) {
                 return {
-                    stepAngle: 15,
-                    stepX: 16,
-                    stepY: 10,
-                    scaleDrop: 0.04,
+                    maxAngle: 18,
+                    rise: 14,
+                    scaleDrop: 0.035,
                 };
             }
             if (n === 5) {
                 return {
-                    stepAngle: 10,
-                    stepX: 20,
-                    stepY: 9,
-                    scaleDrop: 0.035,
+                    maxAngle: 28,
+                    rise: 20,
+                    scaleDrop: 0.028,
                 };
             }
             return {
-                stepAngle: 9,
-                stepX: 18,
-                stepY: 10,
-                scaleDrop: 0.04,
+                maxAngle: 20,
+                rise: 16,
+                scaleDrop: 0.035,
             };
         };
 
@@ -243,67 +240,32 @@
             // Use computed size from the first card (width/height are explicitly set in markup).
             const cardRect = fanButtons[0].getBoundingClientRect();
             const cardW = cardRect.width || 120;
-            const cardH = cardRect.height || 180;
-            const n = fanButtons.length;
-
-            if (n === 5) {
-                // 5-card fan: near half-circle with a shared bottom-left anchor point.
-                const anchorX = pad;
-                const anchorY = rect.height * 0.92;
-                // Requested opening: ~160 degrees.
-                const minAngle = -30;
-                const maxAngle = 130;
-                const step = (maxAngle - minAngle) / (n - 1);
-                const activeBoost = 0.08;
-
-                fanButtons.forEach((btn) => {
-                    const idx = Number(btn.getAttribute('data-index') || '0');
-                    const angle = minAngle + (idx * step);
-                    const isActive = idx === activeIndex;
-                    const t = idx / (n - 1);
-                    const scaleBase = 1 - (Math.abs(t - 0.55) * 0.035);
-                    const scale = isActive ? (scaleBase + activeBoost) : scaleBase;
-                    const shadow = isActive ? '0 16px 40px rgba(15,23,42,0.22)' : '0 6px 16px rgba(15,23,42,0.10)';
-
-                    btn.style.zIndex = String(isActive ? 500 : (200 - idx));
-                    btn.style.boxShadow = shadow;
-                    btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
-                    btn.style.left = `${anchorX}px`;
-                    btn.style.top = `${anchorY}px`;
-                    btn.style.transformOrigin = '0% 100%';
-                    btn.style.transform = `translate(0, -100%) rotate(${angle}deg) scale(${scale})`;
-
-                    if (DEBUG_RITUEL) {
-                        btn.style.outline = isActive ? '2px solid rgba(14,165,160,0.55)' : '1px dashed rgba(2,6,23,0.28)';
-                        btn.style.outlineOffset = '2px';
-                    }
-                });
-
-                return;
             }
-            const base = baseLayout(n);
-            const maxX = Math.max(0, (rect.width / 2) - (cardW / 2) - pad);
 
-            // Fixed fan: positions do NOT change when active card changes.
+            // Regular "hand" fan: same anchor (center/baseline) for all cards.
             const center = (n - 1) / 2;
             const tMax = (n - 1) / 2;
+            const activeBoost = 0.08;
 
-            // Scale X/angles down if the spread would overflow.
-            const maxAbsX = Math.abs(tMax * base.stepX) || 1;
-            const k = Math.min(1, maxX / maxAbsX);
-
+            // Choose an angle span then compute the max horizontal offset that keeps
+            // the rotated card inside the frame, so outer cards can nearly touch edges.
+            const maxAngle = base.maxAngle;
+            const theta = Math.abs(maxAngle) * Math.PI / 180;
+            const halfProjW = 0.5 * ((cardW * Math.cos(theta)) + (cardH * Math.sin(theta)));
+            const xMax = Math.max(0, (rect.width / 2) - halfProjW - pad);
             const activeBoost = 0.08;
 
             fanButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                const t = idx - center;
-                const angle = (t * base.stepAngle) * k;
-                const rawX = (t * base.stepX) * k;
-                // Keep the bottom of cards near the baseline: outer cards rise slightly instead of going further down.
+                const u = tMax ? (t / tMax) : 0;
+                const angle = u * maxAngle;
+                const rawX = u * xMax;
+                // Outer cards rise a bit to create a semi-circle feel.
+                const rawY = -Math.pow(Math.abs(u), 1.55) * base.rise;
                 const rawY = -(Math.abs(t) * base.stepY) * k;
-                const isActive = idx === activeIndex;
 
-                // Clamp X so cards stay within the frame.
+                // X stays within computed range.
+                const x = Math.max(-xMax, Math.min(xMax, rawX));
                 const x = Math.max(-maxX, Math.min(maxX, rawX));
 
                 // Clamp Y so the card top doesn't go above minTop.
