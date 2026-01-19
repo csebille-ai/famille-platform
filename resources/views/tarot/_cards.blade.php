@@ -98,7 +98,7 @@
                                                 src="{{ $img }}"
                                                 alt="{{ e($name) }}"
                                                 class="h-full w-full object-contain bg-transparent"
-                                                style="transform: {{ $reversed ? 'rotate(180deg) scale(1.06)' : 'scale(1.06)' }}; clip-path: inset(0% 2.8%);"
+                                                style="transform: {{ $reversed ? 'rotate(180deg) scale(1.04)' : 'scale(1.04)' }}; clip-path: inset(0% 2.8%);"
                                                 loading="lazy"
                                                 decoding="async"
                                             />
@@ -201,7 +201,7 @@
                                             src="{{ $img }}"
                                             alt=""
                                             class="h-full w-full object-contain bg-transparent"
-                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.06)' : 'scale(1.06)' }}; clip-path: inset(0% 2.8%);"
+                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.04)' : 'scale(1.04)' }}; clip-path: inset(0% 2.8%);"
                                             loading="lazy"
                                             decoding="async"
                                         />
@@ -379,7 +379,7 @@
             const reversed = btn.getAttribute('data-reversed') === '1';
             modalImg.src = img;
             modalImg.alt = name;
-            modalImg.style.transform = reversed ? 'rotate(180deg) scale(1.06)' : 'scale(1.06)';
+            modalImg.style.transform = reversed ? 'rotate(180deg) scale(1.04)' : 'scale(1.04)';
             modal.classList.remove('hidden');
             modal.setAttribute('aria-hidden', 'false');
         };
