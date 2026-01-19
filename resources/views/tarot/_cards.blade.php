@@ -166,7 +166,7 @@
                     <div class="text-xs font-semibold text-slate-600">Carte <span data-active-pos>1</span>/<span data-total>{{ $N }}</span></div>
                 </div>
 
-                <div class="mt-3 rounded-2xl border border-black/10 bg-white/70 shadow-sm">
+                <div class="mt-3 rounded-2xl border border-black/10 bg-transparent">
                     <div class="w-full" style="height: clamp(240px, 64vw, 280px);">
                         <div class="relative h-full w-full overflow-hidden" data-spread>
                             <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
@@ -185,7 +185,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="absolute left-1/2 top-[90%] origin-bottom rounded-2xl border border-black/10 bg-white shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
+                                class="absolute left-1/2 top-[90%] origin-bottom rounded-2xl bg-transparent shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
                                 style="width: clamp(120px, 34vw, 140px); height: clamp(180px, 51vw, 210px);"
                                 data-card-fan
                                 data-index="{{ (int) $i }}"
@@ -195,7 +195,7 @@
                                 data-kws="{{ e(json_encode($kws, JSON_UNESCAPED_UNICODE)) }}"
                                 aria-label="Choisir la carte {{ (int) $i + 1 }}"
                             >
-                                <div class="h-full w-full overflow-hidden rounded-2xl bg-white">
+                                <div class="h-full w-full overflow-hidden rounded-2xl bg-transparent">
                                     @if($img !== '')
                                         <img
                                             src="{{ $img }}"
@@ -523,12 +523,6 @@
             if (!spread || fanButtons.length === 0) return;
             if (!canUseRituelNow()) return;
 
-            // Ensure the active card is painted last (on top) in addition to z-index.
-            const activeBtn = root.querySelector(`[data-card-fan][data-index="${activeIndex}"]`);
-            if (activeBtn && activeBtn.parentElement === spread) {
-                spread.appendChild(activeBtn);
-            }
-
             const rect = spread.getBoundingClientRect();
             const pad = 16;
             const centerX = rect.width / 2;
@@ -596,7 +590,9 @@
                 const scaleBase = 1 - (Math.abs(t) * base.scaleDrop);
                 const scale = isActive ? (scaleBase + 0.07) : scaleBase;
                 const shadow = isActive ? '0 10px 28px rgba(15,23,42,0.16)' : '0 6px 16px rgba(15,23,42,0.10)';
-                btn.style.zIndex = String(isActive ? 20 : 10 + idx);
+                // Stack by fan depth (active on top, then closer cards).
+                const depth = Math.abs(t);
+                btn.style.zIndex = String(isActive ? 200 : (100 - Math.round(depth * 10)));
                 btn.style.boxShadow = shadow;
                 btn.style.filter = isActive ? 'none' : 'saturate(0.92) contrast(0.98)';
                 btn.style.transformOrigin = '50% 100%';
