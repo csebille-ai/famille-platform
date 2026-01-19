@@ -41,7 +41,8 @@
             <div class="fam-card p-4">
                 <div class="-mx-4">
                     <div class="w-full" style="height: {{ $fanHeight }};">
-                        <div class="relative h-full w-full overflow-hidden rounded-2xl border border-black/10 bg-white" data-carousel-scene>
+                        <div class="relative h-full w-full overflow-x-auto overflow-y-hidden rounded-2xl border border-black/10 bg-white" data-carousel-scene style="scroll-snap-type: x mandatory; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;">
+                            <div class="h-full w-max min-w-full flex items-center justify-center px-4" data-carousel-track>
 
                             @foreach($cards as $i => $c)
                                 @php
@@ -56,8 +57,8 @@
                                 @endphp
                                 <button
                                     type="button"
-                                    class="absolute left-1/2 top-1/2 rounded-2xl bg-transparent shadow-sm transition-[transform,filter,box-shadow,opacity] duration-300 ease-out"
-                                    style="{{ $fanCardSize }}; transform: translate(-50%, -50%) scale(0.96); opacity: 0;"
+                                    class="relative shrink-0 snap-center rounded-2xl bg-transparent shadow-sm transition-[transform,filter,box-shadow,opacity] duration-300 ease-out"
+                                    style="{{ $fanCardSize }}; opacity: 0; {{ $i > 0 ? 'margin-left: -22px;' : '' }}"
                                     data-card-carousel
                                     data-index="{{ (int) $i }}"
                                     data-name="{{ e($name) }}"
@@ -82,6 +83,7 @@
                                     </div>
                                 </button>
                             @endforeach
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -171,170 +173,117 @@
             const next = Math.max(0, Math.min(count - 1, idx));
             activeIndex = next;
             syncActiveCardPanels();
-            applyCarouselLayout(activeIndex, { instant: false, stepMode: 'final' });
+            applyActiveStyles();
+            scrollActiveIntoView();
         };
 
         const scene = root.querySelector('[data-carousel-scene]');
+        const track = root.querySelector('[data-carousel-track]');
         const cardButtons = Array.from(root.querySelectorAll('[data-card-carousel]'));
 
-        const getCardSize = () => {
-            const rect = cardButtons[0]?.getBoundingClientRect();
-            return {
-                w: rect?.width || 120,
-                h: rect?.height || 180,
-            };
-        };
-
-        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
-        const computeStepX = (mode, centerIdx, visibleUntil) => {
-            const sceneRect = scene?.getBoundingClientRect();
-            const sceneW = sceneRect?.width || 360;
-            const pad = 18;
-            const { w: cardW } = getCardSize();
-            const halfAvail = Math.max(0, (sceneW / 2) - pad - (cardW / 2));
-
-            // How many cards exist on each side of the center for the *currently visible* set.
-            const leftCount = Math.max(0, centerIdx);
-            const rightCount = Math.max(0, visibleUntil - centerIdx);
-            const maxSide = Math.max(leftCount, rightCount);
-
-            // If only one card (or no side), spacing can be any reasonable default.
-            if (maxSide === 0) {
-                return mode === 'deal'
-                    ? clamp(cardW * 0.92, 92, 170)
-                    : clamp(cardW * 0.64, 70, 130);
-            }
-
-            // Ensure the farthest visible card stays inside the scene.
-            const fitStep = halfAvail / maxSide;
-
-            // Target aesthetics.
-            const target = mode === 'deal'
-                ? clamp(cardW * 0.92, 92, 170)
-                : clamp(cardW * 0.64, 70, 130);
-
-            return clamp(Math.min(target, fitStep), 56, target);
-        };
-
-        const applyCarouselLayout = (centerIdx, opts = {}) => {
-            const { instant = false, stepMode = 'final', visibleUntil = (count - 1) } = opts;
-            const stepX = computeStepX(stepMode, centerIdx, visibleUntil);
-
+        const applyActiveStyles = () => {
             cardButtons.forEach((btn) => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                const isVisible = idx <= visibleUntil;
-                const rel = idx - centerIdx;
-
-                btn.style.transitionDuration = instant ? '0ms' : (stepMode === 'deal' ? '260ms' : '320ms');
-                btn.style.transitionTimingFunction = 'cubic-bezier(.2,.9,.2,1)';
-
-                if (!isVisible) {
-                    btn.style.opacity = '0';
-                    btn.style.pointerEvents = 'none';
-                    btn.style.zIndex = '0';
-                    btn.style.transform = 'translate(-50%, -50%) scale(0.96)';
-                    return;
-                }
-
-                const x = rel * stepX;
-                const rot = clamp(rel * 2.2, -10, 10);
-                const isActive = idx === centerIdx;
-                const scale = isActive ? 1.06 : 1.0;
-                const y = isActive ? -8 : 0;
-                const z = isActive ? 500 : (200 - Math.abs(rel) * 10);
+                const isActive = idx === activeIndex;
 
                 btn.style.opacity = '1';
                 btn.style.pointerEvents = 'auto';
-                btn.style.zIndex = String(z);
+                btn.style.zIndex = String(isActive ? 20 : 10);
                 btn.style.filter = isActive ? 'none' : 'saturate(0.94) contrast(0.99)';
-                btn.style.transformOrigin = '50% 50%';
-                btn.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rot}deg) scale(${scale})`;
+                btn.style.transformOrigin = '50% 60%';
+                btn.style.transform = isActive ? 'translateY(-8px) rotate(0deg) scale(1.06)' : 'translateY(0px) rotate(0deg) scale(1)';
+                btn.style.boxShadow = isActive ? '0 16px 40px rgba(15,23,42,0.20)' : '0 6px 16px rgba(15,23,42,0.10)';
             });
+        };
+
+        const scrollActiveIntoView = (instant = false) => {
+            const btn = getCardBtnByIndex('[data-card-carousel]', activeIndex);
+            if (!btn) return;
+            // If scroll snapping is supported, this is enough to perfectly center.
+            try {
+                btn.scrollIntoView({ behavior: instant ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
+            } catch (e) {}
+        };
+
+        const updateActiveFromScroll = () => {
+            if (!scene) return;
+            const sceneRect = scene.getBoundingClientRect();
+            const centerX = sceneRect.left + (sceneRect.width / 2);
+
+            let bestIdx = activeIndex;
+            let bestDist = Infinity;
+            cardButtons.forEach((btn) => {
+                const rect = btn.getBoundingClientRect();
+                const btnCenterX = rect.left + (rect.width / 2);
+                const dist = Math.abs(btnCenterX - centerX);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestIdx = Number(btn.getAttribute('data-index') || '0');
+                }
+            });
+
+            if (bestIdx !== activeIndex) {
+                activeIndex = bestIdx;
+                syncActiveCardPanels();
+                applyActiveStyles();
+            }
         };
 
         // Tap any card to focus it.
         cardButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 const idx = Number(btn.getAttribute('data-index') || '0');
-                activeIndex = idx;
-                syncActiveCardPanels();
-                applyCarouselLayout(activeIndex, { instant: false, stepMode: 'final', visibleUntil: count - 1 });
+                setActiveIndex(idx);
             });
         });
 
-        // Swipe navigation.
+        // Keep active card in sync with scroll position.
+        let scrollRaf = null;
         if (scene) {
-            let startX = null;
-            let startY = null;
-            scene.addEventListener('pointerdown', (e) => {
-                startX = e.clientX;
-                startY = e.clientY;
-            });
-            scene.addEventListener('pointerup', (e) => {
-                if (startX == null || startY == null) return;
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                startX = null;
-                startY = null;
-                if (Math.abs(dx) < 30 || Math.abs(dx) < Math.abs(dy)) return;
-                const next = Math.max(0, Math.min(count - 1, activeIndex + (dx < 0 ? 1 : -1)));
-                activeIndex = next;
-                syncActiveCardPanels();
-                applyCarouselLayout(activeIndex, { instant: false, stepMode: 'final', visibleUntil: count - 1 });
-            });
+            scene.addEventListener('scroll', () => {
+                if (scrollRaf) return;
+                scrollRaf = requestAnimationFrame(() => {
+                    scrollRaf = null;
+                    updateActiveFromScroll();
+                });
+            }, { passive: true });
         }
 
         const ro = (window.ResizeObserver && scene) ? new ResizeObserver(() => {
-            applyCarouselLayout(activeIndex, { instant: true, stepMode: 'final', visibleUntil: count - 1 });
+            applyActiveStyles();
+            scrollActiveIntoView(true);
         }) : null;
         if (ro && scene) ro.observe(scene);
 
         window.addEventListener('resize', () => {
-            applyCarouselLayout(activeIndex, { instant: true, stepMode: 'final', visibleUntil: count - 1 });
+            applyActiveStyles();
+            scrollActiveIntoView(true);
         });
 
-        const runDealAnimation = () => {
-            // Deal sequence: 0 shows center, then 1 shows center (0 shifts left), etc.
-            // After last card is dealt, we re-center the whole group on the middle card.
+        const revealCards = () => {
             const finalCenter = Math.floor(count / 2);
 
-            // First frame: only card 0 visible at center.
-            activeIndex = 0;
+            // Start centered on the middle card.
+            activeIndex = finalCenter;
             syncActiveCardPanels();
-            applyCarouselLayout(0, { instant: true, stepMode: 'deal', visibleUntil: 0 });
+            applyActiveStyles();
+            scrollActiveIntoView(true);
 
             if (prefersReducedMotion) {
-                activeIndex = finalCenter;
-                syncActiveCardPanels();
-                applyCarouselLayout(finalCenter, { instant: true, stepMode: 'final', visibleUntil: count - 1 });
+                cardButtons.forEach((btn) => { btn.style.opacity = '1'; });
                 return;
             }
 
-            let step = 1;
-            const dealNext = () => {
-                if (step >= count) {
-                    // Focus slide: center the group on the middle card.
-                    setTimeout(() => {
-                        activeIndex = finalCenter;
-                        syncActiveCardPanels();
-                        applyCarouselLayout(finalCenter, { instant: false, stepMode: 'final', visibleUntil: count - 1 });
-                    }, 320);
-                    return;
-                }
-
-                activeIndex = step;
-                syncActiveCardPanels();
-                applyCarouselLayout(step, { instant: false, stepMode: 'deal', visibleUntil: step });
-                step += 1;
-                setTimeout(dealNext, 360);
-            };
-
-            setTimeout(dealNext, 260);
+            cardButtons.forEach((btn, i) => {
+                btn.style.opacity = '0';
+                setTimeout(() => {
+                    btn.style.opacity = '1';
+                }, 90 + i * 70);
+            });
         };
 
         // Init
-        requestAnimationFrame(() => runDealAnimation());
+        requestAnimationFrame(() => revealCards());
     })();
     </script>
 @endif
