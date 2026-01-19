@@ -58,8 +58,11 @@ class TarotInterpreter
     - Carte renversée: blocage, excès, retard, angle mort ou "mode bug". Explique en 1 phrase claire.
 
     FORMAT EXACT (Markdown)
-    - Utilise des TITRES (##) et de VRAIS paragraphes (lignes séparées par une ligne vide).
+    - Commence par un CHAPEAU (1 phrase drôle) SANS TITRE, sur un paragraphe.
+    - Puis utilise des TITRES (##) et de VRAIS paragraphes (lignes séparées par une ligne vide).
     - Aucun bloc compact tout collé : laisse une ligne vide entre les sections.
+
+    (Chapeau ici, sans "Annonce du tirage" ni aucun titre.)
 
     ## Passé
     2 phrases.
@@ -186,8 +189,8 @@ TXT;
         $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*$/mu', '## $1', $t) ?? $t;
         $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*(.+)$/mu', "## $1\n\n$2", $t) ?? $t;
 
-        // Drop the intro section entirely (users don't want it in UI).
-        $t = preg_replace('/^##\s*Annonce du tirage\s*\n+.*?(?=^##\s|\z)/ms', '', $t) ?? $t;
+        // If the model used an "Annonce du tirage" heading, remove the label but keep the chapeau text.
+        $t = preg_replace('/^##\s*Annonce du tirage\s*\n+/mi', "", $t) ?? $t;
 
         // Ensure a blank line after headings.
         $t = preg_replace('/^(##\s+[^\n]+)\n(?!\n)/m', "$1\n\n", $t) ?? $t;

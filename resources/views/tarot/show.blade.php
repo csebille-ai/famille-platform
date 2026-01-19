@@ -81,7 +81,7 @@
                 $interpretationText = str_replace("\r\n", "\n", $interpretationText);
                 $interpretationText = preg_replace('/^\s*✅\s+/mu', '- ', $interpretationText) ?? $interpretationText;
                 $interpretationText = preg_replace('/^(Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:/mu', '**$1 :**', $interpretationText) ?? $interpretationText;
-                $interpretationText = preg_replace('/^##\s*Annonce du tirage\s*\n+.*?(?=^##\s|\z)/ms', '', $interpretationText) ?? $interpretationText;
+                $interpretationText = preg_replace('/^##\s*Annonce du tirage\s*\n+/mi', '', $interpretationText) ?? $interpretationText;
                 $interpretationText = trim($interpretationText);
 
                 $spokenText = (string) ($reading->spoken_text ?? '');
