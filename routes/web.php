@@ -97,6 +97,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
 });
 
+Route::get('/ephemeride', function () {
+    return view('ephemeris.show');
+})->middleware(['auth', 'verified'])->name('ephemeris.show');
+
 // Home (mobile-first). Keep route name 'dashboard' for backward compatibility.
 Route::get('/home', function () {
     $feed = (string) request()->query('feed', 'all');

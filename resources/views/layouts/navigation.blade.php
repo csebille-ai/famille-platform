@@ -42,6 +42,15 @@
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
 
+    $ephemeris = null;
+    if ($isHome && !$showBack) {
+        try {
+            $ephemeris = app(\App\Services\Ephemeris\EphemerisService::class)->today();
+        } catch (\Throwable $e) {
+            $ephemeris = null;
+        }
+    }
+
     $tarotIconUrl = asset('images/carte.png');
     try {
         $tarotIconPath = public_path('images/carte.png');
@@ -89,7 +98,29 @@
                     </div>
 
                     <div class="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-center px-24">
-                        <div class="text-[0.95rem] font-semibold text-[color:var(--fam-text)] truncate max-w-[55vw]">{{ $mobileTitle }}</div>
+                        @if($isHome && !$showBack && is_array($ephemeris))
+                            <a
+                                href="{{ route('ephemeris.show') }}"
+                                class="pointer-events-auto w-full max-w-[62vw] rounded-2xl border border-[color:var(--fam-border)] bg-white/90 px-3 py-2 text-left shadow-[0_1px_1px_rgba(15,23,42,0.04)]"
+                                aria-label="Éphéméride"
+                            >
+                                <div class="text-[11px] font-medium text-slate-600 flex items-center gap-2 whitespace-nowrap">
+                                    <span class="font-semibold text-[color:var(--fam-text)]">{{ $ephemeris['date_label'] ?? '—' }}</span>
+                                    <span class="inline-flex items-center gap-1">
+                                        <i class="ph ph-sun" aria-hidden="true"></i>
+                                        <span>{{ $ephemeris['sunrise_time'] ?? '' }}</span>
+                                    </span>
+                                    <span class="inline-flex items-center gap-1">
+                                        <i class="ph ph-moon" aria-hidden="true"></i>
+                                        <span>{{ $ephemeris['sunset_time'] ?? '' }}</span>
+                                    </span>
+                                </div>
+                                <div class="mt-1 text-[13px] font-semibold text-[color:var(--fam-text)] leading-tight truncate">{{ $ephemeris['saint_name'] ?? '—' }}</div>
+                                <div class="mt-0.5 text-[11px] text-slate-600 truncate">{{ $ephemeris['proverb_text'] ?? '' }}</div>
+                            </a>
+                        @else
+                            <div class="text-[0.95rem] font-semibold text-[color:var(--fam-text)] truncate max-w-[55vw]">{{ $mobileTitle }}</div>
+                        @endif
                     </div>
 
                     <div class="shrink-0 flex items-center gap-2 z-10">
