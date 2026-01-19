@@ -33,7 +33,7 @@
             <div class="inline-flex rounded-xl border border-black/10 bg-white p-1" role="tablist" aria-label="Vue">
                 <button
                     type="button"
-                    class="px-3 py-1.5 text-sm font-semibold rounded-lg text-slate-700 hover:bg-slate-50"
+                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.06)' : 'scale(1.06)' }};"
                     data-view-btn="focus"
                 >
                     Focus
