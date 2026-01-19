@@ -26,6 +26,12 @@
 @endphp
 
 @if($N > 0)
+    @php
+        $fanHeight = $N === 5 ? 'clamp(260px, 70vw, 320px)' : 'clamp(240px, 64vw, 280px)';
+        $fanCardSize = $N === 5
+            ? 'width: clamp(112px, 30vw, 130px); height: clamp(168px, 45vw, 195px);'
+            : 'width: clamp(120px, 34vw, 140px); height: clamp(180px, 51vw, 210px);';
+    @endphp
     <div id="{{ $idPrefix }}-cards-ui" class="space-y-4" data-tarot-cards-ui data-count="{{ $N }}" data-supports-rituel="{{ $supportsRituel ? '1' : '0' }}">
         @if(!$supportsRituel)
             <div class="fam-card p-4 text-sm text-slate-600">
@@ -34,7 +40,7 @@
         @else
             <div class="fam-card p-4">
                 <div class="rounded-2xl border border-black/10 bg-transparent">
-                    <div class="w-full" style="height: clamp(240px, 64vw, 280px);">
+                    <div class="w-full" style="height: {{ $fanHeight }};">
                         <div class="relative h-full w-full overflow-hidden" data-spread>
                             <div class="absolute inset-0 hidden pointer-events-none" data-rituel-debug>
                                 <div class="absolute left-4 top-4 h-24 w-16 rounded-xl bg-rose-300/80 ring-2 ring-rose-500/60" style="z-index: 1"></div>
@@ -56,7 +62,7 @@
                                 <button
                                     type="button"
                                     class="absolute left-1/2 top-[90%] origin-bottom rounded-2xl bg-transparent shadow-sm transition-[transform,filter,box-shadow] duration-200 ease-out"
-                                    style="width: clamp(120px, 34vw, 140px); height: clamp(180px, 51vw, 210px);"
+                                    style="{{ $fanCardSize }}"
                                     data-card-fan
                                     data-index="{{ (int) $i }}"
                                     data-name="{{ e($name) }}"
@@ -207,6 +213,14 @@
                     stepX: 16,
                     stepY: 10,
                     scaleDrop: 0.04,
+                };
+            }
+            if (n === 5) {
+                return {
+                    stepAngle: 10,
+                    stepX: 20,
+                    stepY: 9,
+                    scaleDrop: 0.035,
                 };
             }
             return {
