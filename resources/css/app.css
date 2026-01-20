@@ -39,6 +39,13 @@
 		color: var(--fam-text);
 	}
 
+	/* PWA/iOS: let JS raise the fixed bottom dock above the virtual keyboard.
+	   Default is 0px so it behaves like bottom: 0.
+	*/
+	#mobileBottomDock {
+		bottom: var(--vv-bottom, 0px);
+	}
+
 	a {
 		color: var(--fam-primary);
 	}

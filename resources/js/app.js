@@ -245,6 +245,81 @@ window.famillePush = {
 	hasActive: hasActivePushSubscription,
 };
 
+function isStandalonePwa() {
+	try {
+		if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+		// iOS Safari
+		if (typeof window.navigator === 'object' && window.navigator && window.navigator.standalone) return true;
+	} catch (e) {
+		// ignore
+	}
+	return false;
+}
+
+function isEditableElement(el) {
+	if (!el) return false;
+	const tag = (el.tagName || '').toLowerCase();
+	if (tag === 'textarea') return true;
+	if (tag !== 'input') return false;
+	const type = String(el.getAttribute('type') || 'text').toLowerCase();
+	// Consider only text-like inputs.
+	return !['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'file', 'color', 'image'].includes(type);
+}
+
+function setupPwaKeyboardDockFix() {
+	// PWA only: keep the fixed bottom dock visible above the on-screen keyboard.
+	if (!isStandalonePwa()) return;
+	if (!window.visualViewport) return;
+
+	const root = document.documentElement;
+	let focused = false;
+
+	const computeBottom = () => {
+		const vv = window.visualViewport;
+		if (!vv) return 0;
+		// How much of the layout viewport is obscured at the bottom (keyboard).
+		const raw = window.innerHeight - vv.height - vv.offsetTop;
+		const bottom = Math.max(0, raw);
+		// Ignore tiny jitter; add a small cushion so the composer doesn't get clipped.
+		if (bottom < 8) return 0;
+		return Math.round(bottom + 8);
+	};
+
+	const apply = () => {
+		const px = focused ? computeBottom() : 0;
+		root.style.setProperty('--vv-bottom', `${px}px`);
+	};
+
+	const schedule = () => {
+		requestAnimationFrame(() => requestAnimationFrame(apply));
+	};
+
+	document.addEventListener('focusin', (e) => {
+		if (!isEditableElement(e.target)) return;
+		focused = true;
+		root.dataset.kbd = '1';
+		schedule();
+	});
+
+	document.addEventListener('focusout', (e) => {
+		if (!isEditableElement(e.target)) return;
+		focused = false;
+		try {
+			delete root.dataset.kbd;
+		} catch (e2) {}
+		// Let iOS settle viewport metrics.
+		setTimeout(schedule, 60);
+	});
+
+	window.visualViewport.addEventListener('resize', schedule, { passive: true });
+	window.visualViewport.addEventListener('scroll', schedule, { passive: true });
+	window.addEventListener('orientationchange', () => setTimeout(schedule, 250), { passive: true });
+
+	schedule();
+}
+
+setupPwaKeyboardDockFix();
+
 // PWA (production only): register the service worker.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 	window.addEventListener('load', () => {
