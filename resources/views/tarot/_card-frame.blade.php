@@ -45,6 +45,9 @@
     $defaultPadRight = '--tarot-pad-right: 8%;';
     $defaultPadBottom = '--tarot-pad-bottom: 10%;';
     $defaultPadLeft = '--tarot-pad-left: 8%;';
+    // Inner crop radius should be slightly smaller than the outer wrapper radius.
+    // Using a dedicated var avoids inheriting an overly-large radius after insets.
+    $defaultInnerRadius = '--tarot-inner-radius: 0.85rem;';
     $defaultRotate = ($rotateVar !== '' ? $rotateVar : '--tarot-rotate: 0deg;');
 
     // Order matters: defaults first, then caller overrides.
@@ -57,6 +60,7 @@
         $defaultPadRight,
         $defaultPadBottom,
         $defaultPadLeft,
+        $defaultInnerRadius,
         $defaultRotate,
         $styleVars,
     ])));
@@ -70,7 +74,7 @@
 >
     <div
         class="tarot-card-frame__crop"
-        style="position:absolute; top: var(--tarot-pad-top); right: var(--tarot-pad-right); bottom: var(--tarot-pad-bottom); left: var(--tarot-pad-left); overflow:hidden; border-radius: inherit;"
+        style="position:absolute; top: var(--tarot-pad-top); right: var(--tarot-pad-right); bottom: var(--tarot-pad-bottom); left: var(--tarot-pad-left); overflow:hidden; border-radius: var(--tarot-inner-radius);"
         aria-hidden="true"
     >
         <img
