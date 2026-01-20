@@ -53,6 +53,19 @@
 		background: var(--fam-bg);
 	}
 
+	/* Tarot cards: crop out the external green frame (PNG majors). */
+	.tarot-crop {
+		/* Adjust once for the whole series (typical: 5%–9%). */
+		--tarot-crop: 7%;
+		@apply relative overflow-hidden;
+	}
+
+	.tarot-crop__img {
+		/* Expand the image beyond the wrapper bounds to crop edges. */
+		inset: calc(var(--tarot-crop) * -1);
+		@apply absolute object-cover;
+	}
+
 	.fam-card {
 		background: var(--fam-surface);
 		border: 1px solid var(--fam-border);

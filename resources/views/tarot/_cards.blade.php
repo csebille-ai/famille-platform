@@ -132,13 +132,13 @@
                                 aria-label="Choisir la carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
                             >
                                 <div class="h-4 text-[11px] leading-4 font-medium text-slate-500 whitespace-nowrap" data-role-label>{{ $roleShort }}</div>
-                                <div class="mt-1 h-[96px] w-full overflow-hidden rounded-xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]" data-thumb-box>
+                                <div class="tarot-crop mt-1 h-[96px] w-full overflow-hidden rounded-xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]" data-thumb-box>
                                     @if($img !== '')
                                         <img
                                             src="{{ $img }}"
                                             alt=""
-                                            class="h-full w-full object-contain bg-transparent"
-                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.04)' : 'scale(1.04)' }}; clip-path: inset(0% 2.8%);"
+                                            class="tarot-crop__img bg-transparent"
+                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.02)' : 'scale(1.02)' }};"
                                             loading="lazy"
                                             decoding="async"
                                         />
@@ -176,7 +176,7 @@
                                 data-index="{{ (int) $i }}"
                                 aria-label="Carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
                             >
-                                <div class="relative w-full aspect-[2/3] overflow-hidden rounded-2xl bg-white shadow-sm" style="{{ $masterMaxHeight }}">
+                                <div class="tarot-crop relative w-full aspect-[2/3] overflow-hidden rounded-2xl bg-white shadow-sm" style="{{ $masterMaxHeight }}">
                                     @if($img === '')
                                         <div class="absolute inset-0 flex items-center justify-center">
                                             <div class="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100"></div>
@@ -187,8 +187,8 @@
                                         <img
                                             src="{{ $img }}"
                                             alt=""
-                                            class="absolute inset-0 h-full w-full object-contain bg-transparent"
-                                            style="transform: {{ ((string) $orientation) === 'reversed' || $reversed ? 'rotate(180deg)' : 'none' }};"
+                                            class="tarot-crop__img bg-transparent"
+                                            style="transform: {{ ((string) $orientation) === 'reversed' || $reversed ? 'rotate(180deg) scale(1.01)' : 'scale(1.01)' }};"
                                             loading="eager"
                                             decoding="async"
                                         />

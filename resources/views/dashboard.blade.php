@@ -22,13 +22,14 @@
                         $img = (string) ($c1['image_url'] ?? '');
                         $title = (string) ($c1['title'] ?? '');
                         $text = (string) ($c1['text'] ?? '');
-                        $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
+                        $isTarot = $kind === 'tarot';
+                        $imgClass = $isTarot ? 'w-full h-full object-cover' : 'w-full h-full object-cover';
                     @endphp
 
                     <a href="{{ $href }}" class="block rounded-2xl border border-black/10 bg-white overflow-hidden transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         @if($img !== '')
-                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
-                                <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
+                            <div class="aspect-[16/10] overflow-hidden {{ $isTarot ? 'tarot-crop bg-white' : 'bg-slate-100' }}">
+                                <img src="{{ $img }}" alt="" class="{{ $isTarot ? 'tarot-crop__img bg-transparent' : $imgClass }}" loading="lazy" />
                             </div>
                         @else
                             <div class="aspect-[16/10] bg-[color:var(--fam-surface-alt)] flex items-center justify-center">
@@ -181,13 +182,14 @@
                         $img = (string) ($c1['image_url'] ?? '');
                         $title = (string) ($c1['title'] ?? '');
                         $text = (string) ($c1['text'] ?? '');
-                        $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
+                        $isTarot = $kind === 'tarot';
+                        $imgClass = $isTarot ? 'w-full h-full object-cover' : 'w-full h-full object-cover';
                     @endphp
 
                     <a href="{{ $href }}" class="block rounded-2xl border border-black/10 bg-white overflow-hidden transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         @if($img !== '')
-                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
-                                <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
+                            <div class="aspect-[16/10] overflow-hidden {{ $isTarot ? 'tarot-crop bg-white' : 'bg-slate-100' }}">
+                                <img src="{{ $img }}" alt="" class="{{ $isTarot ? 'tarot-crop__img bg-transparent' : $imgClass }}" loading="lazy" />
                             </div>
                         @else
                             <div class="aspect-[16/10] bg-[color:var(--fam-surface-alt)] flex items-center justify-center">
@@ -216,13 +218,14 @@
                         $img = (string) ($c2['image_url'] ?? '');
                         $title = (string) ($c2['title'] ?? '');
                         $text = (string) ($c2['text'] ?? '');
-                        $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
+                        $isTarot = $kind === 'tarot';
+                        $imgClass = $isTarot ? 'w-full h-full object-cover' : 'w-full h-full object-cover';
                     @endphp
 
                     <a href="{{ $href }}" class="block rounded-2xl border border-black/10 bg-white overflow-hidden transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         @if($img !== '')
-                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
-                                <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
+                            <div class="aspect-[16/10] overflow-hidden {{ $isTarot ? 'tarot-crop bg-white' : 'bg-slate-100' }}">
+                                <img src="{{ $img }}" alt="" class="{{ $isTarot ? 'tarot-crop__img bg-transparent' : $imgClass }}" loading="lazy" />
                             </div>
                         @else
                             <div class="aspect-[16/10] bg-[color:var(--fam-surface-alt)] flex items-center justify-center">
@@ -251,13 +254,14 @@
                         $img = (string) ($c3['image_url'] ?? '');
                         $title = (string) ($c3['title'] ?? '');
                         $text = (string) ($c3['text'] ?? '');
-                        $imgClass = $kind === 'tarot' ? 'w-full h-full object-contain bg-white' : 'w-full h-full object-cover';
+                        $isTarot = $kind === 'tarot';
+                        $imgClass = $isTarot ? 'w-full h-full object-cover' : 'w-full h-full object-cover';
                     @endphp
 
                     <a href="{{ $href }}" class="block rounded-2xl border border-black/10 bg-white overflow-hidden transition-colors hover:bg-[rgba(14,165,160,0.10)] active:bg-[rgba(14,165,160,0.16)]">
                         @if($img !== '')
-                            <div class="aspect-[16/10] bg-slate-100 overflow-hidden">
-                                <img src="{{ $img }}" alt="" class="{{ $imgClass }}" loading="lazy" />
+                            <div class="aspect-[16/10] overflow-hidden {{ $isTarot ? 'tarot-crop bg-white' : 'bg-slate-100' }}">
+                                <img src="{{ $img }}" alt="" class="{{ $isTarot ? 'tarot-crop__img bg-transparent' : $imgClass }}" loading="lazy" />
                             </div>
                         @else
                             <div class="aspect-[16/10] bg-[color:var(--fam-surface-alt)] flex items-center justify-center">
