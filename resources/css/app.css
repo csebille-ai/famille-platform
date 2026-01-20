@@ -72,10 +72,11 @@
 		   Goal: the visible edge starts at the off-white inner frame (no green).
 		   Start here, then adjust in debug mode (?tarot_debug=1).
 		*/
-		--tarot-aspect: 0.72;
-		--tarot-crop-top: 22%;
+		/* Most source PNGs are ~768×1156 => ~0.665; matching it avoids cover-cutting content. */
+		--tarot-aspect: 0.665;
+		--tarot-crop-top: 12%;
 		--tarot-crop-right: 10%;
-		--tarot-crop-bottom: 13%;
+		--tarot-crop-bottom: 14%;
 		--tarot-crop-left: 10%;
 		aspect-ratio: var(--tarot-aspect);
 		@apply relative overflow-hidden;
@@ -86,7 +87,7 @@
 		right: calc(var(--tarot-crop-right) * -1);
 		bottom: calc(var(--tarot-crop-bottom) * -1);
 		left: calc(var(--tarot-crop-left) * -1);
-		@apply absolute h-full w-full object-contain;
+		@apply absolute h-full w-full object-cover;
 	}
 
 	.tarot-card-frame--debug {

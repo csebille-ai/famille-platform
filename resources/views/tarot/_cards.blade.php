@@ -36,10 +36,10 @@
 
         // Defaults match CSS; query params can override while tuning.
         $tarotStyleVars = implode(' ', [
-            '--tarot-aspect: ' . $asAspect('tarot_aspect', 0.72) . ';',
-            '--tarot-crop-top: ' . $asPct('tarot_crop_top', 22) . ';',
+            '--tarot-aspect: ' . $asAspect('tarot_aspect', 0.665) . ';',
+            '--tarot-crop-top: ' . $asPct('tarot_crop_top', 12) . ';',
             '--tarot-crop-right: ' . $asPct('tarot_crop_right', 10) . ';',
-            '--tarot-crop-bottom: ' . $asPct('tarot_crop_bottom', 13) . ';',
+            '--tarot-crop-bottom: ' . $asPct('tarot_crop_bottom', 14) . ';',
             '--tarot-crop-left: ' . $asPct('tarot_crop_left', 10) . ';',
         ]);
     }
@@ -202,7 +202,7 @@
                             <button
                                 type="button"
                                 class="relative shrink-0 focus-visible:outline-none {{ $tarotDebug ? 'md:w-[540px] md:max-w-none' : '' }}"
-                                style="scroll-snap-align: center; width: min(72vw, 420px, calc(55vh * 0.72));"
+                                style="scroll-snap-align: center; width: min(72vw, 420px, calc(55vh * 0.665));"
                                 data-hero-slide
                                 data-index="{{ (int) $i }}"
                                 aria-label="Carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
