@@ -13,18 +13,10 @@
     $supportsRituel = in_array($N, [3, 5], true);
 
     // Debug mode for tuning tarot crop/aspect quickly.
-    // Usage: /tarot?tarot_debug=1 (optional overrides: tarot_crop_top/right/bottom/left + tarot_aspect)
+    // Usage: /tarot?tarot_debug=1 (optional overrides: tarot_aspect, tarot_zoom, tarot_pos_x, tarot_pos_y)
     $tarotDebug = request()->boolean('tarot_debug');
     $tarotStyleVars = '';
     if ($tarotDebug) {
-        $asPct = function (string $key, float $fallback): string {
-            $raw = request()->query($key);
-            if ($raw === null || $raw === '') return sprintf('%.2f%%', $fallback);
-            if (!is_numeric($raw)) return sprintf('%.2f%%', $fallback);
-            $v = (float) $raw;
-            $v = max(0.0, min(25.0, $v));
-            return rtrim(rtrim(sprintf('%.2f', $v), '0'), '.') . '%';
-        };
         $asAspect = function (string $key, float $fallback): string {
             $raw = request()->query($key);
             if ($raw === null || $raw === '') return rtrim(rtrim(sprintf('%.4f', $fallback), '0'), '.');
@@ -34,14 +26,29 @@
             return rtrim(rtrim(sprintf('%.4f', $v), '0'), '.');
         };
 
-        // Defaults match CSS; query params can override while tuning.
-        $tarotStyleVars = implode(' ', [
-            '--tarot-aspect: ' . $asAspect('tarot_aspect', 0.665) . ';',
-            '--tarot-crop-top: ' . $asPct('tarot_crop_top', 12) . ';',
-            '--tarot-crop-right: ' . $asPct('tarot_crop_right', 10) . ';',
-            '--tarot-crop-bottom: ' . $asPct('tarot_crop_bottom', 14) . ';',
-            '--tarot-crop-left: ' . $asPct('tarot_crop_left', 10) . ';',
-        ]);
+        $asZoom = function (string $key, float $min, float $max): ?string {
+            $raw = request()->query($key);
+            if ($raw === null || $raw === '') return null;
+            if (!is_numeric($raw)) return null;
+            $v = (float) $raw;
+            $v = max($min, min($max, $v));
+            return rtrim(rtrim(sprintf('%.4f', $v), '0'), '.');
+        };
+
+        $asPosPct = function (string $key): ?string {
+            $raw = request()->query($key);
+            if ($raw === null || $raw === '') return null;
+            if (!is_numeric($raw)) return null;
+            $v = (float) $raw;
+            $v = max(0.0, min(100.0, $v));
+            return rtrim(rtrim(sprintf('%.2f', $v), '0'), '.') . '%';
+        };
+
+        $vars = ['--tarot-aspect: ' . $asAspect('tarot_aspect', 0.665) . ';'];
+        if (($z = $asZoom('tarot_zoom', 1.0, 1.35)) !== null) $vars[] = '--tarot-zoom: ' . $z . ';';
+        if (($px = $asPosPct('tarot_pos_x')) !== null) $vars[] = '--tarot-pos-x: ' . $px . ';';
+        if (($py = $asPosPct('tarot_pos_y')) !== null) $vars[] = '--tarot-pos-y: ' . $py . ';';
+        $tarotStyleVars = implode(' ', $vars);
     }
 
     $normalizeKeywords = function ($raw): array {
@@ -166,11 +173,12 @@
                                     @include('tarot._card-frame', [
                                         'src' => $img,
                                         'alt' => '',
+                                        'variant' => 'thumb',
                                         'class' => 'mt-1 h-[96px] w-full rounded-xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]',
                                         'imgClass' => 'bg-transparent',
                                         'loading' => 'lazy',
                                         'decoding' => 'async',
-                                        'imgStyle' => 'transform: ' . ($reversed ? 'rotate(180deg)' : 'none') . ';',
+                                        'rotate' => ($reversed ? 180 : 0),
                                         'styleVars' => $tarotStyleVars,
                                         'debug' => $tarotDebug,
                                     ])
@@ -218,11 +226,12 @@
                                         @include('tarot._card-frame', [
                                             'src' => $img,
                                             'alt' => '',
+                                            'variant' => 'hero',
                                             'class' => 'w-full rounded-2xl bg-white',
                                             'imgClass' => 'bg-transparent',
                                             'loading' => 'eager',
                                             'decoding' => 'async',
-                                            'imgStyle' => 'transform: ' . ((((string) $orientation) === 'reversed' || $reversed) ? 'rotate(180deg)' : 'none') . ';',
+                                            'rotate' => ((((string) $orientation) === 'reversed' || $reversed) ? 180 : 0),
                                             'styleVars' => $tarotStyleVars,
                                             'debug' => $tarotDebug,
                                         ])
