@@ -15,7 +15,7 @@
     RewriteEngine On
 
     # Allow /tarot to be a Laravel route even if a physical /tarot/ directory
-    # exists to host the card images. This keeps /tarot/*.webp served as files.
+    # exists to host the card images. This keeps /tarot/*.png served as files.
     RewriteRule ^tarot/?$ index.php [L]
 
     # Handle Authorization Header

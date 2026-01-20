@@ -646,8 +646,11 @@ Route::get('/home', function () {
             if (is_array($card) && !empty($card['name'])) {
                 $tarotImageUrl = null;
                 if (!empty($card['file'])) {
-                    $base = rtrim((string) config('tarot.assets_base_url', 'https://opanoma.fr/tarot'), '/');
-                    $tarotImageUrl = $base . '/' . ltrim((string) $card['file'], '/');
+                    $file = (string) $card['file'];
+                    if ($file !== '' && mb_strtolower((string) pathinfo($file, PATHINFO_EXTENSION)) === 'webp') {
+                        $file = preg_replace('/\.[Ww][Ee][Bb][Pp]$/', '.png', $file) ?? $file;
+                    }
+                    $tarotImageUrl = $file !== '' ? asset('tarot/' . ltrim($file, '/')) : null;
                 }
 
                 $messages = [

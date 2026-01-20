@@ -15,6 +15,8 @@ param(
     [switch]$MatchByNumber
 )
 
+# PSScriptAnalyzer -IgnoreRuleName PSAvoidAssignmentToAutomaticVariable
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -38,17 +40,17 @@ if (-not (Test-Path -LiteralPath $TargetDir)) {
 }
 
 $content = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8
-$matches = [regex]::Matches($content, "'file'\\s*=>\\s*'([^']+\\.webp)'")
-
-if ($matches.Count -eq 0) {
-    throw "No card files found in config/tarot.php (expected 'file' => 'xx.webp')"
-}
+$rx = [regex]::new("'file'\\s*=>\\s*'([^']+\\.png)'")
 
 $targetNames = @()
-foreach ($m in $matches) {
-    $webp = $m.Groups[1].Value
-    $png = $webp -replace '\\.webp$', '.png'
-    $targetNames += $png
+$m = $rx.Match($content)
+while ($m.Success) {
+    $targetNames += $m.Groups[1].Value
+    $m = $m.NextMatch()
+}
+
+if ($targetNames.Count -eq 0) {
+    throw "No card files found in config/tarot.php (expected 'file' => 'xx.png')"
 }
 
 $sourceFiles = Get-ChildItem -LiteralPath $SourceDir -Filter '*.png' -File | Sort-Object Name

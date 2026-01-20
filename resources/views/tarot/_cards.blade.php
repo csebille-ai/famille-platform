@@ -83,12 +83,15 @@
                         @foreach($cards as $i => $c)
                             @php
                                 $file = (string) ($c['file'] ?? '');
+                                if ($file !== '' && mb_strtolower((string) pathinfo($file, PATHINFO_EXTENSION)) === 'webp') {
+                                    $file = preg_replace('/\.[Ww][Ee][Bb][Pp]$/', '.png', $file) ?? $file;
+                                }
                                 $name = (string) ($c['name'] ?? '');
                                 $slug = (string) ($c['slug'] ?? '');
                                 $n = isset($c['n']) ? (int) $c['n'] : null;
                                 $reversed = !empty($c['reversed']);
                                 $orientation = (string) ($c['orientation'] ?? ($reversed ? 'reversed' : 'upright'));
-                                $img = $file !== '' ? ('https://opanoma.fr/tarot/' . ltrim($file, '/')) : '';
+                                $img = $file !== '' ? asset('tarot/' . ltrim($file, '/')) : '';
 
                                 $deckCard = null;
                                 $fk = $fileKey($file);
@@ -154,12 +157,15 @@
                         @foreach($cards as $i => $c)
                             @php
                                 $file = (string) ($c['file'] ?? '');
+                                if ($file !== '' && mb_strtolower((string) pathinfo($file, PATHINFO_EXTENSION)) === 'webp') {
+                                    $file = preg_replace('/\.[Ww][Ee][Bb][Pp]$/', '.png', $file) ?? $file;
+                                }
                                 $name = (string) ($c['name'] ?? '');
                                 $slug = (string) ($c['slug'] ?? '');
                                 $n = isset($c['n']) ? (int) $c['n'] : null;
                                 $reversed = !empty($c['reversed']);
                                 $orientation = (string) ($c['orientation'] ?? ($reversed ? 'reversed' : 'upright'));
-                                $img = $file !== '' ? ('https://opanoma.fr/tarot/' . ltrim($file, '/')) : '';
+                                $img = $file !== '' ? asset('tarot/' . ltrim($file, '/')) : '';
                                 $roleFull = $roles[$i] ?? '';
                             @endphp
                             <button
