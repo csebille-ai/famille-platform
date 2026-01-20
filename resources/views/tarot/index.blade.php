@@ -83,17 +83,33 @@
 
         @if (is_array($draft ?? null))
             <div id="tarot-result" tabindex="-1" class="bg-white rounded-2xl shadow-sm p-4 sm:p-6 space-y-3" style="scroll-margin-top: 5.5rem;" data-tarot-result>
+                @php
+                    $spread = (string) ($draft['spread'] ?? 'three');
+                    $isFive = $spread === 'five';
+                    $positions = $isFive
+                        ? ['Passé', 'Présent', 'Défi', 'Conseil', 'Tendance']
+                        : ['Passé', 'Présent', 'Tendance'];
+
+                    $cardsForMeta = (array) ($draft['cards'] ?? []);
+                    $totalCards = count($cardsForMeta);
+                    $reversedCount = 0;
+                    foreach ($cardsForMeta as $cc) {
+                        if (!is_array($cc)) continue;
+                        $o = strtolower(trim((string) ($cc['orientation'] ?? '')));
+                        $isRev = !empty($cc['reversed']) || ($o === 'reversed');
+                        if ($isRev) $reversedCount++;
+                    }
+                    $drawLabel = $isFive ? '5 cartes' : '3 cartes';
+                    $meta = 'Tirage: ' . $drawLabel . ' • ' . implode(' • ', $positions);
+                    if ($totalCards > 0) {
+                        $meta .= ' • Renversées: ' . $reversedCount . '/' . $totalCards;
+                    }
+                @endphp
+
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <div class="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
-                            <span>Ta question</span>
-                            @php
-                                $spread = (string) ($draft['spread'] ?? 'three');
-                                $spreadChip = $spread === 'five' ? '5 cartes' : '3 cartes';
-                            @endphp
-                            <span class="fam-chip text-xs">{{ $spreadChip }}</span>
-                        </div>
-                        <div class="mt-1 text-[15px] sm:text-base font-semibold text-slate-900 leading-snug line-clamp-2">{{ (string) ($draft['question'] ?? '') }}</div>
+                        <h2 class="text-[15px] sm:text-lg font-semibold text-slate-900 leading-snug line-clamp-2">{{ (string) ($draft['question'] ?? '') }}</h2>
+                        <div class="mt-1 text-xs text-slate-500 leading-snug">{{ $meta }}</div>
                     </div>
                     <form method="POST" action="{{ route('tarot.reset') }}" class="shrink-0">
                         @csrf
