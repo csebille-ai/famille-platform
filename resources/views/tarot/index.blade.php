@@ -164,7 +164,7 @@
                         <button type="button" class="h-8 px-3 rounded-2xl text-[13px] font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="reading" role="tab">Lecture</button>
                     </div>
 
-                    <div data-tarot-panel="cards" class="pb-[calc(5.75rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))]">
+                    <div data-tarot-panel="cards" class="pb-[calc(1.25rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))]">
                         @include('tarot._cards', [
                             'cards' => (array) ($draft['cards'] ?? []),
                             'spread' => $spread,
@@ -221,7 +221,7 @@
 
                     <div class="sr-only" id="tarot-tts-text">{{ $ttsText }}</div>
 
-                    <div data-tarot-panel="reading" class="hidden pb-[calc(5.75rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))]">
+                    <div data-tarot-panel="reading" class="hidden pb-[calc(1.25rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))]">
                         <div class="flex items-center justify-end gap-3">
                             <div class="flex items-center gap-3">
                                 <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
@@ -239,30 +239,6 @@
                         {!! \Illuminate\Support\Str::markdown($interpretationText, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
                     </div>
                 </div>
-
-                    <div
-                        class="sticky z-[60] rounded-2xl border border-[color:var(--fam-border-soft)] bg-white/95 supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-xl shadow-[0_-16px_40px_rgba(15,23,42,0.18)]"
-                        style="bottom: calc(var(--mobile-bottom-nav-h,4rem) + env(safe-area-inset-bottom) + 0.75rem);"
-                        data-tarot-sticky-bar
-                        aria-label="Actions tarot"
-                    >
-                        <div class="px-4 py-3 flex items-center gap-3">
-                            <div class="min-w-0 flex-1">
-                                <div class="text-[11px] font-semibold text-slate-500 whitespace-nowrap" data-card-reminder></div>
-                                <div class="mt-0.5 flex items-center gap-2 min-w-0">
-                                    <div class="text-sm font-semibold text-slate-900 truncate" data-active-name></div>
-                                    <span class="hidden fam-chip text-xs" data-active-reversed>Renversée</span>
-                                </div>
-                                <div class="mt-0.5 text-xs text-slate-600 truncate" data-active-kws-inline></div>
-                            </div>
-                            <button type="button" class="hidden text-sm font-semibold text-slate-700 hover:text-slate-900" data-tarot-go-cards>
-                                Retour aux cartes
-                            </button>
-                            <button type="button" class="inline-flex items-center justify-center rounded-xl bg-[color:var(--fam-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[color:var(--fam-primary-hover)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.28)]" data-tarot-go-reading>
-                                Lire l’interprétation
-                            </button>
-                        </div>
-                    </div>
 
                     <form method="POST" action="{{ route('tarot.save') }}" class="flex items-center gap-3">
                         @csrf
