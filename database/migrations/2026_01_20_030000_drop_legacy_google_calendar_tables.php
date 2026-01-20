@@ -7,6 +7,12 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
+        Schema::dropIfExists('event_external_links');
+        Schema::dropIfExists('google_calendar_accounts');
+    }
+
+    public function down(): void
+    {
         Schema::create('google_calendar_accounts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -25,10 +31,20 @@ return new class extends Migration {
 
             $table->unique('user_id');
         });
-    }
 
-    public function down(): void
-    {
-        Schema::dropIfExists('google_calendar_accounts');
+        Schema::create('event_external_links', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('event_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+
+            $table->string('provider', 32);
+            $table->string('external_event_id', 255);
+            $table->string('external_calendar_id', 255)->nullable();
+
+            $table->timestamps();
+
+            $table->unique(['event_id', 'user_id', 'provider']);
+            $table->index(['user_id', 'provider']);
+        });
     }
 };

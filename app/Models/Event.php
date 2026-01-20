@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Gate;
 use Carbon\CarbonImmutable;
 
@@ -44,11 +43,6 @@ class Event extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
-    }
-
-    public function externalLinks(): HasMany
-    {
-        return $this->hasMany(EventExternalLink::class);
     }
 
     public function isPrivate(): bool
