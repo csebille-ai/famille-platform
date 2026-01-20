@@ -24,7 +24,13 @@ class GoogleCalendarOauthController
         $request->session()->put('google_calendar_oauth_state', $state);
         $request->session()->put('google_calendar_oauth_state_ts', time());
 
-        $url = $client->buildAuthorizeUrl($user, $state);
+        try {
+            $url = $client->buildAuthorizeUrl($user, $state);
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->route('profile.edit')->with('status', 'google-calendar-misconfigured');
+        }
+
         return redirect()->away($url);
     }
 

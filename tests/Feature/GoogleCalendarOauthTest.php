@@ -17,13 +17,21 @@ class GoogleCalendarOauthTest extends TestCase
 
     public function test_oauth_start_redirects_to_google_and_sets_state(): void
     {
+        config()->set('services.google_calendar.redirect', '');
+
         $user = User::factory()->create();
 
         $resp = $this->actingAs($user)->get('/oauth/google/calendar/start');
         $resp->assertRedirect();
 
         $this->assertNotNull(session('google_calendar_oauth_state'));
-        $this->assertStringContainsString('accounts.google.com', $resp->headers->get('Location') ?? '');
+        $location = (string) ($resp->headers->get('Location') ?? '');
+        $this->assertStringContainsString('accounts.google.com', $location);
+
+        $query = parse_url($location, PHP_URL_QUERY);
+        parse_str((string) $query, $params);
+        $this->assertArrayHasKey('redirect_uri', $params);
+        $this->assertNotSame('', (string) $params['redirect_uri']);
     }
 
     public function test_oauth_callback_exchanges_code_and_saves_tokens(): void

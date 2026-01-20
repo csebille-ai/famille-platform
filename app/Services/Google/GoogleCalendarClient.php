@@ -17,10 +17,26 @@ class GoogleCalendarClient
     private const API_BASE = 'https://www.googleapis.com/calendar/v3';
     private const SCOPE = 'https://www.googleapis.com/auth/calendar';
 
+    private function resolveRedirectUri(): string
+    {
+        $redirectUri = trim((string) config('services.google_calendar.redirect'));
+        if ($redirectUri !== '') {
+            return $redirectUri;
+        }
+
+        // Fallback to the app route so OAuth doesn't break when env is missing.
+        $fallback = trim((string) route('oauth.google.calendar.callback'));
+        if ($fallback === '') {
+            throw new \RuntimeException('Google OAuth redirect URI is not configured. Set GOOGLE_REDIRECT_URI or APP_URL.');
+        }
+
+        return $fallback;
+    }
+
     public function buildAuthorizeUrl(User $user, string $state): string
     {
         $clientId = (string) config('services.google_calendar.client_id');
-        $redirectUri = (string) config('services.google_calendar.redirect');
+        $redirectUri = $this->resolveRedirectUri();
 
         $params = [
             'client_id' => $clientId,
@@ -44,7 +60,7 @@ class GoogleCalendarClient
     {
         $clientId = (string) config('services.google_calendar.client_id');
         $clientSecret = (string) config('services.google_calendar.client_secret');
-        $redirectUri = (string) config('services.google_calendar.redirect');
+        $redirectUri = $this->resolveRedirectUri();
 
         $resp = Http::asForm()->timeout(15)->post(self::TOKEN_URL, [
             'code' => $code,
