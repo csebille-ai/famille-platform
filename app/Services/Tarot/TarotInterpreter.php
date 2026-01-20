@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 class TarotInterpreter
 {
     /**
-     * @param array<int, array{name:string, keywords:string}> $cards
+     * @param array<int, array{name:string, keywords?:string, n?:int, slug?:string, reversed?:bool, orientation?:string}> $cards
      */
     public function interpret(string $question, string $spread, array $cards): string
     {
@@ -17,7 +17,7 @@ class TarotInterpreter
     }
 
     /**
-     * @param array<int, array{name:string, keywords:string, reversed?:bool, orientation?:string}> $cards
+     * @param array<int, array{name:string, keywords?:string, n?:int, slug?:string, reversed?:bool, orientation?:string}> $cards
      * @return array{interpretation:string, spoken_text:string}
      */
     public function interpretBundle(string $question, string $spread, array $cards): array
@@ -31,9 +31,39 @@ class TarotInterpreter
         $model = (string) config('services.openai.model', 'gpt-4o-mini');
         $maxChars = (int) config('tarot.max_chars', 1200);
 
+        $normalizeOrientation = function (array $c): string {
+            $raw = strtolower(trim((string) ($c['orientation'] ?? '')));
+            if (in_array($raw, ['upright', 'reversed'], true)) {
+                return $raw;
+            }
+            $rev = (bool) ($c['reversed'] ?? false);
+            return $rev ? 'reversed' : 'upright';
+        };
+        $orientationLabel = fn (string $o): string => $o === 'reversed' ? 'Renversée' : 'Droite';
+
         $cardsText = collect($cards)
-            ->map(fn ($c) => '- ' . ($c['name'] ?? '') . ' (' . ($c['keywords'] ?? '') . ')')
-            ->filter(fn ($line) => trim($line) !== '-')
+            ->map(function ($c) use ($normalizeOrientation, $orientationLabel): ?string {
+                if (!is_array($c)) return null;
+                $name = trim((string) ($c['name'] ?? ''));
+                if ($name === '') return null;
+
+                $n = isset($c['n']) && (is_int($c['n']) || is_numeric($c['n'])) ? (int) $c['n'] : null;
+                $slug = trim((string) ($c['slug'] ?? ''));
+                $keywords = trim((string) ($c['keywords'] ?? ''));
+
+                $meta = [];
+                if ($n !== null) $meta[] = 'n°' . $n;
+                if ($slug !== '') $meta[] = $slug;
+                $metaText = $meta ? ' (' . implode(' / ', $meta) . ')' : '';
+
+                $o = $normalizeOrientation($c);
+                $oText = $orientationLabel($o);
+
+                $kwText = $keywords !== '' ? ' — mots-clés: ' . $keywords : '';
+
+                return '- ' . $name . $metaText . ' — orientation: ' . $oText . $kwText;
+            })
+            ->filter(fn ($line) => is_string($line) && trim($line) !== '')
             ->implode("\n");
 
         $system = <<<SYS
@@ -55,7 +85,9 @@ class TarotInterpreter
 
     INTERPRÉTATION DES CARTES
     - Chaque carte: 1 idée principale + 1 conséquence concrète.
-    - Carte renversée: blocage, excès, retard, angle mort ou "mode bug". Explique en 1 phrase claire.
+    - IMPORTANT: chaque carte a une orientation (Droite ou Renversée).
+    - Si orientation = Renversée: interprète l'arcane renversé (blocages, excès, inversion, ombre) sans contredire le sens global.
+    - La carte renversée n'annule pas tout: elle nuance, ralentit, ou indique un angle mort (1 phrase claire).
 
     FORMAT EXACT (Markdown)
     - Commence par un CHAPEAU (1 phrase drôle) SANS TITRE, sur un paragraphe.
