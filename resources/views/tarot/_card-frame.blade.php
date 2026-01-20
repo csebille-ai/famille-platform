@@ -42,9 +42,9 @@
     $defaultPosX = '--tarot-pos-x: 50%;';
     $defaultPosY = '--tarot-pos-y: 50%;';
     $defaultPadTop = '--tarot-pad-top: 6%;';
-    $defaultPadRight = '--tarot-pad-right: 6%;';
+    $defaultPadRight = '--tarot-pad-right: 8%;';
     $defaultPadBottom = '--tarot-pad-bottom: 10%;';
-    $defaultPadLeft = '--tarot-pad-left: 6%;';
+    $defaultPadLeft = '--tarot-pad-left: 8%;';
     $defaultRotate = ($rotateVar !== '' ? $rotateVar : '--tarot-rotate: 0deg;');
 
     // Order matters: defaults first, then caller overrides.

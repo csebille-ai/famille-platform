@@ -77,9 +77,9 @@
 		--tarot-pos-x: 50%;
 		--tarot-pos-y: 50%;
 		--tarot-pad-top: 6%;
-		--tarot-pad-right: 6%;
+		--tarot-pad-right: 8%;
 		--tarot-pad-bottom: 10%;
-		--tarot-pad-left: 6%;
+		--tarot-pad-left: 8%;
 		--tarot-rotate: 0deg;
 		aspect-ratio: var(--tarot-aspect);
 		@apply relative block w-full overflow-hidden;

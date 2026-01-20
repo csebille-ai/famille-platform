@@ -38,9 +38,9 @@
         $vars = [
             '--tarot-aspect: ' . $asAspect('tarot_aspect', 0.665) . ';',
             '--tarot-pad-top: ' . $asPct('tarot_pad_top', 6) . ';',
-            '--tarot-pad-right: ' . $asPct('tarot_pad_right', 6) . ';',
+            '--tarot-pad-right: ' . $asPct('tarot_pad_right', 8) . ';',
             '--tarot-pad-bottom: ' . $asPct('tarot_pad_bottom', 10) . ';',
-            '--tarot-pad-left: ' . $asPct('tarot_pad_left', 6) . ';',
+            '--tarot-pad-left: ' . $asPct('tarot_pad_left', 8) . ';',
         ];
 
         $fit = strtolower((string) request()->query('tarot_fit', ''));
