@@ -41,6 +41,11 @@
                 <div class="text-sm font-semibold text-gray-700">Non connecté</div>
                 <a href="{{ route('oauth.google.calendar.start') }}" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">Connecter Google Agenda</a>
             </div>
+
+            <p class="mt-2 text-xs text-gray-600">
+                Si Google affiche <span class="font-semibold">Erreur 403: access_denied</span> (application en test / non validée), ajoute ton compte dans
+                <span class="font-semibold">Google Cloud Console → OAuth consent screen → Test users</span>, ou passe l’application en production.
+            </p>
         @endif
 
         @if (session('status') === 'google-calendar-connected')
