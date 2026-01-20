@@ -36,11 +36,11 @@
 
         // Defaults match CSS; query params can override while tuning.
         $tarotStyleVars = implode(' ', [
-            '--tarot-aspect: ' . $asAspect('tarot_aspect', 0.69) . ';',
-            '--tarot-crop-top: ' . $asPct('tarot_crop_top', 12) . ';',
-            '--tarot-crop-right: ' . $asPct('tarot_crop_right', 8) . ';',
-            '--tarot-crop-bottom: ' . $asPct('tarot_crop_bottom', 7) . ';',
-            '--tarot-crop-left: ' . $asPct('tarot_crop_left', 8) . ';',
+            '--tarot-aspect: ' . $asAspect('tarot_aspect', 0.72) . ';',
+            '--tarot-crop-top: ' . $asPct('tarot_crop_top', 22) . ';',
+            '--tarot-crop-right: ' . $asPct('tarot_crop_right', 10) . ';',
+            '--tarot-crop-bottom: ' . $asPct('tarot_crop_bottom', 13) . ';',
+            '--tarot-crop-left: ' . $asPct('tarot_crop_left', 10) . ';',
         ]);
     }
 
@@ -59,8 +59,6 @@
 
 @if($N > 0)
     @php
-        $masterMaxHeight = 'max-height: 55vh;';
-
         $roles = $N === 3
             ? ['Passé', 'Présent', 'Tendance']
             : ['Passé', 'Présent', 'Défi', 'Conseil', 'Issue probable'];
@@ -203,13 +201,13 @@
                             @endphp
                             <button
                                 type="button"
-                                class="relative shrink-0 w-[clamp(240px,72vw,420px)] focus-visible:outline-none {{ $tarotDebug ? 'md:w-[540px] md:max-w-none' : '' }}"
-                                style="scroll-snap-align: center;"
+                                class="relative shrink-0 focus-visible:outline-none {{ $tarotDebug ? 'md:w-[540px] md:max-w-none' : '' }}"
+                                style="scroll-snap-align: center; width: min(72vw, 420px, calc(55vh * 0.72));"
                                 data-hero-slide
                                 data-index="{{ (int) $i }}"
                                 aria-label="Carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
                             >
-                                <div class="relative w-full overflow-hidden rounded-2xl bg-white shadow-sm" style="{{ $masterMaxHeight }}">
+                                <div class="relative w-full overflow-hidden rounded-2xl bg-white shadow-sm">
                                     @if($img === '')
                                         <div class="absolute inset-0 flex items-center justify-center">
                                             <div class="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100"></div>

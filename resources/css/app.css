@@ -72,11 +72,11 @@
 		   Goal: the visible edge starts at the off-white inner frame (no green).
 		   Start here, then adjust in debug mode (?tarot_debug=1).
 		*/
-		--tarot-aspect: 0.69;
-		--tarot-crop-top: 12%;
-		--tarot-crop-right: 8%;
-		--tarot-crop-bottom: 7%;
-		--tarot-crop-left: 8%;
+		--tarot-aspect: 0.72;
+		--tarot-crop-top: 22%;
+		--tarot-crop-right: 10%;
+		--tarot-crop-bottom: 13%;
+		--tarot-crop-left: 10%;
 		aspect-ratio: var(--tarot-aspect);
 		@apply relative overflow-hidden;
 	}
