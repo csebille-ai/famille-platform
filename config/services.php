@@ -86,6 +86,8 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'default_tz' => env('GOOGLE_DEFAULT_TZ', env('APP_TIMEZONE', 'UTC')),
+        'family_calendar_summary' => env('GOOGLE_FAMILY_CALENDAR_SUMMARY', 'Famille — Calendrier'),
     ],
 
 ];

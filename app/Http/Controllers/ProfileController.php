@@ -19,6 +19,7 @@ class ProfileController extends Controller
         return view('profile.edit', [
             'user' => $request->user(),
             'googleConnected' => $request->user()?->hasGoogleCalendarConnected() ?? false,
+            'googleSyncEnabled' => $request->user()?->hasGoogleCalendarSyncEnabled() ?? false,
         ]);
     }
 

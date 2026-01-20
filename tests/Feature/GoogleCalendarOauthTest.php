@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\GoogleCalendarAccount;
+use App\Jobs\InitialGoogleCalendarSync;
+use App\Models\GoogleAccount;
+use App\Models\GoogleCalendar;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -25,13 +28,18 @@ class GoogleCalendarOauthTest extends TestCase
 
     public function test_oauth_callback_exchanges_code_and_saves_tokens(): void
     {
+        Bus::fake();
+
         Http::fake([
             'https://oauth2.googleapis.com/token' => Http::response([
                 'access_token' => 'access-123',
                 'refresh_token' => 'refresh-456',
                 'expires_in' => 3600,
-                'scope' => 'https://www.googleapis.com/auth/calendar.events',
+                'scope' => 'https://www.googleapis.com/auth/calendar',
                 'token_type' => 'Bearer',
+            ], 200),
+            'https://www.googleapis.com/calendar/v3/calendars' => Http::response([
+                'id' => 'cal_123',
             ], 200),
         ]);
 
@@ -45,8 +53,15 @@ class GoogleCalendarOauthTest extends TestCase
         $resp->assertRedirect(route('profile.edit'));
 
         $user->refresh();
-        $acc = GoogleCalendarAccount::query()->where('user_id', $user->id)->first();
+
+        $acc = GoogleAccount::query()->where('user_id', $user->id)->first();
         $this->assertNotNull($acc);
         $this->assertTrue($acc->isConnected());
+
+        $cal = GoogleCalendar::query()->where('user_id', $user->id)->first();
+        $this->assertNotNull($cal);
+        $this->assertSame('cal_123', $cal->google_calendar_id);
+
+        Bus::assertDispatched(InitialGoogleCalendarSync::class);
     }
 }

@@ -20,7 +20,7 @@
 
 		$hasFamilyCalendar = (bool) ($hasFamilyCalendar ?? false);
         $googleConnected = (bool) ($googleConnected ?? false);
-        $googleAdded = (bool) ($googleAdded ?? false);
+        $googleSyncEnabled = (bool) ($googleSyncEnabled ?? false);
     @endphp
 
     <div class="max-w-2xl mx-auto px-4 py-4 space-y-3">
@@ -39,7 +39,7 @@
             </div>
             <div class="shrink-0 flex items-center gap-2">
                 <a href="{{ route('events.index') }}" class="inline-flex items-center h-10 px-3 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]">Liste</a>
-                @if(!$hasFamilyCalendar)
+                @if(!$hasFamilyCalendar && !$googleSyncEnabled)
                     <button
                         type="button"
                         id="eventAddToCalendarBtn"
@@ -48,7 +48,13 @@
                         Ajouter à mon agenda
                     </button>
                 @else
-                    <div class="hidden sm:block text-xs font-semibold text-[color:var(--fam-muted)]">Déjà inclus via Calendrier Famille</div>
+                    <div class="hidden sm:block text-xs font-semibold text-[color:var(--fam-muted)]">
+                        @if($hasFamilyCalendar)
+                            Déjà inclus via Calendrier Famille
+                        @elseif($googleSyncEnabled)
+                            Synchronisé via Google
+                        @endif
+                    </div>
                 @endif
                 @can('update', $event)
                     <a href="{{ route('events.edit', $event) }}" class="inline-flex items-center h-10 px-3 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Modifier</a>
@@ -61,14 +67,16 @@
                 <div class="min-w-0">
                     <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Google Agenda</div>
                     <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">
-                        Ajout direct dans ton agenda Google.
+                        Synchronisation automatique dans ton calendrier dédié.
                     </div>
                 </div>
                 <div class="shrink-0">
-                    @if($googleConnected)
-                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Connecté</span>
-                    @else
+                    @if(!$googleConnected)
                         <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non connecté</span>
+                    @elseif($googleSyncEnabled)
+                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Synchro activée</span>
+                    @else
+                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-amber-50 text-amber-900 text-xs font-extrabold border border-amber-200">Synchro désactivée</span>
                     @endif
                 </div>
             </div>
@@ -77,31 +85,12 @@
                 @if(!$googleConnected)
                     <a href="{{ route('oauth.google.calendar.start') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Connecter Google Agenda</a>
                 @else
-                    @if($googleAdded)
-                        <span class="inline-flex items-center h-10 px-4 rounded-2xl bg-emerald-50 text-emerald-800 text-sm font-extrabold border border-emerald-200">Ajouté</span>
-                        <form method="POST" action="{{ route('events.google_calendar.remove', $event) }}">
-                            @csrf
-                            <button type="submit" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm font-extrabold text-rose-800 hover:bg-rose-100">Retirer</button>
-                        </form>
-                    @else
-                        <form method="POST" action="{{ route('events.google_calendar.add', $event) }}">
-                            @csrf
-                            <button type="submit" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Ajouter à Google Agenda</button>
-                        </form>
-                    @endif
+                    <a href="{{ route('profile.edit') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-white border border-[color:var(--fam-border)] text-[color:var(--fam-text)] text-sm font-extrabold hover:bg-[color:var(--fam-tint)]">Gérer la synchro</a>
                 @endif
             </div>
-
-            @if (session('status') === 'google-calendar-event-added')
-                <div class="mt-2 text-xs font-semibold text-emerald-700">Ajouté à Google Agenda.</div>
-            @elseif (session('status') === 'google-calendar-event-removed')
-                <div class="mt-2 text-xs font-semibold text-slate-700">Retiré de Google Agenda.</div>
-            @elseif (session('status') === 'google-calendar-event-error')
-                <div class="mt-2 text-xs font-semibold text-rose-700">Action Google Agenda échouée. Si besoin, reconnecte ton compte.</div>
-            @endif
         </div>
 
-        @if(!$hasFamilyCalendar)
+        @if(!$hasFamilyCalendar && !$googleSyncEnabled)
             <div id="eventAddToCalendarSheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
                 <button type="button" id="eventAddToCalendarBackdrop" class="absolute inset-0 bg-black/35"></button>
                 <div class="absolute inset-x-0 bottom-0 flex justify-center">

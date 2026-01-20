@@ -103,6 +103,16 @@ class User extends Authenticatable
         return $this->hasOne(GoogleCalendarAccount::class);
     }
 
+    public function googleAccount(): HasOne
+    {
+        return $this->hasOne(GoogleAccount::class);
+    }
+
+    public function googleCalendar(): HasOne
+    {
+        return $this->hasOne(GoogleCalendar::class);
+    }
+
     public function hasFamilyCalendarSubscriptionEnabled(): bool
     {
         $sub = $this->calendarSubscription;
@@ -111,8 +121,18 @@ class User extends Authenticatable
 
     public function hasGoogleCalendarConnected(): bool
     {
-        $acc = $this->googleCalendarAccount;
+        $acc = $this->googleAccount;
         return $acc !== null && $acc->isConnected();
+    }
+
+    public function hasGoogleCalendarSyncEnabled(): bool
+    {
+        if (!$this->hasGoogleCalendarConnected()) {
+            return false;
+        }
+
+        $cal = $this->googleCalendar;
+        return $cal !== null && (bool) $cal->is_enabled;
     }
 
     /**

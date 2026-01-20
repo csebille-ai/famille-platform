@@ -1,21 +1,40 @@
 <section>
     <header>
         <h2 class="text-lg font-medium text-gray-900">Google Agenda</h2>
-        <p class="mt-1 text-sm text-gray-600">Connecte ton compte Google Agenda pour ajouter des événements directement (sans écran Google).</p>
+        <p class="mt-1 text-sm text-gray-600">Connecte ton compte Google Agenda pour synchroniser automatiquement les événements dans un calendrier dédié.</p>
     </header>
 
     @php
         $googleConnected = (bool) ($googleConnected ?? false);
+        $googleSyncEnabled = (bool) ($googleSyncEnabled ?? false);
     @endphp
 
     <div class="mt-6">
         @if($googleConnected)
-            <div class="flex items-center justify-between gap-4">
-                <div class="text-sm font-semibold text-emerald-700">Connecté</div>
-                <form method="POST" action="{{ route('oauth.google.calendar.disconnect') }}">
-                    @csrf
-                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-rose-500 focus:bg-rose-500 active:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition ease-in-out duration-150">Déconnecter</button>
-                </form>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="text-sm font-semibold text-emerald-700">Connecté</div>
+                    <form method="POST" action="{{ route('oauth.google.calendar.disconnect') }}">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-rose-500 focus:bg-rose-500 active:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition ease-in-out duration-150">Déconnecter</button>
+                    </form>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <form method="POST" action="{{ route('oauth.google.calendar.toggle') }}">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center px-4 py-2 {{ $googleSyncEnabled ? 'bg-emerald-600 hover:bg-emerald-500 focus:bg-emerald-500 active:bg-emerald-700 focus:ring-emerald-500' : 'bg-gray-800 hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:ring-indigo-500' }} border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-offset-2 transition ease-in-out duration-150">
+                            {{ $googleSyncEnabled ? 'Synchro activée (désactiver)' : 'Synchro désactivée (activer)' }}
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ route('oauth.google.calendar.resync') }}">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-50 focus:bg-gray-50 active:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">Resynchroniser maintenant</button>
+                    </form>
+                </div>
+
+                <p class="text-sm text-gray-600">Le calendrier dédié s'appelle <span class="font-semibold">Famille — Calendrier</span>.</p>
             </div>
         @else
             <div class="flex items-center justify-between gap-4">
@@ -25,9 +44,15 @@
         @endif
 
         @if (session('status') === 'google-calendar-connected')
-            <p class="mt-2 text-sm text-gray-600">Google Agenda connecté.</p>
+            <p class="mt-2 text-sm text-gray-600">Google Agenda connecté. Synchronisation en cours.</p>
         @elseif (session('status') === 'google-calendar-disconnected')
             <p class="mt-2 text-sm text-gray-600">Google Agenda déconnecté.</p>
+        @elseif (session('status') === 'google-calendar-sync-enabled')
+            <p class="mt-2 text-sm text-gray-600">Synchronisation activée.</p>
+        @elseif (session('status') === 'google-calendar-sync-disabled')
+            <p class="mt-2 text-sm text-gray-600">Synchronisation désactivée.</p>
+        @elseif (session('status') === 'google-calendar-resync-started')
+            <p class="mt-2 text-sm text-gray-600">Resynchronisation lancée.</p>
         @elseif (session('status') === 'google-calendar-error')
             <p class="mt-2 text-sm text-rose-600">Connexion Google Agenda échouée. Réessaie.</p>
         @endif

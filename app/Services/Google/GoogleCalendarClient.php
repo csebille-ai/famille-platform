@@ -3,8 +3,9 @@
 namespace App\Services\Google;
 
 use App\Models\Event;
-use App\Models\EventExternalLink;
-use App\Models\GoogleCalendarAccount;
+use App\Models\GoogleAccount;
+use App\Models\GoogleCalendar;
+use App\Models\GoogleEventLink;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
@@ -14,6 +15,7 @@ class GoogleCalendarClient
     private const AUTH_BASE = 'https://accounts.google.com/o/oauth2/v2/auth';
     private const TOKEN_URL = 'https://oauth2.googleapis.com/token';
     private const API_BASE = 'https://www.googleapis.com/calendar/v3';
+    private const SCOPE = 'https://www.googleapis.com/auth/calendar';
 
     public function buildAuthorizeUrl(User $user, string $state): string
     {
@@ -24,7 +26,7 @@ class GoogleCalendarClient
             'client_id' => $clientId,
             'redirect_uri' => $redirectUri,
             'response_type' => 'code',
-            'scope' => 'https://www.googleapis.com/auth/calendar.events',
+            'scope' => self::SCOPE,
             'access_type' => 'offline',
             'include_granted_scopes' => 'true',
             'prompt' => 'consent',
@@ -64,7 +66,7 @@ class GoogleCalendarClient
         return $data;
     }
 
-    public function getValidAccessToken(GoogleCalendarAccount $account): string
+    public function getValidAccessToken(GoogleAccount $account): string
     {
         $now = CarbonImmutable::now('UTC');
         $expiresAt = $account->expires_at ? CarbonImmutable::instance($account->expires_at)->utc() : null;
@@ -122,28 +124,82 @@ class GoogleCalendarClient
     }
 
     /**
-     * Create or update the Google Calendar event for a user.
+     * Ensure the dedicated "Famille — Calendrier" exists for the user.
      */
-    public function createOrUpdateEvent(User $user, Event $event): EventExternalLink
+    public function ensureDedicatedFamilyCalendar(User $user): GoogleCalendar
     {
-        $account = $user->googleCalendarAccount;
+        $account = $user->googleAccount;
         if (!$account || !$account->isConnected()) {
             throw new \RuntimeException('Google Calendar not connected.');
         }
 
+        $cal = GoogleCalendar::query()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'summary' => (string) config('services.google_calendar.family_calendar_summary', 'Famille — Calendrier'),
+                'timezone' => (string) config('services.google_calendar.default_tz', config('app.timezone', 'UTC')),
+                'is_enabled' => true,
+            ]
+        );
+
+        if (!$cal->is_enabled) {
+            return $cal;
+        }
+
+        if (is_string($cal->google_calendar_id) && $cal->google_calendar_id !== '') {
+            return $cal;
+        }
+
         $token = $this->getValidAccessToken($account);
-        $calendarId = (string) ($account->calendar_id ?: 'primary');
+        $payload = [
+            'summary' => (string) ($cal->summary ?: config('services.google_calendar.family_calendar_summary', 'Famille — Calendrier')),
+            'timeZone' => (string) ($cal->timezone ?: config('services.google_calendar.default_tz', config('app.timezone', 'UTC'))),
+        ];
 
-        $payload = $this->mapEventPayload($event);
+        $url = self::API_BASE . '/calendars';
+        $resp = Http::withToken($token)->timeout(15)->post($url, $payload);
 
-        $link = EventExternalLink::query()
-            ->where('event_id', $event->id)
-            ->where('user_id', $user->id)
-            ->where('provider', 'google')
-            ->first();
+        if ($resp->status() === 401) {
+            $account->revoked_at = now();
+            $account->save();
+            throw new \RuntimeException('Google authorization revoked.');
+        }
 
+        if (!$resp->ok()) {
+            throw new \RuntimeException('Google calendar creation failed.');
+        }
+
+        $data = $resp->json();
+        $calendarId = is_array($data) && isset($data['id']) && is_string($data['id']) ? $data['id'] : '';
+        if ($calendarId === '') {
+            throw new \RuntimeException('Google calendar creation returned invalid payload.');
+        }
+
+        $cal->google_calendar_id = $calendarId;
+        $cal->save();
+
+        return $cal;
+    }
+
+    public function upsertEvent(User $user, Event $event): GoogleEventLink
+    {
+        $account = $user->googleAccount;
+        if (!$account || !$account->isConnected() || !$user->hasGoogleCalendarSyncEnabled()) {
+            throw new \RuntimeException('Google calendar sync not enabled.');
+        }
+
+        $cal = $this->ensureDedicatedFamilyCalendar($user);
+        $calendarId = (string) ($cal->google_calendar_id ?? '');
+        if ($calendarId === '') {
+            throw new \RuntimeException('Missing dedicated Google calendar id.');
+        }
+
+        $token = $this->getValidAccessToken($account);
+        $payload = $this->mapEventPayload($event, (string) ($cal->timezone ?: config('services.google_calendar.default_tz', config('app.timezone', 'UTC'))));
+
+        $link = GoogleEventLink::query()->where('event_id', $event->id)->where('user_id', $user->id)->first();
         if ($link) {
-            $url = self::API_BASE . '/calendars/' . rawurlencode($calendarId) . '/events/' . rawurlencode($link->external_event_id);
+            $url = self::API_BASE . '/calendars/' . rawurlencode($calendarId) . '/events/' . rawurlencode($link->google_event_id);
             $resp = Http::withToken($token)->timeout(15)->put($url, $payload);
 
             if ($resp->status() === 401) {
@@ -152,11 +208,18 @@ class GoogleCalendarClient
                 throw new \RuntimeException('Google authorization revoked.');
             }
 
+            if ($resp->status() === 404) {
+                // Remote was deleted: recreate.
+                $link->delete();
+                return $this->upsertEvent($user, $event);
+            }
+
             if (!$resp->ok()) {
                 throw new \RuntimeException('Google event update failed.');
             }
 
-            $link->external_calendar_id = $calendarId;
+            $link->google_calendar_id = $calendarId;
+            $link->last_pushed_at = now();
             $link->save();
             return $link;
         }
@@ -180,39 +243,38 @@ class GoogleCalendarClient
             throw new \RuntimeException('Google event creation returned invalid payload.');
         }
 
-        return EventExternalLink::create([
+        return GoogleEventLink::create([
             'event_id' => $event->id,
             'user_id' => $user->id,
-            'provider' => 'google',
-            'external_event_id' => $externalId,
-            'external_calendar_id' => $calendarId,
+            'google_event_id' => $externalId,
+            'google_calendar_id' => $calendarId,
+            'last_pushed_at' => now(),
         ]);
     }
 
-    public function removeEvent(User $user, Event $event): void
+    public function deleteEventIfLinked(User $user, Event $event): void
     {
-        $account = $user->googleCalendarAccount;
+        $account = $user->googleAccount;
         if (!$account || !$account->isConnected()) {
             return;
         }
 
-        $link = EventExternalLink::query()
-            ->where('event_id', $event->id)
-            ->where('user_id', $user->id)
-            ->where('provider', 'google')
-            ->first();
-
+        $link = GoogleEventLink::query()->where('event_id', $event->id)->where('user_id', $user->id)->first();
         if (!$link) {
             return;
         }
 
-        $token = $this->getValidAccessToken($account);
-        $calendarId = (string) ($link->external_calendar_id ?: $account->calendar_id ?: 'primary');
+        $calendarId = (string) ($link->google_calendar_id ?: optional($user->googleCalendar)->google_calendar_id);
+        if ($calendarId === '') {
+            $link->delete();
+            return;
+        }
 
-        $url = self::API_BASE . '/calendars/' . rawurlencode($calendarId) . '/events/' . rawurlencode($link->external_event_id);
+        $token = $this->getValidAccessToken($account);
+
+        $url = self::API_BASE . '/calendars/' . rawurlencode($calendarId) . '/events/' . rawurlencode($link->google_event_id);
         $resp = Http::withToken($token)->timeout(15)->delete($url);
 
-        // If already gone, treat as success.
         if ($resp->status() === 404) {
             $link->delete();
             return;
@@ -231,10 +293,38 @@ class GoogleCalendarClient
         $link->delete();
     }
 
+    public function deleteDedicatedCalendar(User $user): void
+    {
+        $account = $user->googleAccount;
+        $cal = $user->googleCalendar;
+
+        if (!$account || !$account->isConnected() || !$cal || !is_string($cal->google_calendar_id) || $cal->google_calendar_id === '') {
+            return;
+        }
+
+        $token = $this->getValidAccessToken($account);
+        $url = self::API_BASE . '/calendars/' . rawurlencode($cal->google_calendar_id);
+        $resp = Http::withToken($token)->timeout(15)->delete($url);
+
+        if ($resp->status() === 404) {
+            return;
+        }
+
+        if ($resp->status() === 401) {
+            $account->revoked_at = now();
+            $account->save();
+            throw new \RuntimeException('Google authorization revoked.');
+        }
+
+        if (!$resp->successful()) {
+            throw new \RuntimeException('Google calendar deletion failed.');
+        }
+    }
+
     /**
      * @return array<string,mixed>
      */
-    private function mapEventPayload(Event $event): array
+    private function mapEventPayload(Event $event, string $defaultTz): array
     {
         $title = trim((string) ($event->title ?? ''));
         $title = $title !== '' ? $title : 'Événement';
@@ -249,7 +339,7 @@ class GoogleCalendarClient
         }
         $descParts[] = $eventUrl;
 
-        $tz = (string) ($event->timezone ?: config('app.timezone', 'UTC'));
+        $tz = (string) ($event->timezone ?: $defaultTz ?: config('app.timezone', 'UTC'));
         $start = $event->start_at ? CarbonImmutable::instance($event->start_at)->timezone($tz) : CarbonImmutable::now($tz);
         $end = $event->end_at ? CarbonImmutable::instance($event->end_at)->timezone($tz) : null;
 

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Oauth;
 
-use App\Models\EventExternalLink;
-use App\Models\GoogleCalendarAccount;
+use App\Jobs\InitialGoogleCalendarSync;
+use App\Models\GoogleAccount;
+use App\Models\GoogleCalendar;
+use App\Models\GoogleEventLink;
 use App\Models\User;
 use App\Services\Google\GoogleCalendarClient;
 use Carbon\CarbonImmutable;
@@ -51,7 +53,7 @@ class GoogleCalendarOauthController
         $scope = isset($tokens['scope']) && is_string($tokens['scope']) ? $tokens['scope'] : null;
         $tokenType = isset($tokens['token_type']) && is_string($tokens['token_type']) ? $tokens['token_type'] : null;
 
-        $account = GoogleCalendarAccount::query()->firstOrNew(['user_id' => $user->id]);
+        $account = GoogleAccount::query()->firstOrNew(['user_id' => $user->id]);
 
         $account->access_token = $accessToken;
         if ($refreshToken !== null && $refreshToken !== '') {
@@ -60,11 +62,62 @@ class GoogleCalendarOauthController
         $account->expires_at = $expiresIn !== null ? CarbonImmutable::now('UTC')->addSeconds($expiresIn) : null;
         $account->scope = $scope;
         $account->token_type = $tokenType;
-        $account->calendar_id = $account->calendar_id ?: 'primary';
         $account->revoked_at = null;
         $account->save();
 
+        // Ensure per-user calendar row exists and create the dedicated calendar immediately.
+        GoogleCalendar::query()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'summary' => (string) config('services.google_calendar.family_calendar_summary', 'Famille — Calendrier'),
+                'timezone' => (string) config('services.google_calendar.default_tz', config('app.timezone', 'UTC')),
+                'is_enabled' => true,
+            ]
+        );
+
+        try {
+            $client->ensureDedicatedFamilyCalendar($user);
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->route('profile.edit')->with('status', 'google-calendar-error');
+        }
+
+        InitialGoogleCalendarSync::dispatch($user->id);
+
         return redirect()->route('profile.edit')->with('status', 'google-calendar-connected');
+    }
+
+    public function toggleSync(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        $cal = GoogleCalendar::query()->firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'summary' => (string) config('services.google_calendar.family_calendar_summary', 'Famille — Calendrier'),
+                'timezone' => (string) config('services.google_calendar.default_tz', config('app.timezone', 'UTC')),
+                'is_enabled' => true,
+            ]
+        );
+
+        $cal->is_enabled = !$cal->is_enabled;
+        $cal->save();
+
+        return redirect()->route('profile.edit')->with('status', $cal->is_enabled ? 'google-calendar-sync-enabled' : 'google-calendar-sync-disabled');
+    }
+
+    public function resync(Request $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if (!$user->hasGoogleCalendarSyncEnabled()) {
+            return redirect()->route('profile.edit')->with('status', 'google-calendar-sync-disabled');
+        }
+
+        InitialGoogleCalendarSync::dispatch($user->id);
+        return redirect()->route('profile.edit')->with('status', 'google-calendar-resync-started');
     }
 
     public function disconnect(Request $request): RedirectResponse
@@ -72,7 +125,14 @@ class GoogleCalendarOauthController
         /** @var User $user */
         $user = $request->user();
 
-        $account = GoogleCalendarAccount::query()->where('user_id', $user->id)->first();
+        // Best-effort cleanup on Google side.
+        try {
+            app(GoogleCalendarClient::class)->deleteDedicatedCalendar($user);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $account = GoogleAccount::query()->where('user_id', $user->id)->first();
         if ($account) {
             $account->revoked_at = now();
             $account->access_token = '';
@@ -83,10 +143,14 @@ class GoogleCalendarOauthController
             $account->save();
         }
 
-        EventExternalLink::query()
-            ->where('user_id', $user->id)
-            ->where('provider', 'google')
-            ->delete();
+        GoogleEventLink::query()->where('user_id', $user->id)->delete();
+
+        $cal = GoogleCalendar::query()->where('user_id', $user->id)->first();
+        if ($cal) {
+            $cal->google_calendar_id = null;
+            $cal->is_enabled = false;
+            $cal->save();
+        }
 
         return redirect()->route('profile.edit')->with('status', 'google-calendar-disconnected');
     }

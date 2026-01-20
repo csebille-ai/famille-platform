@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Event;
 use App\Models\Person;
+use App\Observers\EventObserver;
 use App\Observers\UserObserver;
 use App\Policies\EventPolicy;
 use App\Policies\PersonPolicy;
@@ -53,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         User::observe(UserObserver::class);
+        Event::observe(EventObserver::class);
 
         Gate::policy(Person::class, PersonPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);

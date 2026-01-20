@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Models\Event;
-use App\Models\EventExternalLink;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -103,20 +102,13 @@ class EventController extends Controller
 		$user = $request->user();
 		$hasFamilyCalendar = $user->hasFamilyCalendarSubscriptionEnabled();
         $googleConnected = $user->hasGoogleCalendarConnected();
-        $googleAdded = false;
-        if ($googleConnected) {
-            $googleAdded = EventExternalLink::query()
-                ->where('event_id', $event->id)
-                ->where('user_id', $user->id)
-                ->where('provider', 'google')
-                ->exists();
-        }
+        $googleSyncEnabled = $user->hasGoogleCalendarSyncEnabled();
 
         return view('events.show', [
 			'event' => $event,
 			'hasFamilyCalendar' => $hasFamilyCalendar,
             'googleConnected' => $googleConnected,
-            'googleAdded' => $googleAdded,
+            'googleSyncEnabled' => $googleSyncEnabled,
 		]);
     }
 
