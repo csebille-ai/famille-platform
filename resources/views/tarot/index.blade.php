@@ -82,7 +82,7 @@
         </div>
 
         @if (is_array($draft ?? null))
-            <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6 space-y-4" data-tarot-result>
+            <div id="tarot-result" tabindex="-1" class="bg-white rounded-2xl shadow-sm p-5 sm:p-6 space-y-4" style="scroll-margin-top: 5.5rem;" data-tarot-result>
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <div class="text-sm font-semibold text-gray-900 truncate">{{ (string) ($draft['question'] ?? '') }}</div>
@@ -214,6 +214,17 @@
 
 <script>
 (() => {
+    // Anchor landing: after a draw redirect we arrive on #tarot-result.
+    // Ensure the block is aligned (and not hidden under sticky headers).
+    if ((window.location.hash || '').toLowerCase() === '#tarot-result') {
+        window.addEventListener('load', () => {
+            const el = document.getElementById('tarot-result');
+            if (!el) return;
+            try { el.scrollIntoView({ behavior: 'auto', block: 'start' }); } catch (e) {}
+            try { el.focus({ preventScroll: true }); } catch (e) {}
+        }, { once: true, passive: true });
+    }
+
     // Result tabs (Cartes / Lecture)
     const resultEl = document.querySelector('[data-tarot-result]');
     const tabButtons = Array.from(document.querySelectorAll('[data-tarot-tab]'));

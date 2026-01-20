@@ -82,7 +82,7 @@ class TarotController extends Controller
 
         $request->session()->put('tarot.draft', $draft);
 
-        return redirect()->route('tarot.index');
+        return redirect()->to(route('tarot.index') . '#tarot-result');
     }
 
     public function reset(Request $request): RedirectResponse
