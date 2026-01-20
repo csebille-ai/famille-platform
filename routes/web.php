@@ -13,6 +13,7 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\CalendarFamilyController;
 use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
@@ -95,7 +96,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/events/{event}/modifier', [EventController::class, 'edit'])->name('events.edit');
     Route::patch('/events/{event}', [EventController::class, 'update'])->name('events.update');
     Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+
+	Route::post('/calendar/family/subscribe', [CalendarFamilyController::class, 'subscribe'])->name('calendar.family.subscribe');
+	Route::post('/calendar/family/unsubscribe', [CalendarFamilyController::class, 'unsubscribe'])->name('calendar.family.unsubscribe');
 });
+
+// Family calendar feed (token-based, no session).
+Route::get('/calendar/family/{token}.ics', [CalendarFamilyController::class, 'feed'])->name('calendar.family.feed');
 
 // Home (mobile-first). Keep route name 'dashboard' for backward compatibility.
 Route::get('/home', function () {

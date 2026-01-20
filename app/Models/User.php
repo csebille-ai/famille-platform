@@ -93,6 +93,17 @@ class User extends Authenticatable
         return $this->hasOne(Person::class);
     }
 
+    public function calendarSubscription(): HasOne
+    {
+        return $this->hasOne(CalendarSubscription::class);
+    }
+
+    public function hasFamilyCalendarSubscriptionEnabled(): bool
+    {
+        $sub = $this->calendarSubscription;
+        return $sub !== null && (bool) $sub->is_enabled;
+    }
+
     /**
      * Children this user can manage.
      */

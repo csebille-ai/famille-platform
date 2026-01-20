@@ -17,6 +17,8 @@
         $startAt = $event->start_at;
         $endAt = $event->end_at;
         $tz = $event->timezone ?: config('app.timezone');
+
+		$hasFamilyCalendar = (bool) ($hasFamilyCalendar ?? false);
     @endphp
 
     <div class="max-w-2xl mx-auto px-4 py-4 space-y-3">
@@ -35,11 +37,78 @@
             </div>
             <div class="shrink-0 flex items-center gap-2">
                 <a href="{{ route('events.index') }}" class="inline-flex items-center h-10 px-3 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]">Liste</a>
+                @if(!$hasFamilyCalendar)
+                    <button
+                        type="button"
+                        id="eventAddToCalendarBtn"
+                        class="inline-flex items-center h-10 px-3 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-extrabold text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]"
+                    >
+                        Ajouter à mon agenda
+                    </button>
+                @else
+                    <div class="hidden sm:block text-xs font-semibold text-[color:var(--fam-muted)]">Déjà inclus via Calendrier Famille</div>
+                @endif
                 @can('update', $event)
                     <a href="{{ route('events.edit', $event) }}" class="inline-flex items-center h-10 px-3 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Modifier</a>
                 @endcan
             </div>
         </div>
+
+        @if(!$hasFamilyCalendar)
+            <div id="eventAddToCalendarSheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+                <button type="button" id="eventAddToCalendarBackdrop" class="absolute inset-0 bg-black/35"></button>
+                <div class="absolute inset-x-0 bottom-0 flex justify-center">
+                    <div class="w-full max-w-[560px] rounded-t-3xl bg-white border border-[color:var(--fam-border-soft)] shadow-[0_-18px_55px_rgba(15,23,42,0.18)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+                        <div class="mx-auto h-1 w-9 rounded-full bg-black/10"></div>
+                        <div class="mt-3 text-sm font-extrabold text-[color:var(--fam-text)]">Ajouter à mon agenda</div>
+                        <div class="mt-3 grid gap-2">
+                            <a
+                                href="{{ $event->googleCalendarUrl() }}"
+                                target="_blank"
+                                rel="noopener"
+                                class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]"
+                            >
+                                <span>Google Agenda</span>
+                                <i class="ph ph-google-logo" aria-hidden="true"></i>
+                            </a>
+                            <a
+                                href="{{ $event->outlookCalendarUrl() }}"
+                                target="_blank"
+                                rel="noopener"
+                                class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]"
+                            >
+                                <span>Outlook</span>
+                                <i class="ph ph-microsoft-outlook-logo" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <button type="button" id="eventAddToCalendarClose" class="mt-3 w-full h-11 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-white/60 active:bg-white/75">Annuler</button>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                (() => {
+                    const btn = document.getElementById('eventAddToCalendarBtn');
+                    const sheet = document.getElementById('eventAddToCalendarSheet');
+                    const close = document.getElementById('eventAddToCalendarClose');
+                    const backdrop = document.getElementById('eventAddToCalendarBackdrop');
+                    if (!btn || !sheet) return;
+
+                    const open = () => {
+                        sheet.classList.remove('hidden');
+                        sheet.setAttribute('aria-hidden', 'false');
+                    };
+                    const hide = () => {
+                        sheet.classList.add('hidden');
+                        sheet.setAttribute('aria-hidden', 'true');
+                    };
+
+                    btn.addEventListener('click', open);
+                    if (close) close.addEventListener('click', hide);
+                    if (backdrop) backdrop.addEventListener('click', hide);
+                })();
+            </script>
+        @endif
 
         <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4 space-y-3">
             <div class="flex items-start justify-between gap-3">

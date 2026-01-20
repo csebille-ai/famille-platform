@@ -55,7 +55,12 @@ class EventController extends Controller
 
         $events = $q->paginate(20)->withQueryString();
 
-        return view('events.index', compact('events', 'scope', 'filter'));
+		$calendarSub = $user->calendarSubscription;
+		$hasFamilyCalendar = $calendarSub !== null && (bool) $calendarSub->is_enabled;
+		$calendarHttpsUrl = $hasFamilyCalendar ? $calendarSub->httpsUrl() : null;
+		$calendarWebcalUrl = $hasFamilyCalendar ? $calendarSub->webcalUrl() : null;
+
+        return view('events.index', compact('events', 'scope', 'filter', 'hasFamilyCalendar', 'calendarHttpsUrl', 'calendarWebcalUrl'));
     }
 
     public function create(Request $request): View
@@ -93,7 +98,14 @@ class EventController extends Controller
     {
         $this->authorize('view', $event);
 
-        return view('events.show', ['event' => $event]);
+		/** @var User $user */
+		$user = $request->user();
+		$hasFamilyCalendar = $user->hasFamilyCalendarSubscriptionEnabled();
+
+        return view('events.show', [
+			'event' => $event,
+			'hasFamilyCalendar' => $hasFamilyCalendar,
+		]);
     }
 
     public function edit(Request $request, Event $event): View
