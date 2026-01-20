@@ -72,35 +72,39 @@
 		   Goal: the visible edge starts at the off-white inner frame (no green).
 		   Start here, then adjust in debug mode (?tarot_debug=1).
 		*/
-		/* Most source PNGs are ~768×1156 => ~0.665. */
 		--tarot-aspect: 0.665;
-		/* Zoom/position removes the external green frame more reliably than insets. */
-		--tarot-zoom: 1.0;
+		--tarot-fit: cover;
 		--tarot-pos-x: 50%;
 		--tarot-pos-y: 50%;
+		--tarot-pad-top: 6%;
+		--tarot-pad-right: 6%;
+		--tarot-pad-bottom: 10%;
+		--tarot-pad-left: 6%;
 		--tarot-rotate: 0deg;
 		aspect-ratio: var(--tarot-aspect);
 		@apply relative block w-full overflow-hidden;
 	}
 
-	.tarot-card-frame--hero {
-		--tarot-zoom: 1.08;
-		--tarot-pos-x: 50%;
-		--tarot-pos-y: 52%;
-	}
-
-	.tarot-card-frame--thumb {
-		--tarot-zoom: 1.12;
-		--tarot-pos-x: 50%;
-		--tarot-pos-y: 50%;
+	.tarot-card-frame__crop {
+		position: absolute;
+		top: var(--tarot-pad-top);
+		right: var(--tarot-pad-right);
+		bottom: var(--tarot-pad-bottom);
+		left: var(--tarot-pad-left);
+		overflow: hidden;
+		border-radius: inherit;
 	}
 
 	.tarot-card-frame__img {
 		inset: 0;
+		width: 100%;
+		height: 100%;
+		display: block;
+		object-fit: var(--tarot-fit);
 		object-position: var(--tarot-pos-x) var(--tarot-pos-y);
-		transform: rotate(var(--tarot-rotate)) scale(var(--tarot-zoom));
+		transform: rotate(var(--tarot-rotate));
 		transform-origin: center;
-		@apply absolute block h-full w-full object-cover;
+		@apply absolute;
 	}
 
 	.tarot-debug-outline {

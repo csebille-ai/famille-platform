@@ -13,7 +13,7 @@
     $supportsRituel = in_array($N, [3, 5], true);
 
     // Debug mode for tuning tarot crop/aspect quickly.
-    // Usage: /tarot?tarot_debug=1 (optional overrides: tarot_aspect, tarot_zoom, tarot_pos_x, tarot_pos_y)
+    // Usage: /tarot?tarot_debug=1 (optional overrides: tarot_aspect, tarot_pad_top/right/bottom/left)
     $tarotDebug = request()->boolean('tarot_debug');
     $tarotStyleVars = '';
     if ($tarotDebug) {
@@ -26,28 +26,28 @@
             return rtrim(rtrim(sprintf('%.4f', $v), '0'), '.');
         };
 
-        $asZoom = function (string $key, float $min, float $max): ?string {
+        $asPct = function (string $key, float $fallback): string {
             $raw = request()->query($key);
-            if ($raw === null || $raw === '') return null;
-            if (!is_numeric($raw)) return null;
+            if ($raw === null || $raw === '') return rtrim(rtrim(sprintf('%.2f', $fallback), '0'), '.') . '%';
+            if (!is_numeric($raw)) return rtrim(rtrim(sprintf('%.2f', $fallback), '0'), '.') . '%';
             $v = (float) $raw;
-            $v = max($min, min($max, $v));
-            return rtrim(rtrim(sprintf('%.4f', $v), '0'), '.');
-        };
-
-        $asPosPct = function (string $key): ?string {
-            $raw = request()->query($key);
-            if ($raw === null || $raw === '') return null;
-            if (!is_numeric($raw)) return null;
-            $v = (float) $raw;
-            $v = max(0.0, min(100.0, $v));
+            $v = max(0.0, min(25.0, $v));
             return rtrim(rtrim(sprintf('%.2f', $v), '0'), '.') . '%';
         };
 
-        $vars = ['--tarot-aspect: ' . $asAspect('tarot_aspect', 0.665) . ';'];
-        if (($z = $asZoom('tarot_zoom', 1.0, 1.35)) !== null) $vars[] = '--tarot-zoom: ' . $z . ';';
-        if (($px = $asPosPct('tarot_pos_x')) !== null) $vars[] = '--tarot-pos-x: ' . $px . ';';
-        if (($py = $asPosPct('tarot_pos_y')) !== null) $vars[] = '--tarot-pos-y: ' . $py . ';';
+        $vars = [
+            '--tarot-aspect: ' . $asAspect('tarot_aspect', 0.665) . ';',
+            '--tarot-pad-top: ' . $asPct('tarot_pad_top', 6) . ';',
+            '--tarot-pad-right: ' . $asPct('tarot_pad_right', 6) . ';',
+            '--tarot-pad-bottom: ' . $asPct('tarot_pad_bottom', 10) . ';',
+            '--tarot-pad-left: ' . $asPct('tarot_pad_left', 6) . ';',
+        ];
+
+        $fit = strtolower((string) request()->query('tarot_fit', ''));
+        if (in_array($fit, ['cover', 'contain'], true)) {
+            $vars[] = '--tarot-fit: ' . $fit . ';';
+        }
+
         $tarotStyleVars = implode(' ', $vars);
     }
 

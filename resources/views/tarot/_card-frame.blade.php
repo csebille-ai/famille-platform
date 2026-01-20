@@ -36,18 +36,27 @@
     $rotateVar = abs($rotateDeg) > 0.0001 ? ('--tarot-rotate: ' . rtrim(rtrim(sprintf('%.2f', $rotateDeg), '0'), '.') . 'deg;') : '';
 
     // Robust defaults (can be overridden by $styleVars in debug mode).
+    // Crop is expressed as an inner "window" (offsets from each edge).
     $defaultAspect = '--tarot-aspect: 0.665;';
+    $defaultFit = '--tarot-fit: cover;';
     $defaultPosX = '--tarot-pos-x: 50%;';
-    $defaultPosY = '--tarot-pos-y: ' . ($variant === 'hero' ? '52%' : '50%') . ';';
-    $defaultZoom = '--tarot-zoom: ' . ($variant === 'hero' ? '1.08' : '1.12') . ';';
+    $defaultPosY = '--tarot-pos-y: 50%;';
+    $defaultPadTop = '--tarot-pad-top: 6%;';
+    $defaultPadRight = '--tarot-pad-right: 6%;';
+    $defaultPadBottom = '--tarot-pad-bottom: 10%;';
+    $defaultPadLeft = '--tarot-pad-left: 6%;';
     $defaultRotate = ($rotateVar !== '' ? $rotateVar : '--tarot-rotate: 0deg;');
 
     // Order matters: defaults first, then caller overrides.
     $finalStyleVars = trim(implode(' ', array_filter([
         $defaultAspect,
-        $defaultZoom,
+        $defaultFit,
         $defaultPosX,
         $defaultPosY,
+        $defaultPadTop,
+        $defaultPadRight,
+        $defaultPadBottom,
+        $defaultPadLeft,
         $defaultRotate,
         $styleVars,
     ])));
@@ -59,12 +68,18 @@
     data-debug="card-frame-v2"
     @if($debug) data-tarot-debug="1" @endif
 >
-    <img
-        src="{{ $src }}"
-        alt="{{ $alt }}"
-        class="tarot-card-frame__img absolute inset-0 block h-full w-full object-cover {{ $imgClass }}"
-        style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; object-position: var(--tarot-pos-x) var(--tarot-pos-y); transform: rotate(var(--tarot-rotate)) scale(var(--tarot-zoom)); transform-origin: center;"
-        loading="{{ $loading }}"
-        decoding="{{ $decoding }}"
-    />
+    <div
+        class="tarot-card-frame__crop"
+        style="position:absolute; top: var(--tarot-pad-top); right: var(--tarot-pad-right); bottom: var(--tarot-pad-bottom); left: var(--tarot-pad-left); overflow:hidden; border-radius: inherit;"
+        aria-hidden="true"
+    >
+        <img
+            src="{{ $src }}"
+            alt="{{ $alt }}"
+            class="tarot-card-frame__img {{ $imgClass }}"
+            style="position:absolute; inset:0; width:100%; height:100%; display:block; object-fit: var(--tarot-fit); object-position: var(--tarot-pos-x) var(--tarot-pos-y); transform: rotate(var(--tarot-rotate)); transform-origin: center;"
+            loading="{{ $loading }}"
+            decoding="{{ $decoding }}"
+        />
+    </div>
 </div>
