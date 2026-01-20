@@ -98,10 +98,21 @@ class User extends Authenticatable
         return $this->hasOne(CalendarSubscription::class);
     }
 
+    public function googleCalendarAccount(): HasOne
+    {
+        return $this->hasOne(GoogleCalendarAccount::class);
+    }
+
     public function hasFamilyCalendarSubscriptionEnabled(): bool
     {
         $sub = $this->calendarSubscription;
         return $sub !== null && (bool) $sub->is_enabled;
+    }
+
+    public function hasGoogleCalendarConnected(): bool
+    {
+        $acc = $this->googleCalendarAccount;
+        return $acc !== null && $acc->isConnected();
     }
 
     /**

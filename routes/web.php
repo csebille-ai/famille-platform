@@ -14,6 +14,8 @@ use App\Http\Controllers\TarotController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\CalendarFamilyController;
+use App\Http\Controllers\Oauth\GoogleCalendarOauthController;
+use App\Http\Controllers\Events\GoogleCalendarEventController;
 use App\Http\Controllers\Api\TarotDrawController;
 use App\Http\Controllers\Api\TarotTtsController;
 use App\Http\Controllers\Api\NewsIndexController;
@@ -99,6 +101,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 	Route::post('/calendar/family/subscribe', [CalendarFamilyController::class, 'subscribe'])->name('calendar.family.subscribe');
 	Route::post('/calendar/family/unsubscribe', [CalendarFamilyController::class, 'unsubscribe'])->name('calendar.family.unsubscribe');
+
+    Route::get('/oauth/google/calendar/start', [GoogleCalendarOauthController::class, 'start'])->name('oauth.google.calendar.start');
+    Route::get('/oauth/google/calendar/callback', [GoogleCalendarOauthController::class, 'callback'])->name('oauth.google.calendar.callback');
+    Route::post('/oauth/google/calendar/disconnect', [GoogleCalendarOauthController::class, 'disconnect'])->name('oauth.google.calendar.disconnect');
+
+    Route::post('/events/{event}/google-calendar/add', [GoogleCalendarEventController::class, 'add'])->middleware('throttle:10,1')->name('events.google_calendar.add');
+    Route::post('/events/{event}/google-calendar/remove', [GoogleCalendarEventController::class, 'remove'])->middleware('throttle:10,1')->name('events.google_calendar.remove');
 });
 
 // Family calendar feed (token-based, no session).

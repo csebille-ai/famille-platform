@@ -19,6 +19,8 @@
         $tz = $event->timezone ?: config('app.timezone');
 
 		$hasFamilyCalendar = (bool) ($hasFamilyCalendar ?? false);
+        $googleConnected = (bool) ($googleConnected ?? false);
+        $googleAdded = (bool) ($googleAdded ?? false);
     @endphp
 
     <div class="max-w-2xl mx-auto px-4 py-4 space-y-3">
@@ -54,6 +56,51 @@
             </div>
         </div>
 
+        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Google Agenda</div>
+                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">
+                        Ajout direct dans ton agenda Google.
+                    </div>
+                </div>
+                <div class="shrink-0">
+                    @if($googleConnected)
+                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Connecté</span>
+                    @else
+                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non connecté</span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+                @if(!$googleConnected)
+                    <a href="{{ route('oauth.google.calendar.start') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Connecter Google Agenda</a>
+                @else
+                    @if($googleAdded)
+                        <span class="inline-flex items-center h-10 px-4 rounded-2xl bg-emerald-50 text-emerald-800 text-sm font-extrabold border border-emerald-200">Ajouté</span>
+                        <form method="POST" action="{{ route('events.google_calendar.remove', $event) }}">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm font-extrabold text-rose-800 hover:bg-rose-100">Retirer</button>
+                        </form>
+                    @else
+                        <form method="POST" action="{{ route('events.google_calendar.add', $event) }}">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Ajouter à Google Agenda</button>
+                        </form>
+                    @endif
+                @endif
+            </div>
+
+            @if (session('status') === 'google-calendar-event-added')
+                <div class="mt-2 text-xs font-semibold text-emerald-700">Ajouté à Google Agenda.</div>
+            @elseif (session('status') === 'google-calendar-event-removed')
+                <div class="mt-2 text-xs font-semibold text-slate-700">Retiré de Google Agenda.</div>
+            @elseif (session('status') === 'google-calendar-event-error')
+                <div class="mt-2 text-xs font-semibold text-rose-700">Action Google Agenda échouée. Si besoin, reconnecte ton compte.</div>
+            @endif
+        </div>
+
         @if(!$hasFamilyCalendar)
             <div id="eventAddToCalendarSheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
                 <button type="button" id="eventAddToCalendarBackdrop" class="absolute inset-0 bg-black/35"></button>
@@ -62,15 +109,6 @@
                         <div class="mx-auto h-1 w-9 rounded-full bg-black/10"></div>
                         <div class="mt-3 text-sm font-extrabold text-[color:var(--fam-text)]">Ajouter à mon agenda</div>
                         <div class="mt-3 grid gap-2">
-                            <a
-                                href="{{ $event->googleCalendarUrl() }}"
-                                target="_blank"
-                                rel="noopener"
-                                class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]"
-                            >
-                                <span>Google Agenda</span>
-                                <i class="ph ph-google-logo" aria-hidden="true"></i>
-                            </a>
                             <a
                                 href="{{ $event->outlookCalendarUrl() }}"
                                 target="_blank"

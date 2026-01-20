@@ -82,4 +82,10 @@ return [
         'cache_days' => (int) env('GEO_CACHE_DAYS', 365),
     ],
 
+    'google_calendar' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
 ];
