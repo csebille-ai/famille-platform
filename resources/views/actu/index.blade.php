@@ -115,6 +115,7 @@
             let loading = false;
             let pendingFirstPage = null;
             let autoTimer = null;
+            let latestFetchedAt = null;
 
             const seenUrls = new Set();
 
@@ -412,8 +413,21 @@
                 return data;
             };
 
+            const parseIsoMs = (iso) => {
+                if (!iso) return null;
+                const ms = Date.parse(String(iso));
+                return Number.isFinite(ms) ? ms : null;
+            };
+
+            const setLatestFetchedAt = (data) => {
+                const v = (data && typeof data.latest_fetched_at === 'string') ? data.latest_fetched_at : null;
+                latestFetchedAt = v;
+            };
+
             const applyResetData = (data) => {
                 seenUrls.clear();
+
+                setLatestFetchedAt(data);
 
                 const items = dedupeItems(data.items || []);
                 nextCursor = data.next_cursor ?? null;
@@ -469,6 +483,9 @@
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                     const data = await resp.json();
                     if (!data || data.ok !== true || !Array.isArray(data.items)) throw new Error('Bad payload');
+
+                    // Track freshness marker for the currently selected bucket.
+                    setLatestFetchedAt(data);
 
                     const items = reset ? dedupeItems(data.items) : dedupeItems(data.items);
                     nextCursor = data.next_cursor ?? null;
@@ -535,8 +552,16 @@
                         const data = await fetchFirstPageData();
                         const newTop = data.items?.[0] ?? null;
                         const currentTop = heroItem;
-                        const changed = itemKey(newTop) !== '' && itemKey(newTop) !== itemKey(currentTop);
-                        if (!changed) return;
+
+                        // 1) Dataset freshness (import/refresh signal) — robust even when the top item doesn't change.
+                        const prevMs = parseIsoMs(latestFetchedAt);
+                        const nextMs = parseIsoMs(data.latest_fetched_at);
+                        const datasetChanged = (prevMs !== null && nextMs !== null) ? (nextMs > prevMs) : false;
+
+                        // 2) Fallback: top item changed.
+                        const topChanged = itemKey(newTop) !== '' && itemKey(newTop) !== itemKey(currentTop);
+
+                        if (!datasetChanged && !topChanged) return;
 
                         if (window.scrollY <= AT_TOP_PX) {
                             applyResetData(data);

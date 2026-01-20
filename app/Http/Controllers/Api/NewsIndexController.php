@@ -39,6 +39,9 @@ class NewsIndexController extends Controller
             $query->where('bucket', $bucket);
         }
 
+        // Keep a base query (no cursor) to compute a bucket-scoped freshness marker.
+        $freshnessQuery = clone $query;
+
         if ($cursor !== '') {
             $decoded = self::decodeCursor($cursor);
             if ($decoded) {
@@ -115,7 +118,7 @@ class NewsIndexController extends Controller
 
         $latestFetchedAt = null;
         try {
-            $raw = NewsItem::query()->max('fetched_at');
+            $raw = $freshnessQuery->max('fetched_at');
             if (is_string($raw) && trim($raw) !== '') {
                 $latestFetchedAt = Carbon::parse($raw)->toIso8601String();
             } elseif ($raw instanceof Carbon) {
