@@ -82,14 +82,22 @@
         </div>
 
         @if (is_array($draft ?? null))
-            <div id="tarot-result" tabindex="-1" class="bg-white rounded-2xl shadow-sm p-5 sm:p-6 space-y-4" style="scroll-margin-top: 5.5rem;" data-tarot-result>
-                <div class="flex items-start justify-between gap-4">
+            <div id="tarot-result" tabindex="-1" class="bg-white rounded-2xl shadow-sm p-4 sm:p-6 space-y-3" style="scroll-margin-top: 5.5rem;" data-tarot-result>
+                <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <div class="text-sm font-semibold text-gray-900 truncate">{{ (string) ($draft['question'] ?? '') }}</div>
+                        <div class="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
+                            <span>Ta question</span>
+                            @php
+                                $spread = (string) ($draft['spread'] ?? 'three');
+                                $spreadChip = $spread === 'five' ? '5 cartes' : '3 cartes';
+                            @endphp
+                            <span class="fam-chip text-xs">{{ $spreadChip }}</span>
+                        </div>
+                        <div class="mt-1 text-[15px] sm:text-base font-semibold text-slate-900 leading-snug line-clamp-2">{{ (string) ($draft['question'] ?? '') }}</div>
                     </div>
                     <form method="POST" action="{{ route('tarot.reset') }}" class="shrink-0">
                         @csrf
-                        <x-secondary-button type="submit">Relancer</x-secondary-button>
+                        <x-secondary-button type="submit" class="!h-8 !px-3 !text-[13px]">Relancer</x-secondary-button>
                     </form>
                 </div>
 
@@ -97,10 +105,6 @@
                     <button type="button" class="h-8 px-3 rounded-2xl text-[13px] font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="cards" role="tab">Cartes</button>
                     <button type="button" class="h-8 px-3 rounded-2xl text-[13px] font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="reading" role="tab">Lecture</button>
                 </div>
-
-                @php
-                    $spread = (string) ($draft['spread'] ?? 'three');
-                @endphp
 
                 <div data-tarot-panel="cards" class="pb-[calc(5.75rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))]">
                     @include('tarot._cards', [
