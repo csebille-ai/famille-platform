@@ -40,10 +40,11 @@
 	}
 
 	/* PWA/iOS: let JS raise the fixed bottom dock above the virtual keyboard.
-	   Default is 0px so it behaves like bottom: 0.
+	   Using transform is more reliable than adjusting `bottom` in iOS PWAs.
 	*/
 	#mobileBottomDock {
-		bottom: var(--vv-bottom, 0px);
+		transform: translateY(calc(-1 * var(--vv-bottom, 0px)));
+		will-change: transform;
 	}
 
 	a {

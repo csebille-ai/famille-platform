@@ -277,12 +277,20 @@ function setupPwaKeyboardDockFix() {
 	const computeBottom = () => {
 		const vv = window.visualViewport;
 		if (!vv) return 0;
-		// How much of the layout viewport is obscured at the bottom (keyboard).
-		const raw = window.innerHeight - vv.height - vv.offsetTop;
-		const bottom = Math.max(0, raw);
-		// Ignore tiny jitter; add a small cushion so the composer doesn't get clipped.
-		if (bottom < 8) return 0;
-		return Math.round(bottom + 8);
+
+		// Prefer the layout viewport height (more stable on iOS/PWA than innerHeight).
+		const layoutH = document.documentElement ? document.documentElement.clientHeight : 0;
+		const innerH = window.innerHeight || 0;
+		const visualBottom = vv.offsetTop + vv.height;
+
+		// Distance from the bottom of the layout viewport to the bottom of the visual viewport.
+		const overlap1 = (layoutH > 0) ? (layoutH - visualBottom) : 0;
+		const overlap2 = (innerH > 0) ? (innerH - visualBottom) : 0;
+		const bottom = Math.max(0, overlap1, overlap2);
+
+		// Ignore tiny jitter; add a cushion so the composer doesn't get clipped.
+		if (bottom < 12) return 0;
+		return Math.round(bottom + 16);
 	};
 
 	const apply = () => {
@@ -294,16 +302,39 @@ function setupPwaKeyboardDockFix() {
 		requestAnimationFrame(() => requestAnimationFrame(apply));
 	};
 
+	let pollTimer = null;
+	const startPolling = () => {
+		if (pollTimer) {
+			clearInterval(pollTimer);
+			pollTimer = null;
+		}
+		let n = 0;
+		pollTimer = setInterval(() => {
+			n += 1;
+			schedule();
+			if (n >= 16) {
+				clearInterval(pollTimer);
+				pollTimer = null;
+			}
+		}, 50);
+	};
+
 	document.addEventListener('focusin', (e) => {
 		if (!isEditableElement(e.target)) return;
 		focused = true;
 		root.dataset.kbd = '1';
 		schedule();
+		// iOS can update viewport metrics late (sometimes only after first keystroke).
+		startPolling();
 	});
 
 	document.addEventListener('focusout', (e) => {
 		if (!isEditableElement(e.target)) return;
 		focused = false;
+		if (pollTimer) {
+			clearInterval(pollTimer);
+			pollTimer = null;
+		}
 		try {
 			delete root.dataset.kbd;
 		} catch (e2) {}
