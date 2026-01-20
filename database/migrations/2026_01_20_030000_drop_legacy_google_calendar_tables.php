@@ -7,8 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::dropIfExists('event_external_links');
-        Schema::dropIfExists('google_calendar_accounts');
+        // Safe/idempotent: only drop if legacy tables exist
+        if (Schema::hasTable('event_external_links')) {
+            Schema::drop('event_external_links');
+        }
+
+        if (Schema::hasTable('google_calendar_accounts')) {
+            Schema::drop('google_calendar_accounts');
+        }
     }
 
     public function down(): void
