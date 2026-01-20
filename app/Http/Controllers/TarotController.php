@@ -24,9 +24,11 @@ class TarotController extends Controller
     public function draw(Request $request, TarotDeck $deck, TarotInterpreter $interpreter): RedirectResponse
     {
         $validated = $request->validate([
-            'question' => ['required', 'string', 'max:500'],
+            'question' => ['nullable', 'string', 'max:500'],
             'spread' => ['required', 'in:three,five'],
         ]);
+
+        $question = trim((string) ($validated['question'] ?? ''));
 
         $count = $validated['spread'] === 'five' ? 5 : 3;
         $cards = $deck->draw($count);
@@ -44,7 +46,7 @@ class TarotController extends Controller
 
         try {
             $bundle = $interpreter->interpretBundle(
-                question: $validated['question'],
+                question: $question,
                 spread: $validated['spread'],
                 cards: $cards,
             );
@@ -72,7 +74,7 @@ class TarotController extends Controller
 
         $draft = [
             'draw_id' => (string) Str::uuid(),
-            'question' => $validated['question'],
+            'question' => $question,
             'spread' => $validated['spread'],
             'cards' => $cards,
             'interpretation' => $interpretation,
@@ -82,7 +84,7 @@ class TarotController extends Controller
 
         $request->session()->put('tarot.draft', $draft);
 
-        return redirect()->to(route('tarot.index') . '#tarot-result');
+        return redirect()->to(route('tarot.index', ['view' => 'active']) . '#tarot-active');
     }
 
     public function reset(Request $request): RedirectResponse
@@ -105,7 +107,7 @@ class TarotController extends Controller
         $data = [
             'user_id' => $userId,
             'question' => (string) ($draft['question'] ?? ''),
-            'spread' => (string) ($draft['spread'] ?? 'one'),
+            'spread' => (string) ($draft['spread'] ?? 'three'),
             'cards' => (array) ($draft['cards'] ?? []),
             'interpretation' => (string) ($draft['interpretation'] ?? ''),
             'is_shared' => false,

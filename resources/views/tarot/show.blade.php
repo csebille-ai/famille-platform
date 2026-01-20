@@ -16,13 +16,13 @@
             <a href="{{ route('tarot.history') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Retour historique</a>
         </div>
 
-        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" data-tarot-result>
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" data-tarot-stage>
             <div>
                 <div class="text-sm text-slate-500">Question</div>
                 <div class="mt-1 text-base font-semibold text-gray-900">{{ $reading->question }}</div>
             </div>
 
-            <div class="inline-flex items-center rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] p-1" role="tablist" aria-label="Affichage du résultat">
+            <div class="inline-flex items-center rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] p-1" role="tablist" aria-label="Affichage tarot">
                 <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition" data-tarot-tab="cards" role="tab">Cartes</button>
                 <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition" data-tarot-tab="reading" role="tab">Lecture</button>
             </div>
@@ -122,13 +122,13 @@
 
 <script>
 (() => {
-    // Result tabs (Cartes / Lecture)
-    const resultEl = document.querySelector('[data-tarot-result]');
+    // Tabs (Cartes / Lecture)
+    const resultEl = document.querySelector('[data-tarot-stage]');
     const tabButtons = Array.from(document.querySelectorAll('[data-tarot-tab]'));
     const cardsPanel = document.querySelector('[data-tarot-panel="cards"]');
     const readingPanel = document.querySelector('[data-tarot-panel="reading"]');
 
-    const TAB_STORAGE_KEY = 'tarot.result.tab';
+    const TAB_STORAGE_KEY = 'tarot.tab';
     const applyTabUi = (tab) => {
         const isCards = tab === 'cards';
         if (cardsPanel) cardsPanel.classList.toggle('hidden', !isCards);

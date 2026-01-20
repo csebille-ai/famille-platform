@@ -247,15 +247,12 @@
                     <div class="pointer-events-none absolute inset-y-0 right-0 w-7" style="background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));"></div>
                 </div>
 
-                <div class="hidden sm:block mt-3 text-xs font-medium text-slate-600" data-card-reminder></div>
-
-                <div class="hidden sm:block mt-2">
-                    <div class="flex items-center gap-2">
+                <div class="mt-3">
+                    <div class="text-xs font-semibold text-slate-500" data-card-reminder></div>
+                    <div class="mt-1 flex items-center gap-2">
                         <div class="text-base font-semibold text-slate-900 truncate" data-active-name></div>
-                        <span class="hidden fam-chip text-xs" data-active-reversed>Renversée</span>
                     </div>
-                    <div class="mt-2 flex items-center gap-2 flex-wrap" data-active-kws></div>
-                    <div class="hidden mt-1 text-xs text-slate-500" data-active-kws-inline></div>
+                    <div class="mt-2 flex items-center gap-2 flex-wrap" data-active-chips></div>
                 </div>
             </div>
         @endif
@@ -292,13 +289,31 @@
             });
         };
 
+        const renderChips = (container, { kws = [], isReversed = false } = {}) => {
+            if (!container) return;
+            container.innerHTML = '';
+
+            const orientChip = document.createElement('span');
+            orientChip.className = 'fam-chip text-xs';
+            orientChip.textContent = isReversed ? 'Renversée' : 'Droite';
+            container.appendChild(orientChip);
+
+            const list = Array.isArray(kws) ? kws.filter(Boolean).slice(0, 3) : [];
+            list.forEach((k) => {
+                const chip = document.createElement('span');
+                chip.className = 'fam-chip text-xs';
+                chip.textContent = k;
+                container.appendChild(chip);
+            });
+        };
+
         const getCardBtnByIndex = (selector, idx) => root.querySelector(`${selector}[data-index="${idx}"]`);
 
         const thumbs = Array.from(root.querySelectorAll('[data-thumb]'));
         const thumbsStrip = root.querySelector('[data-thumbs-strip]');
         const heroStrip = root.querySelector('[data-hero-strip]');
         const heroSlides = Array.from(root.querySelectorAll('[data-hero-slide]'));
-        const resultContainer = root.closest('[data-tarot-result]') || root;
+        const resultContainer = root.closest('[data-tarot-stage]') || root;
         const reminderEls = Array.from(resultContainer.querySelectorAll('[data-card-reminder]'));
         const reversedBadges = Array.from(resultContainer.querySelectorAll('[data-active-reversed]'));
 
@@ -317,7 +332,6 @@
             } catch (e) {}
 
             resultContainer.querySelectorAll('[data-active-name]').forEach((el) => { el.textContent = name; });
-            resultContainer.querySelectorAll('[data-active-kws]').forEach((el) => renderKeywords(el, kws));
             resultContainer.querySelectorAll('[data-active-kws-inline]').forEach((el) => {
                 const list = Array.isArray(kws) ? kws.filter(Boolean).slice(0, 3) : [];
                 el.textContent = list.length ? list.join(' · ') : '';
@@ -327,6 +341,10 @@
             const orientationLower = (orientation || '').toLowerCase();
             const isReversed = (anyBtn.getAttribute('data-reversed') === '1') || (orientationLower === 'reversed');
             reversedBadges.forEach((el) => el.classList.toggle('hidden', !isReversed));
+
+            resultContainer.querySelectorAll('[data-active-chips]').forEach((el) => {
+                renderChips(el, { kws, isReversed });
+            });
 
             const roleFull = anyBtn.getAttribute('data-role') || '';
             if (reminderEls.length) {
