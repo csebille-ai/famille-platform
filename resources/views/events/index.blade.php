@@ -64,14 +64,17 @@
             $hasFamilyCalendar = (bool) ($hasFamilyCalendar ?? false);
             $calendarHttpsUrl = (string) ($calendarHttpsUrl ?? '');
             $calendarWebcalUrl = (string) ($calendarWebcalUrl ?? '');
+
+            $googleConnected = (bool) ($googleConnected ?? false);
+            $googleSyncEnabled = (bool) ($googleSyncEnabled ?? false);
         @endphp
 
         <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille</div>
+                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille (abonnement)</div>
                     <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">
-                        Synchronise automatiquement tous les événements.
+                        Abonnement iCal (ICS/webcal) : tous les événements dans ton agenda.
                     </div>
                 </div>
                 <div class="shrink-0">
@@ -104,7 +107,7 @@
                     <div class="absolute inset-x-0 bottom-0 flex justify-center">
                         <div class="w-full max-w-[560px] rounded-t-3xl bg-white border border-[color:var(--fam-border-soft)] shadow-[0_-18px_55px_rgba(15,23,42,0.18)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
                             <div class="mx-auto h-1 w-9 rounded-full bg-black/10"></div>
-                            <div class="mt-3 text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille</div>
+                            <div class="mt-3 text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille (abonnement)</div>
                             <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">Apple Calendar s’ouvre via webcal. Google/Outlook peuvent utiliser le lien https.</div>
                             <div class="mt-3 grid gap-2">
                                 <a href="{{ $calendarWebcalUrl }}" class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]">
@@ -162,6 +165,30 @@
                     })();
                 </script>
             @endif
+        </div>
+
+        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Google Calendar (sync)</div>
+                    <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">
+                        Crée un agenda Google dédié et synchronise automatiquement les événements.
+                    </div>
+                </div>
+                <div class="shrink-0">
+                    @if($googleSyncEnabled)
+                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Actif</span>
+                    @elseif($googleConnected)
+                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Connecté</span>
+                    @else
+                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non connecté</span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+                <a href="{{ route('profile.edit') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Configurer / Gérer</a>
+            </div>
         </div>
 
         <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-3">

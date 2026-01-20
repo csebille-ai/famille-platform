@@ -60,7 +60,10 @@ class EventController extends Controller
 		$calendarHttpsUrl = $hasFamilyCalendar ? $calendarSub->httpsUrl() : null;
 		$calendarWebcalUrl = $hasFamilyCalendar ? $calendarSub->webcalUrl() : null;
 
-        return view('events.index', compact('events', 'scope', 'filter', 'hasFamilyCalendar', 'calendarHttpsUrl', 'calendarWebcalUrl'));
+        $googleConnected = $user->hasGoogleCalendarConnected();
+        $googleSyncEnabled = $user->hasGoogleCalendarSyncEnabled();
+
+        return view('events.index', compact('events', 'scope', 'filter', 'hasFamilyCalendar', 'calendarHttpsUrl', 'calendarWebcalUrl', 'googleConnected', 'googleSyncEnabled'));
     }
 
     public function create(Request $request): View
