@@ -85,8 +85,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6 space-y-4" data-tarot-result>
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
-                        <div class="text-sm text-slate-500">Résultat ({{ $spreadLabel((string) ($draft['spread'] ?? 'one')) }})</div>
-                        <div class="mt-1 text-base font-semibold text-gray-900 truncate">{{ (string) ($draft['question'] ?? '') }}</div>
+                        <div class="text-sm font-semibold text-gray-900 truncate">{{ (string) ($draft['question'] ?? '') }}</div>
                     </div>
                     <form method="POST" action="{{ route('tarot.reset') }}" class="shrink-0">
                         @csrf
@@ -94,9 +93,9 @@
                     </form>
                 </div>
 
-                <div class="inline-flex items-center rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] p-1" role="tablist" aria-label="Affichage du résultat">
-                    <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="cards" role="tab">Cartes</button>
-                    <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="reading" role="tab">Lecture</button>
+                <div class="inline-flex items-center rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] p-0.5" role="tablist" aria-label="Affichage du résultat">
+                    <button type="button" class="h-8 px-3 rounded-2xl text-[13px] font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="cards" role="tab">Cartes</button>
+                    <button type="button" class="h-8 px-3 rounded-2xl text-[13px] font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="reading" role="tab">Lecture</button>
                 </div>
 
                 @php
@@ -192,6 +191,7 @@
                                 <div class="text-sm font-semibold text-slate-900 truncate" data-active-name></div>
                                 <span class="hidden fam-chip text-xs" data-active-reversed>Renversée</span>
                             </div>
+                            <div class="mt-0.5 text-xs text-slate-600 truncate" data-active-kws-inline></div>
                         </div>
                         <button type="button" class="hidden text-sm font-semibold text-slate-700 hover:text-slate-900" data-tarot-go-cards>
                             Retour aux cartes

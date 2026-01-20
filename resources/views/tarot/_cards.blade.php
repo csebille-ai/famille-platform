@@ -108,14 +108,14 @@
             }
         }
     @endphp
-    <div id="{{ $idPrefix }}-cards-ui" class="space-y-4" data-tarot-cards-ui data-count="{{ $N }}" data-supports-rituel="{{ $supportsRituel ? '1' : '0' }}">
+    <div id="{{ $idPrefix }}-cards-ui" class="space-y-3" data-tarot-cards-ui data-count="{{ $N }}" data-supports-rituel="{{ $supportsRituel ? '1' : '0' }}">
         @if(!$supportsRituel)
             <div class="fam-card p-4 text-sm text-slate-600">
                 Affichage disponible uniquement pour 3 ou 5 cartes.
             </div>
         @else
             <div class="fam-card p-4">
-                <div class="mt-4 -mx-4 px-4 relative">
+                <div class="mt-2 -mx-4 px-4 relative">
                     <div class="flex items-start gap-3 overflow-x-auto pb-1" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-thumbs-strip>
                         @foreach($cards as $i => $c)
                             @php
@@ -193,8 +193,8 @@
                     <div class="pointer-events-none absolute inset-y-0 right-0 w-6" style="background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));"></div>
                 </div>
 
-                <div class="mt-2 -mx-4 px-4 relative" id="tarot-cards">
-                    <div class="flex items-center gap-4 overflow-x-auto py-2" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-hero-strip aria-label="Cartes (carrousel)">
+                <div class="mt-1 -mx-4 px-4 relative" id="tarot-cards">
+                    <div class="flex items-center gap-4 overflow-x-auto py-1" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-hero-strip aria-label="Cartes (carrousel)">
                         @foreach($cards as $i => $c)
                             @php
                                 $file = (string) ($c['file'] ?? '');
@@ -247,9 +247,9 @@
                     <div class="pointer-events-none absolute inset-y-0 right-0 w-7" style="background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));"></div>
                 </div>
 
-                <div class="mt-3 text-xs font-medium text-slate-600" data-card-reminder></div>
+                <div class="hidden sm:block mt-3 text-xs font-medium text-slate-600" data-card-reminder></div>
 
-                <div class="mt-2">
+                <div class="hidden sm:block mt-2">
                     <div class="flex items-center gap-2">
                         <div class="text-base font-semibold text-slate-900 truncate" data-active-name></div>
                         <span class="hidden fam-chip text-xs" data-active-reversed>Renversée</span>
@@ -298,8 +298,9 @@
         const thumbsStrip = root.querySelector('[data-thumbs-strip]');
         const heroStrip = root.querySelector('[data-hero-strip]');
         const heroSlides = Array.from(root.querySelectorAll('[data-hero-slide]'));
-        const reminderEls = Array.from(root.querySelectorAll('[data-card-reminder]'));
-        const reversedBadge = root.querySelector('[data-active-reversed]');
+        const resultContainer = root.closest('[data-tarot-result]') || root;
+        const reminderEls = Array.from(resultContainer.querySelectorAll('[data-card-reminder]'));
+        const reversedBadges = Array.from(resultContainer.querySelectorAll('[data-active-reversed]'));
 
         const syncActiveCardPanels = () => {
             const anyBtn = getCardBtnByIndex('[data-thumb]', activeIndex);
@@ -315,9 +316,9 @@
                 kws = JSON.parse(anyBtn.getAttribute('data-kws') || '[]');
             } catch (e) {}
 
-            root.querySelectorAll('[data-active-name]').forEach((el) => { el.textContent = name; });
-            root.querySelectorAll('[data-active-kws]').forEach((el) => renderKeywords(el, kws));
-            root.querySelectorAll('[data-active-kws-inline]').forEach((el) => {
+            resultContainer.querySelectorAll('[data-active-name]').forEach((el) => { el.textContent = name; });
+            resultContainer.querySelectorAll('[data-active-kws]').forEach((el) => renderKeywords(el, kws));
+            resultContainer.querySelectorAll('[data-active-kws-inline]').forEach((el) => {
                 const list = Array.isArray(kws) ? kws.filter(Boolean).slice(0, 3) : [];
                 el.textContent = list.length ? list.join(' · ') : '';
                 el.classList.toggle('hidden', list.length === 0);
@@ -325,9 +326,7 @@
 
             const orientationLower = (orientation || '').toLowerCase();
             const isReversed = (anyBtn.getAttribute('data-reversed') === '1') || (orientationLower === 'reversed');
-            if (reversedBadge) {
-                reversedBadge.classList.toggle('hidden', !isReversed);
-            }
+            reversedBadges.forEach((el) => el.classList.toggle('hidden', !isReversed));
 
             const roleFull = anyBtn.getAttribute('data-role') || '';
             if (reminderEls.length) {
