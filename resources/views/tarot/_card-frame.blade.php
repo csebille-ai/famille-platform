@@ -47,7 +47,7 @@
     $defaultPadLeft = '--tarot-pad-left: 8%;';
     // Inner crop radius should be slightly smaller than the outer wrapper radius.
     // Using a dedicated var avoids inheriting an overly-large radius after insets.
-    $defaultInnerRadius = '--tarot-inner-radius: 0.85rem;';
+    $defaultInnerRadius = '--tarot-inner-radius: 0.55rem;';
     $defaultRotate = ($rotateVar !== '' ? $rotateVar : '--tarot-rotate: 0deg;');
 
     // Order matters: defaults first, then caller overrides.

@@ -81,7 +81,7 @@
 		--tarot-pad-bottom: 10%;
 		--tarot-pad-left: 8%;
 		/* Inner radius for the cropped window (slightly smaller than the wrapper radius). */
-		--tarot-inner-radius: 0.85rem;
+		--tarot-inner-radius: 0.55rem;
 		--tarot-rotate: 0deg;
 		aspect-ratio: var(--tarot-aspect);
 		@apply relative block w-full overflow-hidden;

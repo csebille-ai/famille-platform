@@ -152,7 +152,7 @@
                             @endphp
                             <button
                                 type="button"
-                                class="relative shrink-0 rounded-2xl bg-transparent transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.22)]"
+                                class="relative shrink-0 rounded-xl bg-transparent transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.22)]"
                                 style="width: 84px; scroll-snap-align: center;"
                                 data-thumb
                                 data-index="{{ (int) $i }}"
@@ -170,12 +170,12 @@
                             >
                                 <div class="h-4 text-[11px] leading-4 font-semibold text-slate-500 whitespace-nowrap" data-role-label>{{ $roleShort }}</div>
                                 @if($img !== '')
-                                    <div data-thumb-box class="mt-1 w-full rounded-2xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]">
+                                    <div data-thumb-box class="mt-1 w-full rounded-xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]">
                                         @include('tarot._card-frame', [
                                             'src' => $img,
                                             'alt' => '',
                                             'variant' => 'thumb',
-                                            'class' => 'h-[118px] w-full rounded-2xl bg-white',
+                                            'class' => 'h-[118px] w-full rounded-xl bg-white',
                                             'imgClass' => 'bg-transparent',
                                             'loading' => 'lazy',
                                             'decoding' => 'async',
@@ -217,7 +217,7 @@
                                 data-index="{{ (int) $i }}"
                                 aria-label="Carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
                             >
-                                <div class="relative w-full overflow-hidden rounded-2xl bg-white shadow-sm">
+                                <div class="relative w-full overflow-hidden rounded-xl bg-white shadow-sm">
                                     @if($img === '')
                                         <div class="absolute inset-0 flex items-center justify-center">
                                             <div class="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100"></div>
@@ -229,7 +229,7 @@
                                             'src' => $img,
                                             'alt' => '',
                                             'variant' => 'hero',
-                                            'class' => 'w-full rounded-2xl bg-white',
+                                            'class' => 'w-full rounded-xl bg-white',
                                             'imgClass' => 'bg-transparent',
                                             'loading' => 'eager',
                                             'decoding' => 'async',
