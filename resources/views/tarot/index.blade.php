@@ -82,7 +82,7 @@
         </div>
 
         @if (is_array($draft ?? null))
-            <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" data-tarot-result>
+            <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6 space-y-4" data-tarot-result>
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <div class="text-sm text-slate-500">Résultat ({{ $spreadLabel((string) ($draft['spread'] ?? 'one')) }})</div>
@@ -95,26 +95,20 @@
                 </div>
 
                 <div class="inline-flex items-center rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] p-1" role="tablist" aria-label="Affichage du résultat">
-                    <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition" data-tarot-tab="cards" role="tab">Cartes</button>
-                    <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition" data-tarot-tab="reading" role="tab">Lecture</button>
+                    <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="cards" role="tab">Cartes</button>
+                    <button type="button" class="h-9 px-4 rounded-2xl text-sm font-semibold transition focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.18)]" data-tarot-tab="reading" role="tab">Lecture</button>
                 </div>
 
                 @php
                     $spread = (string) ($draft['spread'] ?? 'three');
                 @endphp
 
-                <div data-tarot-panel="cards">
+                <div data-tarot-panel="cards" class="pb-[calc(5.75rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))]">
                     @include('tarot._cards', [
                         'cards' => (array) ($draft['cards'] ?? []),
                         'spread' => $spread,
                         'idPrefix' => 'tarot-draft',
                     ])
-
-                    <div class="flex items-center justify-end">
-                        <button type="button" class="text-sm font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]" data-tarot-go-reading>
-                            Lire l’interprétation
-                        </button>
-                    </div>
                 </div>
 
                 @php
@@ -166,12 +160,8 @@
 
                 <div class="sr-only" id="tarot-tts-text">{{ $ttsText }}</div>
 
-                <div data-tarot-panel="reading" class="hidden">
-                    <div class="flex items-center justify-between gap-3">
-                        <button type="button" class="text-sm font-semibold text-slate-600 hover:text-slate-800" data-tarot-go-cards>
-                            Voir les cartes
-                        </button>
-
+                <div data-tarot-panel="reading" class="hidden pb-[calc(5.75rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))]">
+                    <div class="flex items-center justify-end gap-3">
                         <div class="flex items-center gap-3">
                             <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
                                 <input type="checkbox" id="tarot-tts-toggle" class="sr-only peer" />
@@ -186,6 +176,29 @@
 
                     <div id="tarot-reading" class="rounded-xl border border-slate-200 bg-white px-4 py-4 text-sm text-gray-900 leading-relaxed [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:my-3 [&_ul]:pl-5 [&_ul]:list-disc [&_ol]:my-3 [&_ol]:pl-5 [&_ol]:list-decimal [&_li]:mb-1 [&_strong]:font-semibold">
                         {!! \Illuminate\Support\Str::markdown($interpretationText, ['html_input' => 'strip', 'allow_unsafe_links' => false]) !!}
+                    </div>
+                </div>
+
+                <div
+                    class="sticky z-[60] rounded-2xl border border-[color:var(--fam-border-soft)] bg-white/95 supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-xl shadow-[0_-16px_40px_rgba(15,23,42,0.18)]"
+                    style="bottom: calc(var(--mobile-bottom-nav-h,4rem) + env(safe-area-inset-bottom) + 0.75rem);"
+                    data-tarot-sticky-bar
+                    aria-label="Actions du résultat tarot"
+                >
+                    <div class="px-4 py-3 flex items-center gap-3">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[11px] font-semibold text-slate-500 whitespace-nowrap" data-card-reminder></div>
+                            <div class="mt-0.5 flex items-center gap-2 min-w-0">
+                                <div class="text-sm font-semibold text-slate-900 truncate" data-active-name></div>
+                                <span class="hidden fam-chip text-xs" data-active-reversed>Renversée</span>
+                            </div>
+                        </div>
+                        <button type="button" class="hidden text-sm font-semibold text-slate-700 hover:text-slate-900" data-tarot-go-cards>
+                            Retour aux cartes
+                        </button>
+                        <button type="button" class="inline-flex items-center justify-center rounded-xl bg-[color:var(--fam-primary)] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[color:var(--fam-primary-hover)] focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.28)]" data-tarot-go-reading>
+                            Lire l’interprétation
+                        </button>
                     </div>
                 </div>
 
@@ -213,6 +226,11 @@
         if (cardsPanel) cardsPanel.classList.toggle('hidden', !isCards);
         if (readingPanel) readingPanel.classList.toggle('hidden', isCards);
 
+        const stickyGoReading = document.querySelector('[data-tarot-sticky-bar] [data-tarot-go-reading]');
+        const stickyGoCards = document.querySelector('[data-tarot-sticky-bar] [data-tarot-go-cards]');
+        if (stickyGoReading) stickyGoReading.classList.toggle('hidden', !isCards);
+        if (stickyGoCards) stickyGoCards.classList.toggle('hidden', isCards);
+
         tabButtons.forEach((btn) => {
             const isActive = btn.getAttribute('data-tarot-tab') === tab;
             btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
@@ -221,6 +239,7 @@
             btn.classList.toggle('shadow-sm', isActive);
             btn.classList.toggle('text-slate-900', isActive);
             btn.classList.toggle('text-slate-600', !isActive);
+            btn.classList.toggle('hover:text-slate-900', !isActive);
         });
     };
 

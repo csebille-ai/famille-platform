@@ -152,8 +152,8 @@
                             @endphp
                             <button
                                 type="button"
-                                class="relative shrink-0 rounded-xl bg-transparent transition-[transform] duration-150 ease-out focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.22)]"
-                                style="width: 66px; scroll-snap-align: center;"
+                                class="relative shrink-0 rounded-2xl bg-transparent transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(14,165,160,0.22)]"
+                                style="width: 84px; scroll-snap-align: center;"
                                 data-thumb
                                 data-index="{{ (int) $i }}"
                                 data-img="{{ e($img) }}"
@@ -168,20 +168,22 @@
                                 title="{{ e($roleFull) }}"
                                 aria-label="Choisir la carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
                             >
-                                <div class="h-4 text-[11px] leading-4 font-medium text-slate-500 whitespace-nowrap" data-role-label>{{ $roleShort }}</div>
+                                <div class="h-4 text-[11px] leading-4 font-semibold text-slate-500 whitespace-nowrap" data-role-label>{{ $roleShort }}</div>
                                 @if($img !== '')
-                                    @include('tarot._card-frame', [
-                                        'src' => $img,
-                                        'alt' => '',
-                                        'variant' => 'thumb',
-                                        'class' => 'mt-1 h-[96px] w-full rounded-xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]',
-                                        'imgClass' => 'bg-transparent',
-                                        'loading' => 'lazy',
-                                        'decoding' => 'async',
-                                        'rotate' => ($reversed ? 180 : 0),
-                                        'styleVars' => $tarotStyleVars,
-                                        'debug' => $tarotDebug,
-                                    ])
+                                    <div data-thumb-box class="mt-1 w-full rounded-2xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]">
+                                        @include('tarot._card-frame', [
+                                            'src' => $img,
+                                            'alt' => '',
+                                            'variant' => 'thumb',
+                                            'class' => 'h-[118px] w-full rounded-2xl bg-white',
+                                            'imgClass' => 'bg-transparent',
+                                            'loading' => 'lazy',
+                                            'decoding' => 'async',
+                                            'rotate' => ($reversed ? 180 : 0),
+                                            'styleVars' => $tarotStyleVars,
+                                            'debug' => $tarotDebug,
+                                        ])
+                                    </div>
                                 @endif
                             </button>
                         @endforeach
@@ -191,7 +193,7 @@
                     <div class="pointer-events-none absolute inset-y-0 right-0 w-6" style="background: linear-gradient(to left, rgba(255,255,255,1), rgba(255,255,255,0));"></div>
                 </div>
 
-                <div class="mt-3 -mx-4 px-4 relative" id="tarot-cards">
+                <div class="mt-2 -mx-4 px-4 relative" id="tarot-cards">
                     <div class="flex items-center gap-4 overflow-x-auto py-2" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;" data-hero-strip aria-label="Cartes (carrousel)">
                         @foreach($cards as $i => $c)
                             @php
@@ -209,8 +211,8 @@
                             @endphp
                             <button
                                 type="button"
-                                class="relative shrink-0 focus-visible:outline-none {{ $tarotDebug ? 'md:w-[540px] md:max-w-none' : '' }}"
-                                style="scroll-snap-align: center; width: min(72vw, 420px, calc(55vh * 0.665));"
+                                class="relative shrink-0 transition-[transform,opacity] duration-200 ease-out motion-reduce:transition-none focus-visible:outline-none {{ $tarotDebug ? 'md:w-[540px] md:max-w-none' : '' }}"
+                                style="scroll-snap-align: center; width: min(78vw, 380px, calc(50dvh * 0.665));"
                                 data-hero-slide
                                 data-index="{{ (int) $i }}"
                                 aria-label="Carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
@@ -296,7 +298,7 @@
         const thumbsStrip = root.querySelector('[data-thumbs-strip]');
         const heroStrip = root.querySelector('[data-hero-strip]');
         const heroSlides = Array.from(root.querySelectorAll('[data-hero-slide]'));
-        const reminderEl = root.querySelector('[data-card-reminder]');
+        const reminderEls = Array.from(root.querySelectorAll('[data-card-reminder]'));
         const reversedBadge = root.querySelector('[data-active-reversed]');
 
         const syncActiveCardPanels = () => {
@@ -328,8 +330,9 @@
             }
 
             const roleFull = anyBtn.getAttribute('data-role') || '';
-            if (reminderEl) {
-                reminderEl.textContent = roleFull ? `Carte ${activeIndex + 1}/${count} — ${roleFull}` : `Carte ${activeIndex + 1}/${count}`;
+            if (reminderEls.length) {
+                const t = roleFull ? `Carte ${activeIndex + 1}/${count} — ${roleFull}` : `Carte ${activeIndex + 1}/${count}`;
+                reminderEls.forEach((el) => { el.textContent = t; });
             }
         };
 
