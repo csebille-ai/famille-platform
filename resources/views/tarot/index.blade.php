@@ -19,20 +19,16 @@
             </div>
         @endif
 
-        <div class="flex items-center justify-between gap-3">
-            <h1 class="text-lg font-bold text-slate-900">Tarot</h1>
-
-            @if($hasDraft)
-                <form method="POST" action="{{ route('tarot.reset') }}" class="shrink-0">
-                    @csrf
-                    <x-secondary-button type="submit" class="!h-8 !px-3 !text-[13px]">Relancer</x-secondary-button>
-                </form>
-            @endif
-        </div>
-
         <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6">
             <div class="flex items-center justify-between gap-3">
                 <h2 class="text-sm font-semibold text-slate-900">Nouveau tirage</h2>
+
+                @if($hasDraft)
+                    <form method="POST" action="{{ route('tarot.reset') }}" class="shrink-0">
+                        @csrf
+                        <x-secondary-button type="submit" class="!h-8 !px-3 !text-[13px]">Nouveau</x-secondary-button>
+                    </form>
+                @endif
             </div>
 
             <form method="POST" action="{{ route('tarot.draw') }}" class="mt-4 space-y-4" data-tarot-draw-form>
@@ -53,24 +49,21 @@
                     <div class="microcopy mt-1 text-xs text-slate-500">3 pour aller droit au but, 5 pour décortiquer.</div>
                 </div>
 
-                <details class="rounded-xl border border-slate-200 bg-white px-4 py-3">
-                    <summary class="cursor-pointer text-sm font-semibold text-slate-700 select-none">+ Ajouter une question (facultatif)</summary>
-                    <div class="mt-3">
-                        <label for="question" class="block text-sm font-semibold text-slate-900">Question</label>
-                        <textarea id="question" name="question" rows="3" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
-                        <div class="microcopy mt-1 text-xs text-slate-500">Max 500 caractères.</div>
+                <div>
+                    <label for="question" class="block text-sm font-semibold text-slate-900">Question <span class="text-slate-500 font-medium">(facultatif)</span></label>
+                    <textarea id="question" name="question" rows="3" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
+                    <div class="microcopy mt-1 text-xs text-slate-500">Max 500 caractères.</div>
 
-                        <div class="mt-2 flex items-center gap-3">
-                            <x-secondary-button type="button" id="tarot-stt-start">Dicter</x-secondary-button>
-                            <x-secondary-button type="button" id="tarot-stt-stop">Stop</x-secondary-button>
-                            <div id="tarot-stt-status" class="text-xs text-slate-500"></div>
-                        </div>
+                    <div class="mt-2 flex items-center gap-3">
+                        <x-secondary-button type="button" id="tarot-stt-start">Dicter</x-secondary-button>
+                        <x-secondary-button type="button" id="tarot-stt-stop">Stop</x-secondary-button>
+                        <div id="tarot-stt-status" class="text-xs text-slate-500"></div>
                     </div>
-                </details>
+                </div>
 
                 <div class="flex items-center gap-3">
                     <x-primary-button data-tarot-submit>
-                        <span data-tarot-submit-label>Lancer le tirage</span>
+                        <span data-tarot-submit-label>Tirer 3 cartes</span>
                         <span class="hidden items-center gap-2" data-tarot-submit-loading>
                             <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
@@ -83,8 +76,8 @@
             </form>
         </div>
 
-        <div class="text-sm text-slate-600 leading-snug">
-            Choisis 3 ou 5 cartes : 3 pour aller droit au but, 5 pour quand tu veux vraiment tout décortiquer. Pose ta question (ou pas) et on y va.
+        <div class="microcopy text-sm text-slate-600 leading-snug">
+            3 pour aller droit au but, 5 pour tout décortiquer. Question facultative.
         </div>
 
         <div class="space-y-4" data-tarot-stage>
@@ -109,19 +102,30 @@
             @if(!$hasDraft)
                 <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6" data-tarot-stage-empty>
                     <div class="text-sm text-slate-600">Aucun tirage pour l’instant. Lance un tirage et on affiche les cartes ici.</div>
-                    <div class="mt-3 flex items-center gap-3">
-                        <a href="{{ route('tarot.history') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">Historique</a>
-                    </div>
                 </div>
             @elseif(!$isActive)
                 @php
                     $cards = (array) ($draft['cards'] ?? []);
                     $count = count($cards);
+                    $generatedAt = (string) ($draft['generated_at'] ?? '');
+                    $generatedLabel = '';
+                    try {
+                        if ($generatedAt !== '') {
+                            $generatedLabel = \Carbon\Carbon::parse($generatedAt)->diffForHumans();
+                        }
+                    } catch (\Throwable $e) {
+                        $generatedLabel = '';
+                    }
                 @endphp
                 <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6" data-tarot-stage-last>
                     <div class="flex items-center justify-between gap-3">
-                        <h2 class="text-sm font-semibold text-slate-900">Dernier tirage</h2>
-                        <a href="{{ route('tarot.index', ['view' => 'active']) }}#tarot-active" class="text-sm font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]">Reprendre</a>
+                        <div>
+                            <h2 class="text-sm font-semibold text-slate-900">Dernier tirage</h2>
+                            @if($generatedLabel !== '')
+                                <div class="mt-0.5 text-xs text-slate-500">{{ $generatedLabel }}</div>
+                            @endif
+                        </div>
+                        <a href="{{ route('tarot.index', ['view' => 'active']) }}#tarot-reading" class="text-sm font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]">Voir l’interprétation</a>
                     </div>
 
                     @if($count > 0)
@@ -152,9 +156,6 @@
                         </div>
                     @endif
 
-                    <div class="mt-4 flex items-center gap-3">
-                        <a href="{{ route('tarot.history') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">Historique</a>
-                    </div>
                 </div>
             @else
                 <div id="tarot-active" tabindex="-1" class="bg-white rounded-2xl shadow-sm p-4 sm:p-6 space-y-3" style="scroll-margin-top: 5.5rem;" data-tarot-stage-active>
@@ -271,6 +272,10 @@
                 </div>
             @endif
         </div>
+
+        <div>
+            <a href="{{ route('tarot.history') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">Historique</a>
+        </div>
     </div>
 </x-app-layout>
 
@@ -369,6 +374,25 @@
     const stageActiveEl = document.querySelector('[data-tarot-stage-active]');
     const stageEmptyEl = document.querySelector('[data-tarot-stage-empty]');
     const stageLastEl = document.querySelector('[data-tarot-stage-last]');
+
+    const updateSubmitLabel = () => {
+        if (!drawForm || !submitLabel) return;
+        const selected = drawForm.querySelector('input[name="spread"]:checked');
+        const v = (selected && selected.value) ? String(selected.value) : 'three';
+        submitLabel.textContent = (v === 'five') ? 'Tirer 5 cartes' : 'Tirer 3 cartes';
+    };
+
+    if (drawForm) {
+        drawForm.addEventListener('change', (e) => {
+            const t = e.target;
+            if (!t) return;
+            if (t.matches && t.matches('input[name="spread"]')) {
+                updateSubmitLabel();
+            }
+        }, { passive: true });
+
+        updateSubmitLabel();
+    }
 
     drawForm?.addEventListener('submit', () => {
         try { drawForm.setAttribute('aria-busy', 'true'); } catch (e) {}
