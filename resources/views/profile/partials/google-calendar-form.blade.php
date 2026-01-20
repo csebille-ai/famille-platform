@@ -55,6 +55,8 @@
             <p class="mt-2 text-sm text-gray-600">Resynchronisation lancée.</p>
         @elseif (session('status') === 'google-calendar-error')
             <p class="mt-2 text-sm text-rose-600">Connexion Google Agenda échouée. Réessaie.</p>
+        @elseif (session('status') === 'google-calendar-misconfigured')
+            <p class="mt-2 text-sm text-rose-600">Connexion Google Agenda impossible: configuration manquante (GOOGLE_CLIENT_ID / GOOGLE_REDIRECT_URI / APP_URL). Vérifie aussi l’URL de redirection autorisée dans Google Cloud Console.</p>
         @endif
     </div>
 </section>

@@ -15,8 +15,17 @@ class GoogleCalendarOauthTest extends TestCase
 {
     use RefreshDatabase;
 
+    private function setGoogleOauthConfig(): void
+    {
+        config()->set('services.google_calendar.client_id', 'test-client-id');
+        config()->set('services.google_calendar.client_secret', 'test-client-secret');
+        config()->set('services.google_calendar.redirect', 'http://127.0.0.1:8000/oauth/google/calendar/callback');
+    }
+
     public function test_oauth_start_redirects_to_google_and_sets_state(): void
     {
+        $this->setGoogleOauthConfig();
+        // Assert fallback works even if env redirect is missing.
         config()->set('services.google_calendar.redirect', '');
 
         $user = User::factory()->create();
@@ -36,6 +45,8 @@ class GoogleCalendarOauthTest extends TestCase
 
     public function test_oauth_callback_exchanges_code_and_saves_tokens(): void
     {
+        $this->setGoogleOauthConfig();
+
         Bus::fake();
 
         Http::fake([

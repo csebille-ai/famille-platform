@@ -33,10 +33,20 @@ class GoogleCalendarClient
         return $fallback;
     }
 
+    private function requireNonEmpty(string $value, string $name): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            throw new \RuntimeException("Missing Google OAuth configuration: {$name}.");
+        }
+
+        return $value;
+    }
+
     public function buildAuthorizeUrl(User $user, string $state): string
     {
-        $clientId = (string) config('services.google_calendar.client_id');
-        $redirectUri = $this->resolveRedirectUri();
+        $clientId = $this->requireNonEmpty((string) config('services.google_calendar.client_id'), 'GOOGLE_CLIENT_ID');
+        $redirectUri = $this->requireNonEmpty($this->resolveRedirectUri(), 'GOOGLE_REDIRECT_URI/APP_URL');
 
         $params = [
             'client_id' => $clientId,
@@ -58,9 +68,9 @@ class GoogleCalendarClient
      */
     public function exchangeCodeForTokens(string $code): array
     {
-        $clientId = (string) config('services.google_calendar.client_id');
-        $clientSecret = (string) config('services.google_calendar.client_secret');
-        $redirectUri = $this->resolveRedirectUri();
+        $clientId = $this->requireNonEmpty((string) config('services.google_calendar.client_id'), 'GOOGLE_CLIENT_ID');
+        $clientSecret = $this->requireNonEmpty((string) config('services.google_calendar.client_secret'), 'GOOGLE_CLIENT_SECRET');
+        $redirectUri = $this->requireNonEmpty($this->resolveRedirectUri(), 'GOOGLE_REDIRECT_URI/APP_URL');
 
         $resp = Http::asForm()->timeout(15)->post(self::TOKEN_URL, [
             'code' => $code,

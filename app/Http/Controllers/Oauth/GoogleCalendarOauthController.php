@@ -51,7 +51,12 @@ class GoogleCalendarOauthController
             return redirect()->route('profile.edit')->with('status', 'google-calendar-error');
         }
 
-        $tokens = $client->exchangeCodeForTokens($code);
+        try {
+            $tokens = $client->exchangeCodeForTokens($code);
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->route('profile.edit')->with('status', 'google-calendar-misconfigured');
+        }
 
         $accessToken = (string) ($tokens['access_token'] ?? '');
         $refreshToken = isset($tokens['refresh_token']) && is_string($tokens['refresh_token']) ? $tokens['refresh_token'] : null;
