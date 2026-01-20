@@ -153,7 +153,7 @@
                     $interpretationText = str_replace(["\\r\\n", "\\n", "\\r"], "\n", $interpretationText);
                     $interpretationText = str_replace("\r\n", "\n", $interpretationText);
                     $interpretationText = preg_replace('/^\s*✅\s+/mu', '- ', $interpretationText) ?? $interpretationText;
-                    $interpretationText = preg_replace('/^(Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:/mu', '**$1 :**', $interpretationText) ?? $interpretationText;
+                    $interpretationText = preg_replace('/^(Passé|Présent|Futur|Défi|Conseil|Issue probable|Le conseil qui pique mais qui aide|Le twist final)\s*:/mu', '**$1 :**', $interpretationText) ?? $interpretationText;
                     $interpretationText = preg_replace('/^##\s*Annonce du tirage\s*\n+/mi', '', $interpretationText) ?? $interpretationText;
                     $interpretationText = trim($interpretationText);
 

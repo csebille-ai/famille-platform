@@ -31,6 +31,54 @@ class TarotInterpreter
         $model = (string) config('services.openai.model', 'gpt-4o-mini');
         $maxChars = (int) config('tarot.max_chars', 1200);
 
+        $spreadKey = strtolower(trim((string) $spread));
+        $isFive = in_array($spreadKey, ['five', '5', '5-cards', 'five-cards'], true);
+
+        $formatBlock = $isFive
+            ? <<<FMT
+    (Chapeau ici, sans "Annonce du tirage" ni aucun titre.)
+
+    ## Passé
+    2 phrases.
+
+    ## Présent
+    2 phrases.
+
+    ## Défi
+    2 phrases.
+
+    ## Conseil
+    2 phrases.
+
+    ## Issue probable
+    2 phrases.
+
+    ## Le twist final
+    1 punchline surprise.
+    - Ne termine jamais par "..." ou "…".
+    FMT
+            : <<<FMT
+    (Chapeau ici, sans "Annonce du tirage" ni aucun titre.)
+
+    ## Passé
+    2 phrases.
+
+    ## Présent
+    2 phrases.
+
+    ## Futur
+    2 phrases.
+
+    ## Le conseil qui pique mais qui aide
+    2 actions concrètes au format liste:
+    - ✅ ...
+    - ✅ ...
+
+    ## Le twist final
+    1 punchline surprise.
+    - Ne termine jamais par "..." ou "…".
+    FMT;
+
         $normalizeOrientation = function (array $c): string {
             $raw = strtolower(trim((string) ($c['orientation'] ?? '')));
             if (in_array($raw, ['upright', 'reversed'], true)) {
@@ -94,25 +142,7 @@ class TarotInterpreter
     - Puis utilise des TITRES (##) et de VRAIS paragraphes (lignes séparées par une ligne vide).
     - Aucun bloc compact tout collé : laisse une ligne vide entre les sections.
 
-    (Chapeau ici, sans "Annonce du tirage" ni aucun titre.)
-
-    ## Passé
-    2 phrases.
-
-    ## Présent
-    2 phrases.
-
-    ## Futur
-    2 phrases.
-
-    ## Le conseil qui pique mais qui aide
-    2 actions concrètes au format liste:
-    - ✅ ...
-    - ✅ ...
-
-    ## Le twist final
-    1 punchline surprise.
-    - Ne termine jamais par "..." ou "…".
+    {$formatBlock}
 
     EN PLUS: SPOKEN_TEXT (pour lecture audio)
     - Génère aussi un champ spoken_text adapté à l’oral: 25–45 secondes.
@@ -217,9 +247,9 @@ TXT;
         $t = preg_replace('/^\s*•\s+/mu', '- ', $t) ?? $t;
 
         // Upgrade common section labels to markdown headings.
-        $t = preg_replace('/^\s*\*\*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:?\s*\*\*\s*$/mu', '## $1', $t) ?? $t;
-        $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*$/mu', '## $1', $t) ?? $t;
-        $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*(.+)$/mu', "## $1\n\n$2", $t) ?? $t;
+        $t = preg_replace('/^\s*\*\*(Annonce du tirage|Passé|Présent|Futur|Défi|Conseil|Issue probable|Le conseil qui pique mais qui aide|Le twist final)\s*:?\s*\*\*\s*$/mu', '## $1', $t) ?? $t;
+        $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Défi|Conseil|Issue probable|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*$/mu', '## $1', $t) ?? $t;
+        $t = preg_replace('/^\s*(Annonce du tirage|Passé|Présent|Futur|Défi|Conseil|Issue probable|Le conseil qui pique mais qui aide|Le twist final)\s*:\s*(.+)$/mu', "## $1\n\n$2", $t) ?? $t;
 
         // If the model used an "Annonce du tirage" heading, remove the label but keep the chapeau text.
         $t = preg_replace('/^##\s*Annonce du tirage\s*\n+/mi', "", $t) ?? $t;
