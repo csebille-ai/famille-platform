@@ -646,7 +646,8 @@ Route::get('/home', function () {
             if (is_array($card) && !empty($card['name'])) {
                 $tarotImageUrl = null;
                 if (!empty($card['file'])) {
-                    $tarotImageUrl = 'https://opanoma.fr/tarot/' . ltrim((string) $card['file'], '/');
+                    $base = rtrim((string) config('tarot.assets_base_url', 'https://opanoma.fr/tarot'), '/');
+                    $tarotImageUrl = $base . '/' . ltrim((string) $card['file'], '/');
                 }
 
                 $messages = [
