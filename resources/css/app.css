@@ -66,6 +66,41 @@
 		@apply absolute object-cover;
 	}
 
+	/* Tarot draw screen: crop the external green frame, keep the whole card visible. */
+	.tarot-card-frame {
+		/* Tune once for the whole deck (Tempérance is a good reference).
+		   Goal: the visible edge starts at the off-white inner frame (no green).
+		   Start here, then adjust in debug mode (?tarot_debug=1).
+		*/
+		--tarot-aspect: 0.69;
+		--tarot-crop-top: 12%;
+		--tarot-crop-right: 8%;
+		--tarot-crop-bottom: 7%;
+		--tarot-crop-left: 8%;
+		aspect-ratio: var(--tarot-aspect);
+		@apply relative overflow-hidden;
+	}
+
+	.tarot-card-frame__img {
+		top: calc(var(--tarot-crop-top) * -1);
+		right: calc(var(--tarot-crop-right) * -1);
+		bottom: calc(var(--tarot-crop-bottom) * -1);
+		left: calc(var(--tarot-crop-left) * -1);
+		@apply absolute h-full w-full object-contain;
+	}
+
+	.tarot-card-frame--debug {
+		@apply ring-2 ring-red-500;
+	}
+
+	.tarot-card-frame--debug::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border: 2px dashed rgba(239, 68, 68, 0.6);
+		pointer-events: none;
+	}
+
 	.fam-card {
 		background: var(--fam-surface);
 		border: 1px solid var(--fam-border);

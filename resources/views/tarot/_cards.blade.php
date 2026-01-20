@@ -12,6 +12,38 @@
     $N = count($cards);
     $supportsRituel = in_array($N, [3, 5], true);
 
+    // Debug mode for tuning tarot crop/aspect quickly.
+    // Usage: /tarot?tarot_debug=1 (optional overrides: tarot_crop_top/right/bottom/left + tarot_aspect)
+    $tarotDebug = request()->boolean('tarot_debug');
+    $tarotStyleVars = '';
+    if ($tarotDebug) {
+        $asPct = function (string $key, float $fallback): string {
+            $raw = request()->query($key);
+            if ($raw === null || $raw === '') return sprintf('%.2f%%', $fallback);
+            if (!is_numeric($raw)) return sprintf('%.2f%%', $fallback);
+            $v = (float) $raw;
+            $v = max(0.0, min(25.0, $v));
+            return rtrim(rtrim(sprintf('%.2f', $v), '0'), '.') . '%';
+        };
+        $asAspect = function (string $key, float $fallback): string {
+            $raw = request()->query($key);
+            if ($raw === null || $raw === '') return rtrim(rtrim(sprintf('%.4f', $fallback), '0'), '.');
+            if (!is_numeric($raw)) return rtrim(rtrim(sprintf('%.4f', $fallback), '0'), '.');
+            $v = (float) $raw;
+            $v = max(0.55, min(0.85, $v));
+            return rtrim(rtrim(sprintf('%.4f', $v), '0'), '.');
+        };
+
+        // Defaults match CSS; query params can override while tuning.
+        $tarotStyleVars = implode(' ', [
+            '--tarot-aspect: ' . $asAspect('tarot_aspect', 0.69) . ';',
+            '--tarot-crop-top: ' . $asPct('tarot_crop_top', 12) . ';',
+            '--tarot-crop-right: ' . $asPct('tarot_crop_right', 8) . ';',
+            '--tarot-crop-bottom: ' . $asPct('tarot_crop_bottom', 7) . ';',
+            '--tarot-crop-left: ' . $asPct('tarot_crop_left', 8) . ';',
+        ]);
+    }
+
     $normalizeKeywords = function ($raw): array {
         if (is_array($raw)) {
             $items = $raw;
@@ -132,18 +164,19 @@
                                 aria-label="Choisir la carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
                             >
                                 <div class="h-4 text-[11px] leading-4 font-medium text-slate-500 whitespace-nowrap" data-role-label>{{ $roleShort }}</div>
-                                <div class="tarot-crop mt-1 h-[96px] w-full overflow-hidden rounded-xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]" data-thumb-box>
-                                    @if($img !== '')
-                                        <img
-                                            src="{{ $img }}"
-                                            alt=""
-                                            class="tarot-crop__img bg-transparent"
-                                            style="transform: {{ $reversed ? 'rotate(180deg) scale(1.02)' : 'scale(1.02)' }};"
-                                            loading="lazy"
-                                            decoding="async"
-                                        />
-                                    @endif
-                                </div>
+                                @if($img !== '')
+                                    @include('tarot._card-frame', [
+                                        'src' => $img,
+                                        'alt' => '',
+                                        'class' => 'mt-1 h-[96px] w-full rounded-xl bg-white shadow-[0_6px_16px_rgba(15,23,42,0.10)]',
+                                        'imgClass' => 'bg-transparent',
+                                        'loading' => 'lazy',
+                                        'decoding' => 'async',
+                                        'imgStyle' => 'transform: ' . ($reversed ? 'rotate(180deg)' : 'none') . ';',
+                                        'styleVars' => $tarotStyleVars,
+                                        'debug' => $tarotDebug,
+                                    ])
+                                @endif
                             </button>
                         @endforeach
                     </div>
@@ -170,13 +203,13 @@
                             @endphp
                             <button
                                 type="button"
-                                class="relative shrink-0 w-[clamp(240px,72vw,420px)] focus-visible:outline-none"
+                                class="relative shrink-0 w-[clamp(240px,72vw,420px)] focus-visible:outline-none {{ $tarotDebug ? 'md:w-[540px] md:max-w-none' : '' }}"
                                 style="scroll-snap-align: center;"
                                 data-hero-slide
                                 data-index="{{ (int) $i }}"
                                 aria-label="Carte {{ (int) $i + 1 }} — {{ e($roleFull) }}"
                             >
-                                <div class="tarot-crop relative w-full aspect-[2/3] overflow-hidden rounded-2xl bg-white shadow-sm" style="{{ $masterMaxHeight }}">
+                                <div class="relative w-full overflow-hidden rounded-2xl bg-white shadow-sm" style="{{ $masterMaxHeight }}">
                                     @if($img === '')
                                         <div class="absolute inset-0 flex items-center justify-center">
                                             <div class="h-full w-full bg-gradient-to-br from-slate-50 to-slate-100"></div>
@@ -184,14 +217,17 @@
                                             <img src="/images/tarot.png" alt="" class="absolute h-12 w-12 opacity-20" loading="lazy" decoding="async" />
                                         </div>
                                     @else
-                                        <img
-                                            src="{{ $img }}"
-                                            alt=""
-                                            class="tarot-crop__img bg-transparent"
-                                            style="transform: {{ ((string) $orientation) === 'reversed' || $reversed ? 'rotate(180deg) scale(1.01)' : 'scale(1.01)' }};"
-                                            loading="eager"
-                                            decoding="async"
-                                        />
+                                        @include('tarot._card-frame', [
+                                            'src' => $img,
+                                            'alt' => '',
+                                            'class' => 'w-full rounded-2xl bg-white',
+                                            'imgClass' => 'bg-transparent',
+                                            'loading' => 'eager',
+                                            'decoding' => 'async',
+                                            'imgStyle' => 'transform: ' . ((((string) $orientation) === 'reversed' || $reversed) ? 'rotate(180deg)' : 'none') . ';',
+                                            'styleVars' => $tarotStyleVars,
+                                            'debug' => $tarotDebug,
+                                        ])
                                     @endif
                                 </div>
                             </button>
