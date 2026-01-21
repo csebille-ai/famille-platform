@@ -3,6 +3,7 @@
 namespace App\Events;
 
 use App\Models\ChatMessage;
+use App\Services\ChatReactions;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -31,6 +32,8 @@ class ChatMessageSent implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
+        $reactionSummary = app(ChatReactions::class)->summaryForMessage((int) $this->message->id, null);
+
         return [
             'id' => $this->message->id,
             'body' => $this->message->body,
@@ -40,6 +43,7 @@ class ChatMessageSent implements ShouldBroadcastNow
                 'name' => $this->message->user?->name,
                 'avatar_url' => avatarUrl($this->message->user),
             ],
+            'reaction_summary' => $reactionSummary,
         ];
     }
 }

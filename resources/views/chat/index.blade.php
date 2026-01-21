@@ -307,6 +307,8 @@
 
                                 $dayKey = $m->created_at?->format('Y-m-d') ?? null;
                                 $dayLabel = $m->created_at?->format('d/m/Y') ?? '';
+
+                                $reactionSummary = (array) (($reactionSummaries ?? [])[(int) $m->id] ?? []);
                             @endphp
 
                             @if($dayKey && $dayKey !== $prevDay)
@@ -325,7 +327,7 @@
                                 $link = $att ? null : $parseLinkCard($m->body);
                             @endphp
 
-                            <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }}" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}">
+                            <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }} group" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}" data-reaction-summary='@json($reactionSummary)'>
                                 <div class="{{ $att ? 'w-[clamp(240px,72vw,420px)] max-w-[92vw] sm:w-[clamp(320px,48vw,520px)] sm:max-w-[520px]' : 'max-w-[72%] sm:max-w-[68%]' }}">
                                     @if($isGroupStart)
                                         <div class="mb-1 text-xs text-slate-500 {{ $isMe ? 'text-right' : '' }}">
@@ -344,7 +346,17 @@
                                             </div>
                                         </div>
 
-                                        <div class="{{ $att ? 'p-0 border-0 bg-transparent' : 'px-4 py-3 border' }} {{ $att ? '' : ($isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md') }}" data-bubble>
+                                        <div class="relative {{ $att ? 'p-0 border-0 bg-transparent' : 'px-4 py-3 border' }} {{ $att ? '' : ($isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md') }}" data-bubble>
+                                            <button
+                                                type="button"
+                                                class="hidden sm:inline-flex absolute -top-3 {{ $isMe ? '-left-3' : '-right-3' }} w-8 h-8 items-center justify-center rounded-full border border-black/10 bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                data-reaction-trigger
+                                                data-message-id="{{ $m->id }}"
+                                                aria-label="Réagir"
+                                                title="Réagir"
+                                            >
+                                                🙂
+                                            </button>
                                             @if ($att)
                                                 @php
                                                     $attType = (string) ($att['media_type'] ?? '');
@@ -413,6 +425,29 @@
                                                 <div class="text-sm whitespace-pre-wrap">{{ $m->body }}</div>
                                             @endif
                                         </div>
+                                    </div>
+
+                                    <div class="mt-1 flex flex-wrap gap-1.5 {{ $isMe ? 'justify-end' : 'justify-start' }}" data-reactions-row>
+                                        @foreach($reactionSummary as $r)
+                                            @php
+                                                $emoji = (string) ($r['emoji'] ?? '');
+                                                $count = (int) ($r['count'] ?? 0);
+                                                $mine = (bool) ($r['reacted_by_me'] ?? false);
+                                            @endphp
+                                            @if($emoji !== '' && $count > 0)
+                                                <button
+                                                    type="button"
+                                                    class="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold shadow-sm {{ $mine ? 'border-teal-300 bg-teal-50 text-teal-800' : 'border-black/10 bg-amber-50/60 text-slate-700' }}"
+                                                    data-reaction-chip
+                                                    data-emoji="{{ $emoji }}"
+                                                    data-message-id="{{ $m->id }}"
+                                                    aria-label="Réactions {{ $emoji }}"
+                                                >
+                                                    <span class="text-sm leading-none">{{ $emoji }}</span>
+                                                    <span class="text-[11px] leading-none">{{ $count }}</span>
+                                                </button>
+                                            @endif
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
@@ -578,6 +613,36 @@
 
         <div id="chatQuickTypeToast" class="fixed inset-x-0 bottom-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom)+0.75rem)] sm:bottom-6 z-[70] pointer-events-none hidden">
             <div class="mx-auto w-fit rounded-full bg-slate-900 text-white px-3 py-1.5 text-xs font-semibold shadow-lg">Copié</div>
+        </div>
+
+        <div id="chatReactionsPicker" class="fixed inset-0 z-[80] hidden" aria-hidden="true">
+            <div id="chatReactionsPickerBackdrop" class="absolute inset-0"></div>
+            <div id="chatReactionsPickerPanel" class="absolute rounded-2xl border border-slate-200 bg-white shadow-2xl px-2 py-2">
+                <div class="flex items-center gap-1.5">
+                    @foreach(\App\Services\ChatReactions::BASE_EMOJIS as $e)
+                        <button type="button" class="w-10 h-10 rounded-xl hover:bg-[color:rgba(14,165,160,0.10)] text-xl" data-reaction-pick="{{ $e }}" aria-label="Réagir {{ $e }}">{{ $e }}</button>
+                    @endforeach
+                    <button type="button" class="w-10 h-10 rounded-xl hover:bg-[color:rgba(14,165,160,0.10)] text-sm font-bold text-slate-700" data-reaction-more aria-label="Plus">＋</button>
+                </div>
+                <div id="chatReactionsMore" class="hidden mt-2 pt-2 border-t border-slate-100">
+                    <div class="grid grid-cols-8 gap-1">
+                        @foreach(['🎉','🔥','😍','🤩','😎','🤔','😅','😭','👏','✅','❌','💯','💪','✨','🫶','🤝'] as $e)
+                            <button type="button" class="w-9 h-9 rounded-xl hover:bg-[color:rgba(14,165,160,0.10)] text-lg" data-reaction-pick="{{ $e }}" aria-label="Réagir {{ $e }}">{{ $e }}</button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="chatReactionsWhoModal" class="fixed inset-0 z-[90] hidden" aria-hidden="true">
+            <div id="chatReactionsWhoBackdrop" class="absolute inset-0 bg-black/40"></div>
+            <div class="absolute inset-x-0 bottom-0 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:top-24 sm:bottom-auto w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl p-4 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm font-semibold text-gray-900">Réactions</div>
+                    <button type="button" id="chatReactionsWhoClose" class="w-9 h-9 rounded-full inline-flex items-center justify-center text-slate-600 hover:bg-[color:rgba(14,165,160,0.10)]" aria-label="Fermer" title="Fermer">✕</button>
+                </div>
+                <div id="chatReactionsWhoBody" class="mt-3 space-y-4"></div>
+            </div>
         </div>
     </div>
 
@@ -1625,6 +1690,28 @@
             const finalizeUrl = @json(url('/api/uploads/finalize'));
             let lastMessageId = @json($lastMessageId ?? 0);
             const initialOnline = @json($initialOnline ?? []);
+            const initialReactionSummaries = @json($reactionSummaries ?? []);
+            const reactionSummaries = new Map();
+
+            function toArraySummary(v) {
+                if (!Array.isArray(v)) return [];
+                return v
+                    .map((r) => ({
+                        emoji: String(r?.emoji || '').trim(),
+                        count: Number(r?.count || 0),
+                        reacted_by_me: Boolean(r?.reacted_by_me),
+                    }))
+                    .filter((r) => r.emoji && r.count > 0);
+            }
+
+            try {
+                for (const [k, v] of Object.entries(initialReactionSummaries || {})) {
+                    const id = Number(k);
+                    if (!Number.isNaN(id) && id > 0) {
+                        reactionSummaries.set(id, toArraySummary(v));
+                    }
+                }
+            } catch {}
 
             const MAX_UPLOAD_BYTES = @json((int) config('uploads.max_upload_bytes'));
             const MULTIPART_THRESHOLD_BYTES = @json((int) config('uploads.multipart_threshold_bytes'));
@@ -2085,6 +2172,310 @@
                 return last?.dataset?.dayKey || '';
             })();
 
+            function renderReactionsRow(rowEl, summary) {
+                if (!rowEl) return;
+                const el = rowEl.querySelector('[data-reactions-row]');
+                if (!el) return;
+
+                const items = toArraySummary(summary);
+                el.innerHTML = '';
+                if (items.length === 0) return;
+
+                for (const r of items) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.dataset.reactionChip = '1';
+                    btn.dataset.emoji = r.emoji;
+                    btn.dataset.messageId = rowEl.dataset.messageId || '';
+                    btn.className = 'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold shadow-sm ' + (r.reacted_by_me ? 'border-teal-300 bg-teal-50 text-teal-800' : 'border-black/10 bg-amber-50/60 text-slate-700');
+
+                    const emo = document.createElement('span');
+                    emo.className = 'text-sm leading-none';
+                    emo.textContent = r.emoji;
+                    const count = document.createElement('span');
+                    count.className = 'text-[11px] leading-none';
+                    count.textContent = String(r.count);
+                    btn.appendChild(emo);
+                    btn.appendChild(count);
+                    el.appendChild(btn);
+                }
+            }
+
+            function updateReactionSummary(messageId, summary) {
+                const id = Number(messageId || 0);
+                if (!id) return;
+                const normalized = toArraySummary(summary);
+                reactionSummaries.set(id, normalized);
+                const row = messagesEl?.querySelector(`[data-message-id="${id}"]`);
+                if (row) {
+                    row.dataset.reactionSummary = JSON.stringify(normalized);
+                    renderReactionsRow(row, normalized);
+                }
+            }
+
+            function optimisticToggle(summary, emoji) {
+                const e = String(emoji || '').trim();
+                if (!e) return summary;
+                const items = toArraySummary(summary);
+                const idx = items.findIndex((r) => r.emoji === e);
+                if (idx >= 0) {
+                    const r = items[idx];
+                    if (r.reacted_by_me) {
+                        r.count = Math.max(0, (Number(r.count) || 0) - 1);
+                        r.reacted_by_me = false;
+                        if (r.count <= 0) items.splice(idx, 1);
+                    } else {
+                        r.count = (Number(r.count) || 0) + 1;
+                        r.reacted_by_me = true;
+                    }
+                } else {
+                    items.push({ emoji: e, count: 1, reacted_by_me: true });
+                }
+                return items;
+            }
+
+            const reactionsPicker = {
+                root: document.getElementById('chatReactionsPicker'),
+                backdrop: document.getElementById('chatReactionsPickerBackdrop'),
+                panel: document.getElementById('chatReactionsPickerPanel'),
+                more: document.getElementById('chatReactionsMore'),
+                open: false,
+                messageId: 0,
+            };
+
+            function openReactionsPicker(messageId, x, y) {
+                const id = Number(messageId || 0);
+                if (!reactionsPicker.root || !reactionsPicker.panel || !id) return;
+                reactionsPicker.messageId = id;
+                reactionsPicker.open = true;
+                reactionsPicker.more?.classList.add('hidden');
+                reactionsPicker.root.classList.remove('hidden');
+
+                const pad = 10;
+                reactionsPicker.panel.style.left = '0px';
+                reactionsPicker.panel.style.top = '0px';
+                const rect = reactionsPicker.panel.getBoundingClientRect();
+
+                const left = Math.max(pad, Math.min(Number(x || 0) - rect.width / 2, window.innerWidth - rect.width - pad));
+                const top = Math.max(pad, Math.min(Number(y || 0) - rect.height - 12, window.innerHeight - rect.height - pad));
+
+                reactionsPicker.panel.style.left = `${left}px`;
+                reactionsPicker.panel.style.top = `${top}px`;
+            }
+
+            function closeReactionsPicker() {
+                reactionsPicker.open = false;
+                reactionsPicker.messageId = 0;
+                reactionsPicker.root?.classList.add('hidden');
+            }
+
+            reactionsPicker.backdrop?.addEventListener('click', closeReactionsPicker);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeReactionsPicker();
+            });
+
+            async function postToggleReaction(messageId, emoji) {
+                const id = Number(messageId || 0);
+                const e = String(emoji || '').trim();
+                if (!id || !e) return null;
+
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const url = `/chat/messages/${id}/reactions`;
+
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    },
+                    body: JSON.stringify({ emoji: e }),
+                    credentials: 'same-origin',
+                });
+
+                if (!resp.ok) {
+                    const txt = await resp.text().catch(() => '');
+                    throw new Error(`toggle failed ${resp.status} ${txt}`);
+                }
+
+                return await resp.json();
+            }
+
+            reactionsPicker.panel?.addEventListener('click', async (e) => {
+                const btn = e.target?.closest('[data-reaction-pick], [data-reaction-more]');
+                if (!btn) return;
+                if (btn.hasAttribute('data-reaction-more')) {
+                    reactionsPicker.more?.classList.toggle('hidden');
+                    return;
+                }
+
+                const emoji = btn.getAttribute('data-reaction-pick') || '';
+                const mid = reactionsPicker.messageId;
+                if (!mid || !emoji) return;
+
+                const prev = reactionSummaries.get(mid) || [];
+                const optimistic = optimisticToggle(prev, emoji);
+                updateReactionSummary(mid, optimistic);
+                closeReactionsPicker();
+
+                try {
+                    const json = await postToggleReaction(mid, emoji);
+                    if (json?.reaction_summary) updateReactionSummary(mid, json.reaction_summary);
+                } catch {
+                    updateReactionSummary(mid, prev);
+                }
+            });
+
+            async function openWhoReacted(messageId) {
+                const id = Number(messageId || 0);
+                if (!id) return;
+                const modal = document.getElementById('chatReactionsWhoModal');
+                const body = document.getElementById('chatReactionsWhoBody');
+                if (!modal || !body) return;
+
+                body.innerHTML = '<div class="text-sm text-slate-600">Chargement…</div>';
+                modal.classList.remove('hidden');
+
+                const url = `/chat/messages/${id}/reactions`;
+                const resp = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
+                if (!resp.ok) {
+                    body.innerHTML = '<div class="text-sm text-red-600">Impossible de charger</div>';
+                    return;
+                }
+                const json = await resp.json();
+                const groups = json?.emoji_groups || {};
+
+                body.innerHTML = '';
+                const entries = Object.entries(groups);
+                if (entries.length === 0) {
+                    body.innerHTML = '<div class="text-sm text-slate-600">Aucune réaction</div>';
+                    return;
+                }
+
+                for (const [emoji, users] of entries) {
+                    const section = document.createElement('div');
+                    const title = document.createElement('div');
+                    title.className = 'text-sm font-semibold text-gray-900';
+                    title.textContent = `${emoji} ${Array.isArray(users) ? users.length : 0}`;
+                    section.appendChild(title);
+
+                    const list = document.createElement('div');
+                    list.className = 'mt-2 space-y-2';
+                    for (const u of (Array.isArray(users) ? users : [])) {
+                        const row = document.createElement('div');
+                        row.className = 'flex items-center gap-2';
+
+                        const avatar = document.createElement('div');
+                        avatar.className = 'w-8 h-8 rounded-full overflow-hidden bg-slate-100 border border-black/10';
+                        const url = String(u?.avatar_url || '');
+                        if (url) {
+                            const img = document.createElement('img');
+                            img.src = url;
+                            img.alt = '';
+                            img.className = 'w-full h-full object-cover';
+                            img.loading = 'lazy';
+                            avatar.appendChild(img);
+                        }
+
+                        const name = document.createElement('div');
+                        name.className = 'text-sm text-slate-900 font-semibold';
+                        name.textContent = String(u?.name || '—');
+
+                        row.appendChild(avatar);
+                        row.appendChild(name);
+                        list.appendChild(row);
+                    }
+
+                    section.appendChild(list);
+                    body.appendChild(section);
+                }
+            }
+
+            document.getElementById('chatReactionsWhoClose')?.addEventListener('click', () => {
+                document.getElementById('chatReactionsWhoModal')?.classList.add('hidden');
+            });
+            document.getElementById('chatReactionsWhoBackdrop')?.addEventListener('click', () => {
+                document.getElementById('chatReactionsWhoModal')?.classList.add('hidden');
+            });
+
+            // Bubble triggers: right-click (desktop) + long-press (mobile)
+            messagesEl?.addEventListener('contextmenu', (e) => {
+                const bubble = e.target?.closest('[data-bubble]');
+                if (!bubble) return;
+                e.preventDefault();
+                const row = bubble.closest('[data-message-row]');
+                const mid = row?.dataset?.messageId;
+                openReactionsPicker(mid, e.clientX, e.clientY);
+            });
+
+            let longPressTimer = null;
+            let longPressStart = null;
+
+            messagesEl?.addEventListener('pointerdown', (e) => {
+                if (e.pointerType !== 'touch') return;
+                const bubble = e.target?.closest('[data-bubble]');
+                if (!bubble) return;
+                longPressStart = { x: e.clientX, y: e.clientY };
+                if (longPressTimer) clearTimeout(longPressTimer);
+                longPressTimer = setTimeout(() => {
+                    const row = bubble.closest('[data-message-row]');
+                    const mid = row?.dataset?.messageId;
+                    const rect = bubble.getBoundingClientRect();
+                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
+                }, 480);
+            });
+
+            messagesEl?.addEventListener('pointermove', (e) => {
+                if (!longPressStart || !longPressTimer) return;
+                const dx = Math.abs(e.clientX - longPressStart.x);
+                const dy = Math.abs(e.clientY - longPressStart.y);
+                if (dx > 10 || dy > 10) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+
+            const cancelLongPress = () => {
+                if (longPressTimer) clearTimeout(longPressTimer);
+                longPressTimer = null;
+                longPressStart = null;
+            };
+
+            messagesEl?.addEventListener('pointerup', cancelLongPress);
+            messagesEl?.addEventListener('pointercancel', cancelLongPress);
+
+            // Clicking reaction chips => open who reacted list
+            messagesEl?.addEventListener('click', (e) => {
+                const trigger = e.target?.closest('[data-reaction-trigger]');
+                if (trigger) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const mid = trigger.getAttribute('data-message-id') || trigger.closest('[data-message-row]')?.dataset?.messageId;
+                    const rect = trigger.getBoundingClientRect();
+                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
+                    return;
+                }
+                const chip = e.target?.closest('[data-reaction-chip]');
+                if (!chip) return;
+                const mid = chip.getAttribute('data-message-id') || chip.closest('[data-message-row]')?.dataset?.messageId;
+                openWhoReacted(mid);
+            });
+
+            // Render existing DOM reaction summaries (server-rendered)
+            try {
+                messagesEl?.querySelectorAll('[data-message-row]').forEach((row) => {
+                    const mid = Number(row?.dataset?.messageId || 0);
+                    let rs = [];
+                    try {
+                        rs = JSON.parse(row?.dataset?.reactionSummary || '[]');
+                    } catch {
+                        rs = reactionSummaries.get(mid) || [];
+                    }
+                    if (mid) reactionSummaries.set(mid, toArraySummary(rs));
+                    renderReactionsRow(row, reactionSummaries.get(mid) || []);
+                });
+            } catch {}
+
             function appendDaySeparator(dayKey, label) {
                 if (!messagesEl || !dayKey || dayKey === lastDayKey) return;
 
@@ -2142,11 +2533,17 @@
                 }
 
                 const outer = document.createElement('div');
-                outer.className = `flex ${isMe ? 'justify-end' : 'justify-start'}`;
+                outer.className = `flex ${isMe ? 'justify-end' : 'justify-start'} group`;
                 outer.dataset.messageRow = '1';
                 outer.dataset.userId = uid != null ? String(uid) : '';
                 outer.dataset.dayKey = dk;
                 if (id != null) outer.dataset.messageId = String(id);
+
+                const initialRs = toArraySummary(payload?.reaction_summary || []);
+                outer.dataset.reactionSummary = JSON.stringify(initialRs);
+                if (id != null) {
+                    reactionSummaries.set(Number(id), initialRs);
+                }
 
                 const width = document.createElement('div');
                 width.className = att
@@ -2171,11 +2568,22 @@
 
                 const wrapper = document.createElement('div');
                 if (att) {
-                    wrapper.className = 'p-0 border-0 bg-transparent';
+                    wrapper.className = 'relative p-0 border-0 bg-transparent';
                 } else {
-                    wrapper.className = `px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
+                    wrapper.className = `relative px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
                 }
                 wrapper.dataset.bubble = '1';
+
+                // Desktop discoverability: hover button 🙂
+                const reactBtn = document.createElement('button');
+                reactBtn.type = 'button';
+                reactBtn.className = `hidden sm:inline-flex absolute -top-3 ${isMe ? '-left-3' : '-right-3'} w-8 h-8 items-center justify-center rounded-full border border-black/10 bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity`;
+                reactBtn.dataset.reactionTrigger = '1';
+                if (id != null) reactBtn.dataset.messageId = String(id);
+                reactBtn.setAttribute('aria-label', 'Réagir');
+                reactBtn.title = 'Réagir';
+                reactBtn.textContent = '🙂';
+                wrapper.appendChild(reactBtn);
                 const bodyEl = document.createElement('div');
 
                 if (att) {
@@ -2304,8 +2712,16 @@
                 row.appendChild(avatarWrap);
                 row.appendChild(wrapper);
                 width.appendChild(row);
+
+                const reactionsRow = document.createElement('div');
+                reactionsRow.className = `mt-1 flex flex-wrap gap-1.5 ${isMe ? 'justify-end' : 'justify-start'}`;
+                reactionsRow.dataset.reactionsRow = '1';
+                width.appendChild(reactionsRow);
+
                 outer.appendChild(width);
                 messagesEl.appendChild(outer);
+
+                renderReactionsRow(outer, reactionSummaries.get(Number(id)) || []);
 
                 if (wasAtBottom || isPinnedToBottom()) {
                     scrollToBottom({ force: true });
@@ -3052,6 +3468,10 @@
                         console.log('[chat] message.sent', e);
                         const appended = appendMessage(e);
                         if (e?.id) lastMessageId = Math.max(lastMessageId, Number(e.id));
+                    })
+                    .listen('.message.reactions.updated', (e) => {
+                        if (!e?.message_id) return;
+                        updateReactionSummary(Number(e.message_id), e.reaction_summary || []);
                     });
             }
 

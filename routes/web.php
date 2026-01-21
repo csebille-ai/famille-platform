@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\OpsDashboardController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ChatMessageReactionController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
@@ -1218,6 +1219,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+
+    Route::post('/chat/messages/{message}/reactions', [ChatMessageReactionController::class, 'toggle'])
+        ->middleware(['throttle:30,1'])
+        ->name('chat.messages.reactions.toggle');
+
+    Route::get('/chat/messages/{message}/reactions', [ChatMessageReactionController::class, 'index'])
+        ->middleware(['throttle:60,1'])
+        ->name('chat.messages.reactions.index');
 
 
 

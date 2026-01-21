@@ -6,6 +6,7 @@ use App\Events\ChatMessageSent;
 use App\Models\ChatPresence;
 use App\Models\ChatMessage;
 use App\Models\User;
+use App\Services\ChatReactions;
 use App\Services\WebPush\WebPushNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,9 @@ class ChatController extends Controller
             ->reverse()
             ->values();
 
+        $reactionSummaries = app(ChatReactions::class)
+            ->summaryForMessageIds($messages->pluck('id')->map(fn ($v) => (int) $v)->all(), Auth::id());
+
         $initialOnline = $this->onlineUsers();
         $lastMessageId = (int) ($messages->last()?->id ?? 0);
 
@@ -34,6 +38,7 @@ class ChatController extends Controller
             'messages' => $messages,
             'initialOnline' => $initialOnline,
             'lastMessageId' => $lastMessageId,
+            'reactionSummaries' => $reactionSummaries,
         ]);
     }
 
@@ -74,6 +79,8 @@ class ChatController extends Controller
         }
 
         if ($request->expectsJson()) {
+            $reactionSummary = app(ChatReactions::class)->summaryForMessage((int) $message->id, Auth::id());
+
             return response()->json([
                 'id' => $message->id,
                 'body' => $message->body,
@@ -83,6 +90,7 @@ class ChatController extends Controller
                     'name' => $message->user?->name,
                     'avatar_url' => avatarUrl($message->user),
                 ],
+                'reaction_summary' => $reactionSummary,
             ]);
         }
 
@@ -104,7 +112,12 @@ class ChatController extends Controller
             ->when($sinceId > 0, fn($q) => $q->where('id', '>', $sinceId))
             ->orderBy('id')
             ->limit(50)
-            ->get()
+            ->get();
+
+        $reactionSummaries = app(ChatReactions::class)
+            ->summaryForMessageIds($messages->pluck('id')->map(fn ($v) => (int) $v)->all(), Auth::id());
+
+        $messages = $messages
             ->map(fn(ChatMessage $m) => [
                 'id' => $m->id,
                 'body' => $m->body,
@@ -114,6 +127,7 @@ class ChatController extends Controller
                     'name' => $m->user?->name,
                     'avatar_url' => avatarUrl($m->user),
                 ],
+                'reaction_summary' => $reactionSummaries[(int) $m->id] ?? [],
             ])
             ->values();
 
