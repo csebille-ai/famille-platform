@@ -445,7 +445,7 @@
             @unless($attributes->get('hideNavigation'))
                 <!-- Add sheet (mobile) -->
                 <div class="sm:hidden">
-                    <div x-show="addOpen" x-cloak class="fixed inset-0 z-[80]" aria-modal="true" role="dialog">
+                    <div x-show="addOpen" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
                         <button type="button" @click="addOpen = false" class="absolute inset-0 bg-black/30" aria-label="Fermer"></button>
 
                         <div class="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white p-4 shadow-sm" style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem)">
