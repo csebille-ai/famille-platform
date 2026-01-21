@@ -3,13 +3,6 @@
 ])
 
 @php
-    $forceFixedOnMedia = request()->routeIs('media.*')
-        || request()->routeIs('images.*')
-        || request()->is('media')
-        || request()->is('media/*');
-
-    $useFixed = (bool) $fixed || $forceFixedOnMedia;
-
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
 
@@ -76,7 +69,7 @@
 @endphp
 
 <nav
-    class="sm:hidden {{ $useFixed ? 'fixed bottom-0 left-0 right-0 z-[60]' : 'w-full' }} bg-white/95 supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-xl border-t border-black/10 shadow-[0_-10px_25px_rgba(0,0,0,0.10)] pb-[env(safe-area-inset-bottom)]"
+    class="sm:hidden {{ $fixed ? 'fixed bottom-0 left-0 right-0 z-50' : 'w-full' }} bg-white/95 supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-xl border-t border-black/10 shadow-[0_-10px_25px_rgba(0,0,0,0.10)] pb-[env(safe-area-inset-bottom)]"
     style="--mobile-bottom-nav-h: 4rem;"
     aria-label="Navigation principale"
 >

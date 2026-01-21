@@ -60,7 +60,7 @@
 @if(request()->routeIs('chat.*'))
     {{-- Chat is conversation-first and provides its own sticky header. --}}
 @else
-<nav id="appTopNav" class="bg-[color:var(--fam-surface)] border-b border-[color:var(--fam-border)] fixed top-0 inset-x-0 z-[60]">
+<nav id="appTopNav" class="bg-[color:var(--fam-surface)] border-b border-[color:var(--fam-border)] fixed top-0 inset-x-0 z-50">
     <!-- Mobile: single sticky top bar -->
     <div class="sm:hidden">
         <!-- App bar (iOS-clean) -->
