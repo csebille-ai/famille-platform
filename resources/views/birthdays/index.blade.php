@@ -57,7 +57,7 @@
 
                         <div class="shrink-0 text-right">
                             <div class="text-sm font-semibold text-gray-900">{{ $labelDate }}</div>
-                            <div class="text-xs text-slate-500">J-{{ $days }}</div>
+                            <x-j-days-badge :days="$days" />
                         </div>
                     </div>
                 @endforeach

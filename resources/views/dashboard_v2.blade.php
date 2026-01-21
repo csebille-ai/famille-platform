@@ -153,7 +153,7 @@
                                             </div>
 
                                             <div class="shrink-0 text-right">
-                                                <div class="inline-flex items-center rounded-full bg-[color:var(--fam-tint)] px-2 py-1 text-xs font-extrabold text-[color:var(--fam-primary-hover)] border border-[color:rgba(14,165,160,0.18)]">J-{{ $days }}</div>
+                                                <x-j-days-badge :days="$days" />
                                             </div>
                                         </div>
                                     </a>
