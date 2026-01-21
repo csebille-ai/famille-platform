@@ -208,6 +208,21 @@
                 </div>
             </div>
 
+            <div id="astro-tabs" class="px-4 sm:px-0">
+                <div class="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur shadow-sm p-2">
+                    <div class="grid grid-cols-3 gap-2">
+                        @foreach($tabs as $key => $label)
+                            <a
+                                href="{{ route('astro.show', ['tab' => $key]) }}"
+                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold leading-none transition-all duration-150 border {{ $tab === $key ? 'bg-teal-600 text-white shadow-sm border-transparent' : 'bg-white text-slate-700 border-black/10 hover:text-slate-900 hover:bg-teal-50' }}"
+                            >
+                                {{ $label }}
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
             @if($tab === 'profile')
                 <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
                     <div class="flex items-start justify-between gap-2">
@@ -264,42 +279,30 @@
                     </div>
 
                 </div>
-            @endif
 
-            <div id="astro-tabs" class="px-4 sm:px-0">
-                @if($tab === 'profile' && ($elementHero !== '' || $chineseHero !== ''))
-                    <div class="mb-2 rounded-2xl border border-slate-200 bg-white/80 backdrop-blur shadow-sm px-4 py-3">
-                        <div class="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-700">
-                            @if($elementHero !== '')
-                                <div class="inline-flex items-center gap-2">
-                                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-teal-800 text-[11px] font-extrabold">E</span>
-                                    <span class="font-semibold text-slate-600">Élément</span>
-                                    <span class="font-extrabold text-slate-900">{{ $elementHero }}</span>
-                                </div>
-                            @endif
-                            @if($chineseHero !== '')
-                                <div class="inline-flex items-center gap-2">
-                                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-teal-800 text-[11px] font-extrabold">中</span>
-                                    <span class="font-semibold text-slate-600">Signe chinois</span>
-                                    <span class="font-extrabold text-slate-900">{{ $chineseHero }}</span>
-                                </div>
-                            @endif
+                @if($elementHero !== '' || $chineseHero !== '')
+                    <div class="px-4 sm:px-0">
+                        <div class="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur shadow-sm px-4 py-3">
+                            <div class="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-700">
+                                @if($elementHero !== '')
+                                    <div class="inline-flex items-center gap-2">
+                                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-teal-800 text-[11px] font-extrabold">E</span>
+                                        <span class="font-semibold text-slate-600">Élément</span>
+                                        <span class="font-extrabold text-slate-900">{{ $elementHero }}</span>
+                                    </div>
+                                @endif
+                                @if($chineseHero !== '')
+                                    <div class="inline-flex items-center gap-2">
+                                        <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-teal-100 text-teal-800 text-[11px] font-extrabold">中</span>
+                                        <span class="font-semibold text-slate-600">Signe chinois</span>
+                                        <span class="font-extrabold text-slate-900">{{ $chineseHero }}</span>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @endif
-                <div class="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur shadow-sm p-2">
-                    <div class="grid grid-cols-3 gap-2">
-                        @foreach($tabs as $key => $label)
-                            <a
-                                href="{{ route('astro.show', ['tab' => $key]) }}"
-                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold leading-none transition-all duration-150 border {{ $tab === $key ? 'bg-teal-600 text-white shadow-sm border-transparent' : 'bg-white text-slate-700 border-black/10 hover:text-slate-900 hover:bg-teal-50' }}"
-                            >
-                                {{ $label }}
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
+            @endif
 
             @if($tab === 'profile')
                 <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="rounded-2xl border border-slate-200 bg-amber-50/60 backdrop-blur shadow-sm">
