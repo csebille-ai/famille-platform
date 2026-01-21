@@ -302,9 +302,9 @@
             </div>
 
             @if($tab === 'profile')
-                <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="bg-white shadow sm:rounded-2xl">
+                <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="rounded-2xl border border-slate-200 bg-slate-50/70 backdrop-blur shadow-sm">
                     <div class="p-4 sm:p-6 space-y-4">
-                        <div class="mt-1">
+                        <div class="rounded-2xl border border-slate-200 bg-white p-4">
                             <div class="flex items-center justify-between">
                                 <div class="text-sm font-semibold text-slate-900">Talents</div>
                             </div>
@@ -316,7 +316,7 @@
                                 $more = count($talents) - count($visible);
                             @endphp
 
-                            <div class="mt-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                            <div class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
                                 @if(count($visible) > 0)
                                     <ul class="space-y-1.5 pl-4 list-disc marker:text-teal-600">
                                         @foreach($visible as $t)
@@ -374,9 +374,9 @@
                             }
                         @endphp
 
-                        <div class="mt-1">
+                        <div class="rounded-2xl border border-slate-200 bg-white p-4">
                             <div class="text-sm font-semibold text-slate-900">Insights</div>
-                            <div class="mt-2 grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 sm:gap-3">
+                            <div class="mt-3 grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 sm:gap-3">
                                 <div class="h-full min-w-0 rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="text-[11px] font-semibold text-slate-600">Point fort</div>
                                     <div class="mt-1 text-sm font-semibold text-emerald-950 line-clamp-2">{{ $strength !== '' ? $strength : '—' }}</div>
@@ -388,11 +388,11 @@
                             </div>
                         </div>
 
-                        <div class="pt-2">
+                        <div class="rounded-2xl border border-slate-200 bg-white p-4">
                             <div class="text-sm font-semibold text-slate-900">Actions</div>
                             <div class="mt-3">
                                 <div class="max-w-sm mx-auto space-y-3">
-                                    <a href="{{ $birthCtaUrl }}" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-teal-50">
+                                    <a href="{{ $birthCtaUrl }}" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold hover:bg-teal-50">
                                         Modifier mes infos
                                     </a>
 
