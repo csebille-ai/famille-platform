@@ -262,23 +262,6 @@
                     @endforeach
                 </div>
 
-                @php
-                    $elementText = $elementHero !== '' ? $elementHero : '—';
-                    $chineseText = $chineseHero !== '' ? $chineseHero : 'À compléter';
-                @endphp
-
-                <div class="mt-3 rounded-2xl border border-teal-200/60 bg-teal-50/40 px-3 py-2.5">
-                    <ul class="space-y-1.5 pl-4 list-disc marker:text-teal-600">
-                        <li class="text-sm text-slate-700">
-                            <span class="font-semibold">Élément</span><span class="text-slate-400"> :</span>
-                            <span class="font-extrabold text-slate-900">{{ $elementText }}</span>
-                        </li>
-                        <li class="text-sm text-slate-700">
-                            <span class="font-semibold">Signe chinois</span><span class="text-slate-400"> :</span>
-                            <span class="font-extrabold {{ $chineseHero !== '' ? 'text-slate-900' : 'text-slate-500' }}">{{ $chineseText }}</span>
-                        </li>
-                    </ul>
-                </div>
             </div>
 
             <div class="px-4 sm:px-0">
@@ -287,7 +270,7 @@
                         @foreach($tabs as $key => $label)
                             <a
                                 href="{{ route('astro.show', ['tab' => $key]) }}{{ $key === 'theme' ? '#theme-astral' : '' }}"
-                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-700 hover:text-slate-900 hover:bg-teal-50 border border-black/10' }}"
+                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold leading-none transition-all duration-150 border {{ $tab === $key ? 'bg-teal-600 text-white shadow-sm border-transparent' : 'bg-white text-slate-700 border-black/10 hover:text-slate-900 hover:bg-teal-50' }}"
                             >
                                 {{ $label }}
                             </a>
