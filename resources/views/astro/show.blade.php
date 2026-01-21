@@ -36,8 +36,6 @@
 
         $archetypeHero = trim((string) ($astro['archetype'] ?? ''));
 
-        $chineseHero = trim((string) ($astro['chinese'] ?? ''));
-
         $elementFromSign = function (string $sign): string {
             $sign = mb_strtolower(trim($sign));
 
@@ -60,9 +58,6 @@
         };
 
         $elementHero = $sun !== '' ? $elementFromSign($sun) : '';
-        $signatureParts = [];
-        if ($chineseHero !== '') $signatureParts[] = $chineseHero;
-        $signatureLine = implode(' • ', $signatureParts);
 
         $birthCtaUrl = isset($birthCtaUrl)
             ? (string) $birthCtaUrl
@@ -272,7 +267,7 @@
                             'fallback' => '—',
                         ],
                         [
-                            'value' => $chineseHero,
+                            'value' => $isChartMissing ? 'À compléter' : 'Complet',
                             'fallback' => 'À compléter',
                         ],
                     ];
@@ -290,13 +285,15 @@
                         </div>
                     @endforeach
                 </div>
+            </div>
 
-                <div class="mt-3 flex justify-center">
-                    <div class="inline-flex bg-slate-100/60 border border-slate-200 rounded-full p-1">
+            <div class="px-4 sm:px-0">
+                <div class="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur shadow-sm p-2">
+                    <div class="grid grid-cols-3 gap-2">
                         @foreach($tabs as $key => $label)
                             <a
                                 href="{{ route('astro.show', ['tab' => $key]) }}{{ $key === 'theme' ? '#theme-astral' : '' }}"
-                                class="px-4 text-center h-9 inline-flex items-center justify-center rounded-full text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900' }}"
+                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-black/10' }}"
                             >
                                 {{ $label }}
                             </a>
@@ -308,39 +305,6 @@
             @if($tab === 'profile')
                 <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="bg-white shadow sm:rounded-2xl">
                     <div class="p-4 sm:p-6 space-y-4">
-                        <div class="text-sm font-semibold text-slate-900">Essentiel</div>
-
-                        @php
-                            $chinese = trim((string) ($astro['chinese'] ?? ''));
-
-                            $essentialCards = [
-                                [
-                                    'label' => 'Signe chinois',
-                                    'value' => $chinese !== '' ? $chinese : 'À compléter',
-                                    'muted' => $chinese === '',
-                                    'meta' => '',
-                                ],
-                            ];
-                        @endphp
-
-                        <div class="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 sm:gap-3">
-                            @foreach($essentialCards as $e)
-                                @php
-                                    $accent = 'bg-sky-400/70';
-                                @endphp
-                                <div class="h-full min-w-0 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
-                                    <div class="flex items-center gap-2">
-                                        <span class="h-1.5 w-1.5 rounded-full {{ $accent }}"></span>
-                                        <div class="text-[11px] font-semibold text-slate-500">{{ $e['label'] }}</div>
-                                    </div>
-                                    <div class="mt-1 text-sm font-semibold {{ $e['muted'] ? 'text-slate-500' : 'text-slate-900' }} truncate">{{ $e['value'] }}</div>
-                                    @if(($e['meta'] ?? '') !== '')
-                                        <div class="mt-0.5 text-[11px] text-slate-500">{{ $e['meta'] }}</div>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-
                         <div class="mt-1">
                             <div class="flex items-center justify-between">
                                 <div class="text-sm font-semibold text-slate-900">Talents</div>
