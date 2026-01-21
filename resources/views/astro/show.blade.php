@@ -528,6 +528,23 @@
                                 };
                             };
 
+                            $planetTheme = function (string $key): array {
+                                $key = trim($key);
+                                return match ($key) {
+                                    'sun' => ['bg' => 'bg-amber-50', 'border' => 'border-amber-200', 'glyph' => 'text-amber-700', 'fill' => '#b45309'],
+                                    'moon' => ['bg' => 'bg-indigo-50', 'border' => 'border-indigo-200', 'glyph' => 'text-indigo-700', 'fill' => '#4338ca'],
+                                    'mercury' => ['bg' => 'bg-sky-50', 'border' => 'border-sky-200', 'glyph' => 'text-sky-700', 'fill' => '#0369a1'],
+                                    'venus' => ['bg' => 'bg-fuchsia-50', 'border' => 'border-fuchsia-200', 'glyph' => 'text-fuchsia-700', 'fill' => '#a21caf'],
+                                    'mars' => ['bg' => 'bg-rose-50', 'border' => 'border-rose-200', 'glyph' => 'text-rose-700', 'fill' => '#be123c'],
+                                    'jupiter' => ['bg' => 'bg-emerald-50', 'border' => 'border-emerald-200', 'glyph' => 'text-emerald-700', 'fill' => '#047857'],
+                                    'saturn' => ['bg' => 'bg-slate-50', 'border' => 'border-slate-200', 'glyph' => 'text-slate-700', 'fill' => '#334155'],
+                                    'uranus' => ['bg' => 'bg-cyan-50', 'border' => 'border-cyan-200', 'glyph' => 'text-cyan-700', 'fill' => '#0e7490'],
+                                    'neptune' => ['bg' => 'bg-blue-50', 'border' => 'border-blue-200', 'glyph' => 'text-blue-700', 'fill' => '#1d4ed8'],
+                                    'pluto' => ['bg' => 'bg-violet-50', 'border' => 'border-violet-200', 'glyph' => 'text-violet-700', 'fill' => '#6d28d9'],
+                                    default => ['bg' => 'bg-white', 'border' => 'border-slate-200', 'glyph' => 'text-slate-700', 'fill' => '#0f172a'],
+                                };
+                            };
+
                             $planetRows = [];
                             foreach ($planets as $pl) {
                                 if (!is_array($pl)) continue;
@@ -537,9 +554,14 @@
                                 $degInSign = $pl['deg_in_sign'] ?? null;
                                 $house = (int) ($pl['house'] ?? 0);
                                 $lon = $pl['lon'] ?? null;
+                                $theme = $planetTheme($key);
                                 $planetRows[] = [
                                     'key' => $key,
                                     'glyph' => $planetGlyph($key),
+                                    'glyph_class' => (string) ($theme['glyph'] ?? 'text-slate-700'),
+                                    'bg_class' => (string) ($theme['bg'] ?? 'bg-white'),
+                                    'border_class' => (string) ($theme['border'] ?? 'border-slate-200'),
+                                    'fill' => (string) ($theme['fill'] ?? '#0f172a'),
                                     'name' => $name,
                                     'sign' => $sign,
                                     'deg_in_sign' => is_numeric($degInSign) ? (float) $degInSign : null,
@@ -687,8 +709,9 @@
                                                 @php
                                                     $lon = $pl['lon'] ?? null;
                                                     $pt = $wheelXY($lon, 66);
+                                                    $fill = (string) ($pl['fill'] ?? '#0f172a');
                                                 @endphp
-                                                <text x="{{ $pt['x'] }}" y="{{ $pt['y'] }}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#0f172a">{{ $pl['glyph'] }}</text>
+                                                <text x="{{ $pt['x'] }}" y="{{ $pt['y'] }}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="{{ $fill }}">{{ $pl['glyph'] }}</text>
                                             @endforeach
 
                                             <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="#64748b">Carte</text>
@@ -700,9 +723,9 @@
                                     <div class="text-sm font-semibold text-slate-900">Planètes</div>
                                     <div class="mt-3 grid grid-cols-2 gap-3">
                                         @foreach($planetRows as $pl)
-                                            <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                                            <div class="rounded-2xl border px-3 py-3 {{ $pl['border_class'] }} {{ $pl['bg_class'] }}">
                                                 <div class="flex items-center gap-2">
-                                                    <span class="text-base">{{ $pl['glyph'] }}</span>
+                                                    <span class="text-base {{ $pl['glyph_class'] }}">{{ $pl['glyph'] }}</span>
                                                     <div class="text-sm font-semibold text-slate-900">{{ $pl['name'] }}</div>
                                                 </div>
                                                 <div class="mt-0.5 text-xs text-slate-600">
