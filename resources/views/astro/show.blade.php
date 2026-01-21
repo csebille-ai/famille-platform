@@ -497,6 +497,21 @@
                                 ];
                             };
 
+                            $normDeg = function ($deg) {
+                                $deg = is_numeric($deg) ? (float) $deg : 0.0;
+                                $deg = fmod($deg, 360.0);
+                                if ($deg < 0) $deg += 360.0;
+                                return $deg;
+                            };
+
+                            $midAngle = function (float $a, float $b) use ($normDeg): float {
+                                $a = $normDeg($a);
+                                $b = $normDeg($b);
+                                $delta = $b - $a;
+                                if ($delta <= 0) $delta += 360.0;
+                                return $normDeg($a + ($delta / 2.0));
+                            };
+
                             $planetGlyph = function (string $key): string {
                                 return match ($key) {
                                     'sun' => '☉',
@@ -555,6 +570,44 @@
                                 if ($ao === $bo) return strcmp($ak, $bk);
                                 return $ao <=> $bo;
                             });
+
+                            $houseCusps = [];
+                            foreach ($houses as $idx => $h) {
+                                if (!is_array($h)) continue;
+                                $lon = $h['cusp_lon'] ?? null;
+                                if (!is_numeric($lon)) continue;
+                                $num = (int) ($h['house'] ?? $h['number'] ?? ($idx + 1));
+                                if ($num <= 0) $num = $idx + 1;
+                                $houseCusps[] = ['num' => $num, 'lon' => (float) $lon];
+                            }
+                            usort($houseCusps, fn ($a, $b) => ((int) $a['num']) <=> ((int) $b['num']));
+
+                            $houseLabels = [];
+                            if (count($houseCusps) === 12) {
+                                for ($i = 0; $i < 12; $i++) {
+                                    $curr = (float) $houseCusps[$i]['lon'];
+                                    $next = (float) $houseCusps[($i + 1) % 12]['lon'];
+                                    $houseLabels[] = [
+                                        'num' => (int) $houseCusps[$i]['num'],
+                                        'lon' => $midAngle($curr, $next),
+                                    ];
+                                }
+                            }
+
+                            $zodiac = [
+                                ['abbr' => 'Bél', 'lon' => 15],
+                                ['abbr' => 'Tau', 'lon' => 45],
+                                ['abbr' => 'Gém', 'lon' => 75],
+                                ['abbr' => 'Can', 'lon' => 105],
+                                ['abbr' => 'Lio', 'lon' => 135],
+                                ['abbr' => 'Vir', 'lon' => 165],
+                                ['abbr' => 'Bal', 'lon' => 195],
+                                ['abbr' => 'Sco', 'lon' => 225],
+                                ['abbr' => 'Sag', 'lon' => 255],
+                                ['abbr' => 'Cap', 'lon' => 285],
+                                ['abbr' => 'Ver', 'lon' => 315],
+                                ['abbr' => 'Poi', 'lon' => 345],
+                            ];
                         @endphp
 
                         @if($missingCoords)
@@ -614,6 +667,20 @@
                                                     $p = $wheelXY($cuspLon, 108);
                                                 @endphp
                                                 <line x1="0" y1="0" x2="{{ $p['x'] }}" y2="{{ $p['y'] }}" stroke="#cbd5e1" stroke-width="1" />
+                                            @endforeach
+
+                                            @foreach($zodiac as $z)
+                                                @php
+                                                    $p = $wheelXY($z['lon'], 114);
+                                                @endphp
+                                                <text x="{{ $p['x'] }}" y="{{ $p['y'] }}" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#94a3b8">{{ $z['abbr'] }}</text>
+                                            @endforeach
+
+                                            @foreach($houseLabels as $h)
+                                                @php
+                                                    $p = $wheelXY($h['lon'], 90);
+                                                @endphp
+                                                <text x="{{ $p['x'] }}" y="{{ $p['y'] }}" text-anchor="middle" dominant-baseline="middle" font-size="9" fill="#64748b" font-weight="600">{{ $h['num'] }}</text>
                                             @endforeach
 
                                             @foreach($planetRows as $pl)
