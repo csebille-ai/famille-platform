@@ -67,6 +67,11 @@ class User extends Authenticatable
             'password' => 'hashed',
             'date_of_birth' => 'date',
 
+            // Ops/monitoring
+            'last_seen_at' => 'datetime',
+            'last_login_at' => 'datetime',
+            'is_active' => 'boolean',
+
             'astro_signature_json' => 'array',
             'avatar_updated_at' => 'datetime',
         ];

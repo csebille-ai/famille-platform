@@ -9,6 +9,7 @@ use App\Services\Astro\ChineseZodiac;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
@@ -22,7 +23,7 @@ class UserController extends Controller
         Gate::authorize('manage-users');
 
         $users = User::query()
-            ->orderBy('email')
+            ->orderBy('name')
             ->paginate(50)
             ->withQueryString();
 
@@ -30,6 +31,41 @@ class UserController extends Controller
             'users' => $users,
             'roles' => ['member', 'editor', 'admin'],
         ]);
+    }
+
+    public function toggleActive(Request $request, User $user): RedirectResponse
+    {
+        Gate::authorize('manage-users');
+
+        if ($user->id === Auth::id()) {
+            return redirect()
+                ->route('admin.users.index')
+                ->withErrors(['user' => __('You cannot deactivate your own account.')]);
+        }
+
+        $user->forceFill([
+            'is_active' => !((bool) $user->is_active),
+        ])->save();
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('status', __('User status updated.'));
+    }
+
+    public function revokeSessions(Request $request, User $user): RedirectResponse
+    {
+        Gate::authorize('manage-users');
+
+        // Optional V1: revoke sessions by deleting session rows.
+        try {
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+        } catch (\Throwable) {
+            // ignore
+        }
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('status', __('Sessions revoked.'));
     }
 
     public function create(Request $request): View

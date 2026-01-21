@@ -11,7 +11,13 @@ use App\Policies\PersonPolicy;
 use App\Services\Astro\NatalChartProvider;
 use App\Services\Astro\NullNatalChartProvider;
 use App\Models\User;
+use App\Models\ActivityEvent;
+use App\Events\ChatMessageSent;
+use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Event as EventFacade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -38,6 +44,61 @@ class AppServiceProvider extends ServiceProvider
     {
         User::observe(UserObserver::class);
         Event::observe(EventObserver::class);
+
+        EventFacade::listen(Login::class, function (Login $event): void {
+            try {
+                $user = $event->user;
+                if (!$user instanceof User) {
+                    return;
+                }
+                $now = CarbonImmutable::now();
+                $user->forceFill(['last_login_at' => $now])->save();
+                ActivityEvent::create([
+                    'created_at' => $now,
+                    'user_id' => $user->id,
+                    'type' => 'login',
+                    'route' => '/login',
+                    'metadata' => ['guard' => $event->guard],
+                ]);
+            } catch (\Throwable) {
+                // ignore
+            }
+        });
+
+        EventFacade::listen(Logout::class, function (Logout $event): void {
+            try {
+                $user = $event->user;
+                if (!$user instanceof User) {
+                    return;
+                }
+                $now = CarbonImmutable::now();
+                ActivityEvent::create([
+                    'created_at' => $now,
+                    'user_id' => $user->id,
+                    'type' => 'logout',
+                    'route' => '/logout',
+                    'metadata' => ['guard' => $event->guard],
+                ]);
+            } catch (\Throwable) {
+                // ignore
+            }
+        });
+
+        EventFacade::listen(ChatMessageSent::class, function (ChatMessageSent $event): void {
+            try {
+                $now = CarbonImmutable::now();
+                $userId = $event->message?->user_id;
+                ActivityEvent::create([
+                    'created_at' => $now,
+                    'user_id' => $userId,
+                    'type' => 'chat_message',
+                    'route' => '/chat',
+                    'metadata' => ['chat_message_id' => $event->message?->id],
+                ]);
+            } catch (\Throwable) {
+                // ignore
+            }
+        });
 
         Gate::policy(Person::class, PersonPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);

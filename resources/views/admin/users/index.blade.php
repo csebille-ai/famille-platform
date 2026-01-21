@@ -25,18 +25,28 @@
         </div>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-8">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @if (session('status'))
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        {{ session('status') }}
-                    </div>
+            @include('admin.ops._nav')
+
+            @if ($errors->any())
+                <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
+                    <div class="text-sm font-semibold">{{ __('Something went wrong') }}</div>
+                    <ul class="mt-2 text-sm list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
+            @if (session('status'))
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900">
+                        {{ session('status') }}
+                </div>
+            @endif
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm">
                             <thead>
@@ -44,8 +54,11 @@
                                     <th class="py-2 pr-4">{{ __('Name') }}</th>
                                     <th class="py-2 pr-4">{{ __('Email') }}</th>
                                     <th class="py-2 pr-4">{{ __('Role') }}</th>
+                                    <th class="py-2 pr-4">Statut</th>
+                                    <th class="py-2 pr-4">Dernier login</th>
+                                    <th class="py-2 pr-4">Last seen</th>
                                     <th class="py-2 pr-4">Invitation</th>
-                                    <th class="py-2">&nbsp;</th>
+                                    <th class="py-2">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -85,6 +98,22 @@
                                         </td>
 
                                         <td class="py-3 pr-4 whitespace-nowrap">
+                                            @if ($user->is_active)
+                                                <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">Actif</span>
+                                            @else
+                                                <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 border border-slate-200">Désactivé</span>
+                                            @endif
+                                        </td>
+
+                                        <td class="py-3 pr-4 whitespace-nowrap text-gray-700">
+                                            {{ optional($user->last_login_at)->diffForHumans() ?? '—' }}
+                                        </td>
+
+                                        <td class="py-3 pr-4 whitespace-nowrap text-gray-700">
+                                            {{ optional($user->last_seen_at)->diffForHumans() ?? '—' }}
+                                        </td>
+
+                                        <td class="py-3 pr-4 whitespace-nowrap">
                                             @if ($user->invited_at)
                                                 <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
                                                     Envoyée
@@ -96,13 +125,34 @@
                                             @endif
                                         </td>
 
-                                        <td class="py-3 whitespace-nowrap text-right">
-                                            <form method="POST" action="{{ route('admin.users.invite', $user) }}">
-                                                @csrf
-                                                <button type="submit" class="inline-flex items-center h-9 px-3 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50">
-                                                    {{ $user->invited_at ? 'Renvoyer invitation' : 'Envoyer invitation' }}
-                                                </button>
-                                            </form>
+                                        <td class="py-3 whitespace-nowrap">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <form method="POST" action="{{ route('admin.users.invite', $user) }}">
+                                                    @csrf
+                                                    <button type="submit" class="inline-flex items-center h-9 px-3 rounded-md border border-gray-300 bg-white text-gray-700 text-sm font-medium hover:bg-gray-50">
+                                                        {{ $user->invited_at ? 'Renvoyer invitation' : 'Envoyer invitation' }}
+                                                    </button>
+                                                </form>
+
+                                                @if (auth()->id() !== $user->id)
+                                                    <form method="POST" action="{{ route('admin.users.active', $user) }}">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="inline-flex items-center h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-700 text-sm font-semibold hover:bg-slate-50">
+                                                            {{ $user->is_active ? 'Désactiver' : 'Activer' }}
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <span class="text-xs text-slate-400 px-2">—</span>
+                                                @endif
+
+                                                <form method="POST" action="{{ route('admin.users.revokeSessions', $user) }}">
+                                                    @csrf
+                                                    <button type="submit" class="inline-flex items-center h-9 px-3 rounded-md border border-slate-300 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50">
+                                                        Revoke sessions
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -113,7 +163,6 @@
                     <div class="mt-6">
                         {{ $users->links() }}
                     </div>
-                </div>
             </div>
         </div>
     </div>

@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CloudNodeController;
 use App\Http\Controllers\AstroProfileController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\OpsDashboardController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\VideoController;
@@ -1621,6 +1622,10 @@ Route::middleware('auth')->group(function () {
     })->name('users.create');
 
     Route::prefix('admin')->group(function () {
+        Route::get('/overview', [OpsDashboardController::class, 'overview'])->name('admin.overview');
+        Route::get('/activity', [OpsDashboardController::class, 'activity'])->name('admin.activity');
+        Route::get('/errors', [OpsDashboardController::class, 'errors'])->name('admin.errors');
+
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
         Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('admin.users.edit');
@@ -1628,6 +1633,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
         Route::post('/users', [AdminUserController::class, 'store'])->name('admin.users.store');
         Route::patch('/users/{user}', [AdminUserController::class, 'update'])->name('admin.users.update');
+        Route::patch('/users/{user}/active', [AdminUserController::class, 'toggleActive'])->name('admin.users.active');
+        Route::post('/users/{user}/revoke-sessions', [AdminUserController::class, 'revokeSessions'])->name('admin.users.revokeSessions');
         Route::post('/users/invites/send-pending', [AdminUserController::class, 'sendPendingInvites'])->name('admin.users.invites.sendPending');
         Route::post('/users/{user}/invite', [AdminUserController::class, 'resendInvite'])->name('admin.users.invite');
         Route::post('/users/{user}/invite-link', [AdminUserController::class, 'inviteLink'])->name('admin.users.inviteLink');
