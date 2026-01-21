@@ -409,7 +409,7 @@
                 </div>
             @elseif($tab === 'theme')
                 <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="bg-white shadow sm:rounded-2xl">
-                    <div id="theme-astral" class="p-4 sm:p-6 space-y-4 scroll-mt-24">
+                    <div id="theme-astral" class="p-3 sm:p-5 space-y-3 scroll-mt-24">
                         <div class="text-sm font-semibold text-slate-900">Thème astral</div>
 
                         @php
@@ -432,8 +432,8 @@
                                 $inList = false;
                             @endphp
 
-                            <div class="rounded-2xl border border-slate-200 bg-white p-4">
-                                <div class="max-h-[62vh] overflow-y-auto pr-2">
+                            <div class="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
+                                <div class="max-h-[72vh] overflow-y-auto pr-2">
                                     <div class="space-y-3">
                                         @foreach($lines as $raw)
                                             @php
