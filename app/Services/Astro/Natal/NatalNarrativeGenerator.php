@@ -416,15 +416,15 @@ final class NatalNarrativeGenerator
     private function enforceLengthTarget(string $full, string $title, array $sections, array $points, array $aspectsAll): string
     {
         $min = 900;
-        $max = 1400;
+        $max = 2000;
 
         $txt = $full;
 
-        // If too long: reduce aspect count progressively down to 5.
+        // If too long: reduce aspect count progressively (down to 0 if needed).
         if (mb_strlen($txt) > $max) {
             $available = count($aspectsAll);
             $limit = min(8, min(10, $available));
-            for ($try = $limit; $try >= 5; $try--) {
+            for ($try = $limit; $try >= 0; $try--) {
                 $aspectLines = [];
                 foreach (array_slice($aspectsAll, 0, min($try, $available)) as $a) {
                     $aspectLines[] = $a['label'] . ' (orb ' . $this->fmtOrb($a['delta']) . ') : ' . $a['meaning'];
@@ -433,7 +433,9 @@ final class NatalNarrativeGenerator
                 $re = [];
                 foreach ($sections as $s) {
                     if (str_starts_with($s, '4) Aspects')) {
-                        if ($aspectLines === []) continue;
+                        if ($aspectLines === []) {
+                            continue;
+                        }
                         $re[] = "4) Aspects clés\n- " . implode("\n- ", $aspectLines);
                     } else {
                         $re[] = $s;
@@ -448,11 +450,49 @@ final class NatalNarrativeGenerator
             }
         }
 
-        // If still too long: trim to max length without cutting mid-word too harshly.
+        // If still too long: drop the aspects section entirely before trimming (never cut the outer planets list if possible).
+        if (mb_strlen($txt) > $max) {
+            $re = [];
+            foreach ($sections as $s) {
+                if (str_starts_with($s, '4) Aspects')) {
+                    continue;
+                }
+                $re[] = $s;
+            }
+            $candidate = $title . "\n\n" . implode("\n\n", $re);
+            if (mb_strlen($candidate) <= $max) {
+                $txt = $candidate;
+            }
+        }
+
+        // If still too long: shorten the conclusion before trimming.
+        if (mb_strlen($txt) > $max) {
+            $re = [];
+            foreach ($sections as $s) {
+                if (str_starts_with($s, '5) Conclusion')) {
+                    $re[] = "5) Conclusion\nPrends ce thème comme un miroir: il peut t’aider à mieux te comprendre, pas à te juger.";
+                } elseif (str_starts_with($s, '4) Aspects')) {
+                    continue;
+                } else {
+                    $re[] = $s;
+                }
+            }
+            $candidate = $title . "\n\n" . implode("\n\n", $re);
+            if (mb_strlen($candidate) <= $max) {
+                $txt = $candidate;
+            }
+        }
+
+        // If still too long: trim to max length, prefer cutting on a line boundary.
         if (mb_strlen($txt) > $max) {
             $cut = mb_substr($txt, 0, $max - 1);
-            $cut = preg_replace('/\s+\S*$/u', '', (string) $cut) ?: $cut;
-            $txt = rtrim($cut) . '…';
+            $lastNl = mb_strrpos($cut, "\n");
+            if (is_int($lastNl) && $lastNl > (int) ($max * 0.6)) {
+                $cut = mb_substr($cut, 0, $lastNl);
+            } else {
+                $cut = preg_replace('/\s+\S*$/u', '', (string) $cut) ?: $cut;
+            }
+            $txt = rtrim($cut) . "\n…";
         }
 
         // If too short: pad deterministically by enriching the conclusion.
