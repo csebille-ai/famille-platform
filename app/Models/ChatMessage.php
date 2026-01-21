@@ -11,6 +11,12 @@ class ChatMessage extends Model
     protected $fillable = [
         'user_id',
         'body',
+        'deleted_for_all_at',
+        'deleted_for_all_by_user_id',
+    ];
+
+    protected $casts = [
+        'deleted_for_all_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -21,5 +27,10 @@ class ChatMessage extends Model
     public function reactions(): HasMany
     {
         return $this->hasMany(MessageReaction::class, 'message_id');
+    }
+
+    public function deletions(): HasMany
+    {
+        return $this->hasMany(ChatMessageDeletion::class, 'message_id');
     }
 }

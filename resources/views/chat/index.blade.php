@@ -309,6 +309,10 @@
                                 $dayLabel = $m->created_at?->format('d/m/Y') ?? '';
 
                                 $reactionSummary = (array) (($reactionSummaries ?? [])[(int) $m->id] ?? []);
+                                $isDeletedForAll = $m->deleted_for_all_at !== null;
+                                if ($isDeletedForAll) {
+                                    $reactionSummary = [];
+                                }
                             @endphp
 
                             @if($dayKey && $dayKey !== $prevDay)
@@ -323,11 +327,15 @@
                             @endif
 
                             @php
-                                $att = $parseAttachment($m->body);
-                                $link = $att ? null : $parseLinkCard($m->body);
+                                $att = null;
+                                $link = null;
+                                if (!$isDeletedForAll) {
+                                    $att = $parseAttachment($m->body);
+                                    $link = $att ? null : $parseLinkCard($m->body);
+                                }
                             @endphp
 
-                            <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }} group" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}" data-reaction-summary='@json($reactionSummary)'>
+                            <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }} group" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}" data-deleted="{{ $isDeletedForAll ? '1' : '0' }}" data-reaction-summary='@json($reactionSummary)'>
                                 <div class="{{ $att ? 'w-[clamp(240px,72vw,420px)] max-w-[92vw] sm:w-[clamp(320px,48vw,520px)] sm:max-w-[520px]' : 'max-w-[72%] sm:max-w-[68%]' }}">
                                     @if($isGroupStart)
                                         <div class="mb-1 text-xs text-slate-500 {{ $isMe ? 'text-right' : '' }}">
@@ -347,17 +355,22 @@
                                         </div>
 
                                         <div class="relative {{ $att ? 'p-0 border-0 bg-transparent' : 'px-4 py-3 border' }} {{ $att ? '' : ($isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md') }}" data-bubble>
-                                            <button
-                                                type="button"
-                                                class="hidden sm:inline-flex absolute -top-3 {{ $isMe ? '-left-3' : '-right-3' }} w-8 h-8 items-center justify-center rounded-full border border-black/10 bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                                                data-reaction-trigger
-                                                data-message-id="{{ $m->id }}"
-                                                aria-label="Réagir"
-                                                title="Réagir"
-                                            >
-                                                🙂
-                                            </button>
-                                            @if ($att)
+                                            @if(!$isDeletedForAll)
+                                                <button
+                                                    type="button"
+                                                    class="hidden sm:inline-flex absolute -top-3 {{ $isMe ? '-left-3' : '-right-3' }} w-8 h-8 items-center justify-center rounded-full border border-black/10 bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    data-reaction-trigger
+                                                    data-message-id="{{ $m->id }}"
+                                                    aria-label="Réagir"
+                                                    title="Réagir"
+                                                >
+                                                    🙂
+                                                </button>
+                                            @endif
+
+                                            @if($isDeletedForAll)
+                                                <div class="text-sm italic {{ $isMe ? 'text-white/80' : 'text-slate-500' }}">Message supprimé</div>
+                                            @elseif ($att)
                                                 @php
                                                     $attType = (string) ($att['media_type'] ?? '');
                                                     $attUrl = (string) ($att['url'] ?? '#');
@@ -428,26 +441,28 @@
                                     </div>
 
                                     <div class="mt-1 flex flex-wrap gap-1.5 {{ $isMe ? 'justify-end' : 'justify-start' }}" data-reactions-row>
-                                        @foreach($reactionSummary as $r)
-                                            @php
-                                                $emoji = (string) ($r['emoji'] ?? '');
-                                                $count = (int) ($r['count'] ?? 0);
-                                                $mine = (bool) ($r['reacted_by_me'] ?? false);
-                                            @endphp
-                                            @if($emoji !== '' && $count > 0)
-                                                <button
-                                                    type="button"
-                                                    class="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold shadow-sm {{ $mine ? 'border-teal-300 bg-teal-50 text-teal-800' : 'border-black/10 bg-amber-50/60 text-slate-700' }}"
-                                                    data-reaction-chip
-                                                    data-emoji="{{ $emoji }}"
-                                                    data-message-id="{{ $m->id }}"
-                                                    aria-label="Réactions {{ $emoji }}"
-                                                >
-                                                    <span class="text-sm leading-none">{{ $emoji }}</span>
-                                                    <span class="text-[11px] leading-none">{{ $count }}</span>
-                                                </button>
-                                            @endif
-                                        @endforeach
+                                        @if(!$isDeletedForAll)
+                                            @foreach($reactionSummary as $r)
+                                                @php
+                                                    $emoji = (string) ($r['emoji'] ?? '');
+                                                    $count = (int) ($r['count'] ?? 0);
+                                                    $mine = (bool) ($r['reacted_by_me'] ?? false);
+                                                @endphp
+                                                @if($emoji !== '' && $count > 0)
+                                                    <button
+                                                        type="button"
+                                                        class="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs font-semibold shadow-sm {{ $mine ? 'border-teal-300 bg-teal-50 text-teal-800' : 'border-black/10 bg-amber-50/60 text-slate-700' }}"
+                                                        data-reaction-chip
+                                                        data-emoji="{{ $emoji }}"
+                                                        data-message-id="{{ $m->id }}"
+                                                        aria-label="Réactions {{ $emoji }}"
+                                                    >
+                                                        <span class="text-sm leading-none">{{ $emoji }}</span>
+                                                        <span class="text-[11px] leading-none">{{ $count }}</span>
+                                                    </button>
+                                                @endif
+                                            @endforeach
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -630,6 +645,11 @@
                             <button type="button" class="w-9 h-9 rounded-xl hover:bg-[color:rgba(14,165,160,0.10)] text-lg" data-reaction-pick="{{ $e }}" aria-label="Réagir {{ $e }}">{{ $e }}</button>
                         @endforeach
                     </div>
+                </div>
+
+                <div id="chatReactionsActions" class="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                    <button type="button" id="chatMsgDeleteMe" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-message-action="delete_me">Supprimer pour moi</button>
+                    <button type="button" id="chatMsgDeleteAll" class="hidden w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50" data-message-action="delete_all">Supprimer pour tout le monde</button>
                 </div>
             </div>
         </div>
@@ -2239,6 +2259,8 @@
                 backdrop: document.getElementById('chatReactionsPickerBackdrop'),
                 panel: document.getElementById('chatReactionsPickerPanel'),
                 more: document.getElementById('chatReactionsMore'),
+                deleteMeBtn: document.getElementById('chatMsgDeleteMe'),
+                deleteAllBtn: document.getElementById('chatMsgDeleteAll'),
                 open: false,
                 messageId: 0,
             };
@@ -2246,9 +2268,17 @@
             function openReactionsPicker(messageId, x, y) {
                 const id = Number(messageId || 0);
                 if (!reactionsPicker.root || !reactionsPicker.panel || !id) return;
+
+                const row = messagesEl?.querySelector(`[data-message-id="${id}"]`);
+                if (row?.dataset?.deleted === '1') {
+                    return;
+                }
+
                 reactionsPicker.messageId = id;
                 reactionsPicker.open = true;
                 reactionsPicker.more?.classList.add('hidden');
+                const isOwner = row && currentUserId && Number(row.dataset.userId || 0) === Number(currentUserId);
+                reactionsPicker.deleteAllBtn?.classList.toggle('hidden', !isOwner);
                 reactionsPicker.root.classList.remove('hidden');
 
                 const pad = 10;
@@ -2302,6 +2332,48 @@
             }
 
             reactionsPicker.panel?.addEventListener('click', async (e) => {
+                const actionBtn = e.target?.closest('[data-message-action]');
+                const action = actionBtn?.getAttribute('data-message-action') || '';
+                if (action) {
+                    const mid = reactionsPicker.messageId;
+                    if (!mid) return;
+
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                    const headers = {
+                        'Accept': 'application/json',
+                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                    };
+
+                    if (action === 'delete_me') {
+                        const ok = confirm('Supprimer ce message pour vous ?');
+                        if (!ok) return;
+                        closeReactionsPicker();
+                        try {
+                            const resp = await fetch(`/chat/messages/${mid}/me`, { method: 'DELETE', headers, credentials: 'same-origin' });
+                            if (resp.ok) {
+                                const row = messagesEl?.querySelector(`[data-message-id="${mid}"]`);
+                                if (row) row.style.display = 'none';
+                            }
+                        } catch {}
+                        return;
+                    }
+
+                    if (action === 'delete_all') {
+                        const ok = confirm('Supprimer ce message pour tout le monde ?');
+                        if (!ok) return;
+                        closeReactionsPicker();
+                        try {
+                            const resp = await fetch(`/chat/messages/${mid}`, { method: 'DELETE', headers, credentials: 'same-origin' });
+                            if (resp.ok) {
+                                markMessageDeletedForAll(mid);
+                            }
+                        } catch {}
+                        return;
+                    }
+
+                    return;
+                }
+
                 const btn = e.target?.closest('[data-reaction-pick], [data-reaction-more]');
                 if (!btn) return;
                 if (btn.hasAttribute('data-reaction-more')) {
@@ -2504,8 +2576,9 @@
                 const uid = payload?.user?.id ?? payload?.user_id ?? null;
                 const name = payload?.user?.name ?? '—';
                 const avatarUrl = avatarUrlFor(payload?.user || payload || {});
-                const body = payload?.body ?? '';
-                const att = parseAttachmentBody(body);
+                const isDeleted = !!payload?.is_deleted || !!payload?.deleted_for_all || !!payload?.deleted_for_all_at;
+                const body = isDeleted ? '' : (payload?.body ?? '');
+                const att = isDeleted ? null : parseAttachmentBody(body);
                 const createdISO = payload?.created_at ?? null;
                 const whenTime = createdISO ? timeLabelFromISO(createdISO) : '';
 
@@ -2537,9 +2610,10 @@
                 outer.dataset.messageRow = '1';
                 outer.dataset.userId = uid != null ? String(uid) : '';
                 outer.dataset.dayKey = dk;
+                outer.dataset.deleted = isDeleted ? '1' : '0';
                 if (id != null) outer.dataset.messageId = String(id);
 
-                const initialRs = toArraySummary(payload?.reaction_summary || []);
+                const initialRs = isDeleted ? [] : toArraySummary(payload?.reaction_summary || []);
                 outer.dataset.reactionSummary = JSON.stringify(initialRs);
                 if (id != null) {
                     reactionSummaries.set(Number(id), initialRs);
@@ -2574,19 +2648,24 @@
                 }
                 wrapper.dataset.bubble = '1';
 
-                // Desktop discoverability: hover button 🙂
-                const reactBtn = document.createElement('button');
-                reactBtn.type = 'button';
-                reactBtn.className = `hidden sm:inline-flex absolute -top-3 ${isMe ? '-left-3' : '-right-3'} w-8 h-8 items-center justify-center rounded-full border border-black/10 bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity`;
-                reactBtn.dataset.reactionTrigger = '1';
-                if (id != null) reactBtn.dataset.messageId = String(id);
-                reactBtn.setAttribute('aria-label', 'Réagir');
-                reactBtn.title = 'Réagir';
-                reactBtn.textContent = '🙂';
-                wrapper.appendChild(reactBtn);
+                if (!isDeleted) {
+                    // Desktop discoverability: hover button 🙂
+                    const reactBtn = document.createElement('button');
+                    reactBtn.type = 'button';
+                    reactBtn.className = `hidden sm:inline-flex absolute -top-3 ${isMe ? '-left-3' : '-right-3'} w-8 h-8 items-center justify-center rounded-full border border-black/10 bg-white text-slate-700 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity`;
+                    reactBtn.dataset.reactionTrigger = '1';
+                    if (id != null) reactBtn.dataset.messageId = String(id);
+                    reactBtn.setAttribute('aria-label', 'Réagir');
+                    reactBtn.title = 'Réagir';
+                    reactBtn.textContent = '🙂';
+                    wrapper.appendChild(reactBtn);
+                }
                 const bodyEl = document.createElement('div');
 
-                if (att) {
+                if (isDeleted) {
+                    bodyEl.className = `text-sm italic ${isMe ? 'text-white/80' : 'text-slate-500'}`;
+                    bodyEl.textContent = 'Message supprimé';
+                } else if (att) {
                     bodyEl.className = 'text-sm';
                     const btn = document.createElement('button');
                     btn.type = 'button';
@@ -2728,6 +2807,29 @@
                 }
                 syncScrollToBottomButton();
                 return true;
+            }
+
+            function markMessageDeletedForAll(messageId) {
+                const id = Number(messageId || 0);
+                if (!id || !messagesEl) return;
+                const row = messagesEl.querySelector(`[data-message-row][data-message-id="${id}"]`);
+                if (!row) return;
+                row.dataset.deleted = '1';
+                reactionSummaries.set(id, []);
+
+                const isMe = currentUserId && Number(row.dataset.userId || 0) === Number(currentUserId);
+                const bubble = row.querySelector('[data-bubble]');
+                if (bubble) {
+                    bubble.className = `relative px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
+                    bubble.innerHTML = '';
+                    const txt = document.createElement('div');
+                    txt.className = `text-sm italic ${isMe ? 'text-white/80' : 'text-slate-500'}`;
+                    txt.textContent = 'Message supprimé';
+                    bubble.appendChild(txt);
+                }
+
+                const rr = row.querySelector('[data-reactions-row]');
+                if (rr) rr.innerHTML = '';
             }
 
             function appendLocalMessage(tempId, body) {
@@ -3468,6 +3570,10 @@
                         console.log('[chat] message.sent', e);
                         const appended = appendMessage(e);
                         if (e?.id) lastMessageId = Math.max(lastMessageId, Number(e.id));
+                    })
+                    .listen('.message.deleted', (e) => {
+                        if (!e?.id) return;
+                        markMessageDeletedForAll(Number(e.id));
                     })
                     .listen('.message.reactions.updated', (e) => {
                         if (!e?.message_id) return;

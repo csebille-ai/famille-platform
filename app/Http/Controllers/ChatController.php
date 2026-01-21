@@ -20,8 +20,11 @@ class ChatController extends Controller
     {
         $this->touchPresence();
 
+        $viewerId = (int) (Auth::id() ?? 0);
+
         $messages = ChatMessage::query()
             ->with('user:id,name,avatar_path,avatar_updated_at')
+            ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
             ->latest()
             ->limit(50)
             ->get()
@@ -83,14 +86,16 @@ class ChatController extends Controller
 
             return response()->json([
                 'id' => $message->id,
-                'body' => $message->body,
+                'body' => $message->deleted_for_all_at ? '' : $message->body,
+                'is_deleted' => (bool) ($message->deleted_for_all_at !== null),
+                'deleted_for_all_at' => $message->deleted_for_all_at?->toISOString(),
                 'created_at' => $message->created_at?->toISOString(),
                 'user' => [
                     'id' => $message->user?->id,
                     'name' => $message->user?->name,
                     'avatar_url' => avatarUrl($message->user),
                 ],
-                'reaction_summary' => $reactionSummary,
+                'reaction_summary' => $message->deleted_for_all_at ? [] : $reactionSummary,
             ]);
         }
 
@@ -101,6 +106,8 @@ class ChatController extends Controller
     {
         $this->touchPresence();
 
+        $viewerId = (int) (Auth::id() ?? 0);
+
         $validated = $request->validate([
             'since_id' => ['nullable', 'integer', 'min:0'],
         ]);
@@ -110,6 +117,7 @@ class ChatController extends Controller
         $messages = ChatMessage::query()
             ->with('user:id,name,avatar_path,avatar_updated_at')
             ->when($sinceId > 0, fn($q) => $q->where('id', '>', $sinceId))
+            ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
             ->orderBy('id')
             ->limit(50)
             ->get();
@@ -120,14 +128,16 @@ class ChatController extends Controller
         $messages = $messages
             ->map(fn(ChatMessage $m) => [
                 'id' => $m->id,
-                'body' => $m->body,
+                'body' => $m->deleted_for_all_at ? '' : $m->body,
+                'is_deleted' => (bool) ($m->deleted_for_all_at !== null),
+                'deleted_for_all_at' => $m->deleted_for_all_at?->toISOString(),
                 'created_at' => $m->created_at?->toISOString(),
                 'user' => [
                     'id' => $m->user?->id,
                     'name' => $m->user?->name,
                     'avatar_url' => avatarUrl($m->user),
                 ],
-                'reaction_summary' => $reactionSummaries[(int) $m->id] ?? [],
+                'reaction_summary' => $m->deleted_for_all_at ? [] : ($reactionSummaries[(int) $m->id] ?? []),
             ])
             ->values();
 

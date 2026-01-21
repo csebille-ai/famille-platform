@@ -3,7 +3,6 @@
 namespace App\Events;
 
 use App\Models\ChatMessage;
-use App\Services\ChatReactions;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PresenceChannel;
@@ -11,7 +10,7 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ChatMessageSent implements ShouldBroadcastNow
+class ChatMessageDeleted implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -27,25 +26,16 @@ class ChatMessageSent implements ShouldBroadcastNow
 
     public function broadcastAs(): string
     {
-        return 'message.sent';
+        return 'message.deleted';
     }
 
     public function broadcastWith(): array
     {
-        $reactionSummary = app(ChatReactions::class)->summaryForMessage((int) $this->message->id, null);
-
         return [
-            'id' => $this->message->id,
-            'body' => $this->message->deleted_for_all_at ? '' : $this->message->body,
-            'is_deleted' => (bool) ($this->message->deleted_for_all_at !== null),
+            'id' => (int) $this->message->id,
+            'deleted_for_all' => true,
             'deleted_for_all_at' => $this->message->deleted_for_all_at?->toISOString(),
-            'created_at' => $this->message->created_at?->toISOString(),
-            'user' => [
-                'id' => $this->message->user?->id,
-                'name' => $this->message->user?->name,
-                'avatar_url' => avatarUrl($this->message->user),
-            ],
-            'reaction_summary' => $this->message->deleted_for_all_at ? [] : $reactionSummary,
+            'deleted_for_all_by_user_id' => (int) ($this->message->deleted_for_all_by_user_id ?? 0),
         ];
     }
 }

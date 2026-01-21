@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\OpsDashboardController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ChatMessageDeletionController;
 use App\Http\Controllers\ChatMessageReactionController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PlaylistController;
@@ -1219,6 +1220,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
     Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+
+    Route::delete('/chat/messages/{message}/me', [ChatMessageDeletionController::class, 'destroyForMe'])
+        ->middleware(['throttle:30,1'])
+        ->name('chat.messages.destroy.me');
+
+    Route::delete('/chat/messages/{message}', [ChatMessageDeletionController::class, 'destroyForAll'])
+        ->middleware(['throttle:30,1'])
+        ->name('chat.messages.destroy');
 
     Route::post('/chat/messages/{message}/reactions', [ChatMessageReactionController::class, 'toggle'])
         ->middleware(['throttle:30,1'])
