@@ -15,10 +15,14 @@
     $greenHue = 150;
     $badgeHue = (int) round($redHue + (($greenHue - $redHue) * $t));
 
-    $badgeBg = "hsl({$badgeHue} 55% 90%)";
+    // Add a subtle gradient so the progression reads better than a flat fill.
+    $h1 = max(0, min(360, $badgeHue - 10));
+    $h2 = max(0, min(360, $badgeHue + 10));
+    $bg1 = "hsl({$h1} 62% 92%)";
+    $bg2 = "hsl({$h2} 62% 86%)";
     $badgeBorder = "hsl({$badgeHue} 45% 72%)";
 
-    $badgeStyle = "background-color:{$badgeBg};border-color:{$badgeBorder};color:#0f172a;";
+    $badgeStyle = "background:linear-gradient(135deg,{$bg1},{$bg2});border-color:{$badgeBorder};color:#0f172a;";
 
     $userStyle = $attributes->get('style');
     $attrs = $attributes->except('style');
