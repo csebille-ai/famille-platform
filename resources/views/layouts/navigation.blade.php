@@ -36,8 +36,12 @@
     $userName = Auth::user()->name ?? '';
     $userInitial = strtoupper(substr(trim($userName), 0, 1));
 
-    $hasAvatarAstro = Auth::user()->hasAvatarAstroImage();
-    $avatarAstroV = Auth::user()->avatarAstroVersion();
+    $avatarUrl = null;
+    try {
+        $avatarUrl = avatarUrl(Auth::user());
+    } catch (\Throwable $e) {
+        $avatarUrl = null;
+    }
 
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
@@ -97,8 +101,8 @@
                             <x-dropdown align="right" width="48">
                                 <x-slot name="trigger">
                                     <button class="ui-chip h-8 w-8 text-xs font-semibold overflow-hidden border-transparent shadow-none bg-white/80">
-                                        @if($hasAvatarAstro)
-                                            <img src="{{ route('avatar.astro.image', ['v' => $avatarAstroV]) }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
+                                        @if(is_string($avatarUrl) && $avatarUrl !== '')
+                                            <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" />
                                         @else
                                             {{ $userInitial }}
                                         @endif

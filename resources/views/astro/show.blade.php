@@ -22,11 +22,12 @@
             }
         }
 
-        $hasAvatar = $user->hasAvatarAstroImage();
-        $avatarV = $user->avatarAstroVersion();
-        $avatarImageUrl = isset($avatarImageUrl)
-            ? (string) $avatarImageUrl
-            : route('avatar.astro.image', ['v' => $avatarV]);
+        $avatarUrl = '';
+        try {
+            $avatarUrl = (string) (avatarUrl($user) ?? '');
+        } catch (\Throwable $e) {
+            $avatarUrl = '';
+        }
 
         $sun = trim((string) ($astro['sun_sign'] ?? ''));
         $moon = trim((string) ($astro['moon_sign'] ?? ''));
@@ -193,11 +194,7 @@
                 </div>
             @endif
 
-            @if ($errors->has('avatar_astro'))
-                <div class="mx-4 sm:mx-0 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-950">
-                    {{ $errors->first('avatar_astro') }}
-                </div>
-            @endif
+            {{-- Avatar IA supprimé: pas d'erreur dédiée. --}}
 
             <div class="px-4 sm:px-0">
                 <div class="relative flex items-center justify-between h-12">
@@ -224,8 +221,8 @@
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                            @if($hasAvatar)
-                                <img src="{{ $avatarImageUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
+                            @if($avatarUrl !== '')
+                                <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
                             @else
                                 <div class="text-slate-600 font-semibold">
                                     {{ $user->initials() }}
@@ -449,12 +446,9 @@
                                     Modifier mes infos
                                 </a>
 
-                                <form method="POST" action="{{ route('avatar.astro.generate') }}">
-                                    @csrf
-                                    <button type="submit" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:bg-slate-950">
-                                        Générer mon avatar
-                                    </button>
-                                </form>
+                                <a href="{{ route('profile.edit') }}#profile-avatar" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:bg-slate-950">
+                                    Changer ma photo de profil
+                                </a>
                             </div>
                         </div>
                     </div>

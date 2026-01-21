@@ -14,9 +14,14 @@
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : 'bg-amber-50 text-amber-900 border-amber-200';
 
-            $hasAvatar = $user->hasAvatarAstroImage();
-            $avatarV = $user->avatarAstroVersion();
-            $avatarUrl = route('avatar.astro.imageForUser', ['user' => $user, 'v' => $avatarV]);
+            $avatarUrl = null;
+            try {
+                $avatarUrl = avatarUrl($user);
+            } catch (\Throwable $e) {
+                $avatarUrl = null;
+            }
+
+            $hasAvatar = is_string($avatarUrl) && $avatarUrl !== '';
         @endphp
 
         <div class="flex items-start justify-between gap-4">
@@ -32,7 +37,7 @@
 
                 <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-black/10 flex items-center justify-center shrink-0">
                     @if($hasAvatar)
-                        <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
+                        <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" />
                     @else
                         <div class="text-slate-600 font-semibold">
                             {{ $user->initials() }}

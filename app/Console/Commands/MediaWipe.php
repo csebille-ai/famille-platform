@@ -21,37 +21,13 @@ class MediaWipe extends Command
         {--force : Actually delete media (dangerous).}
         {--yes : Skip interactive confirmation when using --force.}
         {--include-cloud-files : Also wipe legacy cloud_files image/video rows (if table exists).}
-        {--purge-storage : Also delete leftover local storage dirs (public/videos, local/images, local/private/cloud, local/chunk-uploads).}
+        {--purge-storage : Also delete leftover local storage dirs (public/videos, public/avatars, local/images, local/private/cloud, local/chunk-uploads).}
         {--hard : Force-delete UploadAsset rows instead of soft-deleting.}
         {--limit=0 : Limit how many rows per category to process (for testing).}';
 
     protected $description = 'Purge ALL photo/video media (DB + storage). Dry-run unless --force.';
 
     private const CHAT_ATTACHMENT_PREFIX = '[[ATTACHMENT]]';
-
-    private function extractR2KeyFromUrl(string $url): ?string
-    {
-        $url = trim($url);
-        if ($url === '' || !preg_match('#^https?://#i', $url)) {
-            return null;
-        }
-
-        $path = (string) (parse_url($url, PHP_URL_PATH) ?? '');
-        $path = ltrim($path, '/');
-        if ($path === '') {
-            return null;
-        }
-
-        // Only delete objects that look like ours.
-        foreach (['astro/avatars/', 'uploads/'] as $needle) {
-            $pos = strpos($path, $needle);
-            if ($pos !== false) {
-                return substr($path, $pos);
-            }
-        }
-
-        return null;
-    }
 
     public function handle(R2UploadService $r2): int
     {
@@ -145,11 +121,11 @@ class MediaWipe extends Command
             }
         }
 
-        if ($hasUsers && Schema::hasColumn('users', 'avatar_image_url')) {
+        if ($hasUsers && Schema::hasColumn('users', 'avatar_path')) {
             try {
                 $avatarUserCount = User::query()
-                    ->whereNotNull('avatar_image_url')
-                    ->where('avatar_image_url', '!=', '')
+                    ->whereNotNull('avatar_path')
+                    ->where('avatar_path', '!=', '')
                     ->count();
             } catch (\Throwable $e) {
                 $avatarUserCount = 0;
@@ -205,7 +181,7 @@ class MediaWipe extends Command
         $this->line('- cloud_nodes (image/* or video/*): ' . $nodeCount);
         $this->line('- upload_assets (photo|video, incl trashed): ' . $assetCount);
         $this->line('- chat_messages attachments ([[ATTACHMENT]]…): ' . $chatAttachmentMessageCount);
-        $this->line('- users avatar_image_url to clear: ' . $avatarUserCount);
+        $this->line('- users avatar_path to clear: ' . $avatarUserCount);
         $this->line('- people avatar_path to clear: ' . $avatarPeopleCount);
         $this->line('- local files (public/videos/**): ' . $publicVideosFileCount);
         $this->line('- local files (local/images/**): ' . $localImagesFileCount);
@@ -492,28 +468,26 @@ class MediaWipe extends Command
             $this->newLine();
         }
 
-        // 6) Avatars (stored as URLs pointing to R2 keys, e.g. astro/avatars/...).
-        if ($hasUsers && Schema::hasColumn('users', 'avatar_image_url')) {
-            $this->line('Clearing user avatar fields…');
+        // 6) User avatars (stored locally on the public disk).
+        if ($hasUsers && Schema::hasColumn('users', 'avatar_path')) {
+            $this->line('Clearing user avatar photos…');
             $processed = 0;
 
             User::query()
-                ->whereNotNull('avatar_image_url')
-                ->where('avatar_image_url', '!=', '')
+                ->whereNotNull('avatar_path')
+                ->where('avatar_path', '!=', '')
                 ->orderBy('id')
-                ->chunkById(200, function ($users) use (&$processed, $apply, $limit, $r2) {
+                ->chunkById(200, function ($users) use (&$processed, $apply, $limit) {
                     foreach ($users as $u) {
                         if ($limit > 0 && $processed >= $limit) {
                             return false;
                         }
                         $processed++;
 
-                        $url = trim((string) ($u->avatar_image_url ?? ''));
-                        $key = $this->extractR2KeyFromUrl($url);
-
-                        if ($apply && $key !== null) {
+                        $path = trim((string) ($u->avatar_path ?? ''));
+                        if ($apply && $path !== '') {
                             try {
-                                $r2->deleteObject($key);
+                                Storage::disk('public')->delete($path);
                             } catch (\Throwable $e) {
                                 // Best-effort.
                             }
@@ -522,15 +496,8 @@ class MediaWipe extends Command
                         if ($apply) {
                             try {
                                 $u->forceFill([
-                                    'avatar_image_url' => null,
-                                    'avatar_spec_json' => null,
-                                    'avatar_archetype_title' => null,
-                                    'avatar_traits_canon' => null,
-                                    'avatar_traits_surannes' => null,
-                                    'avatar_version' => null,
+                                    'avatar_path' => null,
                                     'avatar_updated_at' => null,
-                                    'avatar_astro_status' => null,
-                                    'avatar_astro_error' => null,
                                 ])->save();
                             } catch (\Throwable $e) {
                                 // Best-effort.
@@ -581,6 +548,7 @@ class MediaWipe extends Command
 
             if ($apply) {
                 try { Storage::disk('public')->deleteDirectory('videos'); } catch (\Throwable $e) {}
+                try { Storage::disk('public')->deleteDirectory('avatars'); } catch (\Throwable $e) {}
                 try { Storage::disk('local')->deleteDirectory('images'); } catch (\Throwable $e) {}
                 try { Storage::disk('local')->deleteDirectory('private/cloud'); } catch (\Throwable $e) {}
                 try { Storage::disk('local')->deleteDirectory('chunk-uploads'); } catch (\Throwable $e) {}

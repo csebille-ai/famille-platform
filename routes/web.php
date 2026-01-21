@@ -394,14 +394,11 @@ Route::get('/home', function () {
                 $userIds = $peopleWithDob->pluck('user_id')->filter()->unique()->values();
                 if ($userIds->isNotEmpty() && Schema::hasTable('users')) {
                     $uCols = ['id'];
-                    if (Schema::hasColumn('users', 'avatar_image_url')) {
-                        $uCols[] = 'avatar_image_url';
+                    if (Schema::hasColumn('users', 'avatar_path')) {
+                        $uCols[] = 'avatar_path';
                     }
                     if (Schema::hasColumn('users', 'avatar_updated_at')) {
                         $uCols[] = 'avatar_updated_at';
-                    }
-                    if (Schema::hasColumn('users', 'avatar_astro_status')) {
-                        $uCols[] = 'avatar_astro_status';
                     }
 
                     $usersById = User::query()
@@ -418,14 +415,11 @@ Route::get('/home', function () {
             $upcomingBirthdays = $lists['upcomingBirthdays'] ?? [];
         } elseif (Schema::hasTable('users') && Schema::hasColumn('users', 'date_of_birth')) {
             $cols = ['id', 'name', 'date_of_birth'];
-            if (Schema::hasColumn('users', 'avatar_image_url')) {
-                $cols[] = 'avatar_image_url';
+            if (Schema::hasColumn('users', 'avatar_path')) {
+                $cols[] = 'avatar_path';
             }
             if (Schema::hasColumn('users', 'avatar_updated_at')) {
                 $cols[] = 'avatar_updated_at';
-            }
-            if (Schema::hasColumn('users', 'avatar_astro_status')) {
-                $cols[] = 'avatar_astro_status';
             }
 
             $usersWithDob = User::query()
@@ -1202,6 +1196,7 @@ Route::get('/visio/{room}', function (string $room) {
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
         Route::get('/me/astro', [AstroProfileController::class, 'show'])->name('astro.show');
@@ -1586,33 +1581,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/api/tarot/tts', TarotTtsController::class)
         ->middleware('throttle:tarot-draw')
         ->name('tarot.tts');
-
-    Route::post('/api/avatar-astro/generate', [\App\Http\Controllers\Api\AvatarAstroController::class, 'generate'])
-        ->middleware('throttle:avatar-astro-generate')
-        ->name('avatar.astro.generate');
-
-    Route::get('/api/avatar-astro/status', [\App\Http\Controllers\Api\AvatarAstroController::class, 'status'])
-        ->name('avatar.astro.status');
-
-    Route::get('/avatar-astro/image', [\App\Http\Controllers\AvatarAstroImageController::class, 'show'])
-        ->name('avatar.astro.image');
-
-    // Authenticated users can view another member's avatar (used on profile pages).
-    Route::get('/users/{user}/avatar-astro/image', [\App\Http\Controllers\AvatarAstroImageController::class, 'showForUserPublic'])
-        ->name('avatar.astro.imagePublic');
-
-    Route::get('/admin/users/{user}/avatar-astro/image', [\App\Http\Controllers\AvatarAstroImageController::class, 'showForUser'])
-        ->middleware(['can:manage-users'])
-        ->name('avatar.astro.imageForUser');
-
-    // Admin override: generate/check Avatar Astro for any user.
-    Route::post('/api/admin/users/{user}/avatar-astro/generate', [\App\Http\Controllers\Api\AvatarAstroController::class, 'generateForUser'])
-        ->middleware(['can:manage-users', 'throttle:avatar-astro-generate'])
-        ->name('avatar.astro.generateForUser');
-
-    Route::get('/api/admin/users/{user}/avatar-astro/status', [\App\Http\Controllers\Api\AvatarAstroController::class, 'statusForUser'])
-        ->middleware(['can:manage-users'])
-        ->name('avatar.astro.statusForUser');
 
     Route::get('/cloud', [CloudNodeController::class, 'index'])->name('cloud.index');
     Route::post('/cloud/folders', [CloudNodeController::class, 'storeFolder'])->name('cloud.folders.store');

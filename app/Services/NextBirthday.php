@@ -57,13 +57,17 @@ class NextBirthday
                 }
             }
 
-            // If the person is linked to a user, prefer the user's Avatar Astro (same avatar as top-right menu).
+            // If the person is linked to a user, prefer the user's avatar photo.
             if ($avatarUrl === null && $usersById instanceof Collection) {
                 $userId = (int) ($b['user_id'] ?? 0);
                 if ($userId > 0 && $usersById->has($userId)) {
                     $u = $usersById->get($userId);
-                    if ($u instanceof User && $u->hasAvatarAstroImage()) {
-                        $avatarUrl = route('avatar.astro.imagePublic', ['user' => $userId, 'v' => $u->avatarAstroVersion()]);
+                    if ($u instanceof User) {
+                        try {
+                            $avatarUrl = avatarUrl($u);
+                        } catch (\Throwable $e) {
+                            $avatarUrl = null;
+                        }
                     }
                 }
             }
@@ -142,12 +146,13 @@ class NextBirthday
                 }
             }
 
-            // Avatar priority:
-            // 1) user.avatar_image_url (explicit portrait)
-            // 2) local generated avatar route
             $avatarUrl = null;
-            if ($user instanceof \App\Models\User && $user->hasAvatarAstroImage()) {
-                $avatarUrl = trim((string) $user->avatar_image_url);
+            if ($user instanceof \App\Models\User) {
+                try {
+                    $avatarUrl = avatarUrl($user);
+                } catch (\Throwable $e) {
+                    $avatarUrl = null;
+                }
             }
 
             $items[] = [

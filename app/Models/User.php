@@ -39,16 +39,9 @@ class User extends Authenticatable
         // Astro (fun) signature + generated card
         'astro_signature_json',
 
-        // Avatar Astro (portrait)
-        'avatar_image_url',
-        'avatar_spec_json',
-        'avatar_archetype_title',
-        'avatar_traits_canon',
-        'avatar_traits_surannes',
-        'avatar_version',
+        // Avatar photo
+        'avatar_path',
         'avatar_updated_at',
-        'avatar_astro_status',
-        'avatar_astro_error',
     ];
 
     /**
@@ -75,10 +68,6 @@ class User extends Authenticatable
             'date_of_birth' => 'date',
 
             'astro_signature_json' => 'array',
-
-            'avatar_spec_json' => 'array',
-            'avatar_traits_canon' => 'array',
-            'avatar_traits_surannes' => 'array',
             'avatar_updated_at' => 'datetime',
         ];
     }
@@ -182,14 +171,8 @@ class User extends Authenticatable
         return $palette[$index];
     }
 
-    public function hasAvatarAstroImage(): bool
+    public function hasAvatarPhoto(): bool
     {
-        return trim((string) ($this->avatar_image_url ?? '')) !== '';
-    }
-
-    public function avatarAstroVersion(): int
-    {
-        $ts = optional($this->avatar_updated_at)->getTimestamp();
-        return is_int($ts) && $ts > 0 ? $ts : time();
+        return trim((string) ($this->avatar_path ?? '')) !== '';
     }
 }

@@ -83,7 +83,7 @@ class NextBirthdayTest extends TestCase
         $u = new User(['name' => 'Alice']);
         $u->id = 123;
         $u->date_of_birth = CarbonImmutable::create(1990, 1, 24, 0, 0, 0, 'Europe/Paris');
-        $u->avatar_image_url = null;
+        $u->avatar_path = null;
 
         $lists = $svc->dashboardForUsers(new Collection([$u]), $today, 10);
         $upcoming = $lists['upcomingBirthdays'] ?? [];
@@ -93,7 +93,7 @@ class NextBirthdayTest extends TestCase
         $this->assertNull($upcoming[0]['avatar_url']);
     }
 
-    public function test_dashboard_for_people_uses_linked_user_avatar_astro_when_available(): void
+    public function test_dashboard_for_people_uses_linked_user_avatar_when_available(): void
     {
         $svc = new NextBirthday();
 
@@ -108,7 +108,7 @@ class NextBirthdayTest extends TestCase
 
         $u = new User(['name' => 'Christophe']);
         $u->id = 123;
-        $u->avatar_image_url = 'https://example.test/avatar.png';
+        $u->avatar_path = 'avatars/123/avatar.webp';
         $u->avatar_updated_at = CarbonImmutable::create(2026, 1, 1, 0, 0, 0, 'Europe/Paris');
 
         $usersById = (new Collection([$u]))->keyBy('id');
@@ -118,7 +118,7 @@ class NextBirthdayTest extends TestCase
 
         $this->assertCount(1, $upcoming);
         $this->assertIsString($upcoming[0]['avatar_url']);
-        $this->assertStringContainsString('/users/123/avatar-astro/image', (string) $upcoming[0]['avatar_url']);
+        $this->assertStringContainsString('avatars/123/avatar.webp', (string) $upcoming[0]['avatar_url']);
         $this->assertStringContainsString('v=', (string) $upcoming[0]['avatar_url']);
     }
 }

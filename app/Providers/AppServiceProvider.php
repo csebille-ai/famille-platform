@@ -8,10 +8,6 @@ use App\Observers\EventObserver;
 use App\Observers\UserObserver;
 use App\Policies\EventPolicy;
 use App\Policies\PersonPolicy;
-use App\Services\Astro\Images\CloudflareWorkersAiImageProvider;
-use App\Services\Astro\Images\ImageProvider;
-use App\Services\Astro\Images\NullImageProvider;
-use App\Services\Astro\Images\OpenAiImageProvider;
 use App\Services\Astro\NatalChartProvider;
 use App\Services\Astro\NullNatalChartProvider;
 use App\Models\User;
@@ -27,25 +23,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $helpers = app_path('Support/helpers.php');
+        if (is_file($helpers)) {
+            require_once $helpers;
+        }
+
         $this->app->bind(NatalChartProvider::class, NullNatalChartProvider::class);
-
-        $this->app->bind(ImageProvider::class, function () {
-            $provider = strtolower(trim((string) env('AVATAR_ASTRO_IMAGE_PROVIDER', 'auto')));
-
-            if ($provider === 'auto') {
-                $hasCloudflare = trim((string) config('services.cloudflare.account_id')) !== ''
-                    && trim((string) config('services.cloudflare.api_token')) !== '';
-
-                $provider = $hasCloudflare ? 'cloudflare' : 'openai';
-            }
-
-            return match ($provider) {
-                'openai' => app(OpenAiImageProvider::class),
-                'cloudflare', 'workersai', 'workers-ai' => app(CloudflareWorkersAiImageProvider::class),
-                'none', 'null', '' => app(NullImageProvider::class),
-                default => app(NullImageProvider::class),
-            };
-        });
     }
 
     /**
@@ -64,13 +47,6 @@ class AppServiceProvider extends ServiceProvider
             $key = $userId !== '' ? 'u:' . $userId : (string) $request->ip();
 
             return Limit::perMinute(10)->by($key);
-        });
-
-        RateLimiter::for('avatar-astro-generate', function ($request) {
-            $userId = (string) optional($request->user())->id;
-            $key = $userId !== '' ? 'u:' . $userId : (string) $request->ip();
-
-            return Limit::perMinute(3)->by($key);
         });
 
         Gate::define('manage-users', function (User $user): bool {
