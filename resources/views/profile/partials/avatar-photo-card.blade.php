@@ -204,8 +204,9 @@
                 const octx = out.getContext('2d');
                 if (!octx) return;
 
-                const dpr = window.devicePixelRatio || 1;
-                const scaleFactor = outSize / (canvas.width / dpr);
+                // Map from preview canvas (device pixels) to output canvas pixels.
+                // Using device pixels here keeps export identical to the preview crop.
+                const scaleFactor = outSize / canvas.width;
 
                 const s = baseScale * zoom * scaleFactor;
                 const drawW = img.naturalWidth * s;
