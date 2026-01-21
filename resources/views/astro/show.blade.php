@@ -267,10 +267,16 @@
                     $chineseText = $chineseHero !== '' ? $chineseHero : 'À compléter';
                 @endphp
 
-                <div class="mt-3 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                    <ul class="space-y-1 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.9)]">
-                        <li class="text-sm font-semibold text-slate-800">Élément : <span class="text-slate-900">{{ $elementText }}</span></li>
-                        <li class="text-sm font-semibold text-slate-800">Signe chinois : <span class="{{ $chineseHero !== '' ? 'text-slate-900' : 'text-slate-500' }}">{{ $chineseText }}</span></li>
+                <div class="mt-3 rounded-2xl border border-teal-200/60 bg-teal-50/40 px-3 py-2.5">
+                    <ul class="space-y-1.5 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.95)]">
+                        <li class="text-sm text-slate-700">
+                            <span class="font-semibold">Élément</span><span class="text-slate-400"> :</span>
+                            <span class="font-extrabold text-slate-900">{{ $elementText }}</span>
+                        </li>
+                        <li class="text-sm text-slate-700">
+                            <span class="font-semibold">Signe chinois</span><span class="text-slate-400"> :</span>
+                            <span class="font-extrabold {{ $chineseHero !== '' ? 'text-slate-900' : 'text-slate-500' }}">{{ $chineseText }}</span>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -281,7 +287,7 @@
                         @foreach($tabs as $key => $label)
                             <a
                                 href="{{ route('astro.show', ['tab' => $key]) }}{{ $key === 'theme' ? '#theme-astral' : '' }}"
-                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-slate-900 text-white shadow-sm' : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-black/10' }}"
+                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-[color:rgba(14,165,160,1)] text-white shadow-sm' : 'bg-white text-slate-700 hover:text-slate-900 hover:bg-[color:rgba(14,165,160,0.08)] border border-black/10' }}"
                             >
                                 {{ $label }}
                             </a>
@@ -305,9 +311,9 @@
                                 $more = count($talents) - count($visible);
                             @endphp
 
-                            <div class="mt-2">
+                            <div class="mt-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
                                 @if(count($visible) > 0)
-                                    <ul class="space-y-1 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.9)]">
+                                    <ul class="space-y-1.5 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.95)]">
                                         @foreach($visible as $t)
                                             <li class="text-sm font-semibold text-slate-700">{{ $t }}</li>
                                         @endforeach
@@ -379,14 +385,16 @@
 
                         <div class="pt-2">
                             <div class="text-sm font-semibold text-slate-900">Actions</div>
-                            <div class="mt-3 grid sm:grid-cols-2 gap-3">
-                                <a href="{{ $birthCtaUrl }}" class="inline-flex items-center justify-center h-10 px-4 rounded-xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">
-                                    Modifier mes infos
-                                </a>
+                            <div class="mt-3">
+                                <div class="max-w-sm mx-auto space-y-3">
+                                    <a href="{{ $birthCtaUrl }}" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">
+                                        Modifier mes infos
+                                    </a>
 
-                                <a href="{{ route('profile.edit') }}#profile-avatar" class="w-full inline-flex items-center justify-center h-9 px-4 rounded-xl border border-black/10 bg-white text-slate-900 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">
-                                    Changer ma photo de profil
-                                </a>
+                                    <a href="{{ route('profile.edit') }}#profile-avatar" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[color:rgba(14,165,160,1)] text-white text-sm font-semibold hover:bg-[color:rgba(13,148,136,1)] active:bg-[color:rgba(15,118,110,1)]">
+                                        Changer ma photo de profil
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
