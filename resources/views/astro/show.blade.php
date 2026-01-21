@@ -227,15 +227,12 @@
                 <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex items-center gap-3 min-w-0">
-                            <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                                @if($avatarUrl !== '')
-                                    <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
-                                @else
-                                    <div class="text-slate-600 font-semibold">
-                                        {{ $user->initials() }}
-                                    </div>
-                                @endif
-                            </div>
+                            <x-user-avatar
+                                :subject="$user"
+                                sizeClass="h-12 w-12"
+                                class="rounded-2xl bg-slate-100 border border-slate-200 shrink-0"
+                                fallbackClass="text-slate-600 font-semibold"
+                            />
 
                             <div class="min-w-0">
                                 <div class="text-[15px] font-semibold text-slate-900 truncate">{{ $displayName !== '' ? $displayName : 'Profil' }}</div>

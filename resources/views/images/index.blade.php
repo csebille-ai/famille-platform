@@ -253,15 +253,30 @@
             </div>
         @endcan
 
-        @can('cloud-write')
-            <button
-                type="button"
+        @can('images-upload')
+            <form
+                method="POST"
+                action="{{ route('images.store') }}"
+                enctype="multipart/form-data"
+                class="absolute -left-[9999px] top-auto h-px w-px overflow-hidden"
+            >
+                @csrf
+                <input
+                    id="images-page-upload-input"
+                    name="image"
+                    type="file"
+                    accept="image/*"
+                    onchange="this.form.submit()"
+                />
+            </form>
+
+            <label
+                for="images-page-upload-input"
                 class="fixed right-6 z-[60] bg-slate-900 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-sm bottom-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom)+1rem)] sm:bottom-6"
                 aria-label="Uploader"
-                onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker()"
             >
                 <i class="ph ph-plus" aria-hidden="true"></i>
-            </button>
+            </label>
         @endcan
     </div>
 </x-app-layout>

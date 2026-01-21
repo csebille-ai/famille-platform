@@ -14,14 +14,6 @@
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : 'bg-amber-50 text-amber-900 border-amber-200';
 
-            $avatarUrl = null;
-            try {
-                $avatarUrl = avatarUrl($user);
-            } catch (\Throwable $e) {
-                $avatarUrl = null;
-            }
-
-            $hasAvatar = is_string($avatarUrl) && $avatarUrl !== '';
         @endphp
 
         <div class="flex items-start justify-between gap-4">
@@ -35,15 +27,12 @@
                     <i class="ph ph-caret-left" aria-hidden="true"></i>
                 </a>
 
-                <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-black/10 flex items-center justify-center shrink-0">
-                    @if($hasAvatar)
-                        <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" />
-                    @else
-                        <div class="text-slate-600 font-semibold">
-                            {{ $user->initials() }}
-                        </div>
-                    @endif
-                </div>
+                <x-user-avatar
+                    :subject="$user"
+                    sizeClass="h-12 w-12"
+                    class="rounded-2xl bg-slate-100 border border-black/10 shrink-0"
+                    fallbackClass="text-slate-600 font-semibold"
+                />
 
                 <div class="min-w-0">
                     <div class="text-xl font-semibold text-slate-900 truncate">{{ $user->name }}</div>

@@ -1,5 +1,5 @@
 @php
-    /** @var array<int,array{name:string, initials:string, next_date:\Carbon\CarbonImmutable, days_remaining:int, turning_age:int|null}> $birthdays */
+    /** @var array<int,array{name:string, initials:string, avatar_url?:string|null, next_date:\Carbon\CarbonImmutable, days_remaining:int, turning_age:int|null}> $birthdays */
     $birthdays = $birthdays ?? [];
 @endphp
 
@@ -10,7 +10,7 @@
             <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-gray-900">Retour</a>
         </div>
 
-        @if(empty($birthdays))
+        @if (count($birthdays) === 0)
             <div class="rounded-2xl border border-slate-200 bg-white p-5">
                 <div class="text-base font-semibold text-gray-900">Aucune date de naissance</div>
                 <div class="mt-1 text-sm text-slate-600">Ajoutez des dates de naissance sur les profils.</div>
@@ -23,12 +23,23 @@
                         $date = $b['next_date'] ?? null;
                         $labelDate = $date ? $date->locale(app()->getLocale())->translatedFormat('d M') : '';
                         $age = $b['turning_age'] ?? null;
+                        $birthdayAvatarUrl = $b['avatar_url'] ?? null;
                     @endphp
 
                     <div class="p-4 flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-bold">
-                            {{ $b['initials'] ?? '?' }}
-                        </div>
+                        @if ($birthdayAvatarUrl)
+                            <img
+                                src="{{ $birthdayAvatarUrl }}"
+                                alt=""
+                                class="h-10 w-10 flex-shrink-0 rounded-full object-cover"
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        @else
+                            <div class="h-10 w-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-bold">
+                                {{ $b['initials'] ?? '?' }}
+                            </div>
+                        @endif
 
                         <div class="min-w-0 flex-1">
                             <div class="font-semibold text-gray-900 truncate">{{ $b['name'] ?? '—' }}</div>

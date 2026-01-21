@@ -8,5 +8,6 @@ Broadcast::channel('chat', function ($user) {
     return [
         'id' => $user->id,
         'name' => $user->name,
+        'avatar_url' => avatarUrl($user),
     ];
 });

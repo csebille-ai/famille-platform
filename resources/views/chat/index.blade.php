@@ -291,6 +291,12 @@
                                 $colors = $paletteFor($userId);
                                 $initials = $initialsFor($name);
                                 $firstName = $firstNameFor($name);
+                                $avatarUrl = '';
+                                try {
+                                    $avatarUrl = (string) (avatarUrl($m->user) ?? '');
+                                } catch (\Throwable $e) {
+                                    $avatarUrl = '';
+                                }
 
                                 $prev = $messages[$i - 1] ?? null;
                                 $next = $messages[$i + 1] ?? null;
@@ -329,8 +335,12 @@
 
                                     <div class="flex items-end gap-2 {{ $isMe ? 'flex-row-reverse' : '' }}">
                                         <div class="shrink-0 {{ $isGroupEnd ? '' : 'invisible' }}" data-avatar>
-                                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-semibold {{ $colors['avatar'] }}">
-                                                {{ $initials }}
+                                            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold {{ $avatarUrl !== '' ? 'bg-white border border-black/10' : $colors['avatar'] }}">
+                                                @if($avatarUrl !== '')
+                                                    <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" />
+                                                @else
+                                                    {{ $initials }}
+                                                @endif
                                             </div>
                                         </div>
 
@@ -1776,6 +1786,35 @@
                 return ini.toUpperCase();
             }
 
+            function avatarUrlFor(u) {
+                const raw = u?.avatar_url ?? u?.avatarUrl ?? u?.avatar ?? null;
+                const s = String(raw ?? '').trim();
+                return s ? s : '';
+            }
+
+            function buildAvatarNode({ name, colors, avatarUrl, sizeClass = 'w-9 h-9' }) {
+                const wrap = document.createElement('div');
+                wrap.className = `${sizeClass} rounded-full overflow-hidden flex items-center justify-center text-xs font-semibold`;
+
+                const url = String(avatarUrl || '').trim();
+                if (url) {
+                    wrap.classList.add('bg-white');
+                    wrap.classList.add('border');
+                    wrap.classList.add('border-black/10');
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = '';
+                    img.loading = 'lazy';
+                    img.className = 'h-full w-full object-cover';
+                    wrap.appendChild(img);
+                    return wrap;
+                }
+
+                wrap.className += ` ${colors.avatar}`;
+                wrap.textContent = initialsFor(name);
+                return wrap;
+            }
+
             let pinToBottomUntil = 0;
 
             function pinToBottom(ms = 1200) {
@@ -1986,13 +2025,12 @@
                             const id = userId(u);
                             const name = userName(u);
                             const colors = paletteFor(id);
+                            const avatarUrl = avatarUrlFor(u);
 
                             const row = document.createElement('div');
                             row.className = 'flex items-center gap-3';
 
-                            const av = document.createElement('div');
-                            av.className = `w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold ${colors.avatar}`;
-                            av.textContent = initialsFor(name);
+                            const av = buildAvatarNode({ name, colors, avatarUrl, sizeClass: 'w-9 h-9' });
 
                             const label = document.createElement('div');
                             label.className = 'text-sm text-gray-900';
@@ -2074,6 +2112,7 @@
                 const wasAtBottom = isNearBottom();
                 const uid = payload?.user?.id ?? payload?.user_id ?? null;
                 const name = payload?.user?.name ?? '—';
+                const avatarUrl = avatarUrlFor(payload?.user || payload || {});
                 const body = payload?.body ?? '';
                 const att = parseAttachmentBody(body);
                 const createdISO = payload?.created_at ?? null;
@@ -2127,10 +2166,8 @@
                 const avatarWrap = document.createElement('div');
                 avatarWrap.className = 'shrink-0';
                 avatarWrap.dataset.avatar = '1';
-                const avatar = document.createElement('div');
-                avatar.className = `w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-semibold ${colors.avatar}`;
-                avatar.textContent = initials;
-                avatarWrap.appendChild(avatar);
+                const avatarNode = buildAvatarNode({ name, colors, avatarUrl, sizeClass: 'w-8 h-8 sm:w-9 sm:h-9' });
+                avatarWrap.appendChild(avatarNode);
 
                 const wrapper = document.createElement('div');
                 if (att) {

@@ -294,7 +294,7 @@ class NextBirthday
 
     /**
      * @param  Collection<int,User>  $users
-          * @return array<int,array{kind:'user',id:int,name:string, initials:string, next_date:CarbonImmutable, days_remaining:int, turning_age:int|null}>
+            * @return array<int,array{kind:'user',id:int,name:string, initials:string, avatar_url:string|null, next_date:CarbonImmutable, days_remaining:int, turning_age:int|null}>
      */
     public function upcomingForUsers(Collection $users, ?CarbonInterface $today = null): array
     {
@@ -330,6 +330,13 @@ class NextBirthday
                 'id' => (int) ($user->id ?? 0),
                 'name' => $this->firstName((string) $user->name),
                 'initials' => $user->initials(),
+                'avatar_url' => (function () use ($user) {
+                    try {
+                        return avatarUrl($user);
+                    } catch (\Throwable) {
+                        return null;
+                    }
+                })(),
                 'next_date' => $nextDate,
                 'days_remaining' => $days,
                 'turning_age' => $age,
@@ -342,7 +349,7 @@ class NextBirthday
 
     /**
      * @param  Collection<int,Person>  $people
-          * @return array<int,array{kind:'person',id:int,is_child:bool,user_id:int|null,avatar_path:string|null,name:string, initials:string, next_date:CarbonImmutable, days_remaining:int, turning_age:int|null}>
+            * @return array<int,array{kind:'person',id:int,is_child:bool,user_id:int|null,avatar_path:string|null,avatar_url:string|null,name:string, initials:string, next_date:CarbonImmutable, days_remaining:int, turning_age:int|null}>
      */
     public function upcomingForPeople(Collection $people, ?CarbonInterface $today = null): array
     {
@@ -384,6 +391,13 @@ class NextBirthday
                 'is_child' => (bool) ($person->is_child ?? false),
                 'user_id' => isset($person->user_id) ? (int) $person->user_id : null,
                 'avatar_path' => isset($person->avatar_path) ? (string) $person->avatar_path : null,
+                'avatar_url' => (function () use ($person) {
+                    try {
+                        return avatarUrl($person);
+                    } catch (\Throwable) {
+                        return null;
+                    }
+                })(),
                 'name' => $name,
                 'initials' => $person->initials(),
                 'next_date' => $nextDate,

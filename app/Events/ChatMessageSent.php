@@ -16,7 +16,7 @@ class ChatMessageSent implements ShouldBroadcastNow
 
     public function __construct(public ChatMessage $message)
     {
-        $this->message->loadMissing('user:id,name');
+        $this->message->loadMissing('user:id,name,avatar_path,avatar_updated_at');
     }
 
     public function broadcastOn(): Channel
@@ -38,6 +38,7 @@ class ChatMessageSent implements ShouldBroadcastNow
             'user' => [
                 'id' => $this->message->user?->id,
                 'name' => $this->message->user?->name,
+                'avatar_url' => avatarUrl($this->message->user),
             ],
         ];
     }

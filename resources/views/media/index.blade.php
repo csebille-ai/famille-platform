@@ -19,6 +19,8 @@
         class="max-w-6xl mx-auto px-6 pt-4 pb-6 space-y-4"
         x-data="{
             tab: 'photos',
+            canImagesUpload: @json(auth()->user()?->can('images-upload') ?? false),
+            canCloudWrite: @json(auth()->user()?->can('cloud-write') ?? false),
             pageSize: {{ (int) ($pageSize ?? 24) }},
             photos: [],
             videos: [],
@@ -197,18 +199,46 @@
                             </button>
                         </div>
 
-                        @can('cloud-write')
-                        <div class="shrink-0">
-                            <button
-                                type="button"
-                                class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-slate-900 hover:bg-[color:var(--fam-tint)]"
-                                aria-label="Ajouter"
-                                onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker()"
-                            >
-                                <i class="ph ph-plus" aria-hidden="true"></i>
-                            </button>
+                        <div class="shrink-0" x-show="(tab === 'photos' && canImagesUpload) || (tab === 'videos' && canCloudWrite)" x-cloak>
+                            @can('images-upload')
+                                <form
+                                    method="POST"
+                                    action="{{ route('images.store') }}"
+                                    enctype="multipart/form-data"
+                                    class="absolute -left-[9999px] top-auto h-px w-px overflow-hidden"
+                                >
+                                    @csrf
+                                    <input
+                                        id="media-photos-upload-input"
+                                        name="image"
+                                        type="file"
+                                        accept="image/*"
+                                        onchange="this.form.submit()"
+                                    />
+                                </form>
+
+                                <label
+                                    for="media-photos-upload-input"
+                                    class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-slate-900 hover:bg-[color:var(--fam-tint)]"
+                                    x-show="tab === 'photos'"
+                                    aria-label="Ajouter une photo"
+                                >
+                                    <i class="ph ph-plus" aria-hidden="true"></i>
+                                </label>
+                            @endcan
+
+                            @can('cloud-write')
+                                <button
+                                    type="button"
+                                    class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-slate-900 hover:bg-[color:var(--fam-tint)]"
+                                    aria-label="Ajouter une vidéo"
+                                    x-show="tab === 'videos'"
+                                    onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker()"
+                                >
+                                    <i class="ph ph-plus" aria-hidden="true"></i>
+                                </button>
+                            @endcan
                         </div>
-                        @endcan
                     </div>
                 </div>
             </div>
@@ -218,7 +248,9 @@
             <template x-if="(photos || []).length === 0">
                     <div class="fam-card p-6">
                     <div class="text-base font-semibold text-gray-900">Aucune photo pour l’instant</div>
-                    <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première photo avec “+ Ajouter”.</div>
+                    @can('images-upload')
+                        <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première photo avec “+ Ajouter”.</div>
+                    @endcan
                 </div>
             </template>
 
@@ -282,7 +314,9 @@
             <template x-if="(videos || []).length === 0">
                     <div class="fam-card p-6">
                     <div class="text-base font-semibold text-gray-900">Aucune vidéo pour l’instant</div>
-                    <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première vidéo avec “+ Ajouter”.</div>
+                    @can('cloud-write')
+                        <div class="microcopy text-sm text-slate-500 mt-1">Ajoutez une première vidéo avec “+ Ajouter”.</div>
+                    @endcan
                 </div>
             </template>
 

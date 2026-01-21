@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\ChatMessageSent;
 use App\Models\ChatPresence;
 use App\Models\ChatMessage;
+use App\Models\User;
 use App\Services\WebPush\WebPushNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,7 +20,7 @@ class ChatController extends Controller
         $this->touchPresence();
 
         $messages = ChatMessage::query()
-            ->with('user:id,name')
+            ->with('user:id,name,avatar_path,avatar_updated_at')
             ->latest()
             ->limit(50)
             ->get()
@@ -49,7 +50,7 @@ class ChatController extends Controller
             'body' => $validated['body'],
         ]);
 
-        $message->loadMissing('user:id,name');
+        $message->loadMissing('user:id,name,avatar_path,avatar_updated_at');
 
         broadcast(new ChatMessageSent($message))->toOthers();
 
@@ -80,6 +81,7 @@ class ChatController extends Controller
                 'user' => [
                     'id' => $message->user?->id,
                     'name' => $message->user?->name,
+                    'avatar_url' => avatarUrl($message->user),
                 ],
             ]);
         }
@@ -98,7 +100,7 @@ class ChatController extends Controller
         $sinceId = (int) ($validated['since_id'] ?? 0);
 
         $messages = ChatMessage::query()
-            ->with('user:id,name')
+            ->with('user:id,name,avatar_path,avatar_updated_at')
             ->when($sinceId > 0, fn($q) => $q->where('id', '>', $sinceId))
             ->orderBy('id')
             ->limit(50)
@@ -110,6 +112,7 @@ class ChatController extends Controller
                 'user' => [
                     'id' => $m->user?->id,
                     'name' => $m->user?->name,
+                    'avatar_url' => avatarUrl($m->user),
                 ],
             ])
             ->values();
@@ -141,13 +144,17 @@ class ChatController extends Controller
         // Consider a user online if they pinged in the last 45 seconds.
         $cutoff = now()->subSeconds(45);
 
-        return DB::table('chat_presences')
-            ->join('users', 'users.id', '=', 'chat_presences.user_id')
+        return User::query()
+            ->join('chat_presences', 'users.id', '=', 'chat_presences.user_id')
             ->where('chat_presences.last_seen_at', '>=', $cutoff)
             ->orderBy('users.name')
-            ->select(['users.id as id', 'users.name as name'])
+            ->select(['users.id', 'users.name', 'users.avatar_path', 'users.avatar_updated_at'])
             ->get()
-            ->map(fn($r) => ['id' => (int) $r->id, 'name' => (string) $r->name])
+            ->map(fn(User $u) => [
+                'id' => (int) $u->id,
+                'name' => (string) ($u->name ?? '—'),
+                'avatar_url' => avatarUrl($u),
+            ])
             ->values()
             ->all();
     }

@@ -20,9 +20,7 @@
                 @forelse($adults as $p)
                     <div class="rounded-2xl border border-slate-200 p-4">
                         <div class="flex items-center gap-3">
-                            <div class="h-10 w-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-bold">
-                                {{ $p->initials() }}
-                            </div>
+                            <x-user-avatar :subject="$p" sizeClass="h-10 w-10" fallbackClass="bg-slate-900 text-white text-sm font-bold" />
                             <div class="min-w-0">
                                 <div class="font-semibold text-gray-900 truncate">{{ $p->displayName() }}</div>
                                 <div class="text-sm text-slate-600">
@@ -53,9 +51,7 @@
 
                     <div class="rounded-2xl border border-slate-200 p-4">
                         <div class="flex items-start gap-3">
-                            <div class="h-10 w-10 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-bold">
-                                {{ $c->initials() }}
-                            </div>
+                            <x-user-avatar :subject="$c" sizeClass="h-10 w-10" fallbackClass="bg-slate-900 text-white text-sm font-bold" />
 
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center justify-between gap-2">
