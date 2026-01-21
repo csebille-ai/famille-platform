@@ -302,7 +302,7 @@
             </div>
 
             @if($tab === 'profile')
-                <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="rounded-2xl border border-slate-200 bg-slate-50/70 backdrop-blur shadow-sm">
+                <div x-show="show" x-transition.opacity.duration.180ms x-transition.transform.duration.180ms class="rounded-2xl border border-slate-200 bg-amber-50/60 backdrop-blur shadow-sm">
                     <div class="p-4 sm:p-6 space-y-4">
                         <div class="rounded-2xl border border-slate-200 bg-white p-4">
                             <div class="flex items-center justify-between">
@@ -316,7 +316,7 @@
                                 $more = count($talents) - count($visible);
                             @endphp
 
-                            <div class="mt-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                            <div class="mt-2 rounded-2xl border border-slate-200 bg-amber-50/70 px-3 py-2.5">
                                 @if(count($visible) > 0)
                                     <ul class="space-y-1.5 pl-4 list-disc marker:text-teal-600">
                                         @foreach($visible as $t)
@@ -392,7 +392,7 @@
                             <div class="text-sm font-semibold text-slate-900">Actions</div>
                             <div class="mt-3">
                                 <div class="max-w-sm mx-auto space-y-3">
-                                    <a href="{{ $birthCtaUrl }}" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-semibold hover:bg-teal-50">
+                                    <a href="{{ $birthCtaUrl }}" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl border border-slate-200 bg-amber-50/70 text-slate-800 text-sm font-semibold hover:bg-teal-50">
                                         Modifier mes infos
                                     </a>
 
