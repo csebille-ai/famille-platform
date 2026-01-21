@@ -389,4 +389,61 @@
         </div>
 
     </div>
+
+    <script>
+        (() => {
+            const isMobileViewport = () => {
+                try {
+                    return !!(window.matchMedia && window.matchMedia('(max-width: 639px)').matches);
+                } catch (e) {
+                    return true;
+                }
+            };
+
+            const fixBottomNavIfNeeded = () => {
+                if (!isMobileViewport()) return;
+
+                const nav = document.querySelector('nav[aria-label="Navigation principale"]');
+                if (!nav) return;
+
+                let cs = null;
+                try { cs = window.getComputedStyle(nav); } catch (e) { cs = null; }
+
+                let rect = null;
+                try { rect = nav.getBoundingClientRect(); } catch (e) { rect = null; }
+
+                const looksFixed = cs && String(cs.position || '') === 'fixed';
+                const inViewport = rect && rect.bottom <= (window.innerHeight + 8) && rect.top < window.innerHeight;
+
+                // Only intervene if it's not behaving like a fixed bottom nav.
+                if (looksFixed && inViewport) return;
+
+                try {
+                    // Ensure it isn't trapped under a transformed/scrolling ancestor.
+                    document.body.appendChild(nav);
+                } catch (e) {
+                    // ignore
+                }
+
+                nav.style.position = 'fixed';
+                nav.style.left = '0';
+                nav.style.right = '0';
+                nav.style.bottom = '0';
+                nav.style.zIndex = '50';
+                nav.style.transform = 'translate3d(0,0,0)';
+                nav.style.willChange = 'transform';
+            };
+
+            const schedule = () => requestAnimationFrame(() => requestAnimationFrame(fixBottomNavIfNeeded));
+
+            window.addEventListener('pageshow', schedule);
+            window.addEventListener('load', schedule, { once: true });
+            window.addEventListener('resize', schedule, { passive: true });
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') schedule();
+            });
+
+            schedule();
+        })();
+    </script>
 </x-app-layout>
