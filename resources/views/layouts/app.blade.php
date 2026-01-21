@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" style="background: #F6F2EC;">
+@php
+    $isProfileRoute = request()->routeIs('profile.*');
+@endphp
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" style="background: {{ $isProfileRoute ? '#FAF7F2' : '#F6F2EC' }};">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -409,7 +412,7 @@
 
             <!-- Page Content -->
             <main
-                class="@unless($attributes->get('hideNavigation')) pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8 @endunless"
+                class="{{ $isProfileRoute ? 'bg-[color:var(--fam-surface-alt)]' : '' }} @unless($attributes->get('hideNavigation')) pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8 @endunless"
                 style="@unless($attributes->get('hideNavigation')) padding-top: var(--app-nav-h, 0px) @endunless"
             >
                 <!-- Page Heading (must be below fixed top nav) -->
