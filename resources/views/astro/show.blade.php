@@ -191,7 +191,7 @@
                 <div class="relative flex items-center justify-between h-12">
                     <button
                         type="button"
-                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white text-slate-800 hover:bg-[color:rgba(14,165,160,0.10)]"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-white text-slate-800 hover:bg-teal-50"
                         aria-label="Retour"
                         onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href = '{{ route('dashboard') }}'; }"
                     >
@@ -202,7 +202,7 @@
                         <div class="text-[0.95rem] font-semibold text-slate-900">Fiche astro</div>
                     </div>
 
-                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-3 rounded-2xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">
+                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-3 rounded-2xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-teal-50">
                         Modifier
                     </a>
                 </div>
@@ -268,7 +268,7 @@
                 @endphp
 
                 <div class="mt-3 rounded-2xl border border-teal-200/60 bg-teal-50/40 px-3 py-2.5">
-                    <ul class="space-y-1.5 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.95)]">
+                    <ul class="space-y-1.5 pl-4 list-disc marker:text-teal-600">
                         <li class="text-sm text-slate-700">
                             <span class="font-semibold">Élément</span><span class="text-slate-400"> :</span>
                             <span class="font-extrabold text-slate-900">{{ $elementText }}</span>
@@ -287,7 +287,7 @@
                         @foreach($tabs as $key => $label)
                             <a
                                 href="{{ route('astro.show', ['tab' => $key]) }}{{ $key === 'theme' ? '#theme-astral' : '' }}"
-                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-[color:rgba(14,165,160,1)] text-white shadow-sm' : 'bg-white text-slate-700 hover:text-slate-900 hover:bg-[color:rgba(14,165,160,0.08)] border border-black/10' }}"
+                                class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold transition-all duration-150 {{ $tab === $key ? 'bg-teal-600 text-white shadow-sm' : 'bg-white text-slate-700 hover:text-slate-900 hover:bg-teal-50 border border-black/10' }}"
                             >
                                 {{ $label }}
                             </a>
@@ -313,7 +313,7 @@
 
                             <div class="mt-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
                                 @if(count($visible) > 0)
-                                    <ul class="space-y-1.5 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.95)]">
+                                    <ul class="space-y-1.5 pl-4 list-disc marker:text-teal-600">
                                         @foreach($visible as $t)
                                             <li class="text-sm font-semibold text-slate-700">{{ $t }}</li>
                                         @endforeach
@@ -324,7 +324,7 @@
 
                                 @if($more > 0)
                                     <div class="mt-2">
-                                        <button type="button" @click="openTalents = true" class="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-sm border border-black/10 bg-white font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">
+                                        <button type="button" @click="openTalents = true" class="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-sm border border-black/10 bg-white font-semibold text-slate-700 hover:bg-teal-50">
                                             <span>Voir +</span>
                                             <i class="ph ph-caret-down text-slate-500" aria-hidden="true"></i>
                                         </button>
@@ -387,11 +387,11 @@
                             <div class="text-sm font-semibold text-slate-900">Actions</div>
                             <div class="mt-3">
                                 <div class="max-w-sm mx-auto space-y-3">
-                                    <a href="{{ $birthCtaUrl }}" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">
+                                    <a href="{{ $birthCtaUrl }}" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-teal-50">
                                         Modifier mes infos
                                     </a>
 
-                                    <a href="{{ route('profile.edit') }}#profile-avatar" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[color:rgba(14,165,160,1)] text-white text-sm font-semibold hover:bg-[color:rgba(13,148,136,1)] active:bg-[color:rgba(15,118,110,1)]">
+                                    <a href="{{ route('profile.edit') }}#profile-avatar" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 active:bg-teal-800">
                                         Changer ma photo de profil
                                     </a>
                                 </div>
@@ -415,7 +415,7 @@
                                 <div class="text-sm font-semibold text-slate-900">Le thème astral n’est pas disponible pour le moment.</div>
                                 <div class="mt-1 text-xs text-slate-500">Vérifie l’heure et le lieu de naissance pour activer le calcul complet.</div>
                                 <div class="mt-3">
-                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">Modifier</a>
+                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-teal-50">Modifier</a>
                                 </div>
                             </div>
                         @else
@@ -447,7 +447,7 @@
                                             @elseif($isBullet)
                                                 @if(!$inList)
                                                     @php $inList = true; @endphp
-                                                    <ul class="space-y-2 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.9)]">
+                                                    <ul class="space-y-2 pl-4 list-disc marker:text-teal-600">
                                                 @endif
                                                 <li class="text-sm leading-relaxed text-slate-700">{{ ltrim(substr($line, 1)) }}</li>
 
@@ -468,7 +468,7 @@
 
                                 <div class="mt-3 flex items-center justify-between gap-2">
                                     <div class="text-xs text-slate-500">Astuce: tu peux défiler à l’intérieur du cadre.</div>
-                                    <a href="{{ route('astro.show', ['tab' => 'chart']) }}" class="text-xs font-semibold text-[color:rgba(14,165,160,1)] hover:underline">Voir la carte du ciel</a>
+                                    <a href="{{ route('astro.show', ['tab' => 'chart']) }}" class="text-xs font-semibold text-teal-700 hover:underline">Voir la carte du ciel</a>
                                 </div>
                             </div>
                         @endif
@@ -568,7 +568,7 @@
                             <div class="rounded-xl border border-black/10 bg-white p-4">
                                 <div class="text-sm font-semibold text-slate-900">La carte n’est pas disponible pour le moment.</div>
                                 <div class="mt-3">
-                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">Modifier</a>
+                                    <a href="{{ $birthCtaUrl }}" class="inline-flex items-center h-10 px-4 rounded-lg border border-black/10 bg-white text-slate-800 text-sm font-semibold hover:bg-teal-50">Modifier</a>
                                 </div>
                             </div>
                         @else
