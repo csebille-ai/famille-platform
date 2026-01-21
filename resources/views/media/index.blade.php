@@ -9,7 +9,6 @@
 @endphp
 
 <x-app-layout pageBgClass="fam-page-bg">
-    <!-- media-shell: 2a2ddb1 (debug marker) -->
     {{-- /media: use the same mobile bottom dock container (fixed) as chat for PWA stability,
         but keep the UI identical by hiding the (empty) dock wrapper above the nav. --}}
     <x-slot name="bottomDock">
@@ -20,6 +19,15 @@
         /* /media-only: hide the empty composer wrapper inside #mobileBottomDock.
            Keeps only the primary nav visible, while benefiting from the dock fixed container. */
         #mobileBottomDock > div:first-child { display: none !important; }
+
+        /* /media-only: never show the mobile bottom dock on desktop/PWA.
+           (Extra guard in case breakpoint/CSS caching behaves oddly.) */
+        @media (min-width: 640px) {
+            #mobileBottomDock { display: none !important; }
+        }
+        @media (hover: hover) and (pointer: fine) {
+            #mobileBottomDock { display: none !important; }
+        }
     </style>
 
     <script type="application/json" id="media-initial-tab">@json($initialTab)</script>
