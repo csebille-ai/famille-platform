@@ -37,11 +37,6 @@
         $archetypeHero = trim((string) ($astro['archetype'] ?? ''));
 
         $chineseHero = trim((string) ($astro['chinese'] ?? ''));
-        $kemeticIndexHero = (int) ($astro['kemetic_decan_index'] ?? 0);
-        $kemeticLabelHero = trim((string) ($astro['kemetic_decan_label'] ?? ''));
-        $kemeticNameHero = $kemeticIndexHero > 0
-            ? \App\Services\Astro\Kemetic\KemeticDecan::nameFromIndex($kemeticIndexHero)
-            : '';
 
         $elementFromSign = function (string $sign): string {
             $sign = mb_strtolower(trim($sign));
@@ -67,7 +62,6 @@
         $elementHero = $sun !== '' ? $elementFromSign($sun) : '';
         $signatureParts = [];
         if ($chineseHero !== '') $signatureParts[] = $chineseHero;
-        if ($kemeticNameHero !== '') $signatureParts[] = $kemeticNameHero;
         $signatureLine = implode(' • ', $signatureParts);
 
         $birthCtaUrl = isset($birthCtaUrl)
@@ -281,10 +275,6 @@
                             'value' => $chineseHero,
                             'fallback' => 'À compléter',
                         ],
-                        [
-                            'value' => $kemeticNameHero,
-                            'fallback' => 'À calculer',
-                        ],
                     ];
                 @endphp
 
@@ -322,10 +312,6 @@
 
                         @php
                             $chinese = trim((string) ($astro['chinese'] ?? ''));
-                            $kemeticIndex = (int) ($astro['kemetic_decan_index'] ?? 0);
-                            $kemeticName = $kemeticIndex > 0
-                                ? \App\Services\Astro\Kemetic\KemeticDecan::nameFromIndex($kemeticIndex)
-                                : '';
 
                             $essentialCards = [
                                 [
@@ -334,19 +320,13 @@
                                     'muted' => $chinese === '',
                                     'meta' => '',
                                 ],
-                                [
-                                    'label' => 'Zodiac kémétique',
-                                    'value' => $kemeticName !== '' ? $kemeticName : 'À calculer',
-                                    'muted' => $kemeticName === '' && $kemeticIndex <= 0,
-                                    'meta' => '',
-                                ],
                             ];
                         @endphp
 
                         <div class="grid grid-cols-1 min-[360px]:grid-cols-2 gap-2 sm:gap-3">
                             @foreach($essentialCards as $e)
                                 @php
-                                    $accent = $loop->first ? 'bg-sky-400/70' : 'bg-violet-400/70';
+                                    $accent = 'bg-sky-400/70';
                                 @endphp
                                 <div class="h-full min-w-0 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 sm:px-4 sm:py-3">
                                     <div class="flex items-center gap-2">

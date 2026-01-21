@@ -39,6 +39,14 @@ use Illuminate\Support\Facades\Storage;
 Route::get('/api/geo/cities', \App\Http\Controllers\Api\GeoCitySearchController::class)
     ->middleware(['auth', 'verified', 'throttle:60,1']);
 
+// AvatarAstro (legacy) removed: keep endpoints for backward compatibility.
+Route::post('/api/avatar-astro/generate', [\App\Http\Controllers\Api\AvatarAstroController::class, 'generate'])
+    ->middleware(['auth', 'verified', 'throttle:30,1'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::get('/api/avatar-astro/status', [\App\Http\Controllers\Api\AvatarAstroController::class, 'status'])
+    ->middleware(['auth', 'verified', 'throttle:30,1']);
+
 Route::post('/api/tarot/draw', TarotDrawController::class)
     ->middleware('throttle:tarot-draw')
     ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);

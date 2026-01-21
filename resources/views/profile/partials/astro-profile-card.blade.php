@@ -14,11 +14,6 @@
 
     $chinese = \App\Services\Astro\ChineseZodiac::formatDisplayLabel($animal, $element, $polarity);
 
-    $kemeticIndex = (int) ($sig['kemetic_decan_index'] ?? ($p->kemetic_decan_index ?? 0));
-    $kemeticName = $kemeticIndex > 0
-        ? \App\Services\Astro\Kemetic\KemeticDecan::nameFromIndex($kemeticIndex)
-        : '';
-
     $archetype = trim((string) ($sig['archetype'] ?? ($p->archetype ?? '')));
     $talents = $sig['talents'] ?? ($p->talents ?? []);
     $talents = is_array($talents) ? array_values(array_filter(array_map('strval', $talents))) : [];
@@ -62,11 +57,6 @@
             <div class="rounded-xl border border-black/10 bg-white p-3 sm:p-4">
                 <div class="text-xs text-slate-500">Ascendant</div>
                 <div class="mt-1 text-sm font-semibold text-slate-900">{{ $ascendant !== '' ? $ascendant : '—' }}</div>
-            </div>
-
-            <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
-                <div class="text-xs text-slate-500">Zodiac kémétique</div>
-                <div class="mt-1 text-sm font-semibold text-slate-900">{{ $kemeticName !== '' ? $kemeticName : 'À calculer' }}</div>
             </div>
 
             <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">

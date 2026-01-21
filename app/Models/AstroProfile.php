@@ -18,13 +18,6 @@ class AstroProfile extends Model
         'moon_sign',
         'moon_lon',
         'moon_deg_in_sign',
-        'sun_lon',
-        'sun_deg_in_sign',
-        'kemetic_decan_index',
-        'kemetic_decan_label',
-        'kemetic_decan_keyword',
-        'kemetic_hash',
-        'kemetic_computed_at',
         'astro_hash',
         'astro_computed_at',
         'natal_hash',
@@ -42,7 +35,6 @@ class AstroProfile extends Model
         'talents' => 'array',
         'computed_at' => 'datetime',
         'astro_computed_at' => 'datetime',
-        'kemetic_computed_at' => 'datetime',
         'natal_computed_at' => 'datetime',
     ];
 

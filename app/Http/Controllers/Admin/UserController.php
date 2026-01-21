@@ -65,10 +65,6 @@ class UserController extends Controller
         $moon = trim((string) ($sig['moon_sign'] ?? ($p?->moon_sign ?? '')));
         $asc = trim((string) ($sig['ascendant'] ?? ($p?->ascendant_sign ?? '')));
 
-        $kemeticIndex = (int) ($sig['kemetic_decan_index'] ?? ($p?->kemetic_decan_index ?? 0));
-        $kemeticLabel = trim((string) ($sig['kemetic_decan_label'] ?? ($p?->kemetic_decan_label ?? '')));
-        $kemeticKeyword = trim((string) ($sig['kemetic_decan_keyword'] ?? ($p?->kemetic_decan_keyword ?? '')));
-
         $ch = $sig['chinese'] ?? null;
         $chStr = '';
         if (is_array($ch)) {
@@ -114,16 +110,11 @@ class UserController extends Controller
             'moon_sign' => $moon,
             'ascendant' => $asc,
             'chinese' => $chStr,
-            'kemetic_decan_index' => $kemeticIndex > 0 ? $kemeticIndex : null,
-            'kemetic_decan_label' => $kemeticLabel !== '' ? $kemeticLabel : null,
-            'kemetic_decan_keyword' => $kemeticKeyword !== '' ? $kemeticKeyword : null,
             'archetype' => $archetype,
             'talents' => $talents,
             'vigilance' => $vigilance,
             'precision' => $precision,
         ];
-
-        $avatarV = optional($user->avatar_updated_at)->getTimestamp() ?? time();
 
         return view('astro.show', [
             'user' => $user,
@@ -132,7 +123,6 @@ class UserController extends Controller
             'tab' => $tab,
             // Override self-only URLs.
             'birthCtaUrl' => route('admin.users.edit', $user),
-            'avatarImageUrl' => route('avatar.astro.imageForUser', ['user' => $user, 'v' => $avatarV]),
         ]);
     }
 

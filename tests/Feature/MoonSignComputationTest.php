@@ -49,7 +49,7 @@ class MoonSignComputationTest extends TestCase
         $moon = array_values(array_filter($recorded, fn ($pair) => ($pair[0]?->url() ?? '') === 'https://astro.test/moon'));
         $sun = array_values(array_filter($recorded, fn ($pair) => ($pair[0]?->url() ?? '') === 'https://astro.test/sun'));
         $this->assertCount(1, $moon);
-        $this->assertCount(1, $sun);
+        $this->assertCount(0, $sun);
     }
 
     public function test_it_uses_cached_moon_sign_when_inputs_unchanged(): void
@@ -84,7 +84,7 @@ class MoonSignComputationTest extends TestCase
         $moon = array_values(array_filter($recorded, fn ($pair) => ($pair[0]?->url() ?? '') === 'https://astro.test/moon'));
         $sun = array_values(array_filter($recorded, fn ($pair) => ($pair[0]?->url() ?? '') === 'https://astro.test/sun'));
         $this->assertCount(1, $moon);
-        $this->assertCount(1, $sun);
+        $this->assertCount(0, $sun);
     }
 
     public function test_it_clears_cached_moon_when_time_missing(): void
@@ -118,6 +118,6 @@ class MoonSignComputationTest extends TestCase
         $moon = array_values(array_filter($recorded, fn ($pair) => ($pair[0]?->url() ?? '') === 'https://astro.test/moon'));
         $sun = array_values(array_filter($recorded, fn ($pair) => ($pair[0]?->url() ?? '') === 'https://astro.test/sun'));
         $this->assertCount(0, $moon);
-        $this->assertCount(1, $sun);
+        $this->assertCount(0, $sun);
     }
 }

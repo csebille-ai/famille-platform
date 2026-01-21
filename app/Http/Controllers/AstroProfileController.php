@@ -22,10 +22,6 @@ class AstroProfileController extends Controller
         $moon = trim((string) ($sig['moon_sign'] ?? ($p?->moon_sign ?? '')));
         $asc = trim((string) ($sig['ascendant'] ?? ($p?->ascendant_sign ?? '')));
 
-        $kemeticIndex = (int) ($sig['kemetic_decan_index'] ?? ($p?->kemetic_decan_index ?? 0));
-        $kemeticLabel = trim((string) ($sig['kemetic_decan_label'] ?? ($p?->kemetic_decan_label ?? '')));
-        $kemeticKeyword = trim((string) ($sig['kemetic_decan_keyword'] ?? ($p?->kemetic_decan_keyword ?? '')));
-
         $ch = $sig['chinese'] ?? null;
         $chStr = '';
         if (is_array($ch)) {
@@ -71,9 +67,6 @@ class AstroProfileController extends Controller
             'moon_sign' => $moon,
             'ascendant' => $asc,
             'chinese' => $chStr,
-            'kemetic_decan_index' => $kemeticIndex > 0 ? $kemeticIndex : null,
-            'kemetic_decan_label' => $kemeticLabel !== '' ? $kemeticLabel : null,
-            'kemetic_decan_keyword' => $kemeticKeyword !== '' ? $kemeticKeyword : null,
             'natal' => $p?->natal,
             'archetype' => $archetype,
             'talents' => $talents,

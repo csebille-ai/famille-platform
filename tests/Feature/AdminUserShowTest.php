@@ -36,8 +36,6 @@ class AdminUserShowTest extends TestCase
                 'sun_sign' => 'Taureau',
                 'ascendant' => 'Bélier',
                 'chinese' => ['polarity' => 'Yang', 'element' => 'Métal', 'animal' => 'Chien'],
-                'kemetic_decan_index' => 5,
-                'kemetic_decan_label' => 'Taureau — 2e décan',
                 'archetype' => 'Test archetype',
                 'talents' => ['A', 'B'],
                 'vigilance' => 'Test weakness',

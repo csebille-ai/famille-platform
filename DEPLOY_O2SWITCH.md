@@ -160,7 +160,7 @@ Si tu ne peux pas faire tourner Reverb en prod o2switch, mets par exemple :
 
 ## 5) Astro-engine (profil astro)
 
-Le calcul astro (signe lunaire, décans kémétiques, etc.) dépend du micro-service `astro-engine`.
+Le calcul astro (signe lunaire, ascendant, etc.) dépend du micro-service `astro-engine`.
 
 ### Variables `.env`
 
