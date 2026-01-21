@@ -9,24 +9,11 @@
 @endphp
 
 <x-app-layout pageBgClass="fam-page-bg">
-    {{-- /media: use the same mobile bottom dock container (fixed) as chat for PWA stability,
-        but keep the UI identical by hiding the (empty) dock wrapper above the nav. --}}
-    <x-slot name="bottomDock">
-        <div class="h-0"></div>
-    </x-slot>
-
     <style>
-        /* /media-only: hide the empty composer wrapper inside #mobileBottomDock.
-           Keeps only the primary nav visible, while benefiting from the dock fixed container. */
-        #mobileBottomDock > div:first-child { display: none !important; }
-
-        /* /media-only: never show the mobile bottom dock on desktop/PWA.
-           (Extra guard in case breakpoint/CSS caching behaves oddly.) */
+        /* /media-only safety: never show the bottom nav on desktop.
+           This is independent from Tailwind's `sm:hidden` (useful if breakpoints ever fail). */
         @media (min-width: 640px) {
-            #mobileBottomDock { display: none !important; }
-        }
-        @media (hover: hover) and (pointer: fine) {
-            #mobileBottomDock { display: none !important; }
+            nav[aria-label="Navigation principale"] { display: none !important; }
         }
     </style>
 
@@ -411,4 +398,51 @@
 
     </div>
 
+    <script>
+        // /media-only: some environments (notably PWA) can break `position: fixed` if the nav is under a transformed ancestor.
+        // Fix by moving the bottom nav directly under <body> on mobile.
+        (() => {
+            const isMobileViewport = () => {
+                try {
+                    return !!(window.matchMedia && window.matchMedia('(max-width: 639px)').matches);
+                } catch (e) {
+                    return true;
+                }
+            };
+
+            const apply = () => {
+                if (!isMobileViewport()) return;
+
+                const nav = document.querySelector('nav[aria-label="Navigation principale"]');
+                if (!nav) return;
+
+                try {
+                    if (nav.parentElement !== document.body) {
+                        document.body.appendChild(nav);
+                    }
+                } catch (e) {
+                    // ignore
+                }
+
+                nav.style.position = 'fixed';
+                nav.style.left = '0';
+                nav.style.right = '0';
+                nav.style.bottom = '0';
+                nav.style.zIndex = '50';
+                nav.style.transform = 'translate3d(0,0,0)';
+                nav.style.willChange = 'transform';
+            };
+
+            const schedule = () => requestAnimationFrame(() => requestAnimationFrame(apply));
+
+            window.addEventListener('pageshow', schedule);
+            window.addEventListener('load', schedule, { once: true });
+            window.addEventListener('resize', schedule, { passive: true });
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') schedule();
+            });
+
+            schedule();
+        })();
+    </script>
 </x-app-layout>
