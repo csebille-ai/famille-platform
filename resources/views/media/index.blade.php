@@ -9,6 +9,18 @@
 @endphp
 
 <x-app-layout pageBgClass="fam-page-bg">
+    {{-- /media: use the same mobile bottom dock container (fixed) as chat for PWA stability,
+        but keep the UI identical by hiding the (empty) dock wrapper above the nav. --}}
+    <x-slot name="bottomDock">
+        <div class="h-0"></div>
+    </x-slot>
+
+    <style>
+        /* /media-only: hide the empty composer wrapper inside #mobileBottomDock.
+           Keeps only the primary nav visible, while benefiting from the dock fixed container. */
+        #mobileBottomDock > div:first-child { display: none !important; }
+    </style>
+
     <script type="application/json" id="media-initial-tab">@json($initialTab)</script>
     <script type="application/json" id="media-images-items">@json($imagesItems ?? [])</script>
     <script type="application/json" id="media-videos-items">@json($videosItems ?? [])</script>
@@ -390,75 +402,4 @@
 
     </div>
 
-    <script>
-        // /media-only: iOS/PWA can sometimes treat `position: fixed` as relative to a transformed ancestor.
-        // To avoid breaking other pages, we "portal" the fixed nav elements to <body> only on /media.
-        (() => {
-            const isMobileViewport = () => {
-                try {
-                    return !!(window.matchMedia && window.matchMedia('(max-width: 639px)').matches);
-                } catch (e) {
-                    return true;
-                }
-            };
-
-            const portalToBody = (el) => {
-                if (!el) return;
-                if (el.dataset && el.dataset.famPortaled === '1') return;
-                try {
-                    document.body.appendChild(el);
-                    if (el.dataset) el.dataset.famPortaled = '1';
-                } catch (e) {
-                    // ignore
-                }
-            };
-
-            const forceFixed = (el, { top = null, bottom = null, zIndex = 50 } = {}) => {
-                if (!el) return;
-                el.style.position = 'fixed';
-                el.style.left = '0';
-                el.style.right = '0';
-                if (top != null) {
-                    el.style.top = String(top);
-                    el.style.bottom = '';
-                }
-                if (bottom != null) {
-                    el.style.bottom = String(bottom);
-                    el.style.top = '';
-                }
-                el.style.zIndex = String(zIndex);
-                el.style.transform = 'translate3d(0,0,0)';
-                el.style.willChange = 'transform';
-            };
-
-            const apply = () => {
-                // Top navigation: ensure it's fixed at the top.
-                const topNav = document.getElementById('appTopNav');
-                if (topNav) {
-                    portalToBody(topNav);
-                    forceFixed(topNav, { top: '0px', zIndex: 50 });
-                }
-
-                // Bottom navigation (mobile only): ensure it's fixed at the bottom.
-                if (isMobileViewport()) {
-                    const bottomNav = document.querySelector('nav[aria-label="Navigation principale"]');
-                    if (bottomNav) {
-                        portalToBody(bottomNav);
-                        forceFixed(bottomNav, { bottom: '0px', zIndex: 50 });
-                    }
-                }
-            };
-
-            const schedule = () => requestAnimationFrame(() => requestAnimationFrame(apply));
-
-            window.addEventListener('pageshow', schedule);
-            window.addEventListener('load', schedule, { once: true });
-            window.addEventListener('resize', schedule, { passive: true });
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') schedule();
-            });
-
-            schedule();
-        })();
-    </script>
 </x-app-layout>
