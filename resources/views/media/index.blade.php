@@ -9,6 +9,7 @@
 @endphp
 
 <x-app-layout pageBgClass="fam-page-bg">
+    <!-- media-shell: 2a2ddb1 (debug marker) -->
     {{-- /media: use the same mobile bottom dock container (fixed) as chat for PWA stability,
         but keep the UI identical by hiding the (empty) dock wrapper above the nav. --}}
     <x-slot name="bottomDock">
