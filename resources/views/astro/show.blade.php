@@ -36,6 +36,8 @@
 
         $archetypeHero = trim((string) ($astro['archetype'] ?? ''));
 
+        $chineseHero = trim((string) ($astro['chinese'] ?? ''));
+
         $elementFromSign = function (string $sign): string {
             $sign = mb_strtolower(trim($sign));
 
@@ -261,29 +263,15 @@
                 </div>
 
                 @php
-                    $heroChips = [
-                        [
-                            'value' => $elementHero,
-                            'fallback' => '—',
-                        ],
-                        [
-                            'value' => $isChartMissing ? 'À compléter' : 'Complet',
-                            'fallback' => 'À compléter',
-                        ],
-                    ];
+                    $elementText = $elementHero !== '' ? $elementHero : '—';
+                    $chineseText = $chineseHero !== '' ? $chineseHero : 'À compléter';
                 @endphp
 
-                <div class="mt-3 grid grid-cols-1 min-[360px]:grid-cols-3 gap-2">
-                    @foreach($heroChips as $c)
-                        @php
-                            $val = trim((string) ($c['value'] ?? ''));
-                            $missing = ($val === '');
-                            $text = $missing ? (string) ($c['fallback'] ?? '—') : $val;
-                        @endphp
-                        <div class="inline-flex w-full items-center justify-center h-9 px-3 rounded-full border {{ $missing ? 'border-black/10 bg-white text-slate-500' : 'border-black/10 bg-white text-slate-900' }} text-sm font-semibold">
-                            <span class="truncate">{{ $text }}</span>
-                        </div>
-                    @endforeach
+                <div class="mt-3 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                    <ul class="space-y-1 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.9)]">
+                        <li class="text-sm font-semibold text-slate-800">Élément : <span class="text-slate-900">{{ $elementText }}</span></li>
+                        <li class="text-sm font-semibold text-slate-800">Signe chinois : <span class="{{ $chineseHero !== '' ? 'text-slate-900' : 'text-slate-500' }}">{{ $chineseText }}</span></li>
+                    </ul>
                 </div>
             </div>
 
@@ -317,18 +305,24 @@
                                 $more = count($talents) - count($visible);
                             @endphp
 
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                @forelse($visible as $t)
-                                    <span class="inline-flex items-center h-8 px-3 rounded-full text-sm border border-slate-200 bg-white font-semibold text-slate-700">{{ $t }}</span>
-                                @empty
-                                    <span class="text-sm text-slate-500">À calculer</span>
-                                @endforelse
+                            <div class="mt-2">
+                                @if(count($visible) > 0)
+                                    <ul class="space-y-1 pl-4 list-disc marker:text-[color:rgba(14,165,160,0.9)]">
+                                        @foreach($visible as $t)
+                                            <li class="text-sm font-semibold text-slate-700">{{ $t }}</li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <div class="text-sm text-slate-500">À calculer</div>
+                                @endif
 
                                 @if($more > 0)
-                                    <button type="button" @click="openTalents = true" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-sm border border-black/10 bg-white font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">
-                                        <span>Voir +</span>
-                                        <i class="ph ph-caret-down text-slate-500" aria-hidden="true"></i>
-                                    </button>
+                                    <div class="mt-2">
+                                        <button type="button" @click="openTalents = true" class="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-sm border border-black/10 bg-white font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">
+                                            <span>Voir +</span>
+                                            <i class="ph ph-caret-down text-slate-500" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
                                 @endif
                             </div>
                         </div>
@@ -390,7 +384,7 @@
                                     Modifier mes infos
                                 </a>
 
-                                <a href="{{ route('profile.edit') }}#profile-avatar" class="w-full inline-flex items-center justify-center h-10 px-4 rounded-xl bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 active:bg-slate-950">
+                                <a href="{{ route('profile.edit') }}#profile-avatar" class="w-full inline-flex items-center justify-center h-9 px-4 rounded-xl border border-black/10 bg-white text-slate-900 text-sm font-semibold hover:bg-[color:rgba(14,165,160,0.10)]">
                                     Changer ma photo de profil
                                 </a>
                             </div>
