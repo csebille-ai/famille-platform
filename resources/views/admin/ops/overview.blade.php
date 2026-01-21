@@ -10,7 +10,49 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             @include('admin.ops._nav')
 
+            @if ($errors->any())
+                <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
+                    <div class="text-sm font-semibold">{{ __('Something went wrong') }}</div>
+                    <ul class="mt-2 text-sm list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if (session('status'))
+                <div class="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900">
+                    {{ session('status') }}
+                </div>
+            @endif
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="text-xs font-semibold text-slate-500">Actualités</div>
+                            <div class="mt-2 text-sm text-slate-700">
+                                <div>Sources: <span class="font-semibold text-slate-900">{{ (int) ($news['sources_enabled'] ?? 0) }}</span></div>
+                                <div class="mt-1">Dernier import: <span class="font-semibold text-slate-900">{{ optional($news['latest_fetched_at'] ?? null)?->format('Y-m-d H:i') ?? '—' }}</span></div>
+                            </div>
+                        </div>
+
+                        <form method="POST" action="{{ route('news.import') }}" onsubmit="return confirm('Importer les actus maintenant ?');">
+                            @csrf
+                            <button type="submit" class="inline-flex items-center h-10 px-4 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700">
+                                Mettre à jour
+                            </button>
+                        </form>
+                    </div>
+
+                    @if(((int) ($news['sources_enabled'] ?? 0)) === 0)
+                        <div class="mt-3 text-xs text-amber-900 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                            Aucune source RSS configurée (NEWS_SOURCES_JSON / NEWS_FEEDS).
+                        </div>
+                    @endif
+                </div>
+
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <div class="text-xs font-semibold text-slate-500">Actifs 24h</div>
                     <div class="mt-2 text-2xl font-extrabold text-slate-900">{{ number_format((int) $kpis['active_24h']) }}</div>

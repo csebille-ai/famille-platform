@@ -7,10 +7,12 @@ use App\Models\ActivityEvent;
 use App\Models\AppError;
 use App\Models\ChatMessage;
 use App\Models\CloudAuditLog;
+use App\Models\NewsItem;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class OpsDashboardController extends Controller
@@ -42,10 +44,37 @@ class OpsDashboardController extends Controller
             ->limit(10)
             ->get();
 
+        $news = [
+            'sources_enabled' => 0,
+            'latest_fetched_at' => null,
+            'latest_published_at' => null,
+            'count' => 0,
+        ];
+        try {
+            $sources = (array) config('news.sources', []);
+            $sources = array_values(array_filter($sources, fn ($v) => is_array($v)));
+            $news['sources_enabled'] = count(array_filter($sources, fn ($s) => ($s['enabled'] ?? true) === true));
+
+            if (Schema::hasTable('news_items')) {
+                $latest = NewsItem::query()
+                    ->orderByDesc('fetched_at')
+                    ->orderByDesc('published_at')
+                    ->orderByDesc('id')
+                    ->first(['fetched_at', 'published_at']);
+
+                $news['latest_fetched_at'] = $latest?->fetched_at;
+                $news['latest_published_at'] = $latest?->published_at;
+                $news['count'] = NewsItem::query()->count();
+            }
+        } catch (\Throwable) {
+            // ignore
+        }
+
         return view('admin.ops.overview', [
             'kpis' => $kpis,
             'latestEvents' => $latestEvents,
             'latestErrors' => $latestErrors,
+            'news' => $news,
         ]);
     }
 
