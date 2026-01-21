@@ -391,6 +391,8 @@
     </div>
 
     <script>
+        // /media-only: iOS/PWA can sometimes treat `position: fixed` as relative to a transformed ancestor.
+        // To avoid breaking other pages, we "portal" the fixed nav elements to <body> only on /media.
         (() => {
             const isMobileViewport = () => {
                 try {
@@ -400,41 +402,54 @@
                 }
             };
 
-            const fixBottomNavIfNeeded = () => {
-                if (!isMobileViewport()) return;
-
-                const nav = document.querySelector('nav[aria-label="Navigation principale"]');
-                if (!nav) return;
-
-                let cs = null;
-                try { cs = window.getComputedStyle(nav); } catch (e) { cs = null; }
-
-                let rect = null;
-                try { rect = nav.getBoundingClientRect(); } catch (e) { rect = null; }
-
-                const looksFixed = cs && String(cs.position || '') === 'fixed';
-                const inViewport = rect && rect.bottom <= (window.innerHeight + 8) && rect.top < window.innerHeight;
-
-                // Only intervene if it's not behaving like a fixed bottom nav.
-                if (looksFixed && inViewport) return;
-
+            const portalToBody = (el) => {
+                if (!el) return;
+                if (el.dataset && el.dataset.famPortaled === '1') return;
                 try {
-                    // Ensure it isn't trapped under a transformed/scrolling ancestor.
-                    document.body.appendChild(nav);
+                    document.body.appendChild(el);
+                    if (el.dataset) el.dataset.famPortaled = '1';
                 } catch (e) {
                     // ignore
                 }
-
-                nav.style.position = 'fixed';
-                nav.style.left = '0';
-                nav.style.right = '0';
-                nav.style.bottom = '0';
-                nav.style.zIndex = '50';
-                nav.style.transform = 'translate3d(0,0,0)';
-                nav.style.willChange = 'transform';
             };
 
-            const schedule = () => requestAnimationFrame(() => requestAnimationFrame(fixBottomNavIfNeeded));
+            const forceFixed = (el, { top = null, bottom = null, zIndex = 50 } = {}) => {
+                if (!el) return;
+                el.style.position = 'fixed';
+                el.style.left = '0';
+                el.style.right = '0';
+                if (top != null) {
+                    el.style.top = String(top);
+                    el.style.bottom = '';
+                }
+                if (bottom != null) {
+                    el.style.bottom = String(bottom);
+                    el.style.top = '';
+                }
+                el.style.zIndex = String(zIndex);
+                el.style.transform = 'translate3d(0,0,0)';
+                el.style.willChange = 'transform';
+            };
+
+            const apply = () => {
+                // Top navigation: ensure it's fixed at the top.
+                const topNav = document.getElementById('appTopNav');
+                if (topNav) {
+                    portalToBody(topNav);
+                    forceFixed(topNav, { top: '0px', zIndex: 50 });
+                }
+
+                // Bottom navigation (mobile only): ensure it's fixed at the bottom.
+                if (isMobileViewport()) {
+                    const bottomNav = document.querySelector('nav[aria-label="Navigation principale"]');
+                    if (bottomNav) {
+                        portalToBody(bottomNav);
+                        forceFixed(bottomNav, { bottom: '0px', zIndex: 50 });
+                    }
+                }
+            };
+
+            const schedule = () => requestAnimationFrame(() => requestAnimationFrame(apply));
 
             window.addEventListener('pageshow', schedule);
             window.addEventListener('load', schedule, { once: true });
