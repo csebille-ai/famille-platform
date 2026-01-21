@@ -174,7 +174,7 @@
     @endphp
 
     <div
-        x-data="{ show: false, openTalents: false, openPlanet: false, planet: null }"
+        x-data="{ show: false, openTalents: false }"
         x-init="requestAnimationFrame(() => { show = true; const hash = window.location.hash; if (hash === '#theme-astral' || hash === '#astro-tabs') { const el = document.getElementById('astro-tabs'); if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' }); } })"
         class="pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
     >
@@ -533,6 +533,28 @@
                                     'lon' => is_numeric($lon) ? (float) $lon : null,
                                 ];
                             }
+
+                            $order = [
+                                'sun' => 10,
+                                'moon' => 20,
+                                'mercury' => 30,
+                                'venus' => 40,
+                                'mars' => 50,
+                                'jupiter' => 60,
+                                'saturn' => 70,
+                                'uranus' => 80,
+                                'neptune' => 90,
+                                'pluto' => 100,
+                            ];
+
+                            usort($planetRows, function (array $a, array $b) use ($order) {
+                                $ak = (string) ($a['key'] ?? '');
+                                $bk = (string) ($b['key'] ?? '');
+                                $ao = $order[$ak] ?? 999;
+                                $bo = $order[$bk] ?? 999;
+                                if ($ao === $bo) return strcmp($ak, $bk);
+                                return $ao <=> $bo;
+                            });
                         @endphp
 
                         @if($missingCoords)
@@ -609,57 +631,22 @@
 
                                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
                                     <div class="text-sm font-semibold text-slate-900">Planètes</div>
-                                    <div class="mt-3 divide-y divide-slate-100">
+                                    <div class="mt-3 grid grid-cols-2 gap-3">
                                         @foreach($planetRows as $pl)
-                                            <button
-                                                type="button"
-                                                class="w-full py-3 flex items-center justify-between gap-3 text-left"
-                                                @click="planet = {{ \Illuminate\Support\Js::from($pl) }}; openPlanet = true"
-                                            >
-                                                <div class="min-w-0">
-                                                    <div class="flex items-center gap-2">
-                                                        <span class="text-base">{{ $pl['glyph'] }}</span>
-                                                        <div class="text-sm font-semibold text-slate-900">{{ $pl['name'] }}</div>
-                                                    </div>
-                                                    <div class="mt-0.5 text-xs text-slate-600">
-                                                        {{ ($pl['sign'] ?? '') !== '' ? ($pl['sign'] . ' ' . ($pl['deg_label'] ?? '')) : '—' }}
-                                                        @if(($pl['house'] ?? null) !== null)
-                                                            <span class="mx-1">·</span>
-                                                            Maison {{ $pl['house'] }}
-                                                        @endif
-                                                    </div>
+                                            <div class="rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-base">{{ $pl['glyph'] }}</span>
+                                                    <div class="text-sm font-semibold text-slate-900">{{ $pl['name'] }}</div>
                                                 </div>
-                                                <i class="ph ph-caret-right text-slate-400" aria-hidden="true"></i>
-                                            </button>
+                                                <div class="mt-0.5 text-xs text-slate-600">
+                                                    {{ ($pl['sign'] ?? '') !== '' ? ($pl['sign'] . ' ' . ($pl['deg_label'] ?? '')) : '—' }}
+                                                    @if(($pl['house'] ?? null) !== null)
+                                                        <span class="mx-1">·</span>
+                                                        Maison {{ $pl['house'] }}
+                                                    @endif
+                                                </div>
+                                            </div>
                                         @endforeach
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div x-show="openPlanet" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
-                                <button type="button" @click="openPlanet = false" class="absolute inset-0 bg-black/30" aria-label="Fermer"></button>
-
-                                <div
-                                    x-show="openPlanet"
-                                    x-transition.opacity.duration.160ms
-                                    x-transition.transform.duration.160ms
-                                    class="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white p-4 shadow-2xl"
-                                    style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem)"
-                                >
-                                    <div class="flex items-center justify-between">
-                                        <div class="text-sm font-semibold text-slate-900" x-text="planet ? (planet.glyph + ' ' + planet.name) : ''"></div>
-                                        <button type="button" @click="openPlanet = false" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Fermer</button>
-                                    </div>
-
-                                    <div class="mt-3 grid gap-2">
-                                        <div class="rounded-2xl border border-black/10 bg-white px-4 py-3">
-                                            <div class="text-[11px] font-semibold text-slate-500">Position</div>
-                                            <div class="mt-1 text-sm font-semibold text-slate-900" x-text="planet && planet.sign ? (planet.sign + ' ' + planet.deg_label) : '—'"></div>
-                                        </div>
-                                        <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                                            <div class="text-[11px] font-semibold text-slate-500">Maison</div>
-                                            <div class="mt-1 text-sm font-semibold text-slate-900" x-text="planet && planet.house ? ('Maison ' + planet.house) : '—'"></div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
