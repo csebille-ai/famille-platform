@@ -174,7 +174,7 @@
     @endphp
 
     <div
-        x-data="{ show: false, openTalents: false }"
+        x-data="{ show: false, openTalents: false, activePlanetKey: null }"
         x-init="requestAnimationFrame(() => { show = true; const hash = window.location.hash; if (hash === '#theme-astral' || hash === '#astro-tabs') { const el = document.getElementById('astro-tabs'); if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' }); } })"
         class="pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
     >
@@ -710,8 +710,26 @@
                                                     $lon = $pl['lon'] ?? null;
                                                     $pt = $wheelXY($lon, 66);
                                                     $fill = (string) ($pl['fill'] ?? '#0f172a');
+                                                    $key = (string) ($pl['key'] ?? '');
                                                 @endphp
-                                                <text x="{{ $pt['x'] }}" y="{{ $pt['y'] }}" text-anchor="middle" dominant-baseline="middle" font-size="14" fill="{{ $fill }}">{{ $pl['glyph'] }}</text>
+                                                <g x-bind:opacity="!activePlanetKey || activePlanetKey === '{{ $key }}' ? 1 : 0.25">
+                                                    <circle
+                                                        x-show="activePlanetKey === '{{ $key }}'"
+                                                        cx="{{ $pt['x'] }}"
+                                                        cy="{{ $pt['y'] }}"
+                                                        r="11"
+                                                        fill="{{ $fill }}"
+                                                        opacity="0.14"
+                                                    />
+                                                    <text
+                                                        x-bind:font-size="activePlanetKey === '{{ $key }}' ? 18 : 14"
+                                                        x="{{ $pt['x'] }}"
+                                                        y="{{ $pt['y'] }}"
+                                                        text-anchor="middle"
+                                                        dominant-baseline="middle"
+                                                        fill="{{ $fill }}"
+                                                    >{{ $pl['glyph'] }}</text>
+                                                </g>
                                             @endforeach
 
                                             <text x="0" y="0" text-anchor="middle" dominant-baseline="middle" font-size="10" fill="#64748b">Carte</text>
@@ -723,7 +741,13 @@
                                     <div class="text-sm font-semibold text-slate-900">Planètes</div>
                                     <div class="mt-3 grid grid-cols-2 gap-3">
                                         @foreach($planetRows as $pl)
-                                            <div class="rounded-2xl border px-3 py-3 {{ $pl['border_class'] }} {{ $pl['bg_class'] }}">
+                                            @php $key = (string) ($pl['key'] ?? ''); @endphp
+                                            <button
+                                                type="button"
+                                                class="w-full rounded-2xl border px-3 py-3 text-left transition-all {{ $pl['border_class'] }} {{ $pl['bg_class'] }}"
+                                                @click="activePlanetKey = (activePlanetKey === '{{ $key }}' ? null : '{{ $key }}')"
+                                                x-bind:class="activePlanetKey === '{{ $key }}' ? 'ring-2 ring-teal-500 ring-offset-2 ring-offset-white' : ''"
+                                            >
                                                 <div class="flex items-center gap-2">
                                                     <span class="text-base {{ $pl['glyph_class'] }}">{{ $pl['glyph'] }}</span>
                                                     <div class="text-sm font-semibold text-slate-900">{{ $pl['name'] }}</div>
@@ -735,7 +759,7 @@
                                                         Maison {{ $pl['house'] }}
                                                     @endif
                                                 </div>
-                                            </div>
+                                            </button>
                                         @endforeach
                                     </div>
                                 </div>
