@@ -175,7 +175,7 @@
 
     <div
         x-data="{ show: false, openTalents: false, openPlanet: false, planet: null }"
-        x-init="requestAnimationFrame(() => { show = true; if (window.location.hash === '#theme-astral') { setTimeout(() => { const el = document.getElementById('theme-astral'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); } })"
+        x-init="requestAnimationFrame(() => { show = true; const hash = window.location.hash; if (hash === '#theme-astral' || hash === '#astro-tabs') { const el = document.getElementById('astro-tabs'); if (el) el.scrollIntoView({ behavior: 'auto', block: 'start' }); } })"
         class="pt-[calc(env(safe-area-inset-top)+0.75rem)] pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
     >
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-4">
@@ -208,68 +208,70 @@
                 </div>
             </div>
 
-            <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
-                            @if($avatarUrl !== '')
-                                <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
-                            @else
-                                <div class="text-slate-600 font-semibold">
-                                    {{ $user->initials() }}
-                                </div>
-                            @endif
-                        </div>
-
-                        <div class="min-w-0">
-                            <div class="text-[15px] font-semibold text-slate-900 truncate">{{ $displayName !== '' ? $displayName : 'Profil' }}</div>
-                            <div class="mt-0.5 text-[13px] text-slate-500">
-                                @if($ageLabel !== null)
-                                    {{ $ageLabel }}
+            @if($tab === 'profile')
+                <div class="rounded-2xl bg-white shadow-sm border border-slate-200 p-4">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="h-12 w-12 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                                @if($avatarUrl !== '')
+                                    <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" referrerpolicy="no-referrer" />
                                 @else
-                                    Âge inconnu
+                                    <div class="text-slate-600 font-semibold">
+                                        {{ $user->initials() }}
+                                    </div>
                                 @endif
                             </div>
 
-                            {{-- signature moved under zodiac frames --}}
-                        </div>
-                    </div>
+                            <div class="min-w-0">
+                                <div class="text-[15px] font-semibold text-slate-900 truncate">{{ $displayName !== '' ? $displayName : 'Profil' }}</div>
+                                <div class="mt-0.5 text-[13px] text-slate-500">
+                                    @if($ageLabel !== null)
+                                        {{ $ageLabel }}
+                                    @else
+                                        Âge inconnu
+                                    @endif
+                                </div>
 
-                    @if($archetypeHero !== '')
-                        <div class="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1">
-                            <div class="flex items-center gap-1.5">
-                                <i class="ph ph-shield text-slate-500 text-xs" aria-hidden="true"></i>
-                                <div>
-                                    <div class="text-[11px] leading-4 text-slate-500">Archétype</div>
-                                    <div class="text-sm font-semibold leading-5 text-slate-900">{{ $archetypeHero }}</div>
+                                {{-- signature moved under zodiac frames --}}
+                            </div>
+                        </div>
+
+                        @if($archetypeHero !== '')
+                            <div class="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1">
+                                <div class="flex items-center gap-1.5">
+                                    <i class="ph ph-shield text-slate-500 text-xs" aria-hidden="true"></i>
+                                    <div>
+                                        <div class="text-[11px] leading-4 text-slate-500">Archétype</div>
+                                        <div class="text-sm font-semibold leading-5 text-slate-900">{{ $archetypeHero }}</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    @endif
-                </div>
+                        @endif
+                    </div>
 
-                <div class="grid grid-cols-3 gap-3 mt-3">
-                    @foreach($pills as $p)
-                        <div class="rounded-2xl border p-3 min-h-[74px] {{ $p['boxClass'] }}">
-                            <div class="text-[11px] font-semibold {{ $p['labelClass'] }}">{{ $p['label'] }}</div>
-                            <div class="mt-1 text-lg font-extrabold tracking-tight {{ $p['missing'] ? 'text-slate-400' : $p['valueClass'] }}">
-                                {{ $p['value'] }}
+                    <div class="grid grid-cols-3 gap-3 mt-3">
+                        @foreach($pills as $p)
+                            <div class="rounded-2xl border p-3 min-h-[74px] {{ $p['boxClass'] }}">
+                                <div class="text-[11px] font-semibold {{ $p['labelClass'] }}">{{ $p['label'] }}</div>
+                                <div class="mt-1 text-lg font-extrabold tracking-tight {{ $p['missing'] ? 'text-slate-400' : $p['valueClass'] }}">
+                                    {{ $p['value'] }}
+                                </div>
+                                <div class="mt-1 text-[11px] text-slate-400 leading-4">
+                                    {{ $p['hint'] !== '' ? $p['hint'] : ' ' }}
+                                </div>
                             </div>
-                            <div class="mt-1 text-[11px] text-slate-400 leading-4">
-                                {{ $p['hint'] !== '' ? $p['hint'] : ' ' }}
-                            </div>
-                        </div>
-                    @endforeach
+                        @endforeach
+                    </div>
+
                 </div>
+            @endif
 
-            </div>
-
-            <div class="px-4 sm:px-0">
+            <div id="astro-tabs" class="px-4 sm:px-0">
                 <div class="rounded-2xl border border-slate-200 bg-white/80 backdrop-blur shadow-sm p-2">
                     <div class="grid grid-cols-3 gap-2">
                         @foreach($tabs as $key => $label)
                             <a
-                                href="{{ route('astro.show', ['tab' => $key]) }}{{ $key === 'theme' ? '#theme-astral' : '' }}"
+                                href="{{ route('astro.show', ['tab' => $key]) }}"
                                 class="h-10 inline-flex items-center justify-center rounded-2xl text-sm font-semibold leading-none transition-all duration-150 border {{ $tab === $key ? 'bg-teal-600 text-white shadow-sm border-transparent' : 'bg-white text-slate-700 border-black/10 hover:text-slate-900 hover:bg-teal-50' }}"
                             >
                                 {{ $label }}
