@@ -157,7 +157,12 @@ class EventController extends Controller
 
         $allDay = (bool) ($data['all_day'] ?? false);
         $date = (string) ($data['date'] ?? '');
-        $time = (string) ($data['time'] ?? '');
+        $time = trim((string) ($data['time'] ?? ''));
+
+        // UX: if no time is specified, treat as all-day (do not show 00:00).
+        if ($time === '') {
+            $allDay = true;
+        }
 
         $startTime = $allDay ? '00:00' : ($time !== '' ? $time : '00:00');
         $startAt = CarbonImmutable::createFromFormat('Y-m-d H:i', $date . ' ' . $startTime, $tz);

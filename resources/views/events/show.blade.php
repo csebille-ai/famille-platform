@@ -151,20 +151,20 @@
                     <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">
                         @if($event->all_day)
                             @if($startAt)
-                                {{ $startAt->timezone($tz)->translatedFormat('D j M Y') }}
+                                {{ $startAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y') }}
                             @else
                                 —
                             @endif
                             <span class="text-[color:var(--fam-muted)]">(journée entière)</span>
                         @else
                             @if($startAt)
-                                {{ $startAt->timezone($tz)->translatedFormat('D j M Y \à H:i') }}
+                                {{ $startAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y \à H:i') }}
                             @else
                                 —
                             @endif
                             @if($endAt)
                                 <span class="text-[color:var(--fam-muted)]">→</span>
-                                {{ $endAt->timezone($tz)->translatedFormat('D j M Y \à H:i') }}
+                                {{ $endAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y \à H:i') }}
                             @endif
                         @endif
                     </div>
@@ -209,7 +209,7 @@
                             Désactivé
                         @else
                             @if($event->reminder_at)
-                                {{ $event->reminder_at->timezone($tz)->translatedFormat('D j M Y \à H:i') }}
+                                {{ $event->reminder_at->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y \à H:i') }}
                             @else
                                 Activé
                             @endif

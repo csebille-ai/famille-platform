@@ -194,12 +194,15 @@
                                 if ($start) {
                                     if ($start->isToday()) $dayLabel = 'Aujourd’hui';
                                     elseif ($start->isTomorrow()) $dayLabel = 'Demain';
-                                    else $dayLabel = $start->translatedFormat('D j M');
+                                    else $dayLabel = $start->locale(app()->getLocale())->translatedFormat('D j M');
                                 }
 
                                 $timeLabel = '';
                                 if (!$ev->all_day && $start) {
-                                    $timeLabel = $start->format('H:i');
+                                    $t = $start->format('H:i');
+                                    if ($t !== '00:00') {
+                                        $timeLabel = $t;
+                                    }
                                 }
 
                                 $meta = trim($dayLabel . ($timeLabel !== '' ? (' · ' . $timeLabel) : '') . ($ev->location ? (' · ' . $ev->location) : ''));

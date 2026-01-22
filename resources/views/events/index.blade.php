@@ -40,8 +40,13 @@
             $dt = $e->start_at;
             if (!$dt) return '—';
             try {
+                $dt = $dt->locale(app()->getLocale());
                 if ($e->all_day) return $dt->translatedFormat('EEE d MMM') . ' • Toute la journée';
-                return $dt->translatedFormat('EEE d MMM') . ' • ' . $dt->format('H:i');
+                $t = $dt->format('H:i');
+                if ($t === '00:00') {
+                    return $dt->translatedFormat('EEE d MMM');
+                }
+                return $dt->translatedFormat('EEE d MMM') . ' • ' . $t;
             } catch (Throwable) {
                 return '—';
             }
