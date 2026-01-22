@@ -2643,23 +2643,35 @@
                 const x = useRect ? ax : (Number(e.clientX || 0) || ax);
                 const y = useRect ? ay : (Number(e.clientY || 0) || ay);
                 openReactionsPicker(mid, x, y);
-            });
-
-            let longPressTimer = null;
+            });            let longPressTimer = null;
             let longPressStart = null;
+            let longPressBubble = null;
+            let longPressStartedAt = 0;
+            let longPressFired = false;
+
+            const fireLongPress = () => {
+                if (longPressFired) return;
+                const bubble = longPressBubble;
+                if (!bubble) return;
+                const row = bubble.closest('[data-message-row]');
+                const mid = row?.dataset?.messageId;
+                const rect = bubble.getBoundingClientRect();
+                suppressContextMenuUntil = Date.now() + 1200;
+                longPressFired = true;
+                openReactionsPicker(mid, longPressStart?.x ?? (rect.left + rect.width / 2), longPressStart?.y ?? (rect.top + rect.height / 2));
+            };
 
             messagesEl?.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'touch') return;
                 const bubble = e.target?.closest('[data-bubble]');
                 if (!bubble) return;
                 longPressStart = { x: e.clientX, y: e.clientY };
+                longPressBubble = bubble;
+                longPressStartedAt = Date.now();
+                longPressFired = false;
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressTimer = setTimeout(() => {
-                    const row = bubble.closest('[data-message-row]');
-                    const mid = row?.dataset?.messageId;
-                    const rect = bubble.getBoundingClientRect();
-                    suppressContextMenuUntil = Date.now() + 1200;
-                    openReactionsPicker(mid, longPressStart?.x ?? (rect.left + rect.width / 2), longPressStart?.y ?? (rect.top + rect.height / 2));
+                    fireLongPress();
                 }, 480);
             });
 
@@ -2673,16 +2685,28 @@
                 }
             });
 
-            const cancelLongPress = () => {
+            const cancelLongPress = (ev) => {
+                // iOS Safari can fire pointercancel as it claims the long-press gesture.
+                // In that case, we still want to open the picker.
+                try {
+                    const isCancel = ev?.type === 'pointercancel';
+                    const elapsed = Date.now() - (longPressStartedAt || 0);
+                    if (isCancel && !longPressFired && longPressBubble && elapsed >= 260) {
+                        fireLongPress();
+                    }
+                } catch {}
+
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressTimer = null;
                 longPressStart = null;
+                longPressBubble = null;
+                longPressStartedAt = 0;
+                longPressFired = false;
             };
 
             messagesEl?.addEventListener('pointerup', cancelLongPress);
             messagesEl?.addEventListener('pointercancel', cancelLongPress);
-
-            // Clicking reaction chips => open who reacted list
+// Clicking reaction chips => open who reacted list
             messagesEl?.addEventListener('click', (e) => {
                 const trigger = e.target?.closest('[data-reaction-trigger]');
                 if (trigger) {
