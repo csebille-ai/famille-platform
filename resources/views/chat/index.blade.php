@@ -2514,13 +2514,32 @@
             });
 
             // Bubble triggers: right-click (desktop) + long-press (mobile)
+            let suppressContextMenuUntil = 0;
+            const isCoarsePointer = () => {
+                try {
+                    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+                } catch {}
+                return Number(navigator.maxTouchPoints || 0) > 0;
+            };
+
             messagesEl?.addEventListener('contextmenu', (e) => {
                 const bubble = e.target?.closest('[data-bubble]');
                 if (!bubble) return;
                 e.preventDefault();
+
+                if (Date.now() < suppressContextMenuUntil) {
+                    return;
+                }
+
                 const row = bubble.closest('[data-message-row]');
                 const mid = row?.dataset?.messageId;
-                openReactionsPicker(mid, e.clientX, e.clientY);
+                const rect = bubble.getBoundingClientRect();
+                const ax = rect.left + rect.width / 2;
+                const ay = rect.top + rect.height / 2;
+                const useRect = isCoarsePointer();
+                const x = useRect ? ax : (Number(e.clientX || 0) || ax);
+                const y = useRect ? ay : (Number(e.clientY || 0) || ay);
+                openReactionsPicker(mid, x, y);
             });
 
             let longPressTimer = null;
@@ -2536,6 +2555,7 @@
                     const row = bubble.closest('[data-message-row]');
                     const mid = row?.dataset?.messageId;
                     const rect = bubble.getBoundingClientRect();
+                    suppressContextMenuUntil = Date.now() + 1200;
                     openReactionsPicker(mid, longPressStart?.x ?? (rect.left + rect.width / 2), longPressStart?.y ?? (rect.top + rect.height / 2));
                 }, 480);
             });
