@@ -445,7 +445,7 @@
             @unless($attributes->get('hideNavigation'))
                 <!-- Add sheet (mobile) -->
                 <div class="sm:hidden">
-                    <div x-show="addOpen" x-cloak class="fixed inset-0 z-50" aria-modal="true" role="dialog">
+                    <div x-show="addOpen" x-cloak :class="addOpen ? 'pointer-events-auto' : 'pointer-events-none'" class="fixed inset-0 z-50" aria-modal="true" role="dialog">
                         <button type="button" @click="addOpen = false" class="absolute inset-0 bg-black/30" aria-label="Fermer"></button>
 
                         <div class="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white p-4 shadow-sm" style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem)">
@@ -470,7 +470,7 @@
                     <input id="global-cloud-upload-input" name="file" type="file" accept="image/*,video/*,application/pdf" />
                 </form>
 
-                <div id="global-cloud-upload-overlay" class="fixed inset-0 z-[60] hidden" aria-modal="true" role="dialog">
+                <div id="global-cloud-upload-overlay" class="fixed inset-0 z-[60] hidden pointer-events-none" aria-modal="true" role="dialog">
                     <div class="absolute inset-0 bg-black/40"></div>
                     <div class="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white p-4 shadow-sm sm:inset-0 sm:m-auto sm:h-auto sm:max-w-md sm:rounded-2xl">
                         <div class="flex items-center justify-between">
@@ -549,11 +549,13 @@
                         const showOverlay = () => {
                             if (!overlay) return;
                             overlay.classList.remove('hidden');
+                            overlay.classList.remove('pointer-events-none');
                         };
 
                         const hideOverlay = () => {
                             if (!overlay) return;
                             overlay.classList.add('hidden');
+                            overlay.classList.add('pointer-events-none');
                         };
 
                         const setProgress = (pct, label) => {
