@@ -122,7 +122,7 @@
                                         $ageLabel = $b['age_label'] ?? null;
                                     @endphp
 
-                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-white border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
+                                    <a href="{{ $href }}" class="snap-start shrink-0 w-[240px] rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:bg-white hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Anniversaire de {{ $name }} dans {{ $days }} jour{{ $days > 1 ? 's' : '' }}">
                                         <div class="flex items-center justify-between gap-3">
                                             <div class="min-w-0 flex items-center gap-3">
                                                 <div class="relative h-9 w-9 shrink-0">
@@ -206,7 +206,7 @@
                                 $dot = 'bg-[color:var(--fam-primary)]';
                             @endphp
 
-                                <a href="{{ route('events.show', $ev) }}" class="snap-start shrink-0 w-[260px] rounded-2xl bg-white border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Ouvrir événement {{ $ev->title }}">
+                                <a href="{{ route('events.show', $ev) }}" class="snap-start shrink-0 w-[260px] rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:bg-white hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Ouvrir événement {{ $ev->title }}">
                                     <div class="flex items-start gap-3">
                                         <div class="mt-2 h-2.5 w-2.5 rounded-full {{ $dot }}"></div>
 
