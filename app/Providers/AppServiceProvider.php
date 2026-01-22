@@ -13,6 +13,7 @@ use App\Services\Astro\NullNatalChartProvider;
 use App\Models\User;
 use App\Models\ActivityEvent;
 use App\Events\ChatMessageSent;
+use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Auth\Events\Login;
@@ -42,6 +43,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $locale = (string) config('app.locale', 'fr');
+        Carbon::setLocale($locale);
+        CarbonImmutable::setLocale($locale);
+
         User::observe(UserObserver::class);
         Event::observe(EventObserver::class);
 

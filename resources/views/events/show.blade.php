@@ -18,6 +18,13 @@
         $endAt = $event->end_at;
         $tz = $event->timezone ?: config('app.timezone');
 
+        $statusLabel = match ($event->status ?: 'active') {
+            'active' => 'Actif',
+            'cancelled' => 'Annulé',
+            'archived' => 'Archivé',
+            default => 'Actif',
+        };
+
 		$hasFamilyCalendar = (bool) ($hasFamilyCalendar ?? false);
         $googleConnected = (bool) ($googleConnected ?? false);
         $googleSyncEnabled = (bool) ($googleSyncEnabled ?? false);
@@ -190,7 +197,7 @@
                 </div>
                 <div>
                     <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Statut</div>
-                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $event->status ?: 'active' }}</div>
+                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $statusLabel }}</div>
                 </div>
             </div>
 

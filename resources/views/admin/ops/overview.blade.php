@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <h2 class="font-semibold text-xl text-slate-900 leading-tight">Admin Overview</h2>
+            <h2 class="font-semibold text-xl text-slate-900 leading-tight">Aperçu admin</h2>
             <div class="mt-1 text-sm text-slate-600">KPI + derniers événements</div>
         </div>
     </x-slot>

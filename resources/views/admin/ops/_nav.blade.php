@@ -1,9 +1,9 @@
 @php
     $items = [
-        ['route' => 'admin.overview', 'label' => 'Overview'],
-        ['route' => 'admin.users.index', 'label' => 'Users'],
-        ['route' => 'admin.activity', 'label' => 'Activity'],
-        ['route' => 'admin.errors', 'label' => 'Errors'],
+        ['route' => 'admin.overview', 'label' => 'Aperçu'],
+        ['route' => 'admin.users.index', 'label' => 'Utilisateurs'],
+        ['route' => 'admin.activity', 'label' => 'Journal'],
+        ['route' => 'admin.errors', 'label' => 'Erreurs'],
     ];
 @endphp
 

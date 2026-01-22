@@ -338,7 +338,7 @@
                             <div class="flex {{ $isMe ? 'justify-end' : 'justify-start' }} group" data-message-row data-user-id="{{ $userId }}" data-message-id="{{ $m->id }}" data-day-key="{{ $dayKey }}" data-deleted="{{ $isDeletedForAll ? '1' : '0' }}" data-reaction-summary='@json($reactionSummary)'>
                                 <div class="{{ $att ? 'w-[clamp(240px,72vw,420px)] max-w-[92vw] sm:w-[clamp(320px,48vw,520px)] sm:max-w-[520px]' : 'max-w-[72%] sm:max-w-[68%]' }}">
                                     @if($isGroupStart)
-                                        <div class="mb-1 text-xs text-slate-500 {{ $isMe ? 'text-right' : '' }}">
+                                        <div class="mb-1 text-xs text-slate-500 {{ $isMe ? 'text-right' : '' }}" title="{{ $name }}">
                                             {{ $firstName }} · {{ $m->created_at?->format('H:i') }}
                                         </div>
                                     @endif

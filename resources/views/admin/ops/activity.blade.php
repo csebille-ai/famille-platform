@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <h2 class="font-semibold text-xl text-slate-900 leading-tight">Activity</h2>
-            <div class="mt-1 text-sm text-slate-600">Audit log</div>
+            <h2 class="font-semibold text-xl text-slate-900 leading-tight">Journal</h2>
+            <div class="mt-1 text-sm text-slate-600">Journal d’audit</div>
         </div>
     </x-slot>
 
@@ -21,7 +21,7 @@
                         </select>
                     </div>
                     <div>
-                        <div class="text-xs font-semibold text-slate-500">User</div>
+                        <div class="text-xs font-semibold text-slate-500">Utilisateur</div>
                         <select name="user_id" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
                             <option value="0">Tous</option>
                             @foreach($users as $u)
@@ -40,7 +40,7 @@
                     </div>
                     <div class="sm:col-span-3 flex items-center gap-3">
                         <button type="submit" class="inline-flex items-center h-10 px-4 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700">Filtrer</button>
-                        <a href="{{ route('admin.activity') }}" class="text-sm font-semibold text-slate-600 hover:underline">Reset</a>
+                        <a href="{{ route('admin.activity') }}" class="text-sm font-semibold text-slate-600 hover:underline">Réinitialiser</a>
                     </div>
                 </form>
             </div>
@@ -50,10 +50,10 @@
                     <thead>
                         <tr class="text-left text-slate-500">
                             <th class="py-2 pr-3">Date</th>
-                            <th class="py-2 pr-3">User</th>
+                            <th class="py-2 pr-3">Utilisateur</th>
                             <th class="py-2 pr-3">Type</th>
                             <th class="py-2 pr-3">Route</th>
-                            <th class="py-2">Meta</th>
+                            <th class="py-2">Détails</th>
                         </tr>
                     </thead>
                     <tbody>
