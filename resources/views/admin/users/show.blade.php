@@ -173,14 +173,12 @@
                 <div class="text-sm font-semibold text-slate-900">Actions rapides</div>
 
                 <div class="mt-3 flex flex-wrap gap-2">
-                    @if(!$user->invited_at)
-                        <form method="POST" action="{{ route('admin.users.invite', $user) }}">
-                            @csrf
-                            <button type="submit" class="inline-flex items-center h-9 px-3 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
-                                Renvoyer invitation
-                            </button>
-                        </form>
-                    @endif
+                    <form method="POST" action="{{ route('admin.users.invite', $user) }}">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center h-9 px-3 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
+                            {{ $user->invited_at ? 'Renvoyer mail' : 'Envoyer mail' }}
+                        </button>
+                    </form>
 
                     <button
                         type="button"
