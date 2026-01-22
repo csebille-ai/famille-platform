@@ -174,8 +174,13 @@
                 </div>
 
                 @if($upcomingEvents->count())
-                    <div class="mt-2 space-y-2">
-                        @foreach($upcomingEvents as $ev)
+                    <div class="mt-2 relative">
+                        <div class="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white to-transparent"></div>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent"></div>
+
+                        <div class="no-scrollbar overflow-x-auto snap-x snap-mandatory">
+                            <div class="flex gap-2 pr-2">
+                                @foreach($upcomingEvents as $ev)
                             @php
                                 /** @var \App\Models\Event $ev */
                                 $tz = $ev->timezone ?: config('app.timezone');
@@ -201,8 +206,7 @@
                                 $dot = 'bg-[color:var(--fam-primary)]';
                             @endphp
 
-                            <a href="{{ route('events.show', $ev) }}" class="block">
-                                <div class="group rounded-2xl bg-white px-3 py-2.5 border border-[color:var(--fam-border-soft)] hover:shadow-sm transition active:scale-[0.995]">
+                                <a href="{{ route('events.show', $ev) }}" class="snap-start shrink-0 w-[260px] rounded-2xl bg-white border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Ouvrir événement {{ $ev->title }}">
                                     <div class="flex items-start gap-3">
                                         <div class="mt-2 h-2.5 w-2.5 rounded-full {{ $dot }}"></div>
 
@@ -222,9 +226,10 @@
                                             @endif
                                         </div>
                                     </div>
-                                </div>
-                            </a>
-                        @endforeach
+                                </a>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
                 @else
                     <div class="mt-2 text-sm text-[color:var(--fam-muted)]">Aucun événement à venir.</div>
