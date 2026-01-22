@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 
 export default defineConfig({
+    build: {
+        target: 'es2017',
+    },
     server: {
         // In Docker, Vite must listen on 0.0.0.0 to be reachable from the host via port mapping.
         host: '0.0.0.0',
@@ -14,7 +17,7 @@ export default defineConfig({
     },
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/chat-page.js'],
             refresh: true,
         }),
     ],
