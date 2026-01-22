@@ -2310,12 +2310,27 @@
                 reactionsPicker.root.classList.remove('hidden');
 
                 const pad = 10;
+                const offset = 12;
+                const anchorX = Number(x || 0);
+                const anchorY = Number(y || 0);
                 reactionsPicker.panel.style.left = '0px';
                 reactionsPicker.panel.style.top = '0px';
                 const rect = reactionsPicker.panel.getBoundingClientRect();
 
-                const left = Math.max(pad, Math.min(Number(x || 0) - rect.width / 2, window.innerWidth - rect.width - pad));
-                const top = Math.max(pad, Math.min(Number(y || 0) - rect.height - 12, window.innerHeight - rect.height - pad));
+                const left = Math.max(pad, Math.min(anchorX - rect.width / 2, window.innerWidth - rect.width - pad));
+
+                const above = anchorY - rect.height - offset;
+                const below = anchorY + offset;
+                const fitsAbove = above >= pad;
+                const fitsBelow = below + rect.height <= window.innerHeight - pad;
+
+                let top = above;
+                if (!fitsAbove && fitsBelow) {
+                    top = below;
+                }
+                if (!fitsAbove && !fitsBelow) {
+                    top = Math.max(pad, Math.min(anchorY - rect.height / 2, window.innerHeight - rect.height - pad));
+                }
 
                 reactionsPicker.panel.style.left = `${left}px`;
                 reactionsPicker.panel.style.top = `${top}px`;
@@ -2521,7 +2536,7 @@
                     const row = bubble.closest('[data-message-row]');
                     const mid = row?.dataset?.messageId;
                     const rect = bubble.getBoundingClientRect();
-                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
+                    openReactionsPicker(mid, longPressStart?.x ?? (rect.left + rect.width / 2), longPressStart?.y ?? (rect.top + rect.height / 2));
                 }, 480);
             });
 
@@ -2552,7 +2567,7 @@
                     e.stopPropagation();
                     const mid = trigger.getAttribute('data-message-id') || trigger.closest('[data-message-row]')?.dataset?.messageId;
                     const rect = trigger.getBoundingClientRect();
-                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
+                    openReactionsPicker(mid, longPressStart?.x ?? (rect.left + rect.width / 2), longPressStart?.y ?? (rect.top + rect.height / 2));
                     return;
                 }
                 const chip = e.target?.closest('[data-reaction-chip]');
@@ -4279,3 +4294,4 @@
     </script>
     </div>
 </x-app-layout>
+
