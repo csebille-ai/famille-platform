@@ -60,7 +60,7 @@
     <div class="sm:hidden">
         <!-- App bar (iOS-clean) -->
         <div class="bg-[color:var(--fam-surface)]/95 backdrop-blur border-b border-[color:var(--fam-border)]" style="padding-top: calc(env(safe-area-inset-top) + 0.25rem)">
-            <div class="px-4 pb-0.5">
+            <div class="pb-0.5 pl-[calc(1rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))]">
                 <div class="relative flex items-center justify-between gap-3">
                     <div class="shrink-0 z-10">
                         @if($showBack)

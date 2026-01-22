@@ -213,7 +213,6 @@
                                     method="POST"
                                     action="{{ route('images.store') }}"
                                     enctype="multipart/form-data"
-                                    class="absolute -left-[9999px] top-auto h-px w-px overflow-hidden"
                                 >
                                     @csrf
                                     <input
@@ -222,6 +221,8 @@
                                         type="file"
                                         accept="image/*"
                                         onchange="this.form.submit()"
+                                        class="sr-only"
+                                        tabindex="-1"
                                     />
                                 </form>
 
@@ -398,51 +399,4 @@
 
     </div>
 
-    <script>
-        // /media-only: some environments (notably PWA) can break `position: fixed` if the nav is under a transformed ancestor.
-        // Fix by moving the bottom nav directly under <body> on mobile.
-        (() => {
-            const isMobileViewport = () => {
-                try {
-                    return !!(window.matchMedia && window.matchMedia('(max-width: 639px)').matches);
-                } catch (e) {
-                    return true;
-                }
-            };
-
-            const apply = () => {
-                if (!isMobileViewport()) return;
-
-                const nav = document.querySelector('nav[aria-label="Navigation principale"]');
-                if (!nav) return;
-
-                try {
-                    if (nav.parentElement !== document.body) {
-                        document.body.appendChild(nav);
-                    }
-                } catch (e) {
-                    // ignore
-                }
-
-                nav.style.position = 'fixed';
-                nav.style.left = '0';
-                nav.style.right = '0';
-                nav.style.bottom = '0';
-                nav.style.zIndex = '50';
-                nav.style.transform = 'translate3d(0,0,0)';
-                nav.style.willChange = 'transform';
-            };
-
-            const schedule = () => requestAnimationFrame(() => requestAnimationFrame(apply));
-
-            window.addEventListener('pageshow', schedule);
-            window.addEventListener('load', schedule, { once: true });
-            window.addEventListener('resize', schedule, { passive: true });
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') schedule();
-            });
-
-            schedule();
-        })();
-    </script>
 </x-app-layout>
