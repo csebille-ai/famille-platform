@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Models\Event;
+use App\Models\ChatMessage;
 use App\Models\Person;
 use App\Observers\EventObserver;
 use App\Observers\UserObserver;
 use App\Policies\EventPolicy;
+use App\Policies\ChatMessagePolicy;
 use App\Policies\PersonPolicy;
 use App\Services\Astro\NatalChartProvider;
 use App\Services\Astro\NullNatalChartProvider;
@@ -110,6 +112,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(Person::class, PersonPolicy::class);
         Gate::policy(Event::class, EventPolicy::class);
+        Gate::policy(ChatMessage::class, ChatMessagePolicy::class);
 
         RateLimiter::for('tarot-draw', function ($request) {
             $userId = (string) optional($request->user())->id;

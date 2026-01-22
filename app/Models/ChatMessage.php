@@ -26,7 +26,7 @@ class ChatMessage extends Model
 
     public function reactions(): HasMany
     {
-        return $this->hasMany(MessageReaction::class, 'message_id');
+        return $this->hasMany(ChatMessageReaction::class, 'chat_message_id');
     }
 
     public function deletions(): HasMany

@@ -48,8 +48,8 @@ class ChatReactionsTest extends TestCase
         $resp1->assertJsonPath('reaction_summary.0.count', 1);
         $resp1->assertJsonPath('reaction_summary.0.reacted_by_me', true);
 
-        $this->assertDatabaseHas('message_reactions', [
-            'message_id' => $msg->id,
+        $this->assertDatabaseHas('chat_message_reactions', [
+            'chat_message_id' => $msg->id,
             'user_id' => $reactor->id,
             'emoji' => '👍',
         ]);
@@ -59,8 +59,8 @@ class ChatReactionsTest extends TestCase
         ])->assertOk();
 
         $resp2->assertJsonPath('message_id', $msg->id);
-        $this->assertDatabaseMissing('message_reactions', [
-            'message_id' => $msg->id,
+        $this->assertDatabaseMissing('chat_message_reactions', [
+            'chat_message_id' => $msg->id,
             'user_id' => $reactor->id,
             'emoji' => '👍',
         ]);

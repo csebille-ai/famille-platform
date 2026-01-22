@@ -15,6 +15,17 @@ class ChatReactions
     public const BASE_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
     /**
+     * Fixed emoji set for the picker (whitelist).
+     *
+     * @var array<int,string>
+     */
+    public const PICKER_EMOJIS = [
+        '👍', '❤️', '😂', '😮', '😢', '🙏',
+        '🎉', '🔥', '😍', '🤩', '😎', '🤔',
+        '😅', '😭', '👏', '✅', '❌', '💯',
+    ];
+
+    /**
      * @param  array<int,int>  $messageIds
      * @return array<int,array<int,array{emoji:string,count:int,reacted_by_me:bool}>>
      */
@@ -27,18 +38,18 @@ class ChatReactions
 
         $meUserId = (int) ($meUserId ?? 0);
 
-        $rows = DB::table('message_reactions')
-            ->whereIn('message_id', $messageIds)
+        $rows = DB::table('chat_message_reactions')
+            ->whereIn('chat_message_id', $messageIds)
             ->selectRaw(
-                'message_id, emoji, count(*) as count, sum(case when user_id = ? then 1 else 0 end) as me_count',
+                'chat_message_id, emoji, count(*) as count, sum(case when user_id = ? then 1 else 0 end) as me_count',
                 [$meUserId]
             )
-            ->groupBy('message_id', 'emoji')
+            ->groupBy('chat_message_id', 'emoji')
             ->get();
 
         $byMessage = [];
         foreach ($rows as $r) {
-            $messageId = (int) ($r->message_id ?? 0);
+            $messageId = (int) ($r->chat_message_id ?? 0);
             if ($messageId <= 0) {
                 continue;
             }
@@ -106,16 +117,16 @@ class ChatReactions
         }
 
         $rows = User::query()
-            ->join('message_reactions', 'users.id', '=', 'message_reactions.user_id')
-            ->where('message_reactions.message_id', '=', $messageId)
-            ->orderBy('message_reactions.emoji')
+            ->join('chat_message_reactions', 'users.id', '=', 'chat_message_reactions.user_id')
+            ->where('chat_message_reactions.chat_message_id', '=', $messageId)
+            ->orderBy('chat_message_reactions.emoji')
             ->orderBy('users.name')
             ->select([
                 'users.id',
                 'users.name',
                 'users.avatar_path',
                 'users.avatar_updated_at',
-                'message_reactions.emoji as reaction_emoji',
+                'chat_message_reactions.emoji as reaction_emoji',
             ])
             ->get();
 

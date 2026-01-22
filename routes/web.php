@@ -1143,9 +1143,13 @@ Route::middleware('auth')->group(function () {
         ->middleware(['throttle:30,1'])
         ->name('chat.messages.destroy');
 
-    Route::post('/chat/messages/{message}/reactions', [ChatMessageReactionController::class, 'toggle'])
+    Route::post('/chat/messages/{message}/reactions/toggle', [ChatMessageReactionController::class, 'toggle'])
         ->middleware(['throttle:30,1'])
         ->name('chat.messages.reactions.toggle');
+
+    // Backward-compatible alias (older frontends).
+    Route::post('/chat/messages/{message}/reactions', [ChatMessageReactionController::class, 'toggle'])
+        ->middleware(['throttle:30,1']);
 
     Route::get('/chat/messages/{message}/reactions', [ChatMessageReactionController::class, 'index'])
         ->middleware(['throttle:60,1'])
