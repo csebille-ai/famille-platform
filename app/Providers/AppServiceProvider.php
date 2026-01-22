@@ -43,7 +43,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $locale = (string) config('app.locale', 'fr');
+        // Product decision: the UI is French-only.
+        // Force the runtime locale to avoid lingering APP_LOCALE=en in cached config/env.
+        $locale = 'fr';
+        app()->setLocale($locale);
         Carbon::setLocale($locale);
         CarbonImmutable::setLocale($locale);
 
