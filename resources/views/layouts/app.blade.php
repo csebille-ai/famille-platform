@@ -31,6 +31,16 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <style>
+            [x-cloak] {
+                display: none !important;
+            }
+
+            /* Defensive: any dialog that declares itself hidden should not eat taps. */
+            [role="dialog"][aria-hidden="true"],
+            [aria-modal="true"][aria-hidden="true"] {
+                pointer-events: none !important;
+            }
+
             #tm-overlay-root {
                 position: fixed;
                 inset: 0;
@@ -58,18 +68,18 @@
         </style>
 
         <script>
-            (() => {
+            (function () {
                 try {
                     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-                    const raw = window.sessionStorage ? window.sessionStorage.getItem('famille_tm_pending') : null;
+                    var raw = (window.sessionStorage && window.sessionStorage.getItem) ? window.sessionStorage.getItem('famille_tm_pending') : null;
                     if (!raw) return;
-                    const st = JSON.parse(raw);
+                    var st = JSON.parse(raw);
                     if (!st || !st.id || !st.ts) return;
                     if (Date.now() - Number(st.ts) > 6000) return;
 
                     document.documentElement.classList.add('tm-animating');
                     if (!document.getElementById('tm-overlay-root')) {
-                        const root = document.createElement('div');
+                        var root = document.createElement('div');
                         root.id = 'tm-overlay-root';
                         document.documentElement.appendChild(root);
                     }
@@ -445,7 +455,7 @@
             @unless($attributes->get('hideNavigation'))
                 <!-- Add sheet (mobile) -->
                 <div class="sm:hidden">
-                    <div x-show="addOpen" x-cloak :class="addOpen ? 'pointer-events-auto' : 'pointer-events-none'" class="fixed inset-0 z-50" aria-modal="true" role="dialog">
+                    <div x-show="addOpen" x-cloak :class="addOpen ? 'pointer-events-auto' : 'pointer-events-none'" :aria-hidden="addOpen ? 'false' : 'true'" class="fixed inset-0 z-50 pointer-events-none" aria-modal="true" role="dialog" aria-hidden="true">
                         <button type="button" @click="addOpen = false" class="absolute inset-0 bg-black/30" aria-label="Fermer"></button>
 
                         <div class="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white p-4 shadow-sm" style="padding-bottom: calc(env(safe-area-inset-bottom) + 1rem)">
