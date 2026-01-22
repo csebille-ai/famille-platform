@@ -65,7 +65,7 @@
 @endphp
 
 <nav
-    class="sm:hidden {{ $fixed ? 'fixed bottom-0 left-0 right-0 z-50' : 'w-full' }} bg-white/95 supports-[backdrop-filter]:bg-white/80 supports-[backdrop-filter]:backdrop-blur-xl border-t border-black/10 shadow-[0_-10px_25px_rgba(0,0,0,0.10)] pb-[env(safe-area-inset-bottom)]"
+    class="sm:hidden {{ $fixed ? 'fixed bottom-0 left-0 right-0 z-50' : 'w-full' }} bg-[color:var(--fam-surface)]/95 supports-[backdrop-filter]:bg-[color:var(--fam-surface)]/80 supports-[backdrop-filter]:backdrop-blur-xl border-t border-[color:var(--fam-border-soft)] shadow-[0_-10px_25px_rgba(15,23,42,0.08)] pb-[env(safe-area-inset-bottom)]"
     style="--mobile-bottom-nav-h: 4rem;"
     aria-label="Navigation principale"
 >
