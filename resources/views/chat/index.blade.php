@@ -2308,28 +2308,37 @@
                 const isOwner = row && currentUserId && Number(row.dataset.userId || 0) === Number(currentUserId);
                 reactionsPicker.deleteAllBtn?.classList.toggle('hidden', !isOwner);
                 reactionsPicker.root.classList.remove('hidden');
-
                 const pad = 10;
                 const offset = 12;
-                const anchorX = Number(x || 0);
-                const anchorY = Number(y || 0);
+
+                // Use the overlay root as the coordinate space (more reliable on iOS).
+                const rootRect = reactionsPicker.root.getBoundingClientRect();
+                const viewportWidth = rootRect?.width || window.innerWidth;
+                const viewportHeight = rootRect?.height || window.innerHeight;
+                const originLeft = rootRect?.left || 0;
+                const originTop = rootRect?.top || 0;
+
+                // x/y are client coords (viewport-relative) => convert to root-local coords.
+                const anchorX = Number(x || 0) - originLeft;
+                const anchorY = Number(y || 0) - originTop;
+
                 reactionsPicker.panel.style.left = '0px';
                 reactionsPicker.panel.style.top = '0px';
                 const rect = reactionsPicker.panel.getBoundingClientRect();
 
-                const left = Math.max(pad, Math.min(anchorX - rect.width / 2, window.innerWidth - rect.width - pad));
+                const left = Math.max(pad, Math.min(anchorX - rect.width / 2, viewportWidth - rect.width - pad));
 
                 const above = anchorY - rect.height - offset;
                 const below = anchorY + offset;
                 const fitsAbove = above >= pad;
-                const fitsBelow = below + rect.height <= window.innerHeight - pad;
+                const fitsBelow = below <= (viewportHeight - rect.height - pad);
 
                 let top = above;
                 if (!fitsAbove && fitsBelow) {
                     top = below;
                 }
                 if (!fitsAbove && !fitsBelow) {
-                    top = Math.max(pad, Math.min(anchorY - rect.height / 2, window.innerHeight - rect.height - pad));
+                    top = Math.max(pad, Math.min(anchorY - rect.height / 2, viewportHeight - rect.height - pad));
                 }
 
                 reactionsPicker.panel.style.left = `${left}px`;
