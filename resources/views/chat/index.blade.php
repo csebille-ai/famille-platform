@@ -660,7 +660,7 @@
 
         <div id="chatReactionsPicker" class="fixed inset-0 z-[80] hidden" aria-hidden="true">
             <div id="chatReactionsPickerBackdrop" class="absolute inset-0"></div>
-            <div id="chatReactionsPickerPanel" class="absolute rounded-2xl border border-[color:var(--chat-border-soft)] bg-[color:var(--chat-surface)] shadow-[0_1px_0_rgba(15,23,42,0.03),0_24px_70px_rgba(15,23,42,0.22)] px-2 py-2">
+            <div id="chatReactionsPickerPanel" class="fixed rounded-2xl border border-[color:var(--chat-border-soft)] bg-[color:var(--chat-surface)] shadow-[0_1px_0_rgba(15,23,42,0.03),0_24px_70px_rgba(15,23,42,0.22)] px-2 py-2">
                 <div class="flex items-center gap-1.5">
                     @foreach(\App\Services\ChatReactions::BASE_EMOJIS as $e)
                         <button type="button" class="w-10 h-10 rounded-xl hover:bg-[color:rgba(14,165,160,0.10)] text-xl" data-reaction-pick="{{ $e }}" aria-label="Réagir {{ $e }}">{{ $e }}</button>
@@ -2292,15 +2292,109 @@
                 open: false,
                 messageId: 0,
             };
-
             function openReactionsPicker(messageId, x, y) {
                 const id = Number(messageId || 0);
                 if (!reactionsPicker.root || !reactionsPicker.panel || !id) return;
 
-                const row = messagesEl?.querySelector(`[data-message-id="${id}"]`);
+                const row = messagesEl?.querySelector(`[data-message-row][data-message-id="${id}"]`);
                 if (row?.dataset?.deleted === '1') {
                     return;
                 }
+
+                // Anchor to the bubble, but keep the press point when possible (clamped inside the bubble).
+                let anchorClientX = Number(x || 0);
+                let anchorClientY = Number(y || 0);
+                let bubbleClientTop = null;
+                let bubbleClientBottom = null;
+
+                try {
+                    const bubble = row?.querySelector('[data-bubble]');
+                    const br = bubble?.getBoundingClientRect?.();
+                    if (br && Number.isFinite(br.left) && Number.isFinite(br.top) && br.width > 0 && br.height > 0) {
+                        bubbleClientTop = br.top;
+                        bubbleClientBottom = br.bottom;
+
+                        const fallbackX = br.left + br.width / 2;
+                        const fallbackY = br.top + br.height / 2;
+
+                        const fuzz = 48;
+                        const inX = Number.isFinite(anchorClientX) && anchorClientX >= (br.left - fuzz) && anchorClientX <= (br.right + fuzz);
+                        const inY = Number.isFinite(anchorClientY) && anchorClientY >= (br.top - fuzz) && anchorClientY <= (br.bottom + fuzz);
+
+                        const inset = 12;
+                        const minX = br.left + inset;
+                        const maxX = br.right - inset;
+                        const minY = br.top + inset;
+                        const maxY = br.bottom - inset;
+
+                        anchorClientX = inX ? Math.max(minX, Math.min(anchorClientX, maxX)) : fallbackX;
+                        anchorClientY = inY ? Math.max(minY, Math.min(anchorClientY, maxY)) : fallbackY;
+                    }
+                } catch {}
+
+                reactionsPicker.messageId = id;
+                reactionsPicker.open = true;
+                reactionsPicker.more?.classList.add('hidden');
+                const isOwner = row && currentUserId && Number(row.dataset.userId || 0) === Number(currentUserId);
+                reactionsPicker.deleteAllBtn?.classList.toggle('hidden', !isOwner);
+                reactionsPicker.root.classList.remove('hidden');
+
+                const pad = 10;
+                const offset = 12;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                // Panel is position:fixed, so we position directly in client (viewport) coords.
+                const anchorX = anchorClientX;
+                const anchorY = anchorClientY;
+
+                reactionsPicker.panel.style.left = '0px';
+                reactionsPicker.panel.style.top = '0px';
+                reactionsPicker.panel.style.right = '';
+                reactionsPicker.panel.style.bottom = '';
+                const rect = reactionsPicker.panel.getBoundingClientRect();
+
+                // Mobile fallback: show as bottom sheet to avoid iOS long-press coordinate quirks.
+                const isCoarse = (() => {
+                    try {
+                        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
+                    } catch {}
+                    return Number(navigator.maxTouchPoints || 0) > 0;
+                })();
+                if (isCoarse) {
+                    reactionsPicker.panel.style.left = '12px';
+                    reactionsPicker.panel.style.right = '12px';
+                    reactionsPicker.panel.style.top = 'auto';
+                    reactionsPicker.panel.style.bottom = 'calc(var(--mobile-bottom-nav-h,4rem) + env(safe-area-inset-bottom) + 12px)';
+                    return;
+                }
+
+                const minLeft = pad;
+                const maxLeft = viewportWidth - rect.width - pad;
+                const left = Math.max(minLeft, Math.min(anchorX - rect.width / 2, maxLeft));
+
+                const minTop = pad;
+                const maxTop = viewportHeight - rect.height - pad;
+
+                let top = 0;
+                if (bubbleClientTop != null && bubbleClientBottom != null) {
+                    const aboveTop = Number(bubbleClientTop) - rect.height - offset;
+                    const belowTop = Number(bubbleClientBottom) + offset;
+                    const fitsAbove = aboveTop >= minTop;
+                    const fitsBelow = belowTop <= maxTop;
+                    top = fitsBelow ? belowTop : (fitsAbove ? aboveTop : Math.max(minTop, Math.min(anchorY - rect.height / 2, maxTop)));
+                } else {
+                    const aboveTop = anchorY - rect.height - offset;
+                    const belowTop = anchorY + offset;
+                    const fitsAbove = aboveTop >= minTop;
+                    const fitsBelow = belowTop <= maxTop;
+                    top = fitsBelow ? belowTop : (fitsAbove ? aboveTop : Math.max(minTop, Math.min(anchorY - rect.height / 2, maxTop)));
+                }
+
+                reactionsPicker.panel.style.left = `${left}px`;
+                reactionsPicker.panel.style.top = `${top}px`;
+            }
+
 
                 reactionsPicker.messageId = id;
                 reactionsPicker.open = true;
