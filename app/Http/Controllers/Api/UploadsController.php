@@ -411,41 +411,13 @@ class UploadsController extends Controller
             'kind' => ['required', 'string', 'in:photo,video'],
             'context' => ['required', 'string', 'in:media,chat'],
             'storage_disk' => ['nullable', 'string', 'in:r2,local'],
-            // Optional: helps us enforce correct category conventions.
-            // - personal => docs
-            // - library  => films|series
-            'scope' => ['nullable', 'string', 'in:personal,library'],
             'filename' => ['nullable', 'string', 'max:255'],
             'chat_thread_id' => ['nullable', 'string', 'max:100'],
             'title' => ['nullable', 'string', 'max:255'],
-            'category' => ['nullable', 'string', 'in:films,series,docs'],
+            'category' => ['nullable', 'string', 'max:32'],
             'description' => ['nullable', 'string'],
             'poster_file' => ['nullable', 'image', 'max:5120'],
         ]);
-
-        // Enforce category conventions.
-        if ((string) $validated['kind'] === 'video' && (string) $validated['context'] === 'media') {
-            $scope = strtolower(trim((string) ($validated['scope'] ?? '')));
-            $cat = strtolower(trim((string) ($validated['category'] ?? '')));
-
-            if ($cat === '') {
-                return response()->json([
-                    'message' => 'Catégorie requise pour les vidéos.',
-                ], 422);
-            }
-
-            if ($scope === 'library' && !in_array($cat, ['films', 'series'], true)) {
-                return response()->json([
-                    'message' => 'Catégorie invalide pour la Médiathèque (films / séries).',
-                ], 422);
-            }
-
-            if ($scope === 'personal' && $cat !== 'docs') {
-                return response()->json([
-                    'message' => 'Catégorie invalide pour une vidéo perso (docs).',
-                ], 422);
-            }
-        }
 
         $size = (int) $validated['size'];
         if ($size > $max) {
@@ -584,10 +556,7 @@ class UploadsController extends Controller
                 $title = 'Vidéo';
             }
 
-            $category = (string) ($validated['category'] ?? 'docs');
-            if (!in_array($category, ['films', 'series', 'docs'], true)) {
-                $category = 'docs';
-            }
+            $category = 'docs';
 
             $video = Video::create([
                 'title' => $title,

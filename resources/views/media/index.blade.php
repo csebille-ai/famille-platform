@@ -241,7 +241,7 @@
                                     class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-[color:var(--fam-border)] bg-[color:var(--fam-surface)] text-slate-900 hover:bg-[color:var(--fam-tint)]"
                                     aria-label="Ajouter une vidéo"
                                     x-show="tab === 'videos'"
-                                    onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker()"
+                                    onclick="window.openGlobalUploadPicker && window.openGlobalUploadPicker({ return: '{{ route('media.index', ['tab' => 'videos'], false) }}' })"
                                 >
                                     <i class="ph ph-plus" aria-hidden="true"></i>
                                 </button>

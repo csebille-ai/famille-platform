@@ -191,9 +191,7 @@
                                                     </a>
                                                 @else
                                                     @can('cloud-write')
-                                                        <a href="{{ route('videos.classify', ['node' => $node->id]) }}" class="text-sm text-gray-700 hover:underline">
-                                                            Classer
-                                                        </a>
+
                                                     @endcan
                                                 @endif
                                             @endif

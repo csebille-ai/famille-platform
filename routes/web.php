@@ -895,83 +895,6 @@ Route::get('/media/photos/{node}', [ImageController::class, 'show'])
     ->middleware(['auth', 'verified'])
     ->name('media.photos.show');
 
-Route::get('/mediatheque', function () {
-    $tab = strtolower(trim((string) request()->query('tab', '')));
-    if (!in_array($tab, ['films', 'series'], true)) {
-        $tab = 'films';
-    }
-
-    $encodeCursor = function ($createdAt, int $id): string {
-        $payload = [
-            't' => $createdAt ? $createdAt->getTimestamp() : 0,
-            'id' => $id,
-        ];
-        return rtrim(strtr(base64_encode(json_encode($payload)), '+/', '-_'), '=');
-    };
-
-    $buildItems = function (string $category) use ($encodeCursor): array {
-        if (!Schema::hasTable('videos')) {
-            return [[], null];
-        }
-
-        $hasDuration = Schema::hasColumn('videos', 'duration_seconds');
-        $hasVideoFocal = Schema::hasColumn('videos', 'focal_x') && Schema::hasColumn('videos', 'focal_y');
-
-        $limit = 24;
-        $rows = Video::query()
-            ->with('creator:id,name')
-            ->where('category', $category)
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->limit($limit)
-            ->get();
-
-        $items = $rows->map(fn ($v) => [
-            'id' => (int) $v->id,
-            'type' => 'video',
-            'title' => (string) ($v->title ?? ($category === 'series' ? 'Série' : 'Film')),
-            'by' => (string) ($v->creator?->name ?? 'Quelqu’un'),
-            'at' => $v->created_at?->toIso8601String(),
-            'at_human' => $v->created_at?->diffForHumans(),
-            'poster_url' => $v->video_path ? route('videos.poster', $v) : null,
-            'duration_seconds' => $hasDuration ? (int) ($v->duration_seconds ?? 0) : null,
-            'open_url' => route('videos.show', $v),
-            'focal_x' => $hasVideoFocal ? (is_null($v->focal_x) ? null : (float) $v->focal_x) : null,
-            'focal_y' => $hasVideoFocal ? (is_null($v->focal_y) ? null : (float) $v->focal_y) : null,
-        ])->values()->all();
-
-        $nextCursor = null;
-        if ($rows->count() === $limit) {
-            $last = $rows->last();
-            if ($last) {
-                $nextCursor = $encodeCursor($last->created_at, (int) $last->id);
-            }
-        }
-
-        return [$items, $nextCursor];
-    };
-
-    [$filmsItems, $filmsNextCursor] = $buildItems('films');
-    [$seriesItems, $seriesNextCursor] = $buildItems('series');
-
-    $response = response()->view('mediatheque.index', [
-        'tab' => $tab,
-        'filmsItems' => $filmsItems,
-        'seriesItems' => $seriesItems,
-        'filmsNextCursor' => $filmsNextCursor,
-        'seriesNextCursor' => $seriesNextCursor,
-        'pageSize' => 24,
-    ]);
-
-    // Force bypass of any HTML page cache (LiteSpeed/proxies).
-    return $response
-        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-        ->header('Pragma', 'no-cache')
-        ->header('Expires', '0')
-        ->header('X-LiteSpeed-Cache-Control', 'no-cache');
-})->middleware(['auth', 'verified'])
-    ->name('mediatheque.index');
-
 Route::get('/api/media', function () {
     $type = strtolower((string) request()->query('type', ''));
     if (!in_array($type, ['image', 'video'], true)) {
@@ -1066,27 +989,18 @@ Route::get('/api/media', function () {
     }
 
     $hasVideoFocal = Schema::hasColumn('videos', 'focal_x') && Schema::hasColumn('videos', 'focal_y');
-    $category = strtolower(trim((string) request()->query('category', '')));
-    if (!in_array($category, ['', 'films', 'series'], true)) {
-        return response()->json(['message' => 'Invalid category'], 422);
-    }
 
     $q = Video::query()
         ->with('creator:id,name')
         ->orderByDesc('created_at')
         ->orderByDesc('id');
 
-    if ($category !== '') {
-        // Explicit category used by Médiathèque infinite scrolling.
-        $q->where('category', $category);
-    } else {
-        // Default "video" feed (used by /media) must not include Médiathèque items.
-        $q->where(function ($w) {
-            $w->whereNull('category')
-                ->orWhere('category', '')
-                ->orWhere('category', 'docs');
-        });
-    }
+    // /media shows only personal videos.
+    $q->where(function ($w) {
+        $w->whereNull('category')
+            ->orWhere('category', '')
+            ->orWhere('category', 'docs');
+    });
 
     if ($cursor) {
         $q->where(function ($w) use ($cursor) {
@@ -1533,22 +1447,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/_opcache/reset', $opcacheResetHandler)->middleware('throttle:2,1');
     Route::post('/opcache/reset', $opcacheResetHandler)->middleware('throttle:2,1');
 
-    Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->name('videos.stream');
-    Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->name('videos.poster');
-    Route::post('videos/{video}/poster', [VideoController::class, 'storePoster'])->name('videos.poster.store');
-
-    Route::get('videos/classify/{node}', [VideoController::class, 'classifyFromCloud'])->name('videos.classify');
-    Route::post('videos/classify/{node}', [VideoController::class, 'storeFromCloudClassification'])->name('videos.classify.store');
-
-    // Backward-compat: some older cached views referenced route('videos.import')
-    Route::post('videos/import', [VideoController::class, 'store'])->name('videos.import');
+    Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->whereNumber('video')->name('videos.stream');
+    Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->whereNumber('video')->name('videos.poster');
+    Route::post('videos/{video}/poster', [VideoController::class, 'storePoster'])->whereNumber('video')->name('videos.poster.store');
 
     // The dedicated video upload page is deprecated; uploads happen in Cloud.
     Route::get('videos/create', function () {
         return redirect()->route('cloud.index');
     })->name('videos.create');
 
-    Route::resource('videos', VideoController::class)->except(['create']);
+    Route::get('videos/{video}', [VideoController::class, 'show'])->whereNumber('video')->name('videos.show');
+    Route::delete('videos/{video}', [VideoController::class, 'destroy'])->whereNumber('video')->name('videos.destroy');
 
     Route::get('/cloud/create', function () {
         return redirect()

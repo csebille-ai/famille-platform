@@ -21,11 +21,7 @@
                 || request()->routeIs('images.*')
                 || request()->is('media')
                 || request()->is('media/*')
-                || request()->routeIs('mediatheque.*')
-                || request()->is('mediatheque')
-                || request()->is('mediatheque/*')
                 || request()->routeIs('videos.*')
-                || request()->is('videos')
                 || request()->is('videos/*'),
             'label' => 'Galerie',
             'icon' => 'images-square',

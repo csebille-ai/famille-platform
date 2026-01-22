@@ -1,18 +1,15 @@
 @php
     $isHome = request()->routeIs('dashboard') || request()->is('home');
-    $isMedia = request()->routeIs('media.*') || request()->routeIs('images.*') || request()->is('media') || request()->is('media/*');
-    $isLibrary = request()->routeIs('mediatheque.*')
-        || request()->is('mediatheque')
-        || request()->is('mediatheque/*')
+    $isMedia = request()->routeIs('media.*')
+        || request()->routeIs('images.*')
+        || request()->is('media')
+        || request()->is('media/*')
         || request()->routeIs('videos.*')
-        || request()->is('videos')
         || request()->is('videos/*');
     $isChat = request()->routeIs('chat.*') || request()->is('chat') || request()->is('chat/*');
 
     $isPrimary = $isHome
         || request()->routeIs('media.index')
-        || request()->routeIs('mediatheque.index')
-        || request()->routeIs('videos.index')
         || request()->routeIs('chat.index')
         || request()->routeIs('family.*')
         || request()->routeIs('tarot.index')
@@ -24,11 +21,9 @@
     elseif (request()->routeIs('astro.show')) $mobileTitle = 'Ma fiche astro';
     elseif (request()->routeIs('tarot.*')) $mobileTitle = 'Tarot';
     elseif (request()->routeIs('actu.*')) $mobileTitle = 'Actu locale';
-    elseif (request()->routeIs('mediatheque.index') || request()->routeIs('videos.index')) $mobileTitle = 'Médiathèque';
     elseif (request()->routeIs('images.*')) $mobileTitle = 'Photo';
     elseif (request()->routeIs('videos.*')) $mobileTitle = 'Vidéo';
     elseif ($isMedia) $mobileTitle = 'Médias';
-    elseif ($isLibrary) $mobileTitle = 'Médiathèque';
     elseif ($isChat) $mobileTitle = 'Chat';
     else $mobileTitle = 'Famille';
 
@@ -186,10 +181,6 @@
 
                         <x-nav-link :href="route('media.index')" :active="$isMedia">
                             Médias
-                        </x-nav-link>
-
-                        <x-nav-link :href="route('mediatheque.index')" :active="$isLibrary">
-                            Médiathèque
                         </x-nav-link>
 
                         <x-nav-link :href="route('chat.index')" :active="$isChat">

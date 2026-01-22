@@ -467,7 +467,6 @@
                     @csrf
                     <input type="hidden" name="parent_id" value="" />
                     <input type="hidden" name="return" value="{{ request()->getRequestUri() }}" />
-                    <input type="hidden" name="video_kind" value="" />
                     <input id="global-cloud-upload-input" name="file" type="file" accept="image/*,video/*,application/pdf" />
                 </form>
 
@@ -497,14 +496,10 @@
 
                         if (form) {
                             const returnInput = form.querySelector('input[name="return"]');
-                            const kindInput = form.querySelector('input[name="video_kind"]');
 
                             const fallbackReturn = window.location.pathname + window.location.search + window.location.hash;
                             const nextReturn = (typeof opts.return === 'string' && opts.return.trim()) ? opts.return.trim() : fallbackReturn;
                             if (returnInput) returnInput.value = nextReturn;
-
-                            const nextKind = (typeof opts.video_kind === 'string') ? opts.video_kind.trim() : '';
-                            if (kindInput) kindInput.value = nextKind;
                         }
 
                         if (input) input.click();
@@ -770,7 +765,6 @@
                             const token = (form.querySelector('input[name="_token"]') || {}).value;
                             const parentId = (form.querySelector('input[name="parent_id"]') || {}).value;
                             const returnPath = (form.querySelector('input[name="return"]') || {}).value;
-                            const videoKind = (form.querySelector('input[name="video_kind"]') || {}).value;
 
                             // Attempt resume if a previous session exists for the same file+destination.
                             const previous = loadSession();
@@ -789,7 +783,6 @@
                             initFd.append('mime', file.type || '');
                             if (parentId) initFd.append('parent_id', parentId);
                             if (returnPath) initFd.append('return', returnPath);
-                            if (videoKind) initFd.append('video_kind', videoKind);
 
                             setProgress(0, 'Préparation…');
                             const { json: initJson } = await postWithRetry('Préparation', () => postFormData('{{ route('cloud.uploads.init') }}', initFd));
