@@ -733,7 +733,7 @@
             let activeComposerKey = 'mobile';
             try {
                 activeComposerKey = window.matchMedia && window.matchMedia('(min-width: 640px)').matches ? 'desktop' : 'mobile';
-            } catch {}
+            } catch (e) {}
 
             function setActiveComposerKey(key) {
                 if (key === 'mobile' || key === 'desktop') {
@@ -809,7 +809,7 @@
                 try {
                     // eslint-disable-next-line no-console
                     console.log('[QuickType]', event, data);
-                } catch {}
+                } catch (e) {}
             }
 
             const quickTypeMenu = {
@@ -850,7 +850,7 @@
                     const raw = localStorage.getItem(key);
                     const arr = raw ? JSON.parse(raw) : [];
                     return Array.isArray(arr) ? arr.filter((s) => typeof s === 'string' && s.trim() !== '') : [];
-                } catch {
+                } catch (e) {
                     return [];
                 }
             }
@@ -858,7 +858,7 @@
             function saveStringList(key, arr) {
                 try {
                     localStorage.setItem(key, JSON.stringify(arr));
-                } catch {}
+                } catch (e) {}
             }
 
             function loadQuickTypePinned() {
@@ -924,7 +924,7 @@
                 const next = arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v));
                 try {
                     localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
-                } catch {}
+                } catch (e) {}
             }
 
             function loadQuickTypeRecents() {
@@ -952,10 +952,10 @@
                     // Best-effort migration.
                     try {
                         localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(out));
-                    } catch {}
+                    } catch (e) {}
 
                     return out;
-                } catch {
+                } catch (e) {
                     return [];
                 }
             }
@@ -968,7 +968,7 @@
                 const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, QUICKTYPE_MAX_MRU);
                 try {
                     localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
-                } catch {}
+                } catch (e) {}
             }
 
             function learnQuickTypeFromMessage(body) {
@@ -985,7 +985,7 @@
                         if (w.length < QUICKTYPE_MIN_CHARS) continue;
                         words.push(w);
                     }
-                } catch {
+                } catch (e) {
                     const rough = text.split(/\s+/g);
                     for (const part of rough) {
                         const w = String(part || '').replace(/^[^A-Za-zÀ-ÿ]+|[^A-Za-zÀ-ÿ]+$/g, '').trim();
@@ -1016,7 +1016,7 @@
                     .slice(0, QUICKTYPE_MAX_MRU);
                 try {
                     localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
-                } catch {}
+                } catch (e) {}
             }
 
             function getLastTokenInfoFromValue(value, pos) {
@@ -1107,10 +1107,10 @@
                 // Accent-insensitive matching for FR (ça/ç/cà → ca)
                 try {
                     v = v.normalize('NFD');
-                } catch {}
+                } catch (e) {}
                 try {
                     v = v.replace(/\p{Diacritic}+/gu, '');
-                } catch {
+                } catch (e) {
                     v = v.replace(/[\u0300-\u036f]+/g, '');
                 }
                 v = v.replace(/œ/g, 'oe').replace(/æ/g, 'ae');
@@ -1223,7 +1223,7 @@
                         await navigator.clipboard.writeText(v);
                         return;
                     }
-                } catch {}
+                } catch (e) {}
                 try {
                     const ta = document.createElement('textarea');
                     ta.value = v;
@@ -1234,7 +1234,7 @@
                     ta.select();
                     document.execCommand('copy');
                     document.body.removeChild(ta);
-                } catch {}
+                } catch (e) {}
             }
 
             function closeQuickTypeMenu() {
@@ -1383,7 +1383,7 @@
 
                     closeQuickTypeMenu();
                     scheduleQuickTypeUpdate(quickTypeMenu.key);
-                    try { c?.textarea?.focus(); } catch {}
+                    try { c?.textarea?.focus(); } catch (e) {}
                 });
             }
 
@@ -1417,7 +1417,7 @@
                 const newPos = (left + insert).length;
                 try {
                     textarea.setSelectionRange(newPos, newPos);
-                } catch {}
+                } catch (e) {}
 
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 saveQuickTypeRecent(String(suggestion || ''));
@@ -1663,7 +1663,7 @@
                     quickTypeState.selectedIndex = idx;
                     applyQuickTypeSuggestion(c.textarea, s);
                     scheduleQuickTypeUpdate(key);
-                    try { c.textarea.focus(); } catch {}
+                    try { c.textarea.focus(); } catch (e) {}
                 });
 
                 // Hide after blur (small delay to allow chip click)
@@ -1692,7 +1692,7 @@
             function getSocketId() {
                 try {
                     return (window.Echo && typeof window.Echo.socketId === 'function') ? window.Echo.socketId() : null;
-                } catch {
+                } catch (e) {
                     return null;
                 }
             }
@@ -1701,7 +1701,7 @@
                 try {
                     const next = window.matchMedia && window.matchMedia('(min-width: 640px)').matches ? 'desktop' : 'mobile';
                     setActiveComposerKey(next);
-                } catch {}
+                } catch (e) {}
             }
             window.addEventListener('resize', syncComposerKeyFromMatchMedia);
             const attachSheet = document.getElementById('chatAttachSheet');
@@ -1759,7 +1759,7 @@
                         reactionSummaries.set(id, toArraySummary(v));
                     }
                 }
-            } catch {}
+            } catch (e) {}
 
             const MAX_UPLOAD_BYTES = @json((int) config('uploads.max_upload_bytes'));
             const MULTIPART_THRESHOLD_BYTES = @json((int) config('uploads.multipart_threshold_bytes'));
@@ -1817,7 +1817,7 @@
                 let domain = '';
                 try {
                     domain = (new URL(url)).host || '';
-                } catch {
+                } catch (e) {
                     domain = url.replace(/^https?:\/\//i, '').replace(/\/+$/g, '');
                 }
                 const title = (b.includes('Visio') || domain.includes('jit.si')) ? 'Appel vidéo' : 'Lien';
@@ -1974,7 +1974,7 @@
                 let isMobile = true;
                 try {
                     isMobile = !(window.matchMedia && window.matchMedia('(min-width: 640px)').matches);
-                } catch {}
+                } catch (e) {}
 
                 const dockH = isMobile ? getMobileBottomDockHeight() : 0;
                 if (dockH > 0) {
@@ -2002,7 +2002,7 @@
                 const run = () => {
                     try {
                         lastRow.scrollIntoView({ block: 'end' });
-                    } catch {
+                    } catch (e) {
                         // ignore
                     }
                     if (scrollEl) {
@@ -2036,7 +2036,7 @@
                                     scrollToBottom({ force: true });
                                 }).catch(() => {});
                             }
-                        } catch {}
+                        } catch (e) {}
                         markLoaded();
                         return;
                     }
@@ -2072,7 +2072,7 @@
                 if (window.history && 'scrollRestoration' in window.history) {
                     window.history.scrollRestoration = 'manual';
                 }
-            } catch {}
+            } catch (e) {}
 
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) ensureBottom(1200);
@@ -2330,7 +2330,7 @@
                         anchorClientX = inX ? Math.max(minX, Math.min(anchorClientX, maxX)) : fallbackX;
                         anchorClientY = inY ? Math.max(minY, Math.min(anchorClientY, maxY)) : fallbackY;
                     }
-                } catch {}
+                } catch (e) {}
 
                 reactionsPicker.messageId = id;
                 reactionsPicker.open = true;
@@ -2358,7 +2358,7 @@
                 const isCoarse = (() => {
                     try {
                         if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
-                    } catch {}
+                    } catch (e) {}
                     return Number(navigator.maxTouchPoints || 0) > 0;
                 })();
                 if (isCoarse) {
@@ -2500,7 +2500,7 @@
                                 const row = messagesEl?.querySelector(`[data-message-id="${mid}"]`);
                                 if (row) row.style.display = 'none';
                             }
-                        } catch {}
+                        } catch (e) {}
                         return;
                     }
 
@@ -2513,7 +2513,7 @@
                             if (resp.ok) {
                                 markMessageDeletedForAll(mid);
                             }
-                        } catch {}
+                        } catch (e) {}
                         return;
                     }
 
@@ -2539,7 +2539,7 @@
                 try {
                     const json = await postToggleReaction(mid, emoji);
                     if (json?.reaction_summary) updateReactionSummary(mid, json.reaction_summary);
-                } catch {
+                } catch (e) {
                     updateReactionSummary(mid, prev);
                 }
             });
@@ -2621,7 +2621,7 @@
             const isCoarsePointer = () => {
                 try {
                     if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
-                } catch {}
+                } catch (e) {}
                 return Number(navigator.maxTouchPoints || 0) > 0;
             };
 
@@ -2694,7 +2694,7 @@
                     if (isCancel && !longPressFired && longPressBubble && elapsed >= 260) {
                         fireLongPress();
                     }
-                } catch {}
+                } catch (e) {}
 
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressTimer = null;
@@ -2730,13 +2730,13 @@
                     let rs = [];
                     try {
                         rs = JSON.parse(row?.dataset?.reactionSummary || '[]');
-                    } catch {
+                    } catch (e) {
                         rs = reactionSummaries.get(mid) || [];
                     }
                     if (mid) reactionSummaries.set(mid, toArraySummary(rs));
                     renderReactionsRow(row, reactionSummaries.get(mid) || []);
                 });
-            } catch {}
+            } catch (e) {}
 
             function appendDaySeparator(dayKey, label) {
                 if (!messagesEl || !dayKey || dayKey === lastDayKey) return;
@@ -3093,7 +3093,7 @@
                 const panel = document.getElementById('chatAttachPanel');
                 const reduceMotion = (() => {
                     try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
-                    catch { return false; }
+                    catch (e) { return false; }
                 })();
                 const DURATION_MS = 220;
 
@@ -3238,7 +3238,7 @@
             function waitMedia(el, eventName, timeoutMs) {
                 return new Promise((resolve, reject) => {
                     const t = setTimeout(() => {
-                        try { el.removeEventListener(eventName, on); } catch {}
+                        try { el.removeEventListener(eventName, on); } catch (e) {}
                         reject(new Error('timeout:' + eventName));
                     }, timeoutMs);
                     const on = () => {
@@ -3269,9 +3269,9 @@
                         try { video.currentTime = target; } catch (e) { /* ignore */ }
                         try {
                             await waitMedia(video, 'seeked', 8000);
-                        } catch {
+                        } catch (e) {
                             // Some browsers/devices don't fire seeked reliably for blobs.
-                            try { await waitMedia(video, 'loadeddata', 8000); } catch {}
+                            try { await waitMedia(video, 'loadeddata', 8000); } catch (e) {}
                         }
 
                         const w = video.videoWidth || 0;
@@ -3300,7 +3300,7 @@
                     } finally {
                         try { URL.revokeObjectURL(url); } catch (e) {}
                     }
-                } catch {
+                } catch (e) {
                     return null;
                 }
             }
@@ -3334,9 +3334,9 @@
                         if (!w || !h) return null;
                         return { width: w, height: h };
                     } finally {
-                        try { URL.revokeObjectURL(url); } catch {}
+                        try { URL.revokeObjectURL(url); } catch (e) {}
                     }
-                } catch {
+                } catch (e) {
                     return null;
                 }
             }
@@ -4099,7 +4099,7 @@
                     c?.textarea?.focus();
 
                     if (dictationActive) {
-                        try { recognition.stop(); } catch {}
+                        try { recognition.stop(); } catch (e) {}
                         setDictationUi(false);
                         dictationInterim = '';
                         return;
@@ -4110,7 +4110,7 @@
                     setDictationUi(true);
                     try {
                         recognition.start();
-                    } catch {
+                    } catch (e) {
                         setDictationUi(false);
                     }
                 });
@@ -4146,7 +4146,7 @@
                             await navigator.clipboard.writeText(url);
                             copyLink.textContent = 'Copié';
                             setTimeout(() => { copyLink.textContent = 'Copier le lien'; }, 1200);
-                        } catch {
+                        } catch (e) {
                             alert(url);
                         }
                         return;
@@ -4174,7 +4174,7 @@
                             await navigator.clipboard.writeText(txt);
                             copyTextBtn.textContent = 'Copié';
                             setTimeout(() => { copyTextBtn.textContent = 'Copier'; }, 1200);
-                        } catch {
+                        } catch (e) {
                             alert(txt);
                         }
                         return;
@@ -4221,13 +4221,13 @@
                     if (!ts) return false;
                     const ageMs = Date.now() - ts;
                     return ageMs < 1000 * 60 * 60 * 24 * 7; // 7 days
-                } catch {
+                } catch (e) {
                     return false;
                 }
             }
 
             function dismissNotifBanner() {
-                try { localStorage.setItem(NOTIF_DISMISS_KEY, String(Date.now())); } catch {}
+                try { localStorage.setItem(NOTIF_DISMISS_KEY, String(Date.now())); } catch (e) {}
                 if (notifBanner) notifBanner.classList.add('hidden');
             }
 
@@ -4288,7 +4288,7 @@
                     mediaVideo.classList.add('hidden');
                     mediaImg.src = '';
                     mediaImg.alt = '';
-                    try { mediaVideo.pause(); } catch {}
+                    try { mediaVideo.pause(); } catch (e) {}
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
                     mediaTitle.textContent = '';
@@ -4310,7 +4310,7 @@
                             const x = new URL(u, window.location.origin);
                             if (x.origin !== window.location.origin) return null;
                             return x.pathname + x.search + x.hash;
-                        } catch {
+                        } catch (e) {
                             return null;
                         }
                     };
@@ -4380,7 +4380,7 @@
                     mediaVideo.load();
                 } else {
                     mediaVideo.classList.add('hidden');
-                    try { mediaVideo.pause(); } catch {}
+                    try { mediaVideo.pause(); } catch (e) {}
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
                     mediaImg.classList.remove('hidden');
@@ -4441,4 +4441,5 @@
     </script>
     </div>
 </x-app-layout>
+
 
