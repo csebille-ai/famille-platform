@@ -1155,6 +1155,10 @@ Route::middleware('auth')->group(function () {
         ->middleware(['throttle:60,1'])
         ->name('chat.messages.reactions.index');
 
+    Route::get('/chat/messages/{message}/reactions/{emoji}', [ChatMessageReactionController::class, 'showEmoji'])
+        ->middleware(['throttle:120,1'])
+        ->name('chat.messages.reactions.emoji');
+
 
 
     // Admin-only diagnostics (helps debug “server not updating” issues).

@@ -1565,6 +1565,9 @@
                     row.dataset.reactionSummary = JSON.stringify(normalized);
                     renderReactionsRow(row, normalized);
                 }
+
+                // Keep the popover coherent if a reaction changes while it's open.
+                scheduleRefreshReactionUsersPopover(id);
             }
 
             function optimisticToggle(summary, emoji) {
@@ -1598,6 +1601,222 @@
                 open: false,
                 messageId: 0,
             };
+
+            const reactionUsersPopover = {
+                root: document.getElementById('chatReactionUsersPopover'),
+                backdrop: document.getElementById('chatReactionUsersBackdrop'),
+                panel: document.getElementById('chatReactionUsersPanel'),
+                closeBtn: document.getElementById('chatReactionUsersClose'),
+                header: document.getElementById('chatReactionUsersHeader'),
+                body: document.getElementById('chatReactionUsersBody'),
+                open: false,
+                messageId: 0,
+                emoji: '',
+                reqId: 0,
+                abort: null,
+                refreshTimer: null,
+            };
+
+            function closeReactionUsersPopover() {
+                reactionUsersPopover.open = false;
+                reactionUsersPopover.messageId = 0;
+                reactionUsersPopover.emoji = '';
+                if (reactionUsersPopover.refreshTimer) {
+                    clearTimeout(reactionUsersPopover.refreshTimer);
+                    reactionUsersPopover.refreshTimer = null;
+                }
+                try {
+                    reactionUsersPopover.abort?.abort?.();
+                } catch {}
+                reactionUsersPopover.abort = null;
+                reactionUsersPopover.root?.classList.add('hidden');
+            }
+
+            function positionReactionUsersPopover(anchorRect) {
+                if (!reactionUsersPopover.panel || !anchorRect) return;
+
+                const pad = 10;
+                reactionUsersPopover.panel.style.left = '0px';
+                reactionUsersPopover.panel.style.top = '0px';
+                const rect = reactionUsersPopover.panel.getBoundingClientRect();
+
+                const preferAbove = anchorRect.top > (rect.height + 18);
+                const top = preferAbove
+                    ? Math.max(pad, Math.min(anchorRect.top - rect.height - 10, window.innerHeight - rect.height - pad))
+                    : Math.max(pad, Math.min(anchorRect.bottom + 10, window.innerHeight - rect.height - pad));
+
+                const left = Math.max(
+                    pad,
+                    Math.min(anchorRect.left + (anchorRect.width / 2) - (rect.width / 2), window.innerWidth - rect.width - pad)
+                );
+
+                reactionUsersPopover.panel.style.left = `${left}px`;
+                reactionUsersPopover.panel.style.top = `${top}px`;
+            }
+
+            function renderReactionUsersPopoverLoading(emoji) {
+                if (reactionUsersPopover.header) reactionUsersPopover.header.textContent = `${emoji} …`;
+                if (reactionUsersPopover.body) reactionUsersPopover.body.innerHTML = '<div class="text-sm text-slate-600">Chargement…</div>';
+            }
+
+            function renderReactionUsersPopoverError(emoji) {
+                if (reactionUsersPopover.header) reactionUsersPopover.header.textContent = `${emoji}`;
+                if (!reactionUsersPopover.body) return;
+                reactionUsersPopover.body.innerHTML = '';
+
+                const wrap = document.createElement('div');
+                wrap.className = 'space-y-2';
+
+                const txt = document.createElement('div');
+                txt.className = 'text-sm text-red-600';
+                txt.textContent = 'Impossible de charger';
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-[color:rgba(14,165,160,0.08)]';
+                btn.textContent = 'Réessayer';
+                btn.addEventListener('click', () => {
+                    if (!reactionUsersPopover.open) return;
+                    loadReactionUsers(reactionUsersPopover.messageId, reactionUsersPopover.emoji);
+                });
+
+                wrap.appendChild(txt);
+                wrap.appendChild(btn);
+                reactionUsersPopover.body.appendChild(wrap);
+            }
+
+            function renderReactionUsersPopover(emoji, users) {
+                const list = Array.isArray(users) ? users : [];
+                const count = list.length;
+                if (reactionUsersPopover.header) reactionUsersPopover.header.textContent = `${emoji} ${count}`;
+                if (!reactionUsersPopover.body) return;
+
+                reactionUsersPopover.body.innerHTML = '';
+
+                if (count === 0) {
+                    reactionUsersPopover.body.innerHTML = '<div class="text-sm text-slate-600">Aucune réaction</div>';
+                    return;
+                }
+
+                const isTouch = !!window.matchMedia && window.matchMedia('(hover: none)').matches;
+
+                const grid = document.createElement('div');
+                grid.className = 'flex flex-wrap gap-2';
+
+                for (const u of list) {
+                    const name = String(u?.name || '—');
+                    const url = String(u?.avatar_url || '');
+
+                    const wrap = document.createElement('div');
+                    wrap.className = 'flex flex-col items-center gap-1';
+
+                    const avatar = document.createElement('div');
+                    avatar.className = 'w-7 h-7 rounded-full overflow-hidden bg-slate-100 border border-black/10 flex items-center justify-center';
+                    avatar.title = firstName(name);
+
+                    if (url) {
+                        const img = document.createElement('img');
+                        img.src = url;
+                        img.alt = '';
+                        img.className = 'w-full h-full object-cover';
+                        img.loading = 'lazy';
+                        avatar.appendChild(img);
+                    } else {
+                        const t = document.createElement('div');
+                        t.className = 'text-[11px] font-extrabold text-slate-700';
+                        t.textContent = initialsFor(name);
+                        avatar.appendChild(t);
+                    }
+
+                    wrap.appendChild(avatar);
+
+                    if (isTouch) {
+                        const label = document.createElement('div');
+                        label.className = 'text-[11px] text-slate-700 max-w-[64px] truncate';
+                        label.textContent = firstName(name);
+                        wrap.appendChild(label);
+                    }
+
+                    grid.appendChild(wrap);
+                }
+
+                reactionUsersPopover.body.appendChild(grid);
+            }
+
+            async function loadReactionUsers(messageId, emoji) {
+                const id = Number(messageId || 0);
+                const e = String(emoji || '').trim();
+                if (!id || !e) return;
+                if (!reactionUsersPopover.open || reactionUsersPopover.messageId !== id || reactionUsersPopover.emoji !== e) return;
+
+                try {
+                    reactionUsersPopover.abort?.abort?.();
+                } catch {}
+
+                const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+                reactionUsersPopover.abort = controller;
+
+                const myReqId = ++reactionUsersPopover.reqId;
+                renderReactionUsersPopoverLoading(e);
+
+                const url = `/chat/messages/${id}/reactions/${encodeURIComponent(e)}`;
+                try {
+                    const resp = await fetch(url, {
+                        headers: { 'Accept': 'application/json' },
+                        credentials: 'same-origin',
+                        ...(controller ? { signal: controller.signal } : {}),
+                    });
+
+                    if (myReqId !== reactionUsersPopover.reqId) return;
+                    if (!reactionUsersPopover.open || reactionUsersPopover.messageId !== id || reactionUsersPopover.emoji !== e) return;
+
+                    if (!resp.ok) {
+                        renderReactionUsersPopoverError(e);
+                        return;
+                    }
+
+                    const json = await resp.json();
+                    if (myReqId !== reactionUsersPopover.reqId) return;
+
+                    renderReactionUsersPopover(e, json?.users || []);
+                } catch {
+                    if (myReqId !== reactionUsersPopover.reqId) return;
+                    if (!reactionUsersPopover.open) return;
+                    renderReactionUsersPopoverError(e);
+                }
+            }
+
+            function openReactionUsersPopover(messageId, emoji, anchorRect) {
+                const id = Number(messageId || 0);
+                const e = String(emoji || '').trim();
+                if (!reactionUsersPopover.root || !reactionUsersPopover.panel || !id || !e) return;
+
+                const row = messagesEl?.querySelector(`[data-message-id="${id}"]`);
+                if (row?.dataset?.deleted === '1') return;
+
+                if (reactionUsersPopover.open && reactionUsersPopover.messageId === id && reactionUsersPopover.emoji === e) {
+                    closeReactionUsersPopover();
+                    return;
+                }
+
+                reactionUsersPopover.open = true;
+                reactionUsersPopover.messageId = id;
+                reactionUsersPopover.emoji = e;
+                reactionUsersPopover.root.classList.remove('hidden');
+                positionReactionUsersPopover(anchorRect);
+                loadReactionUsers(id, e);
+            }
+
+            function scheduleRefreshReactionUsersPopover(messageId) {
+                const id = Number(messageId || 0);
+                if (!reactionUsersPopover.open || reactionUsersPopover.messageId !== id) return;
+                if (reactionUsersPopover.refreshTimer) clearTimeout(reactionUsersPopover.refreshTimer);
+                reactionUsersPopover.refreshTimer = setTimeout(() => {
+                    reactionUsersPopover.refreshTimer = null;
+                    if (!reactionUsersPopover.open) return;
+                    loadReactionUsers(reactionUsersPopover.messageId, reactionUsersPopover.emoji);
+                }, 350);
+            }
 
             function openReactionsPicker(messageId, x, y) {
                 const id = Number(messageId || 0);
@@ -1635,8 +1854,14 @@
 
             reactionsPicker.backdrop?.addEventListener('click', closeReactionsPicker);
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closeReactionsPicker();
+                if (e.key === 'Escape') {
+                    closeReactionsPicker();
+                    closeReactionUsersPopover();
+                }
             });
+
+            reactionUsersPopover.backdrop?.addEventListener('click', closeReactionUsersPopover);
+            reactionUsersPopover.closeBtn?.addEventListener('click', closeReactionUsersPopover);
 
             async function postToggleReaction(messageId, emoji) {
                 const id = Number(messageId || 0);
@@ -1732,77 +1957,7 @@
                 }
             });
 
-            async function openWhoReacted(messageId) {
-                const id = Number(messageId || 0);
-                if (!id) return;
-                const modal = document.getElementById('chatReactionsWhoModal');
-                const body = document.getElementById('chatReactionsWhoBody');
-                if (!modal || !body) return;
-
-                body.innerHTML = '<div class="text-sm text-slate-600">Chargement…</div>';
-                modal.classList.remove('hidden');
-
-                const url = `/chat/messages/${id}/reactions`;
-                const resp = await fetch(url, { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' });
-                if (!resp.ok) {
-                    body.innerHTML = '<div class="text-sm text-red-600">Impossible de charger</div>';
-                    return;
-                }
-                const json = await resp.json();
-                const groups = json?.emoji_groups || {};
-
-                body.innerHTML = '';
-                const entries = Object.entries(groups);
-                if (entries.length === 0) {
-                    body.innerHTML = '<div class="text-sm text-slate-600">Aucune réaction</div>';
-                    return;
-                }
-
-                for (const [emoji, users] of entries) {
-                    const section = document.createElement('div');
-                    const title = document.createElement('div');
-                    title.className = 'text-sm font-semibold text-gray-900';
-                    title.textContent = `${emoji} ${Array.isArray(users) ? users.length : 0}`;
-                    section.appendChild(title);
-
-                    const list = document.createElement('div');
-                    list.className = 'mt-2 space-y-2';
-                    for (const u of (Array.isArray(users) ? users : [])) {
-                        const row = document.createElement('div');
-                        row.className = 'flex items-center gap-2';
-
-                        const avatar = document.createElement('div');
-                        avatar.className = 'w-8 h-8 rounded-full overflow-hidden bg-slate-100 border border-black/10';
-                        const url = String(u?.avatar_url || '');
-                        if (url) {
-                            const img = document.createElement('img');
-                            img.src = url;
-                            img.alt = '';
-                            img.className = 'w-full h-full object-cover';
-                            img.loading = 'lazy';
-                            avatar.appendChild(img);
-                        }
-
-                        const name = document.createElement('div');
-                        name.className = 'text-sm text-slate-900 font-semibold';
-                        name.textContent = String(u?.name || '—');
-
-                        row.appendChild(avatar);
-                        row.appendChild(name);
-                        list.appendChild(row);
-                    }
-
-                    section.appendChild(list);
-                    body.appendChild(section);
-                }
-            }
-
-            document.getElementById('chatReactionsWhoClose')?.addEventListener('click', () => {
-                document.getElementById('chatReactionsWhoModal')?.classList.add('hidden');
-            });
-            document.getElementById('chatReactionsWhoBackdrop')?.addEventListener('click', () => {
-                document.getElementById('chatReactionsWhoModal')?.classList.add('hidden');
-            });
+            
 
             // Bubble triggers: right-click (desktop) + long-press (mobile)
             messagesEl?.addEventListener('contextmenu', (e) => {
@@ -1864,7 +2019,9 @@
                 const chip = e.target?.closest('[data-reaction-chip]');
                 if (!chip) return;
                 const mid = chip.getAttribute('data-message-id') || chip.closest('[data-message-row]')?.dataset?.messageId;
-                openWhoReacted(mid);
+                const emoji = chip.getAttribute('data-emoji') || '';
+                const rect = chip.getBoundingClientRect();
+                openReactionUsersPopover(mid, emoji, rect);
             });
 
             // Render existing DOM reaction summaries (server-rendered)
@@ -2908,6 +3065,9 @@
                     .listen('.message.deleted', (e) => {
                         if (!e?.id) return;
                         markMessageDeletedForAll(Number(e.id));
+                        if (reactionUsersPopover.open && Number(reactionUsersPopover.messageId || 0) === Number(e.id)) {
+                            closeReactionUsersPopover();
+                        }
                     })
                     .listen('.message.reactions.updated', (e) => {
                         if (!e?.message_id) return;

@@ -76,4 +76,29 @@ class ChatMessageReactionController extends Controller
         $groups = app(ChatReactions::class)->groupsForMessage((int) $message->id);
         return response()->json($groups);
     }
+
+    public function showEmoji(ChatMessage $message, string $emoji)
+    {
+        $emoji = trim((string) $emoji);
+
+        if ($emoji === '' || mb_strlen($emoji) > 16) {
+            return response()->json(['message' => 'Invalid emoji'], 422);
+        }
+
+        if (!in_array($emoji, ChatReactions::PICKER_EMOJIS, true)) {
+            return response()->json(['message' => 'Emoji not allowed'], 422);
+        }
+
+        if ($message->deleted_for_all_at) {
+            return response()->json(['message' => 'Message deleted'], 404);
+        }
+
+        $users = app(ChatReactions::class)->usersForMessageEmoji((int) $message->id, $emoji);
+
+        return response()->json([
+            'emoji' => $emoji,
+            'count' => count($users),
+            'users' => $users,
+        ]);
+    }
 }

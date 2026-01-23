@@ -130,13 +130,15 @@
             </div>
         </div>
 
-        <div id="chatReactionsWhoModal" class="fixed inset-0 z-[90] hidden" aria-hidden="true">
-            <div id="chatReactionsWhoBackdrop" class="absolute inset-0 bg-black/40"></div>
-            <div class="absolute inset-x-0 bottom-0 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:top-24 sm:bottom-auto w-full sm:w-[420px] bg-white rounded-t-3xl sm:rounded-3xl p-4 shadow-2xl">
-                <div class="flex items-center justify-between">
-                    <div class="text-sm font-semibold text-gray-900">Réactions</div>
-                    <button type="button" id="chatReactionsWhoClose" class="w-9 h-9 rounded-full inline-flex items-center justify-center text-slate-600 hover:bg-[color:rgba(14,165,160,0.10)]" aria-label="Fermer" title="Fermer">✕</button>
+        <div id="chatReactionUsersPopover" class="fixed inset-0 z-[85] hidden" aria-hidden="true">
+            <div id="chatReactionUsersBackdrop" class="absolute inset-0"></div>
+            <div id="chatReactionUsersPanel" class="absolute w-[min(92vw,340px)] rounded-2xl border border-slate-200 bg-white shadow-2xl p-3">
+                <div class="flex items-center justify-between gap-3">
+                    <div id="chatReactionUsersHeader" class="text-sm font-semibold text-slate-900"></div>
+                    <button type="button" id="chatReactionUsersClose" class="w-8 h-8 rounded-full inline-flex items-center justify-center text-slate-600 hover:bg-[color:rgba(14,165,160,0.10)]" aria-label="Fermer" title="Fermer">✕</button>
                 </div>
-                <div id="chatReactionsWhoBody" class="mt-3 space-y-4"></div>
+                <div id="chatReactionUsersBody" class="mt-2"></div>
             </div>
         </div>
+
+        

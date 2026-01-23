@@ -159,6 +159,43 @@ class ChatReactions
         return ['emoji_groups' => $ordered];
     }
 
+    /**
+     * @return array<int,array{id:int,name:string,avatar_url:string|null}>
+     */
+    public function usersForMessageEmoji(int $messageId, string $emoji): array
+    {
+        $messageId = (int) $messageId;
+        $emoji = trim((string) $emoji);
+
+        if ($messageId <= 0 || $emoji == '') {
+            return [];
+        }
+
+        $rows = User::query()
+            ->join('chat_message_reactions', 'users.id', '=', 'chat_message_reactions.user_id')
+            ->where('chat_message_reactions.chat_message_id', '=', $messageId)
+            ->where('chat_message_reactions.emoji', '=', $emoji)
+            ->orderBy('users.name')
+            ->select([
+                'users.id',
+                'users.name',
+                'users.avatar_path',
+                'users.avatar_updated_at',
+            ])
+            ->get();
+
+        $users = [];
+        foreach ($rows as $u) {
+            $users[] = [
+                'id' => (int) ($u->id ?? 0),
+                'name' => (string) ($u->name ?? '—'),
+                'avatar_url' => avatarUrl($u),
+            ];
+        }
+
+        return $users;
+    }
+
     private function emojiRank(string $emoji): int
     {
         $i = array_search($emoji, self::BASE_EMOJIS, true);
