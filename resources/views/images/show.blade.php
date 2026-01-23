@@ -483,6 +483,45 @@
                     zoom.ty = clamp(zoom.ty, -maxY, maxY);
                 };
 
+                const getMaxPan = () => {
+                    const base = getBaseSize();
+                    const scaledW = base.w * zoom.scale;
+                    const scaledH = base.h * zoom.scale;
+                    const maxX = Math.max(0, (scaledW - base.stageW) / 2);
+                    const maxY = Math.max(0, (scaledH - base.stageH) / 2);
+                    return { maxX, maxY };
+                };
+
+                let snapTimer = 0;
+                const clearSnapTimer = () => {
+                    if (snapTimer) {
+                        clearTimeout(snapTimer);
+                        snapTimer = 0;
+                    }
+                };
+
+                const snapToCenterIfNear = () => {
+                    if (!img) return;
+                    if (fitMode !== 'cover') return;
+                    if (zoom.scale > 1.01) return;
+
+                    const { maxX, maxY } = getMaxPan();
+                    // Only snap if close to center, so panning to inspect edges stays possible.
+                    const thresholdX = Math.max(18, Math.min(42, maxX * 0.18));
+                    const thresholdY = Math.max(18, Math.min(42, maxY * 0.18));
+                    if (Math.abs(zoom.tx) > thresholdX || Math.abs(zoom.ty) > thresholdY) return;
+
+                    clearSnapTimer();
+                    try { img.style.transition = 'transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1)'; } catch {}
+                    zoom.tx = 0;
+                    zoom.ty = 0;
+                    applyTransform();
+                    snapTimer = setTimeout(() => {
+                        snapTimer = 0;
+                        try { img.style.transition = ''; } catch {}
+                    }, 190);
+                };
+
                 const applyTransform = () => {
                     if (!img) return;
                     const coverBasePan = (fitMode === 'cover' && zoom.scale <= 1.001);
@@ -670,6 +709,8 @@
                     pointers.set(e.pointerId, { sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY });
 
                     didPanThisGesture = false;
+                    clearSnapTimer();
+                    try { if (img) img.style.transition = ''; } catch {}
 
                     if (pointers.size === 1) {
                         panPointerId = e.pointerId;
@@ -747,6 +788,7 @@
 
                     // In cover mode, if the gesture was used to pan the image, don't treat it as navigation/close.
                     if (coverBasePan && didPanThisGesture) {
+                        snapToCenterIfNear();
                         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) onTap(endPt.x, endPt.y);
                         return;
                     }
