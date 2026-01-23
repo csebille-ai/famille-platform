@@ -174,6 +174,98 @@
 		return d;
 	};
 
+	// ------------------------------------------------------------
+	// Option B: Premium crossfade overlay (no morph/zoom)
+	// ------------------------------------------------------------
+	const waapi = (el, keyframes, { duration = 180, easing = 'ease' } = {}) => {
+		if (!el) return Promise.resolve();
+		if (el.animate) {
+			const a = el.animate(keyframes, { duration, easing, fill: 'forwards' });
+			return a.finished.catch(() => {});
+		}
+		// Fallback: set final styles (best-effort).
+		try {
+			const last = Array.isArray(keyframes) ? keyframes[keyframes.length - 1] : null;
+			if (last && typeof last === 'object') Object.assign(el.style, last);
+		} catch {}
+		return new Promise((r) => setTimeout(r, Math.max(0, duration)));
+	};
+
+	const makePremiumOverlay = ({ thumbSrc, hdSrc, backdropColor = '#020617', radiusPx = 16 } = {}) => {
+		const root = getOverlayRoot();
+		root.innerHTML = '';
+		try { root.style.pointerEvents = 'auto'; } catch {}
+
+		const overlay = document.createElement('div');
+		overlay.style.position = 'absolute';
+		overlay.style.inset = '0';
+		overlay.style.pointerEvents = 'auto';
+		root.appendChild(overlay);
+
+		const backdrop = document.createElement('div');
+		backdrop.style.position = 'absolute';
+		backdrop.style.inset = '0';
+		backdrop.style.opacity = '0';
+		backdrop.style.background = `linear-gradient(to bottom, rgba(2,6,23,0.55), rgba(2,6,23,0.92)), ${String(backdropColor || '#020617')}`;
+		backdrop.style.pointerEvents = 'auto';
+		overlay.appendChild(backdrop);
+
+		const stage = document.createElement('div');
+		stage.style.position = 'absolute';
+		stage.style.inset = '0';
+		stage.style.display = 'flex';
+		stage.style.alignItems = 'center';
+		stage.style.justifyContent = 'center';
+		stage.style.padding = 'min(3.5vh, 24px) min(3.5vw, 18px)';
+		stage.style.pointerEvents = 'none';
+		overlay.appendChild(stage);
+
+		const frame = document.createElement('div');
+		frame.style.position = 'relative';
+		frame.style.width = '100%';
+		frame.style.height = '100%';
+		frame.style.maxWidth = 'min(94vw, 1100px)';
+		frame.style.maxHeight = 'min(94vh, 1100px)';
+		frame.style.borderRadius = `${Math.max(0, Number(radiusPx || 16))}px`;
+		frame.style.overflow = 'hidden';
+		frame.style.background = 'rgba(2,6,23,0.35)';
+		frame.style.transform = 'scale(0.98)';
+		frame.style.willChange = 'transform, opacity';
+		frame.style.backfaceVisibility = 'hidden';
+		frame.style.pointerEvents = 'none';
+		stage.appendChild(frame);
+
+		const thumb = document.createElement('img');
+		thumb.alt = '';
+		thumb.decoding = 'async';
+		thumb.src = String(thumbSrc || '');
+		thumb.style.position = 'absolute';
+		thumb.style.inset = '0';
+		thumb.style.width = '100%';
+		thumb.style.height = '100%';
+		thumb.style.objectFit = 'contain';
+		thumb.style.opacity = '1';
+		thumb.style.transform = 'translateZ(0)';
+		thumb.style.backfaceVisibility = 'hidden';
+		frame.appendChild(thumb);
+
+		const hd = document.createElement('img');
+		hd.alt = '';
+		hd.decoding = 'async';
+		if (hdSrc) hd.src = String(hdSrc || '');
+		hd.style.position = 'absolute';
+		hd.style.inset = '0';
+		hd.style.width = '100%';
+		hd.style.height = '100%';
+		hd.style.objectFit = 'contain';
+		hd.style.opacity = '0';
+		hd.style.transform = 'translateZ(0)';
+		hd.style.backfaceVisibility = 'hidden';
+		frame.appendChild(hd);
+
+		return { root, overlay, backdrop, stage, frame, thumb, hd };
+	};
+
 	const makeMediaFrame = ({ rect, radiusPx = 16 } = {}) => {
 		const r = normalizeRect(rect);
 		const frame = document.createElement('div');
@@ -494,154 +586,61 @@
 		if (!st) return;
 
 		const id = String(st.id || '');
-		const src = String(st.src || '');
 		const type = String(st.type || 'enter');
+		const thumbSrc = String(st.thumbSrc || st.src || '').trim();
 
-		// Ensure we can show content behind the overlay.
-		document.documentElement.classList.add('tm-animating');
-		document.documentElement.classList.add('tm-reveal');
-
-		const root = getOverlayRoot();
-		root.innerHTML = '';
-		const backdropColor = getBackdropColorForCurrentPage();
-
-		const backdrop = makeBackdrop(backdropColor, 1);
-		root.appendChild(backdrop);
-
-		const fromRect = normalizeRect(st.fromRect);
-		let cloneRect = fromRect;
-		if (type === 'enter') {
-			// If coming from another page load, rect still matches viewport coords.
-			cloneRect = fromRect;
-		}
-
-		const toRectTmp = normalizeRect(st.toRect);
-		// Create the frame at the destination rect; animate it from the source rect using transform.
-		const frame = makeMediaFrame({ rect: { x: 0, y: 0, w: 0, h: 0 }, radiusPx: 0 });
-		root.appendChild(frame);
-		const frameImg = makeFrameImg({ src, fit: String(st.fit || 'contain'), bg: backdropColor });
-		frame.appendChild(frameImg);
-
-		// Make sure the destination is in the right scroll position for "return".
-		if (type === 'return' && typeof st.toScrollY === 'number' && Number.isFinite(st.toScrollY)) {
-			try {
-				window.scrollTo(0, Number(st.toScrollY));
-			} catch {
-				// ignore
-			}
-		}
-
-		await new Promise((r) => requestAnimationFrame(() => r()));
-		await new Promise((r) => requestAnimationFrame(() => r()));
-
-		let toRect = null;
-		let destFit = null;
-		let destRadiusPx = null;
-		let destImg = null;
-		let destElForHide = null;
-		if (type === 'return' && st.toRect) {
-			toRect = normalizeRect(st.toRect);
-		} else {
-			const destEl = findSharedElement(id);
-			if (destEl) {
-				destFit = getObjectFitFrom(destEl, 'contain');
-				destRadiusPx = getRadiusFrom(destEl);
-				destImg = destEl.tagName === 'IMG' ? destEl : (destEl.querySelector ? destEl.querySelector('img') : null);
-
-				// Large/vertical images may not have a layout box yet at this point.
-				// Wait briefly for the destination image to decode/load so rect measurement isn't 0x0.
-				if (destImg) {
-					try {
-						await waitForImageReady(destImg, isLowEnd() ? 700 : 1400);
-					} catch {
-						// ignore
-					}
-				}
-
-				const boxRect = rectFromEl(destEl);
-				const aspect = getAspectRatioFrom(destImg || destEl, (boxRect.w > 0 && boxRect.h > 0) ? (boxRect.w / boxRect.h) : 1);
-				toRect = calcObjectFitContentRect({ boxRect, aspect, fit: destFit || 'contain' });
-
-				// Hide the real destination element until we fully swap (prevents any clone<->real crossfade).
-				// Only do this if we have a valid destination rect; otherwise we can accidentally hide it forever.
-				destElForHide = destEl;
-				if (toRect && toRect.w > 0 && toRect.h > 0) {
-					try { destEl.style.visibility = 'hidden'; } catch {}
-					try { destEl.style.opacity = '0'; } catch {}
-				}
-			}
-		}
-
-		const duration = isLowEnd() ? 220 : 300;
-
-		if (!toRect || toRect.w <= 0 || toRect.h <= 0) {
-			// Fallback: simple fade.
-			await animateOpacity(backdrop, 1, 0, { duration: Math.max(160, Math.floor(duration * 0.7)) });
-			// Ensure the destination element is visible even if we had hidden it.
-			try {
-				if (destElForHide) {
-					destElForHide.style.visibility = '';
-					destElForHide.style.opacity = '';
-				}
-			} catch {}
-			document.documentElement.classList.remove('tm-animating');
-			document.documentElement.classList.remove('tm-reveal');
-			root.innerHTML = '';
+		// Option B: only handle "enter".
+		if (type !== 'enter') {
 			clearPending();
 			return;
 		}
 
-		// Frame final rect is the destination rect.
-		try {
-			frame.style.left = `${toRect.x}px`;
-			frame.style.top = `${toRect.y}px`;
-			frame.style.width = `${Math.max(0, toRect.w)}px`;
-			frame.style.height = `${Math.max(0, toRect.h)}px`;
-			frame.style.borderRadius = `${Math.max(0, Number(destRadiusPx ?? 0))}px`;
-		} catch {}
+		document.documentElement.classList.add('tm-animating');
+		document.documentElement.classList.add('tm-reveal');
 
-		// Keep fit constant during the morph.
-		try {
-			frameImg.style.objectFit = String(destFit || st.fit || 'contain');
-		} catch {}
+		const backdropColor = getBackdropColorForCurrentPage();
+		const overlay = makePremiumOverlay({ thumbSrc, backdropColor, radiusPx: 16 });
 
+		const openDur = isLowEnd() ? 150 : 200;
 		await Promise.all([
-			animateFrameTransform(frame, {
-				fromRect: cloneRect,
-				toRect,
-				fromRadiusPx: Number(st.radiusPx || 16),
-				toRadiusPx: destRadiusPx != null ? Number(destRadiusPx || 0) : 0,
-				duration,
-				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-			}),
-			animateOpacity(backdrop, 1, 0, { duration }),
+			waapi(overlay.backdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+			waapi(overlay.frame, [{ transform: 'scale(0.98)' }, { transform: 'scale(1)' }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
 		]);
 
-		// Keep the clone until the real image is ready to avoid a blank/blue flash.
-		if (destImg) {
-			try {
-				await waitForImageReady(destImg, isLowEnd() ? 1400 : 2800);
-			} catch {
-				// ignore
-			}
+		// Find the real destination image (HD) and use it for the crossfade.
+		const destEl = findSharedElement(id);
+		const destImg = destEl
+			? (destEl.tagName === 'IMG' ? destEl : (destEl.querySelector ? destEl.querySelector('img') : null))
+			: null;
+		const hdSrc = String(destImg?.currentSrc || destImg?.src || '').trim();
+		if (hdSrc) {
+			try { overlay.hd.src = hdSrc; } catch {}
 		}
 
-		// Swap instantly (no visible fade between clone and real image).
+		// Wait for overlay HD, then crossfade. If it never loads, keep thumb (never blank).
 		try {
-			if (destElForHide) {
-				destElForHide.style.visibility = '';
-				destElForHide.style.opacity = '';
+			if (overlay.hd && overlay.hd.src) {
+				await waitForImageReady(overlay.hd, isLowEnd() ? 1800 : 3000);
 			}
 		} catch {}
-		root.innerHTML = '';
+
+		const fadeDur = isLowEnd() ? 120 : 160;
+		if (overlay.hd && overlay.hd.src) {
+			await Promise.all([
+				waapi(overlay.hd, [{ opacity: 0 }, { opacity: 1 }], { duration: fadeDur, easing: 'ease' }),
+				waapi(overlay.thumb, [{ opacity: 1 }, { opacity: 0 }], { duration: fadeDur, easing: 'ease' }),
+			]);
+		}
+
+		// Ensure the real page image is ready before removing overlay (prevents a flash).
+		if (destImg) {
+			try { await waitForImageReady(destImg, isLowEnd() ? 2200 : 4200); } catch {}
+		}
+
+		try { overlay.root.innerHTML = ''; } catch {}
 		document.documentElement.classList.remove('tm-animating');
 		document.documentElement.classList.remove('tm-reveal');
 		clearPending();
-
-		// If coming back from bfcache, ensure interactions are normal.
-		if (fromBfcache) {
-			// no-op
-		}
 	};
 
 	const runOutgoingEnter = async ({ anchor, sharedEl }) => {
@@ -657,49 +656,26 @@
 		const src = getSrcFromSource(anchor) || getSrcFromSource(sharedEl);
 		if (!src) return false;
 
-		// Important: don't “guess” the viewer's final geometry here.
-		// Any mismatch (safe areas, layout, address bar, fit mode) reads as a mid-transition zoom/dezoom.
-		// We only provide instant feedback (backdrop fade + frozen frame) and let the next page do the true morph.
-		const fromRect = rectFromEl(sharedEl);
-		const root = getOverlayRoot();
-		root.innerHTML = '';
+		// Option B: premium overlay (no rect morph / no border-radius animation).
 		document.documentElement.classList.add('tm-animating');
 		document.documentElement.classList.add('tm-reveal');
 		const enteringViewer = href.includes('/media/photos/');
 		const backdropColor = enteringViewer ? '#020617' : getBackdropColorForCurrentPage();
-		const backdrop = makeBackdrop(backdropColor, 0);
-		root.appendChild(backdrop);
+		const overlay = makePremiumOverlay({ thumbSrc: src, backdropColor, radiusPx: 16 });
+		const duration = isLowEnd() ? 150 : 200;
+		await Promise.all([
+			waapi(overlay.backdrop, [{ opacity: 0 }, { opacity: 1 }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+			waapi(overlay.frame, [{ transform: 'scale(0.98)' }, { transform: 'scale(1)' }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+		]);
 
-		const frame = makeMediaFrame({ rect: fromRect, radiusPx: getRadiusFrom(sharedEl) });
-		root.appendChild(frame);
-		const frameImg = makeFrameImg({ src, fit: getObjectFitFrom(sharedEl, 'cover'), bg: backdropColor });
-		frame.appendChild(frameImg);
-
-		const duration = isLowEnd() ? 90 : 120;
-		await animateOpacity(backdrop, 0, 1, { duration, easing: 'linear' });
-
-		// Best-effort persistence for cross-page settle.
+		// Pending only needs: id + thumbSrc + ts. The destination page will handle the HD crossfade.
 		try {
-			const origins = readOrigins();
-			origins[id] = {
-				fromRect,
-				scrollY: window.scrollY || 0,
-				src,
-				radiusPx: getRadiusFrom(sharedEl),
-				originUrl: window.location.href,
-				ts: now(),
-			};
-			writeOrigins(origins);
 			storageSet(KEY_LAST_ORIGIN_URL, window.location.href);
 			setPending({
 				v: 1,
 				type: 'enter',
 				id,
-				src,
-				fromRect,
-				fromScrollY: window.scrollY || 0,
-				radiusPx: getRadiusFrom(sharedEl),
-				fit: enteringViewer ? 'contain' : getObjectFitFrom(sharedEl, 'cover'),
+				thumbSrc: src,
 				ts: now(),
 			});
 		} catch {
@@ -717,59 +693,25 @@
 		const href = String(returnHref || backLink.href || '').trim();
 		if (!href) return false;
 
-		const id = getSharedIdFrom(imageEl);
-		const origins = readOrigins();
-		const origin = origins[id];
-		if (!origin || !origin.fromRect) return false;
-
-		const imageBox = rectFromEl(imageEl);
-		const fit = getObjectFitFrom(imageEl, 'contain');
-		const aspect = getAspectRatioFrom(imageEl, (imageBox.w > 0 && imageBox.h > 0) ? (imageBox.w / imageBox.h) : 1);
-		const fromRect = calcObjectFitContentRect({ boxRect: imageBox, aspect, fit });
-		const toRect = normalizeRect(origin.fromRect);
-		const src = String(origin.src || imageEl.currentSrc || imageEl.src || '').trim();
-
-		setPending({
-			v: 1,
-			type: 'return',
-			id,
-			src,
-			fromRect,
-			toRect,
-			toScrollY: Number(origin.scrollY || 0),
-			radiusPx: Number(origin.radiusPx || 16),
-			ts: now(),
-		});
-
-		// Quick pre-navigation shrink (transform-only).
+		// Option B close: fade-out backdrop + micro-scale down. No reverse morph.
 		try {
-			const root = getOverlayRoot();
-			root.innerHTML = '';
-			document.documentElement.classList.add('tm-animating');
-			document.documentElement.classList.add('tm-reveal');
-			const backdropColor = getBackdropColorForCurrentPage();
-			const backdrop = makeBackdrop(backdropColor, 1);
-			root.appendChild(backdrop);
-			const frame = makeMediaFrame({ rect: toRect, radiusPx: Number(origin.radiusPx || 16) });
-			root.appendChild(frame);
-			const frameImg = makeFrameImg({ src, fit: 'contain', bg: backdropColor });
-			frame.appendChild(frameImg);
+			viewerEl.classList.add('viewer-ui-hidden');
+		} catch {}
 
-			const duration = isLowEnd() ? 160 : 200;
-			await Promise.all([
-				animateFrameTransform(frame, {
-					fromRect,
-					toRect,
-					fromRadiusPx: getRadiusFrom(imageEl),
-					toRadiusPx: Number(origin.radiusPx || 16),
-					duration,
-					easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-				}),
-				animateOpacity(backdrop, 1, 0, { duration }),
-			]);
-		} catch {
-			// ignore
-		}
+		document.documentElement.classList.add('tm-animating');
+		document.documentElement.classList.add('tm-reveal');
+		const src = String(imageEl.currentSrc || imageEl.src || '').trim();
+		const backdropColor = getBackdropColorForCurrentPage();
+		const overlay = makePremiumOverlay({ thumbSrc: src, hdSrc: src, backdropColor, radiusPx: 16 });
+		try { overlay.hd.style.opacity = '1'; overlay.thumb.style.opacity = '0'; } catch {}
+
+		const duration = isLowEnd() ? 150 : 200;
+		await Promise.all([
+			waapi(overlay.backdrop, [{ opacity: 1 }, { opacity: 0 }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+			waapi(overlay.frame, [{ transform: 'scale(1)' }, { transform: 'scale(0.98)' }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+		]);
+		try { overlay.root.innerHTML = ''; } catch {}
+		clearPending();
 
 		window.location.href = href;
 		return true;
