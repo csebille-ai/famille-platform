@@ -425,6 +425,14 @@
 		return { x: bx + (bw - ww) / 2, y: by + (bh - hh) / 2, w: ww, h: hh };
 	};
 
+	const calcObjectFitContentRect = ({ boxRect, aspect, fit }) => {
+		const box = normalizeRect(boxRect);
+		const f = String(fit || '').trim();
+		if (!box || box.w <= 0 || box.h <= 0) return box;
+		if (f !== 'contain') return box;
+		return calcContainRectInBox({ x: box.x, y: box.y, w: box.w, h: box.h, aspect });
+	};
+
 	const waitForImageReady = async (imgEl, timeoutMs = 2500) => {
 		if (!imgEl) return false;
 		const start = now();
@@ -550,7 +558,9 @@
 					}
 				}
 
-				toRect = rectFromEl(destEl);
+				const boxRect = rectFromEl(destEl);
+				const aspect = getAspectRatioFrom(destImg || destEl, (boxRect.w > 0 && boxRect.h > 0) ? (boxRect.w / boxRect.h) : 1);
+				toRect = calcObjectFitContentRect({ boxRect, aspect, fit: destFit || 'contain' });
 
 				// Hide the real destination element until we fully swap (prevents any clone<->real crossfade).
 				// Only do this if we have a valid destination rect; otherwise we can accidentally hide it forever.
@@ -647,11 +657,9 @@
 		const src = getSrcFromSource(anchor) || getSrcFromSource(sharedEl);
 		if (!src) return false;
 
-		// Destination-aware rendering: the photo viewer uses `contain`, while grids typically use `cover`.
-		// If we keep `cover` until the end, the final switch to `contain` reads as an elastic bounce.
-		const pendingFit = href.includes('/media/photos/') ? 'contain' : getObjectFitFrom(sharedEl, 'cover');
-
-		// Quick pre-navigation morph (transform-only): keep it short to avoid feeling sluggish.
+		// Important: don't “guess” the viewer's final geometry here.
+		// Any mismatch (safe areas, layout, address bar, fit mode) reads as a mid-transition zoom/dezoom.
+		// We only provide instant feedback (backdrop fade + frozen frame) and let the next page do the true morph.
 		const fromRect = rectFromEl(sharedEl);
 		const root = getOverlayRoot();
 		root.innerHTML = '';
@@ -662,34 +670,13 @@
 		const backdrop = makeBackdrop(backdropColor, 0);
 		root.appendChild(backdrop);
 
-		const duration = isLowEnd() ? 160 : 200;
-		// Match the viewer's image area (maximized contain): expand to a centered contain rect inside a near-full viewport box.
-		const aspectImg = sharedEl.tagName === 'IMG' ? sharedEl : (sharedEl.querySelector ? sharedEl.querySelector('img') : null);
-		const aspectEl = aspectImg || sharedEl;
-		const aspect = getAspectRatioFrom(aspectEl, (fromRect.w > 0 && fromRect.h > 0) ? (fromRect.w / fromRect.h) : 1);
-		const vw = window.innerWidth;
-		const vh = window.innerHeight;
-		const padX = 8;
-		const padY = 12;
-		const box = { x: padX, y: padY, w: Math.max(1, vw - padX * 2), h: Math.max(1, vh - padY * 2) };
-		const target = calcContainRectInBox({ ...box, aspect });
-
-		const frame = makeMediaFrame({ rect: target, radiusPx: 0 });
+		const frame = makeMediaFrame({ rect: fromRect, radiusPx: getRadiusFrom(sharedEl) });
 		root.appendChild(frame);
-		const frameImg = makeFrameImg({ src, fit: pendingFit, bg: backdropColor });
+		const frameImg = makeFrameImg({ src, fit: getObjectFitFrom(sharedEl, 'cover'), bg: backdropColor });
 		frame.appendChild(frameImg);
 
-		await Promise.all([
-			animateOpacity(backdrop, 0, 1, { duration }),
-			animateFrameTransform(frame, {
-				fromRect,
-				toRect: target,
-				fromRadiusPx: getRadiusFrom(sharedEl),
-				toRadiusPx: 0,
-				duration,
-				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-			}),
-		]);
+		const duration = isLowEnd() ? 90 : 120;
+		await animateOpacity(backdrop, 0, 1, { duration, easing: 'linear' });
 
 		// Best-effort persistence for cross-page settle.
 		try {
@@ -709,10 +696,10 @@
 				type: 'enter',
 				id,
 				src,
-				fromRect: target,
+				fromRect,
 				fromScrollY: window.scrollY || 0,
 				radiusPx: getRadiusFrom(sharedEl),
-					fit: pendingFit,
+				fit: enteringViewer ? 'contain' : getObjectFitFrom(sharedEl, 'cover'),
 				ts: now(),
 			});
 		} catch {
@@ -735,7 +722,10 @@
 		const origin = origins[id];
 		if (!origin || !origin.fromRect) return false;
 
-		const fromRect = rectFromEl(imageEl);
+		const imageBox = rectFromEl(imageEl);
+		const fit = getObjectFitFrom(imageEl, 'contain');
+		const aspect = getAspectRatioFrom(imageEl, (imageBox.w > 0 && imageBox.h > 0) ? (imageBox.w / imageBox.h) : 1);
+		const fromRect = calcObjectFitContentRect({ boxRect: imageBox, aspect, fit });
 		const toRect = normalizeRect(origin.fromRect);
 		const src = String(origin.src || imageEl.currentSrc || imageEl.src || '').trim();
 
