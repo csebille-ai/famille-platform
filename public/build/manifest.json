@@ -16,7 +16,7 @@
     "src": "node_modules/@phosphor-icons/web/src/regular/Phosphor.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-B6EITkgs.css",
+    "file": "assets/app-CpoM2lKj.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -25,7 +25,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-BZwi1VRZ.js",
+    "file": "assets/app-CtzLMhjk.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -40,7 +40,7 @@
     ]
   },
   "resources/js/chat-page.js": {
-    "file": "assets/chat-page-DX8edkM0.js",
+    "file": "assets/chat-page-xPXlh7an.js",
     "name": "chat-page",
     "src": "resources/js/chat-page.js",
     "isEntry": true

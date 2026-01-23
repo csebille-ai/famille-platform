@@ -1,14 +1,14 @@
-(function () {
+
+        (function () {
+            const start = () => {
             const bootstrap = (window && window.__CHAT_BOOTSTRAP__) ? window.__CHAT_BOOTSTRAP__ : {};
 
-            const start = () => {
-            try { if (window.__chatBootOk) window.__chatBootOk(); } catch (e) {}
             function firstExisting(...els) {
                 for (const el of els) {
                     if (el) return el;
                 }
                 return null;
-            };
+            }
 
             const scrollEl = document.getElementById('chatScroll');
             const messagesEl = document.getElementById('chatMessages');
@@ -39,7 +39,7 @@
             let activeComposerKey = 'mobile';
             try {
                 activeComposerKey = window.matchMedia && window.matchMedia('(min-width: 640px)').matches ? 'desktop' : 'mobile';
-            } catch (e) {}
+            } catch {}
 
             function setActiveComposerKey(key) {
                 if (key === 'mobile' || key === 'desktop') {
@@ -108,14 +108,14 @@
                 'je regarde et je te dis',
             ];
 
-            const QUICKTYPE_NAME_CANDIDATES = Array.isArray(bootstrap.quickTypeNameCandidates) ? bootstrap.quickTypeNameCandidates : [];
+            const QUICKTYPE_NAME_CANDIDATES = (bootstrap.quickTypeNameCandidates || []);
 
             function qtLog(event, data) {
                 if (!QUICKTYPE_DEBUG) return;
                 try {
                     // eslint-disable-next-line no-console
                     console.log('[QuickType]', event, data);
-                } catch (e) {}
+                } catch {}
             }
 
             const quickTypeMenu = {
@@ -156,7 +156,7 @@
                     const raw = localStorage.getItem(key);
                     const arr = raw ? JSON.parse(raw) : [];
                     return Array.isArray(arr) ? arr.filter((s) => typeof s === 'string' && s.trim() !== '') : [];
-                } catch (e) {
+                } catch {
                     return [];
                 }
             }
@@ -164,7 +164,7 @@
             function saveStringList(key, arr) {
                 try {
                     localStorage.setItem(key, JSON.stringify(arr));
-                } catch (e) {}
+                } catch {}
             }
 
             function loadQuickTypePinned() {
@@ -230,7 +230,7 @@
                 const next = arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v));
                 try {
                     localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
-                } catch (e) {}
+                } catch {}
             }
 
             function loadQuickTypeRecents() {
@@ -258,10 +258,10 @@
                     // Best-effort migration.
                     try {
                         localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(out));
-                    } catch (e) {}
+                    } catch {}
 
                     return out;
-                } catch (e) {
+                } catch {
                     return [];
                 }
             }
@@ -274,7 +274,7 @@
                 const next = [v, ...arr.filter((x) => normalizeForMatch(x) !== normalizeForMatch(v))].slice(0, QUICKTYPE_MAX_MRU);
                 try {
                     localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
-                } catch (e) {}
+                } catch {}
             }
 
             function learnQuickTypeFromMessage(body) {
@@ -291,7 +291,7 @@
                         if (w.length < QUICKTYPE_MIN_CHARS) continue;
                         words.push(w);
                     }
-                } catch (e) {
+                } catch {
                     const rough = text.split(/\s+/g);
                     for (const part of rough) {
                         const w = String(part || '').replace(/^[^A-Za-zÀ-ÿ]+|[^A-Za-zÀ-ÿ]+$/g, '').trim();
@@ -322,7 +322,7 @@
                     .slice(0, QUICKTYPE_MAX_MRU);
                 try {
                     localStorage.setItem(QUICKTYPE_MRU_KEY, JSON.stringify(next));
-                } catch (e) {}
+                } catch {}
             }
 
             function getLastTokenInfoFromValue(value, pos) {
@@ -413,10 +413,10 @@
                 // Accent-insensitive matching for FR (ça/ç/cà → ca)
                 try {
                     v = v.normalize('NFD');
-                } catch (e) {}
+                } catch {}
                 try {
                     v = v.replace(/\p{Diacritic}+/gu, '');
-                } catch (e) {
+                } catch {
                     v = v.replace(/[\u0300-\u036f]+/g, '');
                 }
                 v = v.replace(/œ/g, 'oe').replace(/æ/g, 'ae');
@@ -529,7 +529,7 @@
                         await navigator.clipboard.writeText(v);
                         return;
                     }
-                } catch (e) {}
+                } catch {}
                 try {
                     const ta = document.createElement('textarea');
                     ta.value = v;
@@ -540,7 +540,7 @@
                     ta.select();
                     document.execCommand('copy');
                     document.body.removeChild(ta);
-                } catch (e) {}
+                } catch {}
             }
 
             function closeQuickTypeMenu() {
@@ -689,7 +689,7 @@
 
                     closeQuickTypeMenu();
                     scheduleQuickTypeUpdate(quickTypeMenu.key);
-                    try { c?.textarea?.focus(); } catch (e) {}
+                    try { c?.textarea?.focus(); } catch {}
                 });
             }
 
@@ -723,7 +723,7 @@
                 const newPos = (left + insert).length;
                 try {
                     textarea.setSelectionRange(newPos, newPos);
-                } catch (e) {}
+                } catch {}
 
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 saveQuickTypeRecent(String(suggestion || ''));
@@ -969,7 +969,7 @@
                     quickTypeState.selectedIndex = idx;
                     applyQuickTypeSuggestion(c.textarea, s);
                     scheduleQuickTypeUpdate(key);
-                    try { c.textarea.focus(); } catch (e) {}
+                    try { c.textarea.focus(); } catch {}
                 });
 
                 // Hide after blur (small delay to allow chip click)
@@ -998,7 +998,7 @@
             function getSocketId() {
                 try {
                     return (window.Echo && typeof window.Echo.socketId === 'function') ? window.Echo.socketId() : null;
-                } catch (e) {
+                } catch {
                     return null;
                 }
             }
@@ -1007,7 +1007,7 @@
                 try {
                     const next = window.matchMedia && window.matchMedia('(min-width: 640px)').matches ? 'desktop' : 'mobile';
                     setActiveComposerKey(next);
-                } catch (e) {}
+                } catch {}
             }
             window.addEventListener('resize', syncComposerKeyFromMatchMedia);
             const attachSheet = document.getElementById('chatAttachSheet');
@@ -1034,18 +1034,17 @@
             const mediaImg = document.getElementById('chatMediaImg');
             const mediaVideo = document.getElementById('chatMediaVideo');
             const mediaOpenLink = document.getElementById('chatMediaOpenLink');
-
-            const currentUserId = bootstrap.currentUserId ?? null;
-            const currentUserName = bootstrap.currentUserName ?? null;
-            const pollUrl = String(bootstrap.pollUrl || '');
-            const quotaUrl = String(bootstrap.quotaUrl || '');
-            const presignUrl = String(bootstrap.presignUrl || '');
-            const mpInitUrl = String(bootstrap.mpInitUrl || '');
-            const mpCompleteUrl = String(bootstrap.mpCompleteUrl || '');
-            const finalizeUrl = String(bootstrap.finalizeUrl || '');
-            let lastMessageId = Number(bootstrap.lastMessageId || 0);
-            const initialOnline = Array.isArray(bootstrap.initialOnline) ? bootstrap.initialOnline : [];
-            const initialReactionSummaries = bootstrap.initialReactionSummaries || [];
+            const currentUserId = bootstrap.currentUserId;
+            const currentUserName = bootstrap.currentUserName;
+            const pollUrl = bootstrap.pollUrl;
+            const quotaUrl = bootstrap.quotaUrl;
+            const presignUrl = bootstrap.presignUrl;
+            const mpInitUrl = bootstrap.mpInitUrl;
+            const mpCompleteUrl = bootstrap.mpCompleteUrl;
+            const finalizeUrl = bootstrap.finalizeUrl;
+            let lastMessageId = (bootstrap.lastMessageId ?? 0);
+            const initialOnline = (bootstrap.initialOnline || []);
+            const initialReactionSummaries = (bootstrap.initialReactionSummaries || []);
             const reactionSummaries = new Map();
 
             function toArraySummary(v) {
@@ -1066,10 +1065,10 @@
                         reactionSummaries.set(id, toArraySummary(v));
                     }
                 }
-            } catch (e) {}
+            } catch {}
 
-            const MAX_UPLOAD_BYTES = Number(bootstrap.maxUploadBytes || 0);
-            const MULTIPART_THRESHOLD_BYTES = Number(bootstrap.multipartThresholdBytes || 0);
+            const MAX_UPLOAD_BYTES = bootstrap.maxUploadBytes;
+            const MULTIPART_THRESHOLD_BYTES = bootstrap.multipartThresholdBytes;
 
             const quotaEl = document.getElementById('chatAttachQuota');
 
@@ -1124,7 +1123,7 @@
                 let domain = '';
                 try {
                     domain = (new URL(url)).host || '';
-                } catch (e) {
+                } catch {
                     domain = url.replace(/^https?:\/\//i, '').replace(/\/+$/g, '');
                 }
                 const title = (b.includes('Visio') || domain.includes('jit.si')) ? 'Appel vidéo' : 'Lien';
@@ -1281,7 +1280,7 @@
                 let isMobile = true;
                 try {
                     isMobile = !(window.matchMedia && window.matchMedia('(min-width: 640px)').matches);
-                } catch (e) {}
+                } catch {}
 
                 const dockH = isMobile ? getMobileBottomDockHeight() : 0;
                 if (dockH > 0) {
@@ -1309,7 +1308,7 @@
                 const run = () => {
                     try {
                         lastRow.scrollIntoView({ block: 'end' });
-                    } catch (e) {
+                    } catch {
                         // ignore
                     }
                     if (scrollEl) {
@@ -1343,7 +1342,7 @@
                                     scrollToBottom({ force: true });
                                 }).catch(() => {});
                             }
-                        } catch (e) {}
+                        } catch {}
                         markLoaded();
                         return;
                     }
@@ -1379,7 +1378,7 @@
                 if (window.history && 'scrollRestoration' in window.history) {
                     window.history.scrollRestoration = 'manual';
                 }
-            } catch (e) {}
+            } catch {}
 
             document.addEventListener('visibilitychange', () => {
                 if (!document.hidden) ensureBottom(1200);
@@ -1599,46 +1598,16 @@
                 open: false,
                 messageId: 0,
             };
+
             function openReactionsPicker(messageId, x, y) {
                 const id = Number(messageId || 0);
                 if (!reactionsPicker.root || !reactionsPicker.panel || !id) return;
 
-                const row = messagesEl?.querySelector(`[data-message-row][data-message-id="${id}"]`);
+                const row = messagesEl?.querySelector(`[data-message-id="${id}"]`);
                 if (row?.dataset?.deleted === '1') {
                     return;
                 }
 
-                // Anchor to the bubble, but keep the press point when possible (clamped inside the bubble).
-                let anchorClientX = Number(x || 0);
-                let anchorClientY = Number(y || 0);
-                let bubbleClientTop = null;
-                let bubbleClientBottom = null;
-
-                try {
-                    const bubble = row?.querySelector('[data-bubble]');
-                    const br = bubble?.getBoundingClientRect?.();
-                    if (br && Number.isFinite(br.left) && Number.isFinite(br.top) && br.width > 0 && br.height > 0) {
-                        bubbleClientTop = br.top;
-                        bubbleClientBottom = br.bottom;
-
-                        const fallbackX = br.left + br.width / 2;
-                        const fallbackY = br.top + br.height / 2;
-
-                        const fuzz = 48;
-                        const inX = Number.isFinite(anchorClientX) && anchorClientX >= (br.left - fuzz) && anchorClientX <= (br.right + fuzz);
-                        const inY = Number.isFinite(anchorClientY) && anchorClientY >= (br.top - fuzz) && anchorClientY <= (br.bottom + fuzz);
-
-                        const inset = 12;
-                        const minX = br.left + inset;
-                        const maxX = br.right - inset;
-                        const minY = br.top + inset;
-                        const maxY = br.bottom - inset;
-
-                        anchorClientX = inX ? Math.max(minX, Math.min(anchorClientX, maxX)) : fallbackX;
-                        anchorClientY = inY ? Math.max(minY, Math.min(anchorClientY, maxY)) : fallbackY;
-                    }
-                } catch (e) {}
-
                 reactionsPicker.messageId = id;
                 reactionsPicker.open = true;
                 reactionsPicker.more?.classList.add('hidden');
@@ -1647,100 +1616,12 @@
                 reactionsPicker.root.classList.remove('hidden');
 
                 const pad = 10;
-                const offset = 12;
-                const viewportWidth = window.innerWidth;
-                const viewportHeight = window.innerHeight;
-
-                // Panel is position:fixed, so we position directly in client (viewport) coords.
-                const anchorX = anchorClientX;
-                const anchorY = anchorClientY;
-
-                reactionsPicker.panel.style.left = '0px';
-                reactionsPicker.panel.style.top = '0px';
-                reactionsPicker.panel.style.right = '';
-                reactionsPicker.panel.style.bottom = '';
-                const rect = reactionsPicker.panel.getBoundingClientRect();
-
-                // Mobile fallback: show as bottom sheet to avoid iOS long-press coordinate quirks.
-                const isCoarse = (() => {
-                    try {
-                        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
-                    } catch (e) {}
-                    return Number(navigator.maxTouchPoints || 0) > 0;
-                })();
-                if (isCoarse) {
-                    reactionsPicker.panel.style.left = '12px';
-                    reactionsPicker.panel.style.right = '12px';
-                    reactionsPicker.panel.style.top = 'auto';
-                    reactionsPicker.panel.style.bottom = 'calc(var(--mobile-bottom-nav-h,4rem) + env(safe-area-inset-bottom) + 12px)';
-                    return;
-                }
-
-                const minLeft = pad;
-                const maxLeft = viewportWidth - rect.width - pad;
-                const left = Math.max(minLeft, Math.min(anchorX - rect.width / 2, maxLeft));
-
-                const minTop = pad;
-                const maxTop = viewportHeight - rect.height - pad;
-
-                let top = 0;
-                if (bubbleClientTop != null && bubbleClientBottom != null) {
-                    const aboveTop = Number(bubbleClientTop) - rect.height - offset;
-                    const belowTop = Number(bubbleClientBottom) + offset;
-                    const fitsAbove = aboveTop >= minTop;
-                    const fitsBelow = belowTop <= maxTop;
-                    top = fitsBelow ? belowTop : (fitsAbove ? aboveTop : Math.max(minTop, Math.min(anchorY - rect.height / 2, maxTop)));
-                } else {
-                    const aboveTop = anchorY - rect.height - offset;
-                    const belowTop = anchorY + offset;
-                    const fitsAbove = aboveTop >= minTop;
-                    const fitsBelow = belowTop <= maxTop;
-                    top = fitsBelow ? belowTop : (fitsAbove ? aboveTop : Math.max(minTop, Math.min(anchorY - rect.height / 2, maxTop)));
-                }
-
-                reactionsPicker.panel.style.left = `${left}px`;
-                reactionsPicker.panel.style.top = `${top}px`;
-            }
-
-
-                reactionsPicker.messageId = id;
-                reactionsPicker.open = true;
-                reactionsPicker.more?.classList.add('hidden');
-                const isOwner = row && currentUserId && Number(row.dataset.userId || 0) === Number(currentUserId);
-                reactionsPicker.deleteAllBtn?.classList.toggle('hidden', !isOwner);
-                reactionsPicker.root.classList.remove('hidden');
-                const pad = 10;
-                const offset = 12;
-
-                // Use the overlay root as the coordinate space (more reliable on iOS).
-                const rootRect = reactionsPicker.root.getBoundingClientRect();
-                const viewportWidth = rootRect?.width || window.innerWidth;
-                const viewportHeight = rootRect?.height || window.innerHeight;
-                const originLeft = rootRect?.left || 0;
-                const originTop = rootRect?.top || 0;
-
-                // x/y are client coords (viewport-relative) => convert to root-local coords.
-                const anchorX = Number(x || 0) - originLeft;
-                const anchorY = Number(y || 0) - originTop;
-
                 reactionsPicker.panel.style.left = '0px';
                 reactionsPicker.panel.style.top = '0px';
                 const rect = reactionsPicker.panel.getBoundingClientRect();
 
-                const left = Math.max(pad, Math.min(anchorX - rect.width / 2, viewportWidth - rect.width - pad));
-
-                const above = anchorY - rect.height - offset;
-                const below = anchorY + offset;
-                const fitsAbove = above >= pad;
-                const fitsBelow = below <= (viewportHeight - rect.height - pad);
-
-                let top = above;
-                if (!fitsAbove && fitsBelow) {
-                    top = below;
-                }
-                if (!fitsAbove && !fitsBelow) {
-                    top = Math.max(pad, Math.min(anchorY - rect.height / 2, viewportHeight - rect.height - pad));
-                }
+                const left = Math.max(pad, Math.min(Number(x || 0) - rect.width / 2, window.innerWidth - rect.width - pad));
+                const top = Math.max(pad, Math.min(Number(y || 0) - rect.height - 12, window.innerHeight - rect.height - pad));
 
                 reactionsPicker.panel.style.left = `${left}px`;
                 reactionsPicker.panel.style.top = `${top}px`;
@@ -1807,7 +1688,7 @@
                                 const row = messagesEl?.querySelector(`[data-message-id="${mid}"]`);
                                 if (row) row.style.display = 'none';
                             }
-                        } catch (e) {}
+                        } catch {}
                         return;
                     }
 
@@ -1820,7 +1701,7 @@
                             if (resp.ok) {
                                 markMessageDeletedForAll(mid);
                             }
-                        } catch (e) {}
+                        } catch {}
                         return;
                     }
 
@@ -1846,7 +1727,7 @@
                 try {
                     const json = await postToggleReaction(mid, emoji);
                     if (json?.reaction_summary) updateReactionSummary(mid, json.reaction_summary);
-                } catch (e) {
+                } catch {
                     updateReactionSummary(mid, prev);
                 }
             });
@@ -1924,61 +1805,29 @@
             });
 
             // Bubble triggers: right-click (desktop) + long-press (mobile)
-            let suppressContextMenuUntil = 0;
-            const isCoarsePointer = () => {
-                try {
-                    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return true;
-                } catch (e) {}
-                return Number(navigator.maxTouchPoints || 0) > 0;
-            };
-
             messagesEl?.addEventListener('contextmenu', (e) => {
                 const bubble = e.target?.closest('[data-bubble]');
                 if (!bubble) return;
                 e.preventDefault();
-
-                if (Date.now() < suppressContextMenuUntil) {
-                    return;
-                }
-
                 const row = bubble.closest('[data-message-row]');
                 const mid = row?.dataset?.messageId;
-                const rect = bubble.getBoundingClientRect();
-                const ax = rect.left + rect.width / 2;
-                const ay = rect.top + rect.height / 2;
-                const useRect = isCoarsePointer();
-                const x = useRect ? ax : (Number(e.clientX || 0) || ax);
-                const y = useRect ? ay : (Number(e.clientY || 0) || ay);
-                openReactionsPicker(mid, x, y);
-            });            let longPressTimer = null;
+                openReactionsPicker(mid, e.clientX, e.clientY);
+            });
+
+            let longPressTimer = null;
             let longPressStart = null;
-            let longPressBubble = null;
-            let longPressStartedAt = 0;
-            let longPressFired = false;
-
-            const fireLongPress = () => {
-                if (longPressFired) return;
-                const bubble = longPressBubble;
-                if (!bubble) return;
-                const row = bubble.closest('[data-message-row]');
-                const mid = row?.dataset?.messageId;
-                const rect = bubble.getBoundingClientRect();
-                suppressContextMenuUntil = Date.now() + 1200;
-                longPressFired = true;
-                openReactionsPicker(mid, longPressStart?.x ?? (rect.left + rect.width / 2), longPressStart?.y ?? (rect.top + rect.height / 2));
-            };
 
             messagesEl?.addEventListener('pointerdown', (e) => {
                 if (e.pointerType !== 'touch') return;
                 const bubble = e.target?.closest('[data-bubble]');
                 if (!bubble) return;
                 longPressStart = { x: e.clientX, y: e.clientY };
-                longPressBubble = bubble;
-                longPressStartedAt = Date.now();
-                longPressFired = false;
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressTimer = setTimeout(() => {
-                    fireLongPress();
+                    const row = bubble.closest('[data-message-row]');
+                    const mid = row?.dataset?.messageId;
+                    const rect = bubble.getBoundingClientRect();
+                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
                 }, 480);
             });
 
@@ -1992,28 +1841,16 @@
                 }
             });
 
-            const cancelLongPress = (ev) => {
-                // iOS Safari can fire pointercancel as it claims the long-press gesture.
-                // In that case, we still want to open the picker.
-                try {
-                    const isCancel = ev?.type === 'pointercancel';
-                    const elapsed = Date.now() - (longPressStartedAt || 0);
-                    if (isCancel && !longPressFired && longPressBubble && elapsed >= 260) {
-                        fireLongPress();
-                    }
-                } catch (e) {}
-
+            const cancelLongPress = () => {
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressTimer = null;
                 longPressStart = null;
-                longPressBubble = null;
-                longPressStartedAt = 0;
-                longPressFired = false;
             };
 
             messagesEl?.addEventListener('pointerup', cancelLongPress);
             messagesEl?.addEventListener('pointercancel', cancelLongPress);
-// Clicking reaction chips => open who reacted list
+
+            // Clicking reaction chips => open who reacted list
             messagesEl?.addEventListener('click', (e) => {
                 const trigger = e.target?.closest('[data-reaction-trigger]');
                 if (trigger) {
@@ -2021,7 +1858,7 @@
                     e.stopPropagation();
                     const mid = trigger.getAttribute('data-message-id') || trigger.closest('[data-message-row]')?.dataset?.messageId;
                     const rect = trigger.getBoundingClientRect();
-                    openReactionsPicker(mid, longPressStart?.x ?? (rect.left + rect.width / 2), longPressStart?.y ?? (rect.top + rect.height / 2));
+                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
                     return;
                 }
                 const chip = e.target?.closest('[data-reaction-chip]');
@@ -2037,13 +1874,13 @@
                     let rs = [];
                     try {
                         rs = JSON.parse(row?.dataset?.reactionSummary || '[]');
-                    } catch (e) {
+                    } catch {
                         rs = reactionSummaries.get(mid) || [];
                     }
                     if (mid) reactionSummaries.set(mid, toArraySummary(rs));
                     renderReactionsRow(row, reactionSummaries.get(mid) || []);
                 });
-            } catch (e) {}
+            } catch {}
 
             function appendDaySeparator(dayKey, label) {
                 if (!messagesEl || !dayKey || dayKey === lastDayKey) return;
@@ -2400,7 +2237,7 @@
                 const panel = document.getElementById('chatAttachPanel');
                 const reduceMotion = (() => {
                     try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
-                    catch (e) { return false; }
+                    catch { return false; }
                 })();
                 const DURATION_MS = 220;
 
@@ -2545,7 +2382,7 @@
             function waitMedia(el, eventName, timeoutMs) {
                 return new Promise((resolve, reject) => {
                     const t = setTimeout(() => {
-                        try { el.removeEventListener(eventName, on); } catch (e) {}
+                        try { el.removeEventListener(eventName, on); } catch {}
                         reject(new Error('timeout:' + eventName));
                     }, timeoutMs);
                     const on = () => {
@@ -2576,9 +2413,9 @@
                         try { video.currentTime = target; } catch (e) { /* ignore */ }
                         try {
                             await waitMedia(video, 'seeked', 8000);
-                        } catch (e) {
+                        } catch {
                             // Some browsers/devices don't fire seeked reliably for blobs.
-                            try { await waitMedia(video, 'loadeddata', 8000); } catch (e) {}
+                            try { await waitMedia(video, 'loadeddata', 8000); } catch {}
                         }
 
                         const w = video.videoWidth || 0;
@@ -2607,7 +2444,7 @@
                     } finally {
                         try { URL.revokeObjectURL(url); } catch (e) {}
                     }
-                } catch (e) {
+                } catch {
                     return null;
                 }
             }
@@ -2641,9 +2478,9 @@
                         if (!w || !h) return null;
                         return { width: w, height: h };
                     } finally {
-                        try { URL.revokeObjectURL(url); } catch (e) {}
+                        try { URL.revokeObjectURL(url); } catch {}
                     }
-                } catch (e) {
+                } catch {
                     return null;
                 }
             }
@@ -3406,7 +3243,7 @@
                     c?.textarea?.focus();
 
                     if (dictationActive) {
-                        try { recognition.stop(); } catch (e) {}
+                        try { recognition.stop(); } catch {}
                         setDictationUi(false);
                         dictationInterim = '';
                         return;
@@ -3417,7 +3254,7 @@
                     setDictationUi(true);
                     try {
                         recognition.start();
-                    } catch (e) {
+                    } catch {
                         setDictationUi(false);
                     }
                 });
@@ -3453,7 +3290,7 @@
                             await navigator.clipboard.writeText(url);
                             copyLink.textContent = 'Copié';
                             setTimeout(() => { copyLink.textContent = 'Copier le lien'; }, 1200);
-                        } catch (e) {
+                        } catch {
                             alert(url);
                         }
                         return;
@@ -3481,7 +3318,7 @@
                             await navigator.clipboard.writeText(txt);
                             copyTextBtn.textContent = 'Copié';
                             setTimeout(() => { copyTextBtn.textContent = 'Copier'; }, 1200);
-                        } catch (e) {
+                        } catch {
                             alert(txt);
                         }
                         return;
@@ -3494,7 +3331,7 @@
                     if (window.history.length > 1) {
                         window.history.back();
                     } else {
-                        window.location.href = String(bootstrap.dashboardUrl || '/');
+                        window.location.href = bootstrap.dashboardUrl;
                     }
                 });
             }
@@ -3528,13 +3365,13 @@
                     if (!ts) return false;
                     const ageMs = Date.now() - ts;
                     return ageMs < 1000 * 60 * 60 * 24 * 7; // 7 days
-                } catch (e) {
+                } catch {
                     return false;
                 }
             }
 
             function dismissNotifBanner() {
-                try { localStorage.setItem(NOTIF_DISMISS_KEY, String(Date.now())); } catch (e) {}
+                try { localStorage.setItem(NOTIF_DISMISS_KEY, String(Date.now())); } catch {}
                 if (notifBanner) notifBanner.classList.add('hidden');
             }
 
@@ -3595,7 +3432,7 @@
                     mediaVideo.classList.add('hidden');
                     mediaImg.src = '';
                     mediaImg.alt = '';
-                    try { mediaVideo.pause(); } catch (e) {}
+                    try { mediaVideo.pause(); } catch {}
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
                     mediaTitle.textContent = '';
@@ -3617,7 +3454,7 @@
                             const x = new URL(u, window.location.origin);
                             if (x.origin !== window.location.origin) return null;
                             return x.pathname + x.search + x.hash;
-                        } catch (e) {
+                        } catch {
                             return null;
                         }
                     };
@@ -3687,7 +3524,7 @@
                     mediaVideo.load();
                 } else {
                     mediaVideo.classList.add('hidden');
-                    try { mediaVideo.pause(); } catch (e) {}
+                    try { mediaVideo.pause(); } catch {}
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
                     mediaImg.classList.remove('hidden');
@@ -3737,9 +3574,12 @@
                 infoClose.addEventListener('click', () => setInfoOpen(false));
             }
 
+            };
+
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', start, { once: true });
             } else {
                 start();
             }
         })();
+    
