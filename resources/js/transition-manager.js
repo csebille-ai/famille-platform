@@ -191,6 +191,8 @@
 		return new Promise((r) => setTimeout(r, Math.max(0, duration)));
 	};
 
+	const delay = (ms) => new Promise((r) => setTimeout(r, Math.max(0, Number(ms || 0))));
+
 	const makePremiumOverlay = ({ thumbSrc, hdSrc, backdropColor = '#020617', radiusPx = 0 } = {}) => {
 		const root = getOverlayRoot();
 		root.innerHTML = '';
@@ -224,7 +226,8 @@
 		frame.style.borderRadius = `${Math.max(0, Number(radiusPx || 16))}px`;
 		frame.style.overflow = 'hidden';
 		frame.style.background = 'rgba(2,6,23,0.35)';
-		frame.style.transform = 'scale(0.98)';
+		// Keep micro-scale extremely subtle; big scale reads as "zoom".
+		frame.style.transform = 'scale(0.992)';
 		frame.style.willChange = 'transform, opacity';
 		frame.style.backfaceVisibility = 'hidden';
 		frame.style.pointerEvents = 'none';
@@ -596,10 +599,11 @@
 		const backdropColor = getBackdropColorForCurrentPage();
 		const overlay = makePremiumOverlay({ thumbSrc, backdropColor, radiusPx: 0 });
 
-		const openDur = isLowEnd() ? 150 : 200;
+		const startAt = now();
+		const openDur = isLowEnd() ? 170 : 220;
 		await Promise.all([
 			waapi(overlay.backdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-			waapi(overlay.frame, [{ transform: 'scale(0.98)' }, { transform: 'scale(1)' }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+			waapi(overlay.frame, [{ transform: 'scale(0.992)' }, { transform: 'scale(1)' }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
 		]);
 
 		// Find the real destination image (HD) and use it for the crossfade.
@@ -626,11 +630,16 @@
 			}
 		} catch {}
 
-		const fadeDur = isLowEnd() ? 120 : 160;
+		// Avoid a "pop" when HD is already cached: enforce a minimal delay so the eye reads a single motion.
+		const minCrossfadeDelay = isLowEnd() ? 80 : 110;
+		const elapsed = now() - startAt;
+		if (elapsed < minCrossfadeDelay) await delay(minCrossfadeDelay - elapsed);
+
+		const fadeDur = isLowEnd() ? 140 : 180;
 		if (overlay.hd && overlay.hd.src) {
 			await Promise.all([
-				waapi(overlay.hd, [{ opacity: 0 }, { opacity: 1 }], { duration: fadeDur, easing: 'ease' }),
-				waapi(overlay.thumb, [{ opacity: 1 }, { opacity: 0 }], { duration: fadeDur, easing: 'ease' }),
+				waapi(overlay.hd, [{ opacity: 0 }, { opacity: 1 }], { duration: fadeDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+				waapi(overlay.thumb, [{ opacity: 1 }, { opacity: 0 }], { duration: fadeDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
 			]);
 		}
 
@@ -638,6 +647,13 @@
 		if (destImg) {
 			try { await waitForImageReady(destImg, isLowEnd() ? 2200 : 4200); } catch {}
 		}
+
+		// Settle: fade the overlay away very quickly so the handoff to the real DOM image is imperceptible.
+		const settleDur = isLowEnd() ? 90 : 120;
+		await Promise.all([
+			waapi(overlay.frame, [{ opacity: 1 }, { opacity: 0 }], { duration: settleDur, easing: 'linear' }),
+			waapi(overlay.backdrop, [{ opacity: 1 }, { opacity: 0 }], { duration: settleDur, easing: 'linear' }),
+		]);
 
 		try { overlay.root.innerHTML = ''; } catch {}
 		document.documentElement.classList.remove('tm-animating');
@@ -664,10 +680,10 @@
 		const enteringViewer = href.includes('/media/photos/');
 		const backdropColor = enteringViewer ? '#020617' : getBackdropColorForCurrentPage();
 		const overlay = makePremiumOverlay({ thumbSrc: src, backdropColor, radiusPx: 0 });
-		const duration = isLowEnd() ? 150 : 200;
+		const duration = isLowEnd() ? 170 : 220;
 		await Promise.all([
 			waapi(overlay.backdrop, [{ opacity: 0 }, { opacity: 1 }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-			waapi(overlay.frame, [{ transform: 'scale(0.98)' }, { transform: 'scale(1)' }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+			waapi(overlay.frame, [{ transform: 'scale(0.992)' }, { transform: 'scale(1)' }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
 		]);
 
 		// Pending only needs: id + thumbSrc + ts. The destination page will handle the HD crossfade.
@@ -726,10 +742,10 @@
 			}
 		} catch {}
 
-		const duration = isLowEnd() ? 150 : 200;
+		const duration = isLowEnd() ? 160 : 210;
 		await Promise.all([
 			waapi(overlay.backdrop, [{ opacity: 1 }, { opacity: 0 }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-			waapi(overlay.frame, [{ transform: 'scale(1)' }, { transform: 'scale(0.98)' }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+			waapi(overlay.frame, [{ transform: 'scale(1)' }, { transform: 'scale(0.992)' }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
 		]);
 		try { overlay.root.innerHTML = ''; } catch {}
 		clearPending();
