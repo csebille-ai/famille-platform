@@ -36,12 +36,15 @@
 <x-app-layout hideNavigation="1" pageBgClass="bg-slate-950">
     <div
         id="image-viewer"
-        class="min-h-[100svh] relative viewer-ui-hidden"
+        class="min-h-[100svh] relative overflow-hidden viewer-ui-hidden"
         data-prev-url="{{ $prevUrl }}"
         data-next-url="{{ $nextUrl }}"
         data-back-url="{{ $backUrl }}"
     >
         <style>
+            /* Ensure the viewer never inherits the app's light "paper" background. */
+            html, body { background: #020617 !important; }
+
             /* Viewer UI is an overlay: it must never reflow the image. */
             #image-viewer.viewer-ui-hidden [data-viewer-ui] {
                 opacity: 0;
@@ -68,6 +71,23 @@
             #image-viewer-stage {
                 isolation: isolate;
             }
+
+            /* Loading: keep it subtle and avoid white flashes. */
+            #image-viewer-loading {
+                opacity: 1;
+                transition: opacity 220ms ease;
+            }
+            #image-viewer[data-loaded="1"] #image-viewer-loading {
+                opacity: 0;
+                pointer-events: none;
+            }
+            #image-viewer-img {
+                opacity: 0;
+                transition: opacity 220ms ease;
+            }
+            #image-viewer[data-loaded="1"] #image-viewer-img {
+                opacity: 1;
+            }
         </style>
 
         <div
@@ -87,11 +107,11 @@
         >
             <a
                 href="{{ $backUrl }}"
-                class="sr-only"
+                class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900/70 text-white"
                 aria-label="Retour"
                 data-tm-back="1"
             >
-                Retour
+                <i class="ph ph-arrow-left" aria-hidden="true"></i>
             </a>
 
             <div class="min-w-0 flex-1 text-right">
@@ -105,7 +125,17 @@
                         </div>
                     </div>
 
-                    <div class="relative">
+                    <div class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            id="image-viewer-fit-btn"
+                            class="inline-flex items-center justify-center h-10 px-3 rounded-xl bg-slate-900/70 text-white text-xs font-semibold"
+                            aria-label="Changer le mode d’affichage"
+                        >
+                            Ajuster
+                        </button>
+
+                        <div class="relative">
                         <button
                             type="button"
                             id="image-viewer-details-btn"
@@ -131,25 +161,61 @@
                                 </div>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div
-            id="image-viewer-stage"
-            class="absolute inset-0 flex items-center justify-center"
-            style="z-index: 0; padding: calc(env(safe-area-inset-top) + 0.75rem) 0.5rem calc(env(safe-area-inset-bottom) + 0.75rem) 0.5rem"
+            id="image-viewer-footer"
+            data-viewer-ui
+            aria-hidden="true"
+            class="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
+            style="padding: 0 1rem calc(env(safe-area-inset-bottom) + 0.75rem) 1rem"
         >
+            <div class="pointer-events-none" style="background: linear-gradient(to top, rgba(2,6,23,0.86), rgba(2,6,23,0)); height: 5.5rem; position: absolute; inset: auto 0 0 0;"></div>
+            <div class="relative pointer-events-none">
+                <div class="text-[12px] text-white/75">
+                    {{ $node->uploader?->name ?? 'Quelqu\’un' }}
+                    <span class="text-white/35">·</span>
+                    {{ $node->created_at?->diffForHumans() }}
+                </div>
+            </div>
+        </div>
+
+        <div
+            id="image-viewer-stage"
+            class="absolute inset-0"
+            style="z-index: 0; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0"
+        >
+            <div class="absolute inset-0">
+                <img
+                    id="image-viewer-bg"
+                    src="{{ route('images.view', $node) }}"
+                    alt=""
+                    class="absolute inset-0 w-full h-full object-cover"
+                    style="filter: blur(28px); transform: scale(1.08); opacity: 0.32;"
+                    aria-hidden="true"
+                    draggable="false"
+                />
+                <div class="absolute inset-0" style="background: rgba(2,6,23,0.78);"></div>
+            </div>
+
+            <div id="image-viewer-loading" class="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+                <div class="w-[min(92vw,740px)] aspect-[4/3] rounded-2xl" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);"></div>
+            </div>
+
+            <div class="absolute inset-0 flex items-center justify-center">
             <img
                 id="image-viewer-img"
                 src="{{ route('images.view', $node) }}"
                 alt="{{ $node->name }}"
                 class="w-full h-full max-w-full object-contain select-none"
-                style="max-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem)"
                 draggable="false"
                 data-shared-id="media:{{ (int) $node->id }}"
             />
+            </div>
         </div>
 
         <script>
@@ -168,6 +234,8 @@
                 const backLink = root.querySelector('a[data-tm-back="1"]');
                 const stage = document.getElementById('image-viewer-stage');
                 const img = document.getElementById('image-viewer-img') || root.querySelector('img[data-shared-id]');
+                const bg = document.getElementById('image-viewer-bg');
+                const fitBtn = document.getElementById('image-viewer-fit-btn');
 
                 let headerDisplay = 'flex';
                 if (header) {
@@ -187,6 +255,28 @@
                     try {
                         img.style.touchAction = 'none';
                         img.style.transformOrigin = 'center center';
+                    } catch {}
+                }
+
+                // Mark loaded (main image). Also helps prevent any brief "white" flash.
+                const markLoaded = async () => {
+                    if (!img) return;
+                    try {
+                        if (typeof img.decode === 'function') {
+                            await img.decode().catch(() => {});
+                        }
+                    } catch {}
+                    try { root.dataset.loaded = '1'; } catch {}
+                };
+
+                if (img) {
+                    try {
+                        if (img.complete && (img.naturalWidth || 0) > 0) {
+                            markLoaded();
+                        } else {
+                            img.addEventListener('load', () => markLoaded(), { once: true });
+                            img.addEventListener('error', () => { try { root.dataset.loaded = '1'; } catch {} }, { once: true });
+                        }
                     } catch {}
                 }
 
@@ -257,6 +347,25 @@
                 });
 
                 // --- True zoom (pinch + pan + double tap) ---
+                let fitMode = 'contain';
+
+                const readFitMode = () => {
+                    try {
+                        const raw = String(window.localStorage.getItem('famille_viewer_fit') || '').trim();
+                        return raw === 'cover' ? 'cover' : 'contain';
+                    } catch {
+                        return 'contain';
+                    }
+                };
+
+                const writeFitMode = (mode) => {
+                    try {
+                        window.localStorage.setItem('famille_viewer_fit', mode === 'cover' ? 'cover' : 'contain');
+                    } catch {
+                        // ignore
+                    }
+                };
+
                 const zoom = {
                     scale: 1,
                     tx: 0,
@@ -286,18 +395,30 @@
                     return { x: r.left, y: r.top, w: r.width, h: r.height };
                 };
 
-                const getContainBaseSize = () => {
+                const getBaseSize = () => {
                     const sr = getStageRect();
                     const sw = Math.max(1, sr.w);
                     const sh = Math.max(1, sr.h);
 
-                    let ar = 1;
+                    let nw = 0;
+                    let nh = 0;
                     try {
-                        const nw = Number(img?.naturalWidth || 0);
-                        const nh = Number(img?.naturalHeight || 0);
-                        if (nw > 0 && nh > 0) ar = nw / nh;
+                        nw = Number(img?.naturalWidth || 0);
+                        nh = Number(img?.naturalHeight || 0);
                     } catch {}
-                    if (!Number.isFinite(ar) || ar <= 0.05) ar = 1;
+
+                    if (!(nw > 0 && nh > 0)) {
+                        // Unknown intrinsic size: fall back to stage.
+                        return { w: sw, h: sh, stageW: sw, stageH: sh };
+                    }
+
+                    const ar = nw / nh;
+                    if (!Number.isFinite(ar) || ar <= 0.05) return { w: sw, h: sh, stageW: sw, stageH: sh };
+
+                    if (fitMode === 'cover') {
+                        const s = Math.max(sw / nw, sh / nh);
+                        return { w: nw * s, h: nh * s, stageW: sw, stageH: sh };
+                    }
 
                     let w = sw;
                     let h = w / ar;
@@ -309,7 +430,7 @@
                 };
 
                 const clampPan = () => {
-                    const base = getContainBaseSize();
+                    const base = getBaseSize();
                     const scaledW = base.w * zoom.scale;
                     const scaledH = base.h * zoom.scale;
                     const maxX = Math.max(0, (scaledW - base.stageW) / 2);
@@ -362,6 +483,33 @@
                     zoom.ty = 0;
                     applyTransform();
                 };
+
+                const applyFitMode = (mode) => {
+                    fitMode = mode === 'cover' ? 'cover' : 'contain';
+                    if (img) {
+                        try { img.style.objectFit = fitMode; } catch {}
+                    }
+                    if (fitBtn) {
+                        fitBtn.textContent = fitMode === 'cover' ? 'Remplir' : 'Ajuster';
+                    }
+                    resetZoom();
+                    applyTransform();
+                };
+
+                fitMode = readFitMode();
+                applyFitMode(fitMode);
+
+                if (fitBtn) {
+                    fitBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        closeDetails();
+                        const next = fitMode === 'cover' ? 'contain' : 'cover';
+                        writeFitMode(next);
+                        applyFitMode(next);
+                        setHeaderVisible(true);
+                    });
+                }
 
                 // --- Gestures ---
                 // Track pointers with start + current position so we can detect swipes correctly.
