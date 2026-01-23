@@ -191,7 +191,7 @@
 		return new Promise((r) => setTimeout(r, Math.max(0, duration)));
 	};
 
-	const makePremiumOverlay = ({ thumbSrc, hdSrc, backdropColor = '#020617', radiusPx = 16 } = {}) => {
+	const makePremiumOverlay = ({ thumbSrc, hdSrc, backdropColor = '#020617', radiusPx = 0 } = {}) => {
 		const root = getOverlayRoot();
 		root.innerHTML = '';
 		try { root.style.pointerEvents = 'auto'; } catch {}
@@ -213,19 +213,14 @@
 		const stage = document.createElement('div');
 		stage.style.position = 'absolute';
 		stage.style.inset = '0';
-		stage.style.display = 'flex';
-		stage.style.alignItems = 'center';
-		stage.style.justifyContent = 'center';
-		stage.style.padding = 'min(3.5vh, 24px) min(3.5vw, 18px)';
+		stage.style.display = 'block';
+		stage.style.padding = '0';
 		stage.style.pointerEvents = 'none';
 		overlay.appendChild(stage);
 
 		const frame = document.createElement('div');
-		frame.style.position = 'relative';
-		frame.style.width = '100%';
-		frame.style.height = '100%';
-		frame.style.maxWidth = 'min(94vw, 1100px)';
-		frame.style.maxHeight = 'min(94vh, 1100px)';
+		frame.style.position = 'absolute';
+		frame.style.inset = '0';
 		frame.style.borderRadius = `${Math.max(0, Number(radiusPx || 16))}px`;
 		frame.style.overflow = 'hidden';
 		frame.style.background = 'rgba(2,6,23,0.35)';
@@ -599,7 +594,7 @@
 		document.documentElement.classList.add('tm-reveal');
 
 		const backdropColor = getBackdropColorForCurrentPage();
-		const overlay = makePremiumOverlay({ thumbSrc, backdropColor, radiusPx: 16 });
+		const overlay = makePremiumOverlay({ thumbSrc, backdropColor, radiusPx: 0 });
 
 		const openDur = isLowEnd() ? 150 : 200;
 		await Promise.all([
@@ -613,6 +608,13 @@
 			? (destEl.tagName === 'IMG' ? destEl : (destEl.querySelector ? destEl.querySelector('img') : null))
 			: null;
 		const hdSrc = String(destImg?.currentSrc || destImg?.src || '').trim();
+		try {
+			if (destImg) {
+				const fit = getObjectFitFrom(destImg, 'contain');
+				overlay.thumb.style.objectFit = fit;
+				overlay.hd.style.objectFit = fit;
+			}
+		} catch {}
 		if (hdSrc) {
 			try { overlay.hd.src = hdSrc; } catch {}
 		}
@@ -661,7 +663,7 @@
 		document.documentElement.classList.add('tm-reveal');
 		const enteringViewer = href.includes('/media/photos/');
 		const backdropColor = enteringViewer ? '#020617' : getBackdropColorForCurrentPage();
-		const overlay = makePremiumOverlay({ thumbSrc: src, backdropColor, radiusPx: 16 });
+		const overlay = makePremiumOverlay({ thumbSrc: src, backdropColor, radiusPx: 0 });
 		const duration = isLowEnd() ? 150 : 200;
 		await Promise.all([
 			waapi(overlay.backdrop, [{ opacity: 0 }, { opacity: 1 }], { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
@@ -702,8 +704,27 @@
 		document.documentElement.classList.add('tm-reveal');
 		const src = String(imageEl.currentSrc || imageEl.src || '').trim();
 		const backdropColor = getBackdropColorForCurrentPage();
-		const overlay = makePremiumOverlay({ thumbSrc: src, hdSrc: src, backdropColor, radiusPx: 16 });
+		const overlay = makePremiumOverlay({ thumbSrc: src, hdSrc: src, backdropColor, radiusPx: 0 });
 		try { overlay.hd.style.opacity = '1'; overlay.thumb.style.opacity = '0'; } catch {}
+		// Match the real viewer rendering so closing doesn't read as a zoom jump.
+		try {
+			const cs = window.getComputedStyle(imageEl);
+			const fit = String(cs.objectFit || '').trim();
+			if (fit) {
+				overlay.hd.style.objectFit = fit;
+				overlay.thumb.style.objectFit = fit;
+			}
+			const origin = String(cs.transformOrigin || '').trim();
+			if (origin) {
+				overlay.hd.style.transformOrigin = origin;
+				overlay.thumb.style.transformOrigin = origin;
+			}
+			const t = String(cs.transform || '').trim();
+			if (t && t !== 'none') {
+				overlay.hd.style.transform = t;
+				overlay.thumb.style.transform = t;
+			}
+		} catch {}
 
 		const duration = isLowEnd() ? 150 : 200;
 		await Promise.all([

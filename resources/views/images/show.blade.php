@@ -443,6 +443,36 @@
                     return { w, h, stageW: sw, stageH: sh };
                 };
 
+                const recomputeZoomMax = () => {
+                    // Goal: allow reaching (at least) 1:1 pixel size of the HD image
+                    // when the image is displayed smaller than its natural dimensions.
+                    const base = getBaseSize();
+                    const baseW = Math.max(1, Number(base?.w || 1));
+                    const baseH = Math.max(1, Number(base?.h || 1));
+
+                    let nw = 0;
+                    let nh = 0;
+                    try {
+                        nw = Number(img?.naturalWidth || 0);
+                        nh = Number(img?.naturalHeight || 0);
+                    } catch {}
+
+                    let targetMax = 3.25;
+                    if (nw > 0 && nh > 0) {
+                        const oneToOne = Math.max(nw / baseW, nh / baseH);
+                        if (Number.isFinite(oneToOne) && oneToOne > 1) targetMax = Math.max(targetMax, oneToOne);
+                    }
+
+                    // Safety cap for performance/memory.
+                    const cap = 8;
+                    zoom.max = clamp(targetMax, 3.25, cap);
+
+                    if (zoom.scale > zoom.max) {
+                        zoom.scale = zoom.max;
+                        applyTransform();
+                    }
+                };
+
                 const clampPan = () => {
                     const base = getBaseSize();
                     const scaledW = base.w * zoom.scale;
@@ -506,12 +536,24 @@
                     if (fitBtn) {
                         fitBtn.textContent = fitMode === 'cover' ? 'Remplir' : 'Ajuster';
                     }
+                    recomputeZoomMax();
                     resetZoom();
                     applyTransform();
                 };
 
                 fitMode = readFitMode();
                 applyFitMode(fitMode);
+
+                // Recompute zoom ceiling when the image becomes available and on viewport changes.
+                if (img) {
+                    try {
+                        img.addEventListener('load', () => recomputeZoomMax(), { once: false });
+                    } catch {}
+                }
+                window.addEventListener('resize', () => {
+                    recomputeZoomMax();
+                    applyTransform();
+                }, { passive: true });
 
                 if (fitBtn) {
                     fitBtn.addEventListener('click', (e) => {
