@@ -145,7 +145,7 @@
                 id="image-viewer-img"
                 src="{{ route('images.view', $node) }}"
                 alt="{{ $node->name }}"
-                class="max-w-full object-contain select-none"
+                class="w-full h-full max-w-full object-contain select-none"
                 style="max-height: calc(100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1.5rem)"
                 draggable="false"
                 data-shared-id="media:{{ (int) $node->id }}"
