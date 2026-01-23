@@ -106,9 +106,29 @@
             <div class="mx-auto w-fit rounded-full bg-slate-900 text-white px-3 py-1.5 text-xs font-semibold shadow-lg">Copié</div>
         </div>
 
-        <div id="chatReactionsPicker" class="fixed inset-0 z-[80] hidden" aria-hidden="true">
-            <div id="chatReactionsPickerBackdrop" class="absolute inset-0"></div>
-            <div id="chatReactionsPickerPanel" class="absolute rounded-2xl border border-slate-200 bg-white shadow-2xl px-2 py-2">
+        <div id="chatReactionBar" class="fixed inset-0 z-[78] hidden pointer-events-none" aria-hidden="true">
+            <div id="chatReactionBarPanel" class="absolute pointer-events-auto rounded-2xl border border-slate-200 bg-white shadow-2xl px-2 py-1.5">
+                <div class="flex items-center gap-1.5">
+                    @foreach(\App\Services\ChatReactions::BASE_EMOJIS as $e)
+                        <button type="button" class="w-10 h-10 rounded-xl border border-transparent hover:bg-[color:rgba(14,165,160,0.10)] text-xl" data-reaction-bar-pick="{{ $e }}" aria-label="Réagir {{ $e }}">{{ $e }}</button>
+                    @endforeach
+                    <button type="button" class="w-10 h-10 rounded-xl hover:bg-[color:rgba(14,165,160,0.10)] text-sm font-bold text-slate-700" data-reaction-bar-more aria-label="Plus">＋</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chatActionMenu" class="fixed inset-0 z-[79] hidden pointer-events-none" aria-hidden="true">
+            <div id="chatActionMenuPanel" class="absolute pointer-events-auto w-[min(92vw,280px)] rounded-2xl border border-slate-200 bg-white shadow-2xl p-1">
+                <button type="button" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-action-menu="copy">Copier</button>
+                <button type="button" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-action-menu="reply">Répondre</button>
+                <div class="h-px bg-slate-100 my-1"></div>
+                <button type="button" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-action-menu="delete_me">Supprimer pour moi</button>
+                <button type="button" id="chatActionDeleteAll" class="hidden w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50" data-action-menu="delete_all">Supprimer pour tout le monde</button>
+            </div>
+        </div>
+
+        <div id="chatReactionsPicker" class="fixed inset-0 z-[80] hidden pointer-events-none" aria-hidden="true">
+            <div id="chatReactionsPickerPanel" class="absolute pointer-events-auto rounded-2xl border border-slate-200 bg-white shadow-2xl px-2 py-2">
                 <div class="flex items-center gap-1.5">
                     @foreach(\App\Services\ChatReactions::BASE_EMOJIS as $e)
                         <button type="button" class="w-10 h-10 rounded-xl hover:bg-[color:rgba(14,165,160,0.10)] text-xl" data-reaction-pick="{{ $e }}" aria-label="Réagir {{ $e }}">{{ $e }}</button>
@@ -122,17 +142,11 @@
                         @endforeach
                     </div>
                 </div>
-
-                <div id="chatReactionsActions" class="mt-2 pt-2 border-t border-slate-100 space-y-1">
-                    <button type="button" id="chatMsgDeleteMe" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-message-action="delete_me">Supprimer pour moi</button>
-                    <button type="button" id="chatMsgDeleteAll" class="hidden w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50" data-message-action="delete_all">Supprimer pour tout le monde</button>
-                </div>
             </div>
         </div>
 
-        <div id="chatReactionUsersPopover" class="fixed inset-0 z-[85] hidden" aria-hidden="true">
-            <div id="chatReactionUsersBackdrop" class="absolute inset-0"></div>
-            <div id="chatReactionUsersPanel" class="absolute w-[min(92vw,340px)] rounded-2xl border border-slate-200 bg-white shadow-2xl p-3">
+        <div id="chatReactionUsersPopover" class="fixed inset-0 z-[85] hidden pointer-events-none" aria-hidden="true">
+            <div id="chatReactionUsersPanel" class="absolute pointer-events-auto w-[min(92vw,340px)] rounded-2xl border border-slate-200 bg-white shadow-2xl p-3">
                 <div class="flex items-center justify-between gap-3">
                     <div id="chatReactionUsersHeader" class="text-sm font-semibold text-slate-900"></div>
                     <button type="button" id="chatReactionUsersClose" class="w-8 h-8 rounded-full inline-flex items-center justify-center text-slate-600 hover:bg-[color:rgba(14,165,160,0.10)]" aria-label="Fermer" title="Fermer">✕</button>

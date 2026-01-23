@@ -1593,18 +1593,29 @@
 
             const reactionsPicker = {
                 root: document.getElementById('chatReactionsPicker'),
-                backdrop: document.getElementById('chatReactionsPickerBackdrop'),
                 panel: document.getElementById('chatReactionsPickerPanel'),
                 more: document.getElementById('chatReactionsMore'),
-                deleteMeBtn: document.getElementById('chatMsgDeleteMe'),
-                deleteAllBtn: document.getElementById('chatMsgDeleteAll'),
+                open: false,
+                messageId: 0,
+            };
+
+            const reactionBar = {
+                root: document.getElementById('chatReactionBar'),
+                panel: document.getElementById('chatReactionBarPanel'),
+                open: false,
+                messageId: 0,
+            };
+
+            const actionMenu = {
+                root: document.getElementById('chatActionMenu'),
+                panel: document.getElementById('chatActionMenuPanel'),
+                deleteAllBtn: document.getElementById('chatActionDeleteAll'),
                 open: false,
                 messageId: 0,
             };
 
             const reactionUsersPopover = {
                 root: document.getElementById('chatReactionUsersPopover'),
-                backdrop: document.getElementById('chatReactionUsersBackdrop'),
                 panel: document.getElementById('chatReactionUsersPanel'),
                 closeBtn: document.getElementById('chatReactionUsersClose'),
                 header: document.getElementById('chatReactionUsersHeader'),
@@ -1632,16 +1643,110 @@
                 reactionUsersPopover.root?.classList.add('hidden');
             }
 
-            function positionReactionUsersPopover(anchorRect) {
-                if (!reactionUsersPopover.panel || !anchorRect) return;
+            function closeReactionsPicker() {
+                reactionsPicker.open = false;
+                reactionsPicker.messageId = 0;
+                reactionsPicker.root?.classList.add('hidden');
+            }
+
+            function closeReactionBar() {
+                reactionBar.open = false;
+                reactionBar.messageId = 0;
+                reactionBar.root?.classList.add('hidden');
+            }
+
+            function closeActionMenu() {
+                actionMenu.open = false;
+                actionMenu.messageId = 0;
+                actionMenu.root?.classList.add('hidden');
+            }
+
+            function closeAllMessagePopovers() {
+                closeReactionUsersPopover();
+                closeReactionsPicker();
+                closeReactionBar();
+                closeActionMenu();
+            }
+
+            function isAnyMessagePopoverOpen() {
+                return !!(reactionUsersPopover.open || reactionsPicker.open || reactionBar.open || actionMenu.open);
+            }
+
+            function rectFromPoint(x, y) {
+                const px = Number(x || 0);
+                const py = Number(y || 0);
+                return {
+                    left: px,
+                    right: px,
+                    top: py,
+                    bottom: py,
+                    width: 0,
+                    height: 0,
+                };
+            }
+
+            function getMessagePlainText(messageId) {
+                const row = rowForMessageId(messageId);
+                const bubble = bubbleForRow(row);
+                if (!row || !bubble) return '';
+                if (row?.dataset?.deleted === '1') return '';
+
+                try {
+                    const clone = bubble.cloneNode(true);
+                    clone.querySelectorAll('button, [data-message-menu]').forEach((el) => el.remove());
+                    const raw = String(clone.textContent || '');
+                    return raw.replace(/\s+/g, ' ').trim();
+                } catch {
+                    const raw = String(bubble.textContent || '');
+                    return raw.replace(/\s+/g, ' ').trim();
+                }
+            }
+
+            function appendQuoteToComposer(messageId) {
+                const row = rowForMessageId(messageId);
+                const author = String(row?.dataset?.authorName || '').trim();
+                const body = getMessagePlainText(messageId);
+                if (!body) return;
+
+                const quote = `> ${author ? (author + ': ') : ''}${body}`;
+                const c = getActiveComposer();
+                const ta = c?.textarea;
+                if (!ta) return;
+                const prev = String(ta.value || '');
+                const sep = prev && !prev.endsWith('\n') ? '\n' : '';
+                ta.value = prev + sep + quote + '\n';
+                ta.dispatchEvent(new Event('input', { bubbles: true }));
+                try {
+                    ta.focus();
+                    const pos = ta.value.length;
+                    ta.setSelectionRange(pos, pos);
+                } catch {}
+            }
+
+            function rowForMessageId(messageId) {
+                const id = Number(messageId || 0);
+                if (!id) return null;
+                return messagesEl?.querySelector(`[data-message-id="${id}"]`) || null;
+            }
+
+            function bubbleForRow(row) {
+                return row?.querySelector?.('[data-bubble]') || null;
+            }
+
+            function positionPanelNearRect(panelEl, anchorRect, preferAbove = true) {
+                if (!panelEl || !anchorRect) return;
 
                 const pad = 10;
-                reactionUsersPopover.panel.style.left = '0px';
-                reactionUsersPopover.panel.style.top = '0px';
-                const rect = reactionUsersPopover.panel.getBoundingClientRect();
+                panelEl.style.left = '0px';
+                panelEl.style.top = '0px';
+                const rect = panelEl.getBoundingClientRect();
 
-                const preferAbove = anchorRect.top > (rect.height + 18);
-                const top = preferAbove
+                const canAbove = anchorRect.top > (rect.height + 18);
+                const canBelow = (window.innerHeight - anchorRect.bottom) > (rect.height + 18);
+
+                const useAbove = preferAbove ? canAbove || !canBelow : (!canBelow && canAbove);
+
+                const top = useAbove
                     ? Math.max(pad, Math.min(anchorRect.top - rect.height - 10, window.innerHeight - rect.height - pad))
                     : Math.max(pad, Math.min(anchorRect.bottom + 10, window.innerHeight - rect.height - pad));
 
@@ -1650,8 +1755,79 @@
                     Math.min(anchorRect.left + (anchorRect.width / 2) - (rect.width / 2), window.innerWidth - rect.width - pad)
                 );
 
-                reactionUsersPopover.panel.style.left = `${left}px`;
-                reactionUsersPopover.panel.style.top = `${top}px`;
+                panelEl.style.left = `${left}px`;
+                panelEl.style.top = `${top}px`;
+            }
+
+            function syncReactionBarSelection(messageId) {
+                const id = Number(messageId || 0);
+                if (!id || !reactionBar.panel) return;
+                const summary = reactionSummaries.get(id) || [];
+                const reacted = new Set((Array.isArray(summary) ? summary : []).filter(r => r?.reacted_by_me).map(r => String(r?.emoji || '').trim()));
+
+                reactionBar.panel.querySelectorAll('[data-reaction-bar-pick]').forEach((btn) => {
+                    const emoji = String(btn?.getAttribute('data-reaction-bar-pick') || '').trim();
+                    const on = emoji && reacted.has(emoji);
+                    btn.classList.toggle('border-teal-300', on);
+                    btn.classList.toggle('bg-teal-50', on);
+                    btn.classList.toggle('text-teal-800', on);
+                    btn.classList.toggle('border-transparent', !on);
+                });
+            }
+
+            function openReactionBarForMessage(messageId, anchorRect) {
+                const id = Number(messageId || 0);
+                if (!id || !reactionBar.root || !reactionBar.panel) return;
+
+                const row = rowForMessageId(id);
+                if (row?.dataset?.deleted === '1') return;
+
+                if (reactionBar.open && reactionBar.messageId === id) {
+                    closeReactionBar();
+                    return;
+                }
+
+                closeActionMenu();
+                closeReactionsPicker();
+                closeReactionUsersPopover();
+
+                reactionBar.open = true;
+                reactionBar.messageId = id;
+                reactionBar.root.classList.remove('hidden');
+                positionPanelNearRect(reactionBar.panel, anchorRect, true);
+                syncReactionBarSelection(id);
+            }
+
+            function openActionMenuForMessage(messageId, anchorRect) {
+                const id = Number(messageId || 0);
+                if (!id || !actionMenu.root || !actionMenu.panel) return;
+
+                const row = rowForMessageId(id);
+                if (row?.dataset?.deleted === '1') return;
+
+                if (actionMenu.open && actionMenu.messageId === id) {
+                    closeActionMenu();
+                    return;
+                }
+
+                closeReactionBar();
+                closeReactionsPicker();
+                closeReactionUsersPopover();
+
+                actionMenu.open = true;
+                actionMenu.messageId = id;
+                actionMenu.root.classList.remove('hidden');
+
+                const canDeleteAll = row && String(row.dataset.canDelete || '0') === '1';
+                actionMenu.deleteAllBtn?.classList.toggle('hidden', !canDeleteAll);
+
+                positionPanelNearRect(actionMenu.panel, anchorRect, false);
+            }
+
+            function positionReactionUsersPopover(anchorRect) {
+                if (!reactionUsersPopover.panel || !anchorRect) return;
+
+                positionPanelNearRect(reactionUsersPopover.panel, anchorRect, true);
             }
 
             function renderReactionUsersPopoverLoading(emoji) {
@@ -1799,6 +1975,10 @@
                     return;
                 }
 
+                closeReactionBar();
+                closeActionMenu();
+                closeReactionsPicker();
+
                 reactionUsersPopover.open = true;
                 reactionUsersPopover.messageId = id;
                 reactionUsersPopover.emoji = e;
@@ -1827,11 +2007,13 @@
                     return;
                 }
 
+                closeReactionBar();
+                closeActionMenu();
+                closeReactionUsersPopover();
+
                 reactionsPicker.messageId = id;
                 reactionsPicker.open = true;
                 reactionsPicker.more?.classList.add('hidden');
-                const isOwner = row && currentUserId && Number(row.dataset.userId || 0) === Number(currentUserId);
-                reactionsPicker.deleteAllBtn?.classList.toggle('hidden', !isOwner);
                 reactionsPicker.root.classList.remove('hidden');
 
                 const pad = 10;
@@ -1846,21 +2028,6 @@
                 reactionsPicker.panel.style.top = `${top}px`;
             }
 
-            function closeReactionsPicker() {
-                reactionsPicker.open = false;
-                reactionsPicker.messageId = 0;
-                reactionsPicker.root?.classList.add('hidden');
-            }
-
-            reactionsPicker.backdrop?.addEventListener('click', closeReactionsPicker);
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    closeReactionsPicker();
-                    closeReactionUsersPopover();
-                }
-            });
-
-            reactionUsersPopover.backdrop?.addEventListener('click', closeReactionUsersPopover);
             reactionUsersPopover.closeBtn?.addEventListener('click', closeReactionUsersPopover);
 
             async function postToggleReaction(messageId, emoji) {
@@ -1891,48 +2058,6 @@
             }
 
             reactionsPicker.panel?.addEventListener('click', async (e) => {
-                const actionBtn = e.target?.closest('[data-message-action]');
-                const action = actionBtn?.getAttribute('data-message-action') || '';
-                if (action) {
-                    const mid = reactionsPicker.messageId;
-                    if (!mid) return;
-
-                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-                    const headers = {
-                        'Accept': 'application/json',
-                        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
-                    };
-
-                    if (action === 'delete_me') {
-                        const ok = confirm('Supprimer ce message pour vous ?');
-                        if (!ok) return;
-                        closeReactionsPicker();
-                        try {
-                            const resp = await fetch(`/chat/messages/${mid}/me`, { method: 'DELETE', headers, credentials: 'same-origin' });
-                            if (resp.ok) {
-                                const row = messagesEl?.querySelector(`[data-message-id="${mid}"]`);
-                                if (row) row.style.display = 'none';
-                            }
-                        } catch {}
-                        return;
-                    }
-
-                    if (action === 'delete_all') {
-                        const ok = confirm('Supprimer ce message pour tout le monde ?');
-                        if (!ok) return;
-                        closeReactionsPicker();
-                        try {
-                            const resp = await fetch(`/chat/messages/${mid}`, { method: 'DELETE', headers, credentials: 'same-origin' });
-                            if (resp.ok) {
-                                markMessageDeletedForAll(mid);
-                            }
-                        } catch {}
-                        return;
-                    }
-
-                    return;
-                }
-
                 const btn = e.target?.closest('[data-reaction-pick], [data-reaction-more]');
                 if (!btn) return;
                 if (btn.hasAttribute('data-reaction-more')) {
@@ -1957,6 +2082,92 @@
                 }
             });
 
+            reactionBar.panel?.addEventListener('click', async (e) => {
+                const btn = e.target?.closest('[data-reaction-bar-pick], [data-reaction-bar-more]');
+                if (!btn) return;
+                const mid = reactionBar.messageId;
+                if (!mid) return;
+
+                if (btn.hasAttribute('data-reaction-bar-more')) {
+                    const row = rowForMessageId(mid);
+                    const bubble = bubbleForRow(row);
+                    const rect = bubble ? bubble.getBoundingClientRect() : reactionBar.panel.getBoundingClientRect();
+                    closeReactionBar();
+                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
+                    return;
+                }
+
+                const emoji = String(btn.getAttribute('data-reaction-bar-pick') || '').trim();
+                if (!emoji) return;
+
+                const prev = reactionSummaries.get(mid) || [];
+                const optimistic = optimisticToggle(prev, emoji);
+                updateReactionSummary(mid, optimistic);
+                syncReactionBarSelection(mid);
+
+                try {
+                    const json = await postToggleReaction(mid, emoji);
+                    if (json?.reaction_summary) updateReactionSummary(mid, json.reaction_summary);
+                } catch {
+                    updateReactionSummary(mid, prev);
+                    syncReactionBarSelection(mid);
+                }
+            });
+
+            actionMenu.panel?.addEventListener('click', async (e) => {
+                const btn = e.target?.closest('[data-action-menu]');
+                if (!btn) return;
+                const action = String(btn.getAttribute('data-action-menu') || '').trim();
+                const mid = actionMenu.messageId;
+                if (!mid) return;
+
+                if (action === 'copy') {
+                    const txt = getMessagePlainText(mid);
+                    await copyToClipboard(txt);
+                    closeActionMenu();
+                    return;
+                }
+
+                if (action === 'reply') {
+                    closeActionMenu();
+                    appendQuoteToComposer(mid);
+                    return;
+                }
+
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                const headers = {
+                    'Accept': 'application/json',
+                    ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                };
+
+                if (action === 'delete_me') {
+                    const ok = confirm('Supprimer ce message pour vous ?');
+                    if (!ok) return;
+                    closeActionMenu();
+                    try {
+                        const resp = await fetch(`/chat/messages/${mid}/me`, { method: 'DELETE', headers, credentials: 'same-origin' });
+                        if (resp.ok) {
+                            const row = messagesEl?.querySelector(`[data-message-id="${mid}"]`);
+                            if (row) row.style.display = 'none';
+                        }
+                    } catch {}
+                    return;
+                }
+
+                if (action === 'delete_all') {
+                    const ok = confirm('Supprimer ce message pour tout le monde ?');
+                    if (!ok) return;
+                    closeActionMenu();
+                    try {
+                        const resp = await fetch(`/chat/messages/${mid}`, { method: 'DELETE', headers, credentials: 'same-origin' });
+                        if (resp.ok) {
+                            markMessageDeletedForAll(mid);
+                        }
+                    } catch {}
+                    return;
+                }
+            });
+
             
 
             // Bubble triggers: right-click (desktop) + long-press (mobile)
@@ -1966,7 +2177,7 @@
                 e.preventDefault();
                 const row = bubble.closest('[data-message-row]');
                 const mid = row?.dataset?.messageId;
-                openReactionsPicker(mid, e.clientX, e.clientY);
+                openActionMenuForMessage(mid, rectFromPoint(e.clientX, e.clientY));
             });
 
             let longPressTimer = null;
@@ -1982,7 +2193,7 @@
                     const row = bubble.closest('[data-message-row]');
                     const mid = row?.dataset?.messageId;
                     const rect = bubble.getBoundingClientRect();
-                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
+                    openActionMenuForMessage(mid, rect);
                 }, 480);
             });
 
@@ -2005,24 +2216,78 @@
             messagesEl?.addEventListener('pointerup', cancelLongPress);
             messagesEl?.addEventListener('pointercancel', cancelLongPress);
 
-            // Clicking reaction chips => open who reacted list
+            // Message clicks
             messagesEl?.addEventListener('click', (e) => {
+                const menuBtn = e.target?.closest('[data-message-menu]');
+                if (menuBtn) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const mid = menuBtn.getAttribute('data-message-id') || menuBtn.closest('[data-message-row]')?.dataset?.messageId;
+                    const rect = menuBtn.getBoundingClientRect();
+                    openActionMenuForMessage(mid, rect);
+                    return;
+                }
+
                 const trigger = e.target?.closest('[data-reaction-trigger]');
                 if (trigger) {
                     e.preventDefault();
                     e.stopPropagation();
                     const mid = trigger.getAttribute('data-message-id') || trigger.closest('[data-message-row]')?.dataset?.messageId;
-                    const rect = trigger.getBoundingClientRect();
-                    openReactionsPicker(mid, rect.left + rect.width / 2, rect.top);
+                    const row = trigger.closest('[data-message-row]') || rowForMessageId(mid);
+                    const bubble = bubbleForRow(row);
+                    const rect = bubble ? bubble.getBoundingClientRect() : trigger.getBoundingClientRect();
+                    openReactionBarForMessage(mid, rect);
                     return;
                 }
+
                 const chip = e.target?.closest('[data-reaction-chip]');
-                if (!chip) return;
-                const mid = chip.getAttribute('data-message-id') || chip.closest('[data-message-row]')?.dataset?.messageId;
-                const emoji = chip.getAttribute('data-emoji') || '';
-                const rect = chip.getBoundingClientRect();
-                openReactionUsersPopover(mid, emoji, rect);
+                if (chip) {
+                    const mid = chip.getAttribute('data-message-id') || chip.closest('[data-message-row]')?.dataset?.messageId;
+                    const emoji = chip.getAttribute('data-emoji') || '';
+                    const rect = chip.getBoundingClientRect();
+                    openReactionUsersPopover(mid, emoji, rect);
+                    return;
+                }
+
+                const bubble = e.target?.closest('[data-bubble]');
+                if (!bubble) return;
+
+                // Avoid stealing clicks from interactive elements inside bubbles.
+                if (e.target?.closest('a, button, input, textarea, select, [role="button"], [data-chat-media-open]')) return;
+
+                const row = bubble.closest('[data-message-row]');
+                const mid = row?.dataset?.messageId;
+                const rect = bubble.getBoundingClientRect();
+                openReactionBarForMessage(mid, rect);
             });
+
+            // Global close behaviors (non-blocking popovers)
+            document.addEventListener('pointerdown', (e) => {
+                if (!isAnyMessagePopoverOpen()) return;
+                const t = e.target;
+                const inside = (
+                    (reactionUsersPopover.open && reactionUsersPopover.panel?.contains(t)) ||
+                    (reactionsPicker.open && reactionsPicker.panel?.contains(t)) ||
+                    (reactionBar.open && reactionBar.panel?.contains(t)) ||
+                    (actionMenu.open && actionMenu.panel?.contains(t))
+                );
+                if (inside) return;
+                closeAllMessagePopovers();
+            }, true);
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (!isAnyMessagePopoverOpen()) return;
+                e.preventDefault();
+                closeAllMessagePopovers();
+            });
+
+            const closeOnScroll = () => {
+                if (!isAnyMessagePopoverOpen()) return;
+                closeAllMessagePopovers();
+            };
+            window.addEventListener('scroll', closeOnScroll, { passive: true, capture: true });
+            messagesEl?.addEventListener('scroll', closeOnScroll, { passive: true });
 
             // Render existing DOM reaction summaries (server-rendered)
             try {
