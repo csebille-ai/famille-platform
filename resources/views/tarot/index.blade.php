@@ -16,11 +16,6 @@
 
 <x-app-layout pageBgClass="fam-page-bg">
     <div class="max-w-3xl mx-auto px-6 pt-2 pb-[calc(5.5rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))] sm:pt-4 sm:pb-10 space-y-4">
-        <div class="px-1">
-            <div class="text-2xl font-extrabold tracking-tight text-[color:var(--fam-text)]">Tarot</div>
-            <div class="mt-1 text-sm text-[color:var(--fam-muted)]">Tirage du jour (familial)</div>
-        </div>
-
         @if ($errors->any())
             <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {{ $errors->first() }}
