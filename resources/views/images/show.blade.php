@@ -492,6 +492,16 @@
                     return { maxX, maxY };
                 };
 
+                const applyResistance = (value, min, max, k = 0.35) => {
+                    const v = Number(value || 0);
+                    const a = Number(min || 0);
+                    const b = Number(max || 0);
+                    const kk = clamp(Number(k || 0.35), 0.12, 0.55);
+                    if (v < a) return a + (v - a) * kk;
+                    if (v > b) return b + (v - b) * kk;
+                    return v;
+                };
+
                 let snapTimer = 0;
                 const clearSnapTimer = () => {
                     if (snapTimer) {
@@ -522,9 +532,11 @@
                     }, 190);
                 };
 
-                const applyTransform = () => {
+                const applyTransform = ({ elastic = false } = {}) => {
                     if (!img) return;
                     const coverBasePan = (fitMode === 'cover' && zoom.scale <= 1.001);
+
+                    const { maxX, maxY } = getMaxPan();
 
                     if (zoom.scale <= 1.001) {
                         zoom.scale = 1;
@@ -536,31 +548,62 @@
                             return;
                         }
                         // In cover mode, keep translate at base scale (allows pan without zoom).
-                        clampPan();
-                        zoom.tx = snapToDevicePx(zoom.tx);
-                        zoom.ty = snapToDevicePx(zoom.ty);
-                        clampPan();
-                        if (Math.abs(zoom.tx) < 0.25 && Math.abs(zoom.ty) < 0.25) {
+                        if (!elastic) {
+                            zoom.tx = clamp(zoom.tx, -maxX, maxX);
+                            zoom.ty = clamp(zoom.ty, -maxY, maxY);
+                        }
+
+                        const tx = elastic ? applyResistance(zoom.tx, -maxX, maxX) : zoom.tx;
+                        const ty = elastic ? applyResistance(zoom.ty, -maxY, maxY) : zoom.ty;
+                        const txSnap = snapToDevicePx(tx);
+                        const tySnap = snapToDevicePx(ty);
+
+                        if (Math.abs(txSnap) < 0.25 && Math.abs(tySnap) < 0.25) {
                             zoom.tx = 0;
                             zoom.ty = 0;
                             img.style.transform = 'none';
                             try { img.style.willChange = ''; } catch {}
                             return;
                         }
-                        img.style.transform = `translate3d(${zoom.tx}px, ${zoom.ty}px, 0)`;
+
+                        img.style.transform = `translate3d(${txSnap}px, ${tySnap}px, 0)`;
                         try { img.style.willChange = 'transform'; } catch {}
                         return;
                     }
 
-                    clampPan();
-                    // Snap to device pixels to reduce GPU tiling seams / grid artifacts.
-                    zoom.tx = snapToDevicePx(zoom.tx);
-                    zoom.ty = snapToDevicePx(zoom.ty);
-                    clampPan();
+                    if (!elastic) {
+                        zoom.tx = clamp(zoom.tx, -maxX, maxX);
+                        zoom.ty = clamp(zoom.ty, -maxY, maxY);
+                    }
+
+                    const tx = elastic ? applyResistance(zoom.tx, -maxX, maxX) : zoom.tx;
+                    const ty = elastic ? applyResistance(zoom.ty, -maxY, maxY) : zoom.ty;
+                    const txSnap = snapToDevicePx(tx);
+                    const tySnap = snapToDevicePx(ty);
 
                     // CSS transforms apply right-to-left; using translate() scale() means pan isn't scaled.
-                    img.style.transform = `translate3d(${zoom.tx}px, ${zoom.ty}px, 0) scale(${zoom.scale})`;
+                    img.style.transform = `translate3d(${txSnap}px, ${tySnap}px, 0) scale(${zoom.scale})`;
                     try { img.style.willChange = 'transform'; } catch {}
+                };
+
+                const settlePanToBounds = () => {
+                    if (!img) return;
+                    const { maxX, maxY } = getMaxPan();
+                    const targetX = clamp(zoom.tx, -maxX, maxX);
+                    const targetY = clamp(zoom.ty, -maxY, maxY);
+                    const dx = targetX - zoom.tx;
+                    const dy = targetY - zoom.ty;
+                    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+                    clearSnapTimer();
+                    try { img.style.transition = 'transform 190ms cubic-bezier(0.2, 0.9, 0.2, 1)'; } catch {}
+                    zoom.tx = targetX;
+                    zoom.ty = targetY;
+                    applyTransform({ elastic: false });
+                    snapTimer = setTimeout(() => {
+                        snapTimer = 0;
+                        try { img.style.transition = ''; } catch {}
+                    }, 220);
                 };
 
                 const setScaleAroundPoint = (newScale, focal) => {
@@ -754,7 +797,7 @@
                         lastPanY = e.clientY;
                         zoom.tx += dx;
                         zoom.ty += dy;
-                        applyTransform();
+                        applyTransform({ elastic: true });
 
                         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
                             didPanThisGesture = true;
@@ -782,12 +825,14 @@
 
                     // If zoomed, we treat gestures as pan/zoom only (no slide navigation).
                     if (zoom.scale > 1.01) {
+                        if (didPanThisGesture) settlePanToBounds();
                         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) onTap(endPt.x, endPt.y);
                         return;
                     }
 
                     // In cover mode, if the gesture was used to pan the image, don't treat it as navigation/close.
                     if (coverBasePan && didPanThisGesture) {
+                        settlePanToBounds();
                         snapToCenterIfNear();
                         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) onTap(endPt.x, endPt.y);
                         return;
