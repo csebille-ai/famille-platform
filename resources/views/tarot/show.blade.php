@@ -4,19 +4,16 @@
 
 <x-app-layout pageBgClass="fam-page-bg">
     <div class="max-w-3xl mx-auto px-6 py-6 space-y-6">
-        <div class="flex items-end justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Tirage Tarot</h1>
-                <div class="text-sm text-slate-500 mt-1">
+        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" data-tarot-stage>
+            <div class="flex items-center justify-between gap-4">
+                <div class="text-sm text-slate-500">
                     {{ $spreadLabel((string) $reading->spread) }}
                     <span class="text-slate-400">·</span>
                     {{ $reading->created_at?->diffForHumans() }}
                 </div>
+                <a href="{{ route('tarot.history') }}" class="text-sm font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]">Historique</a>
             </div>
-            <a href="{{ route('tarot.history') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Retour historique</a>
-        </div>
 
-        <div class="bg-white rounded-2xl shadow-sm p-6 space-y-4" data-tarot-stage>
             <div>
                 <div class="text-sm text-slate-500">Question</div>
                 <div class="mt-1 text-base font-semibold text-gray-900">{{ $reading->question }}</div>

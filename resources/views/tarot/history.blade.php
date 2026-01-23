@@ -11,14 +11,6 @@
 
 <x-app-layout pageBgClass="fam-page-bg">
     <div class="max-w-3xl mx-auto px-6 py-6 space-y-6">
-        <div class="flex items-end justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Historique Tarot</h1>
-                <div class="text-sm text-slate-500 mt-1">Privé (visible uniquement par toi).</div>
-            </div>
-            <a href="{{ route('tarot.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Nouveau tirage</a>
-        </div>
-
         @if (session('status'))
             <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
                 {{ session('status') }}
@@ -26,6 +18,11 @@
         @endif
 
         <div class="bg-white rounded-2xl shadow-sm p-6">
+            <div class="flex items-center justify-between gap-4 mb-4">
+                <div class="text-sm text-slate-500">Privé (visible uniquement par toi).</div>
+                <a href="{{ route('tarot.index') }}" class="text-sm font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]">Nouveau tirage</a>
+            </div>
+
             @if (($readings ?? null) && $readings->count())
                 <div class="space-y-3">
                     @foreach ($readings as $r)
