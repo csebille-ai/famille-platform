@@ -235,8 +235,8 @@
             }
 
             .ui-badge--brand {
-                border-color: rgba(14, 165, 160, 0.22);
-                background: rgba(14, 165, 160, 0.12);
+                border-color: color-mix(in srgb, var(--fam-primary-200) 70%, transparent);
+                background: var(--fam-primary-100);
                 color: var(--ui-brand-hover);
             }
 
@@ -267,7 +267,7 @@
 
             .ui-nav-link:hover {
                 color: var(--ui-brand-hover);
-                border-bottom-color: rgba(14, 165, 160, 0.35);
+                border-bottom-color: color-mix(in srgb, var(--fam-primary-200) 75%, transparent);
             }
 
             .ui-nav-link--active {
@@ -280,7 +280,7 @@
             }
 
             .ui-nav-link:focus-visible {
-                box-shadow: 0 0 0 3px rgba(14, 165, 160, 0.20);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--fam-primary-200) 55%, transparent);
                 border-radius: 0.5rem;
             }
 
@@ -298,14 +298,14 @@
 
             .ui-nav-link-mobile:hover {
                 color: var(--ui-text);
-                background: rgba(14, 165, 160, 0.08);
-                border-left-color: rgba(14, 165, 160, 0.18);
+                background: var(--fam-primary-100);
+                border-left-color: color-mix(in srgb, var(--fam-primary-200) 60%, transparent);
             }
 
             .ui-nav-link-mobile--active {
                 color: var(--ui-brand-hover);
-                background: rgba(14, 165, 160, 0.10);
-                border-left-color: rgba(14, 165, 160, 0.55);
+                background: var(--fam-primary-100);
+                border-left-color: var(--ui-brand);
             }
 
             .ui-nav-link-mobile:focus {
@@ -313,7 +313,7 @@
             }
 
             .ui-nav-link-mobile:focus-visible {
-                box-shadow: 0 0 0 3px rgba(14, 165, 160, 0.20);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--fam-primary-200) 55%, transparent);
                 border-radius: 0.75rem;
             }
 
@@ -336,7 +336,7 @@
             }
 
             .ui-dropdown-link:hover {
-                background: rgba(14, 165, 160, 0.10);
+                background: var(--fam-primary-100);
                 color: var(--ui-brand-hover);
             }
 
@@ -345,7 +345,7 @@
             }
 
             .ui-dropdown-link:focus-visible {
-                box-shadow: 0 0 0 3px rgba(18, 138, 121, 0.18);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--fam-primary-200) 55%, transparent);
             }
 
             .ui-chip {
@@ -372,7 +372,7 @@
             }
 
             .ui-chip:focus-visible {
-                box-shadow: 0 0 0 3px rgba(18, 138, 121, 0.18);
+                box-shadow: 0 0 0 3px color-mix(in srgb, var(--fam-primary-200) 55%, transparent);
             }
         </style>
     </head>

@@ -35,7 +35,7 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="hidden md:inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900">
+                <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="fam-link-subtle hidden md:inline-flex rounded-xl border border-[color:var(--fam-border)] bg-white px-4 py-2 text-sm font-semibold hover:bg-[color:var(--fam-primary-100)]">
                     Voir tout
                 </a>
             </div>

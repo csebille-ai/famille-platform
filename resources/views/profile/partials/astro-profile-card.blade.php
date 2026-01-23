@@ -73,7 +73,7 @@
         </div>
     </div>
 
-    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5" id="profile-avatar" data-upload-url="{{ url('/profile/avatar') }}">
+    <div class="mt-6 rounded-2xl border border-[color:var(--fam-border)] bg-white p-5" id="profile-avatar" data-upload-url="{{ url('/profile/avatar') }}">
         @php
             $avatarUrl = '';
             try {
@@ -85,12 +85,12 @@
 
         <div class="flex items-start justify-between gap-4">
             <div>
-                <div class="mt-1 text-lg font-semibold text-slate-900">Photo de profil</div>
-                <div class="mt-1 text-xs text-slate-500">Choisis une photo, recadre, enregistre.</div>
+                <div class="mt-1 text-lg font-semibold text-[color:var(--fam-text)]">Photo de profil</div>
+                <div class="mt-1 text-xs text-[color:var(--fam-muted)]">Choisis une photo, recadre, enregistre.</div>
             </div>
 
             <div class="shrink-0">
-                <button type="button" data-action="change" class="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">
+                <button type="button" data-action="change" class="rounded-xl border border-[color:var(--fam-border-soft)] bg-white px-4 py-2 text-sm font-semibold text-[color:var(--fam-muted)] hover:bg-[color:var(--fam-primary-100)]">
                     Changer la photo
                 </button>
                 <input type="file" data-avatar-file accept="image/*" class="hidden" />
@@ -98,19 +98,19 @@
         </div>
 
         <div class="mt-4 flex items-center gap-4">
-            <div class="h-20 w-20 rounded-full overflow-hidden bg-slate-100 border border-black/10 flex items-center justify-center shrink-0">
+            <div class="h-20 w-20 rounded-full overflow-hidden bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border-soft)] flex items-center justify-center shrink-0">
                 @if($avatarUrl !== '')
                     <img src="{{ $avatarUrl }}" alt="" class="h-full w-full object-cover" loading="lazy" />
                 @else
-                    <div class="text-slate-700 font-semibold">
+                    <div class="text-[color:var(--fam-muted)] font-semibold">
                         {{ $user->initials() }}
                     </div>
                 @endif
             </div>
 
-            <div class="text-sm text-slate-600">
-                <div class="font-semibold text-slate-900">Ton avatar est affiché en rond</div>
-                <div class="mt-0.5 text-xs text-slate-500">On stocke un fichier carré (recadré), et on l’affiche en rond partout.</div>
+            <div class="text-sm text-[color:var(--fam-muted)]">
+                <div class="font-semibold text-[color:var(--fam-text)]">Ton avatar est affiché en rond</div>
+                <div class="mt-0.5 text-xs text-[color:var(--fam-muted)]">On stocke un fichier carré (recadré), et on l’affiche en rond partout.</div>
             </div>
         </div>
 

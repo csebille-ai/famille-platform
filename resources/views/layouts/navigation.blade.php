@@ -199,7 +199,7 @@
                                     />
                                     Tarot
                                     @if($hasTarotDraft)
-                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary)]" aria-hidden="true"></span>
+                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary-300)]" aria-hidden="true"></span>
                                     @endif
                                 </span>
                             </x-nav-link>
@@ -208,7 +208,7 @@
                                 <span class="inline-flex items-center">
                                     Actu locale
                                     @if($hasNewActu)
-                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary)]" aria-hidden="true"></span>
+                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary-300)]" aria-hidden="true"></span>
                                     @endif
                                 </span>
                             </x-nav-link>

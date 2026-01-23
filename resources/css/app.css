@@ -8,15 +8,22 @@
 		--fam-bg: #F6F2EC;
 		--fam-surface: #FFFFFF;
 		/* Use sparingly; main cards should stay pure white */
-		--fam-surface-2: #FFFFFF;
+		--fam-surface-2: #FFFCF7;
 		--fam-surface-alt: #FAF7F2;
-		--fam-border: rgba(15, 23, 42, 0.10);
-		--fam-border-soft: rgba(15, 23, 42, 0.06);
-		--fam-text: #0F172A;
-		--fam-muted: #475569;
+		/* Warm separators (avoid cold bluish grays) */
+		--fam-border: rgba(33, 24, 16, 0.12);
+		--fam-border-soft: rgba(33, 24, 16, 0.07);
+		/* Warm near-black + readable muted */
+		--fam-text: #1B140B;
+		--fam-muted: #5A5148;
 		--fam-primary: #0EA5A0;
 		--fam-primary-hover: #0B8F8A;
-		--fam-tint: #E6F7F6;
+		/* Tints: use for icons/avatars/chips (avoid primary everywhere) */
+		--fam-primary-100: #E6F7F6;
+		--fam-primary-200: #C8EEEC;
+		--fam-primary-300: #74CDC8;
+		/* Back-compat */
+		--fam-tint: var(--fam-primary-100);
 		--fam-accent: #0EA5A0;
 		--fam-accent-hover: #0B8F8A;
 
@@ -181,6 +188,19 @@
 		color: var(--fam-primary-hover);
 	}
 
+	/* Subtle link (used for “Voir tout”): calm by default, teal on intent (hover). */
+	.fam-link-subtle {
+		color: var(--fam-muted);
+		font-weight: 600;
+		text-decoration: none;
+		text-underline-offset: 3px;
+	}
+
+	.fam-link-subtle:hover {
+		color: var(--fam-primary-hover);
+		text-decoration: underline;
+	}
+
 	.fam-chip {
 		display: inline-flex;
 		align-items: center;
@@ -188,9 +208,9 @@
 		gap: 0.5rem;
 		padding: 0.25rem 0.6rem;
 		border-radius: 9999px;
-		background: var(--fam-tint);
+		background: var(--fam-primary-100);
 		color: var(--fam-primary-hover);
-		border: 1px solid rgba(14, 165, 160, 0.14);
+		border: 1px solid color-mix(in srgb, var(--fam-primary-200) 65%, transparent);
 	}
 }
 

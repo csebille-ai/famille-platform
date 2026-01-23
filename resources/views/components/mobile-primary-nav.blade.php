@@ -74,7 +74,7 @@
             @foreach($items as $item)
                 <a
                     href="{{ $item['href'] }}"
-                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold {{ $item['active'] ? 'text-[color:var(--fam-primary)] bg-[color:rgba(14,165,160,0.12)]' : 'text-slate-700' }}"
+                    class="relative flex h-16 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-2 text-[11px] font-semibold {{ $item['active'] ? 'text-[color:var(--fam-primary)] bg-[color:var(--fam-primary-100)]' : 'text-[color:var(--fam-muted)]' }}"
                     aria-label="{{ $item['label'] }}"
                     aria-current="{{ $item['active'] ? 'page' : 'false' }}"
                 >
@@ -92,7 +92,7 @@
                         @endif
 
                         @if(!empty($item['badge']))
-                            <span class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[color:var(--fam-primary)] ring-2 ring-[color:var(--fam-surface)]" aria-hidden="true"></span>
+                            <span class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[color:var(--fam-primary-300)] ring-2 ring-[color:var(--fam-surface)]" aria-hidden="true"></span>
                         @endif
                     </span>
 

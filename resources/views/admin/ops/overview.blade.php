@@ -83,7 +83,7 @@
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <div class="flex items-center justify-between">
                         <div class="text-sm font-semibold text-slate-900">Derniers événements</div>
-                        <a href="{{ route('admin.activity') }}" class="text-sm font-semibold text-teal-700 hover:underline">Voir tout</a>
+                        <a href="{{ route('admin.activity') }}" class="fam-link-subtle text-sm font-semibold">Voir tout</a>
                     </div>
                     <div class="mt-3 overflow-x-auto">
                         <table class="min-w-full text-sm">
@@ -114,7 +114,7 @@
                 <div class="rounded-2xl border border-slate-200 bg-white p-4">
                     <div class="flex items-center justify-between">
                         <div class="text-sm font-semibold text-slate-900">Dernières erreurs</div>
-                        <a href="{{ route('admin.errors') }}" class="text-sm font-semibold text-teal-700 hover:underline">Voir tout</a>
+                        <a href="{{ route('admin.errors') }}" class="fam-link-subtle text-sm font-semibold">Voir tout</a>
                     </div>
                     <div class="mt-3 overflow-x-auto">
                         <table class="min-w-full text-sm">

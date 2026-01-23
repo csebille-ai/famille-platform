@@ -70,7 +70,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Dernières photos</div>
-                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
+                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="fam-link-subtle text-sm">Voir tout ›</a>
                 </div>
 
                 <div class="mt-4">
@@ -112,7 +112,7 @@
             <div class="bg-white rounded-2xl shadow-sm p-6">
                 <div class="flex items-end justify-between gap-4">
                     <div class="text-base font-semibold text-gray-900">Dernières vidéos</div>
-                    <a href="{{ route('media.index', ['tab' => 'videos']) }}#videos" class="text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Voir tout ›</a>
+                    <a href="{{ route('media.index', ['tab' => 'videos']) }}#videos" class="fam-link-subtle text-sm">Voir tout ›</a>
                 </div>
 
                 <div class="mt-4">
@@ -155,7 +155,7 @@
                             <span class="whitespace-nowrap">connectés</span>
                         </div>
                     </div>
-                    <a href="{{ route('chat.index') }}" class="shrink-0 text-sm text-indigo-600 hover:text-indigo-700 hover:underline">Ouvrir ›</a>
+                    <a href="{{ route('chat.index') }}" class="fam-link-subtle shrink-0 text-sm">Ouvrir ›</a>
                 </div>
             </div>
 

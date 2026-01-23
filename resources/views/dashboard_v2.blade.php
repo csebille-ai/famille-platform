@@ -102,7 +102,7 @@
                 <div class="rounded-2xl bg-white px-3 py-3 border border-[color:var(--fam-border)] shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div class="text-sm font-semibold text-[color:var(--fam-text)]">Anniversaires</div>
-                        <a href="{{ route('birthdays.index') }}" class="-mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
+                        <a href="{{ route('birthdays.index') }}" class="fam-link-subtle -mr-1 inline-flex items-center rounded-xl px-2 py-1 text-xs font-semibold hover:bg-[color:var(--fam-primary-100)] active:bg-[color:var(--fam-primary-200)]">Voir tout</a>
                     </div>
 
                     <div class="mt-2 relative">
@@ -135,7 +135,7 @@
                                                             onerror="this.style.display='none';var fb=this.parentElement.querySelector('[data-fallback]');if(fb){fb.style.display='flex';}"
                                                         />
                                                     @endif
-                                                    <div data-fallback class="h-9 w-9 rounded-full bg-[color:var(--fam-primary)] text-white flex items-center justify-center" style="{{ (is_string($avatarUrl) && trim($avatarUrl) !== '') ? 'display:none' : 'display:flex' }}">
+                                                    <div data-fallback class="h-9 w-9 rounded-full bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border-soft)] text-[color:var(--fam-primary-300)] flex items-center justify-center" style="{{ (is_string($avatarUrl) && trim($avatarUrl) !== '') ? 'display:none' : 'display:flex' }}">
                                                         <i class="ph ph-user text-[18px]" aria-hidden="true"></i>
                                                         <span class="sr-only">{{ $initials }}</span>
                                                     </div>
@@ -170,7 +170,7 @@
             <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Événements</div>
-                    <a href="{{ route('events.index') }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
+                    <a href="{{ route('events.index') }}" class="fam-link-subtle -mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold hover:bg-[color:var(--fam-primary-100)] active:bg-[color:var(--fam-primary-200)]">Voir tout</a>
                 </div>
 
                 @if($upcomingEvents->count())
@@ -242,7 +242,7 @@
             <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Photos récentes</div>
-                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
+                    <a href="{{ route('media.index', ['tab' => 'photos']) }}" class="fam-link-subtle -mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold hover:bg-[color:var(--fam-primary-100)] active:bg-[color:var(--fam-primary-200)]">Voir tout</a>
                 </div>
 
                 @php $photos = ($latestImages ?? collect())->take(6); @endphp
@@ -275,7 +275,7 @@
             <div class="rounded-2xl bg-white p-3 md:col-span-2 border border-[color:var(--fam-border)] shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Vidéos récentes</div>
-                    <a href="{{ route('media.index', ['tab' => 'videos']) }}#videos" class="-mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold text-[color:var(--fam-primary)] hover:bg-[color:rgba(14,165,160,0.12)] hover:text-[color:var(--fam-primary-hover)] active:bg-[color:rgba(14,165,160,0.18)]">Voir tout</a>
+                    <a href="{{ route('media.index', ['tab' => 'videos']) }}#videos" class="fam-link-subtle -mr-2 inline-flex items-center rounded-xl px-2 py-1 text-sm font-semibold hover:bg-[color:var(--fam-primary-100)] active:bg-[color:var(--fam-primary-200)]">Voir tout</a>
                 </div>
 
                 @php $videos = ($latestVideos ?? collect())->take(6); @endphp
