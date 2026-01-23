@@ -337,14 +337,28 @@
                     }, 200);
                 };
 
-                // On load: start hidden (prevents a paint "flash"), then fade in briefly.
+                // On load: keep UI hidden during shared-element OPENING, then fade in.
                 setHeaderVisible(false);
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
+                const revealUiAfterOpening = () => {
+                    const html = document.documentElement;
+                    const isOpening = () => {
+                        try { return !!(html && html.classList && html.classList.contains('tm-animating')); }
+                        catch { return false; }
+                    };
+
+                    const tick = () => {
+                        if (isOpening()) {
+                            requestAnimationFrame(tick);
+                            return;
+                        }
                         setHeaderVisible(true);
+                        // Keep the "iOS Photos" feel: show briefly, then hide.
                         setTimeout(() => setHeaderVisible(false), 1100);
-                    });
-                });
+                    };
+
+                    requestAnimationFrame(() => requestAnimationFrame(tick));
+                };
+                revealUiAfterOpening();
 
                 // --- True zoom (pinch + pan + double tap) ---
                 let fitMode = 'contain';

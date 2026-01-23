@@ -16,7 +16,7 @@
     "src": "node_modules/@phosphor-icons/web/src/regular/Phosphor.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DL8vqqtd.css",
+    "file": "assets/app-crmPVvvk.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -25,7 +25,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-DkGy9SHZ.js",
+    "file": "assets/app-OsRVMotJ.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

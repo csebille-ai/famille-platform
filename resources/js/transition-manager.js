@@ -174,6 +174,76 @@
 		return d;
 	};
 
+	const makeMediaFrame = ({ rect, radiusPx = 16 } = {}) => {
+		const r = normalizeRect(rect);
+		const frame = document.createElement('div');
+		frame.style.position = 'absolute';
+		frame.style.left = `${r.x}px`;
+		frame.style.top = `${r.y}px`;
+		frame.style.width = `${Math.max(0, r.w)}px`;
+		frame.style.height = `${Math.max(0, r.h)}px`;
+		frame.style.overflow = 'hidden';
+		frame.style.borderRadius = `${Math.max(0, Number(radiusPx || 0))}px`;
+		frame.style.transformOrigin = 'top left';
+		frame.style.willChange = 'transform, border-radius';
+		frame.style.backfaceVisibility = 'hidden';
+		frame.style.transform = 'translate3d(0,0,0)';
+		return frame;
+	};
+
+	const makeFrameImg = ({ src, fit = 'contain', bg = 'transparent' } = {}) => {
+		const img = document.createElement('img');
+		img.src = String(src || '');
+		img.alt = '';
+		img.decoding = 'async';
+		img.style.width = '100%';
+		img.style.height = '100%';
+		img.style.display = 'block';
+		img.style.objectFit = String(fit || 'contain');
+		img.style.background = String(bg || 'transparent');
+		img.style.transform = 'translateZ(0)';
+		img.style.backfaceVisibility = 'hidden';
+		return img;
+	};
+
+	const transformFromRects = (fromRect, toRect) => {
+		const from = normalizeRect(fromRect);
+		const to = normalizeRect(toRect);
+		const tw = Math.max(1, to.w);
+		const th = Math.max(1, to.h);
+		const sx = Math.max(0.0001, from.w / tw);
+		const sy = Math.max(0.0001, from.h / th);
+		const tx = (from.x - to.x);
+		const ty = (from.y - to.y);
+		return `translate3d(${tx}px, ${ty}px, 0) scale(${sx}, ${sy})`;
+	};
+
+	const animateFrameTransform = (
+		frame,
+		{ fromRect, toRect, fromRadiusPx = 16, toRadiusPx = 0, duration = 260, easing = 'cubic-bezier(0.2, 0.8, 0.2, 1)' } = {}
+	) => {
+		if (!frame) return Promise.resolve();
+		const fromT = transformFromRects(fromRect, toRect);
+		const toT = 'translate3d(0,0,0) scale(1,1)';
+		const kf0 = { transform: fromT, borderRadius: `${Math.max(0, Number(fromRadiusPx || 0))}px` };
+		const kf1 = { transform: toT, borderRadius: `${Math.max(0, Number(toRadiusPx || 0))}px` };
+
+		// Prefer WAAPI for smoothness; fallback to CSS transitions.
+		if (frame.animate) {
+			const anim = frame.animate([kf0, kf1], { duration, easing, fill: 'forwards' });
+			return anim.finished.catch(() => {});
+		}
+
+		frame.style.transition = `transform ${duration}ms ${easing}, border-radius ${duration}ms ${easing}`;
+		frame.style.transform = kf0.transform;
+		frame.style.borderRadius = kf0.borderRadius;
+		// Force style flush.
+		try { void frame.offsetHeight; } catch {}
+		frame.style.transform = kf1.transform;
+		frame.style.borderRadius = kf1.borderRadius;
+		return new Promise((resolve) => setTimeout(resolve, duration));
+	};
+
 	const makeCloneImg = (src, rect, radiusPx = 16, bg = 'transparent') => {
 		const img = document.createElement('img');
 		img.src = src;
@@ -437,10 +507,12 @@
 			cloneRect = fromRect;
 		}
 
-		const clone = makeCloneImg(src, cloneRect, Number(st.radiusPx || 16), backdropColor);
-		// Default to source rendering (thumbnail style).
-		clone.style.objectFit = String(st.fit || 'cover');
-		root.appendChild(clone);
+		const toRectTmp = normalizeRect(st.toRect);
+		// Create the frame at the destination rect; animate it from the source rect using transform.
+		const frame = makeMediaFrame({ rect: { x: 0, y: 0, w: 0, h: 0 }, radiusPx: 0 });
+		root.appendChild(frame);
+		const frameImg = makeFrameImg({ src, fit: String(st.fit || 'contain'), bg: backdropColor });
+		frame.appendChild(frameImg);
 
 		// Make sure the destination is in the right scroll position for "return".
 		if (type === 'return' && typeof st.toScrollY === 'number' && Number.isFinite(st.toScrollY)) {
@@ -509,21 +581,29 @@
 			return;
 		}
 
-		// Match destination rendering near the end to avoid a visible jump when swapping overlay -> real element.
-		if (destFit) {
-			setTimeout(() => {
-				try { clone.style.objectFit = String(destFit || 'contain'); } catch {}
-			}, Math.max(0, Math.floor(duration * 0.75)));
-		}
+		// Frame final rect is the destination rect.
+		try {
+			frame.style.left = `${toRect.x}px`;
+			frame.style.top = `${toRect.y}px`;
+			frame.style.width = `${Math.max(0, toRect.w)}px`;
+			frame.style.height = `${Math.max(0, toRect.h)}px`;
+			frame.style.borderRadius = `${Math.max(0, Number(destRadiusPx ?? 0))}px`;
+		} catch {}
+
+		// Keep fit constant during the morph.
+		try {
+			frameImg.style.objectFit = String(destFit || st.fit || 'contain');
+		} catch {}
 
 		await Promise.all([
-			animateMorph(clone, cloneRect, toRect, {
-				duration,
-				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+			animateFrameTransform(frame, {
+				fromRect: cloneRect,
+				toRect,
 				fromRadiusPx: Number(st.radiusPx || 16),
 				toRadiusPx: destRadiusPx != null ? Number(destRadiusPx || 0) : 0,
+				duration,
+				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
 			}),
-			// Fade the backdrop out for both enter and return so the transition reads less.
 			animateOpacity(backdrop, 1, 0, { duration }),
 		]);
 
@@ -571,7 +651,7 @@
 		// If we keep `cover` until the end, the final switch to `contain` reads as an elastic bounce.
 		const pendingFit = href.includes('/media/photos/') ? 'contain' : getObjectFitFrom(sharedEl, 'cover');
 
-		// Quick pre-navigation morph (premium feel); keep it short to avoid feeling sluggish.
+		// Quick pre-navigation morph (transform-only): keep it short to avoid feeling sluggish.
 		const fromRect = rectFromEl(sharedEl);
 		const root = getOverlayRoot();
 		root.innerHTML = '';
@@ -581,9 +661,6 @@
 		const backdropColor = enteringViewer ? '#020617' : getBackdropColorForCurrentPage();
 		const backdrop = makeBackdrop(backdropColor, 0);
 		root.appendChild(backdrop);
-		const clone = makeCloneImg(src, fromRect, getRadiusFrom(sharedEl), backdropColor);
-		clone.style.objectFit = getObjectFitFrom(sharedEl, 'cover');
-		root.appendChild(clone);
 
 		const duration = isLowEnd() ? 160 : 200;
 		// Match the viewer's image area (maximized contain): expand to a centered contain rect inside a near-full viewport box.
@@ -596,17 +673,21 @@
 		const padY = 12;
 		const box = { x: padX, y: padY, w: Math.max(1, vw - padX * 2), h: Math.max(1, vh - padY * 2) };
 		const target = calcContainRectInBox({ ...box, aspect });
-		setTimeout(() => {
-			try { clone.style.objectFit = String(pendingFit || 'contain'); } catch {}
-		}, Math.max(0, Math.floor(duration * 0.25)));
+
+		const frame = makeMediaFrame({ rect: target, radiusPx: 0 });
+		root.appendChild(frame);
+		const frameImg = makeFrameImg({ src, fit: pendingFit, bg: backdropColor });
+		frame.appendChild(frameImg);
 
 		await Promise.all([
 			animateOpacity(backdrop, 0, 1, { duration }),
-			animateMorph(clone, fromRect, target, {
-				duration,
-				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+			animateFrameTransform(frame, {
+				fromRect,
+				toRect: target,
 				fromRadiusPx: getRadiusFrom(sharedEl),
 				toRadiusPx: 0,
+				duration,
+				easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
 			}),
 		]);
 
@@ -670,21 +751,30 @@
 			ts: now(),
 		});
 
-		// Quick pre-navigation shrink to reduce the perceived cut.
+		// Quick pre-navigation shrink (transform-only).
 		try {
 			const root = getOverlayRoot();
 			root.innerHTML = '';
 			document.documentElement.classList.add('tm-animating');
 			document.documentElement.classList.add('tm-reveal');
-
-			const backdrop = makeBackdrop(1);
+			const backdropColor = getBackdropColorForCurrentPage();
+			const backdrop = makeBackdrop(backdropColor, 1);
 			root.appendChild(backdrop);
-			const clone = makeCloneImg(src, fromRect, getRadiusFrom(imageEl));
-			root.appendChild(clone);
+			const frame = makeMediaFrame({ rect: toRect, radiusPx: Number(origin.radiusPx || 16) });
+			root.appendChild(frame);
+			const frameImg = makeFrameImg({ src, fit: 'contain', bg: backdropColor });
+			frame.appendChild(frameImg);
 
 			const duration = isLowEnd() ? 160 : 200;
 			await Promise.all([
-				animateRect(clone, fromRect, toRect, { duration, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+				animateFrameTransform(frame, {
+					fromRect,
+					toRect,
+					fromRadiusPx: getRadiusFrom(imageEl),
+					toRadiusPx: Number(origin.radiusPx || 16),
+					duration,
+					easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+				}),
 				animateOpacity(backdrop, 1, 0, { duration }),
 			]);
 		} catch {
@@ -724,9 +814,7 @@
 		const imageEl = viewer.querySelector('img[data-shared-id]');
 		if (!backLink || !imageEl) return;
 
-		backLink.addEventListener('click', (e) => {
-			// UX decision: no reverse morph on close (it feels like a PiP / "big image in background").
-			// Keep navigation reliable by preferring the last captured origin URL, but navigate immediately.
+		backLink.addEventListener('click', async (e) => {
 			const lastOriginHref = sameOriginHrefOrNull(storageGet(KEY_LAST_ORIGIN_URL));
 			const targetHref = lastOriginHref || String(backLink.href || '/');
 			try {
@@ -734,7 +822,10 @@
 			} catch {
 				// ignore
 			}
-			// Do not prevent default: let the browser navigate directly.
+
+			// Reverse morph on close.
+			e.preventDefault();
+			await runOutgoingReturn({ backLink, viewerEl: viewer, imageEl, returnHref: targetHref });
 		});
 	};
 
