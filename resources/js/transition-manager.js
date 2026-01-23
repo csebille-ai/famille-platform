@@ -539,6 +539,10 @@
 		const src = getSrcFromSource(anchor) || getSrcFromSource(sharedEl);
 		if (!src) return false;
 
+		// Destination-aware rendering: the photo viewer uses `contain`, while grids typically use `cover`.
+		// If we keep `cover` until the end, the final switch to `contain` reads as an elastic bounce.
+		const pendingFit = href.includes('/media/photos/') ? 'contain' : getObjectFitFrom(sharedEl, 'cover');
+
 		// Quick pre-navigation morph (premium feel); keep it short to avoid feeling sluggish.
 		const fromRect = rectFromEl(sharedEl);
 		const root = getOverlayRoot();
@@ -561,6 +565,10 @@
 		const padY = 12;
 		const box = { x: padX, y: padY, w: Math.max(1, vw - padX * 2), h: Math.max(1, vh - padY * 2) };
 		const target = calcContainRectInBox({ ...box, aspect });
+		setTimeout(() => {
+			try { clone.style.objectFit = String(pendingFit || 'contain'); } catch {}
+		}, Math.max(0, Math.floor(duration * 0.25)));
+
 		await Promise.all([
 			animateOpacity(backdrop, 0, 1, { duration }),
 			animateMorph(clone, fromRect, target, {
@@ -592,7 +600,7 @@
 				fromRect: target,
 				fromScrollY: window.scrollY || 0,
 				radiusPx: getRadiusFrom(sharedEl),
-				fit: getObjectFitFrom(sharedEl, 'cover'),
+					fit: pendingFit,
 				ts: now(),
 			});
 		} catch {
