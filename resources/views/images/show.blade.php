@@ -485,20 +485,40 @@
 
                 const applyTransform = () => {
                     if (!img) return;
+                    const coverBasePan = (fitMode === 'cover' && zoom.scale <= 1.001);
+
                     if (zoom.scale <= 1.001) {
                         zoom.scale = 1;
-                        zoom.tx = 0;
-                        zoom.ty = 0;
-                        img.style.transform = 'none';
-                        try { img.style.willChange = ''; } catch {}
-                        return;
-                    } else {
+                        if (!coverBasePan) {
+                            zoom.tx = 0;
+                            zoom.ty = 0;
+                            img.style.transform = 'none';
+                            try { img.style.willChange = ''; } catch {}
+                            return;
+                        }
+                        // In cover mode, keep translate at base scale (allows pan without zoom).
                         clampPan();
-                        // Snap to device pixels to reduce GPU tiling seams / grid artifacts.
                         zoom.tx = snapToDevicePx(zoom.tx);
                         zoom.ty = snapToDevicePx(zoom.ty);
                         clampPan();
+                        if (Math.abs(zoom.tx) < 0.25 && Math.abs(zoom.ty) < 0.25) {
+                            zoom.tx = 0;
+                            zoom.ty = 0;
+                            img.style.transform = 'none';
+                            try { img.style.willChange = ''; } catch {}
+                            return;
+                        }
+                        img.style.transform = `translate3d(${zoom.tx}px, ${zoom.ty}px, 0)`;
+                        try { img.style.willChange = 'transform'; } catch {}
+                        return;
                     }
+
+                    clampPan();
+                    // Snap to device pixels to reduce GPU tiling seams / grid artifacts.
+                    zoom.tx = snapToDevicePx(zoom.tx);
+                    zoom.ty = snapToDevicePx(zoom.ty);
+                    clampPan();
+
                     // CSS transforms apply right-to-left; using translate() scale() means pan isn't scaled.
                     img.style.transform = `translate3d(${zoom.tx}px, ${zoom.ty}px, 0) scale(${zoom.scale})`;
                     try { img.style.willChange = 'transform'; } catch {}
@@ -575,6 +595,8 @@
                 let lastPanY = 0;
                 let lastPinchDist = 0;
 
+                let didPanThisGesture = false;
+
                 let tapTimer = 0;
                 let lastTapAt = 0;
                 let lastTapX = 0;
@@ -647,6 +669,8 @@
 
                     pointers.set(e.pointerId, { sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY });
 
+                    didPanThisGesture = false;
+
                     if (pointers.size === 1) {
                         panPointerId = e.pointerId;
                         lastPanX = e.clientX;
@@ -680,8 +704,9 @@
                         return;
                     }
 
-                    // Pan when zoomed
-                    if (zoom.scale > 1.01 && panPointerId === e.pointerId) {
+                    // Pan when zoomed, OR base-pan in cover mode.
+                    const allowBasePan = (fitMode === 'cover' && zoom.scale <= 1.01);
+                    if ((zoom.scale > 1.01 || allowBasePan) && panPointerId === e.pointerId) {
                         const dx = e.clientX - lastPanX;
                         const dy = e.clientY - lastPanY;
                         lastPanX = e.clientX;
@@ -689,6 +714,12 @@
                         zoom.tx += dx;
                         zoom.ty += dy;
                         applyTransform();
+
+                        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                            didPanThisGesture = true;
+                            // While panning the image, keep UI hidden.
+                            setHeaderVisible(false);
+                        }
                     }
                 };
 
@@ -706,8 +737,16 @@
                     const dx = endPt.x - Number(start?.sx ?? endPt.x);
                     const dy = endPt.y - Number(start?.sy ?? endPt.y);
 
+                    const coverBasePan = (fitMode === 'cover' && zoom.scale <= 1.01);
+
                     // If zoomed, we treat gestures as pan/zoom only (no slide navigation).
                     if (zoom.scale > 1.01) {
+                        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) onTap(endPt.x, endPt.y);
+                        return;
+                    }
+
+                    // In cover mode, if the gesture was used to pan the image, don't treat it as navigation/close.
+                    if (coverBasePan && didPanThisGesture) {
                         if (Math.abs(dx) < 10 && Math.abs(dy) < 10) onTap(endPt.x, endPt.y);
                         return;
                     }
@@ -722,6 +761,8 @@
 
                     // Swipe down = close.
                     if (dy > 90 && Math.abs(dy) > Math.abs(dx)) {
+                        // In cover mode, only allow swipe-close when centered (prevents accidental close while panned).
+                        if (coverBasePan && (Math.abs(zoom.tx) > 2 || Math.abs(zoom.ty) > 2)) return;
                         // Close should be immediate; don't toggle UI.
                         clearTapTimer();
                         if (backLink) backLink.click();
