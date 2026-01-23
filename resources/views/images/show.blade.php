@@ -57,16 +57,6 @@
                 transition: opacity 180ms ease;
             }
 
-            /* Keep only the header on its own composited layer (reduces the chance the image gets promoted and shows tiling seams). */
-            #image-viewer-header {
-                transform: translateZ(0);
-                will-change: opacity;
-            }
-
-            #image-viewer-scrim {
-                will-change: opacity;
-            }
-
             /* Isolate stacking/compositing for the image area. */
             #image-viewer-stage {
                 isolation: isolate;
@@ -90,82 +80,7 @@
             }
         </style>
 
-        <div
-            id="image-viewer-scrim"
-            data-viewer-ui
-            aria-hidden="true"
-            class="absolute inset-x-0 top-0 pointer-events-none"
-            style="z-index: 5; height: calc(env(safe-area-inset-top) + 6rem); background: linear-gradient(to bottom, rgba(2,6,23,0.78), rgba(2,6,23,0));"
-        ></div>
-
-        <div
-            id="image-viewer-header"
-            data-viewer-ui
-            data-tm-controls
-            class="absolute left-4 right-4 z-10 flex items-start justify-between gap-3"
-            style="top: calc(env(safe-area-inset-top) + 1rem)"
-        >
-            <a
-                href="{{ $backUrl }}"
-                class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900/70 text-white"
-                aria-label="Retour"
-                data-tm-back="1"
-            >
-                <i class="ph ph-arrow-left" aria-hidden="true"></i>
-            </a>
-
-            <div class="min-w-0 flex-1 text-right">
-                <div class="flex items-start justify-end gap-2">
-                    <div class="min-w-0">
-                        <div class="text-sm text-white/90 font-semibold truncate">{{ $displayTitle }}</div>
-                        <div class="text-[11px] text-white/60">
-                            {{ $node->uploader?->name ?? 'Quelqu\’un' }}
-                            <span class="text-white/40">·</span>
-                            {{ $node->created_at?->diffForHumans() }}
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <button
-                            type="button"
-                            id="image-viewer-fit-btn"
-                            class="inline-flex items-center justify-center h-10 px-3 rounded-xl bg-slate-900/70 text-white text-xs font-semibold"
-                            aria-label="Changer le mode d’affichage"
-                        >
-                            Ajuster
-                        </button>
-
-                        <div class="relative">
-                        <button
-                            type="button"
-                            id="image-viewer-details-btn"
-                            class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900/70 text-white"
-                            aria-label="Détails"
-                        >
-                            …
-                        </button>
-
-                        <div
-                            id="image-viewer-details"
-                            class="hidden absolute right-0 mt-2 w-[min(320px,calc(100vw-2rem))] rounded-2xl bg-slate-900/95 text-white shadow-2xl ring-1 ring-white/10 overflow-hidden"
-                        >
-                            <div class="p-3 text-left">
-                                <div class="text-xs text-white/60">Fichier</div>
-                                <div class="text-sm font-semibold break-all">{{ $node->name }}</div>
-
-                                <div class="mt-3 text-xs text-white/60">Infos</div>
-                                <div class="text-sm">
-                                    {{ $node->uploader?->name ?? 'Quelqu\’un' }}
-                                    <span class="text-white/40">·</span>
-                                    {{ $node->created_at?->diffForHumans() }}
-                                </div>
-                            </div>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <a href="{{ $backUrl }}" class="hidden" aria-hidden="true" tabindex="-1" data-tm-back="1">Retour</a>
 
         <div
             id="image-viewer-footer"
@@ -227,23 +142,13 @@
                 const nextUrl = root.dataset.nextUrl || '';
                 const backUrl = root.dataset.backUrl || '';
 
-                const header = document.getElementById('image-viewer-header');
-                const scrim = document.getElementById('image-viewer-scrim');
-                const detailsBtn = document.getElementById('image-viewer-details-btn');
-                const detailsPanel = document.getElementById('image-viewer-details');
                 const backLink = root.querySelector('a[data-tm-back="1"]');
                 const stage = document.getElementById('image-viewer-stage');
                 const img = document.getElementById('image-viewer-img') || root.querySelector('img[data-shared-id]');
                 const bg = document.getElementById('image-viewer-bg');
-                const fitBtn = document.getElementById('image-viewer-fit-btn');
-
-                let headerDisplay = 'flex';
-                if (header) {
-                    try {
-                        const d = window.getComputedStyle(header).display;
-                        if (d && d !== 'none') headerDisplay = d;
-                    } catch {}
-                }
+                const detailsBtn = null;
+                const detailsPanel = null;
+                const fitBtn = null;
 
                 if (stage) {
                     try {
@@ -308,33 +213,8 @@
                 const setHeaderVisible = (visible) => {
                     const show = !!visible;
 
-                    // Avoid compositor "blink" by controlling visibility outside the opacity transition.
-                    if (!header) {
-                        root.classList.toggle('viewer-ui-hidden', !show);
-                        return;
-                    }
-
-                    if (show) {
-                        try { header.style.display = headerDisplay; } catch {}
-                        try { header.style.visibility = 'visible'; } catch {}
-                        // If we're currently hidden, wait a frame so the browser has a chance to apply visibility
-                        // before starting the opacity transition.
-                        requestAnimationFrame(() => {
-                            root.classList.remove('viewer-ui-hidden');
-                        });
-                        return;
-                    }
-
-                    // Hide: fade out, then set visibility hidden after the transition.
-                    root.classList.add('viewer-ui-hidden');
-                    closeDetails();
-                    window.setTimeout(() => {
-                        // Only hide if we are still hidden.
-                        if (!root.classList.contains('viewer-ui-hidden')) return;
-                        try { header.style.visibility = 'hidden'; } catch {}
-                        // Removing from the render tree helps some mobile GPUs avoid leaving a faint "ghost" rectangle.
-                        try { header.style.display = 'none'; } catch {}
-                    }, 200);
+                    root.classList.toggle('viewer-ui-hidden', !show);
+                    if (!show) closeDetails();
                 };
 
                 // On load: keep UI hidden during shared-element OPENING, then fade in.
