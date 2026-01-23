@@ -11,6 +11,7 @@ use App\Models\NewsItem;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
@@ -49,11 +50,41 @@ class OpsDashboardController extends Controller
             'latest_fetched_at' => null,
             'latest_published_at' => null,
             'count' => 0,
+            'import_last_started_at' => null,
+            'import_last_finished_at' => null,
+            'import_last_status' => null,
+            'import_last_total' => null,
+            'scheduler_heartbeat_at' => null,
         ];
         try {
             $sources = (array) config('news.sources', []);
             $sources = array_values(array_filter($sources, fn ($v) => is_array($v)));
             $news['sources_enabled'] = count(array_filter($sources, fn ($s) => ($s['enabled'] ?? true) === true));
+
+            $heartbeat = Cache::get('ops.scheduler.heartbeat_at');
+            if (is_string($heartbeat) && $heartbeat !== '') {
+                $news['scheduler_heartbeat_at'] = CarbonImmutable::parse($heartbeat);
+            }
+
+            $started = Cache::get('ops.news_import.last_started_at');
+            if (is_string($started) && $started !== '') {
+                $news['import_last_started_at'] = CarbonImmutable::parse($started);
+            }
+
+            $finished = Cache::get('ops.news_import.last_finished_at');
+            if (is_string($finished) && $finished !== '') {
+                $news['import_last_finished_at'] = CarbonImmutable::parse($finished);
+            }
+
+            $status = Cache::get('ops.news_import.last_status');
+            if (is_string($status) && $status !== '') {
+                $news['import_last_status'] = $status;
+            }
+
+            $total = Cache::get('ops.news_import.last_total');
+            if (is_int($total) || is_float($total) || (is_string($total) && $total !== '' && is_numeric($total))) {
+                $news['import_last_total'] = (int) $total;
+            }
 
             if (Schema::hasTable('news_items')) {
                 $latest = NewsItem::query()

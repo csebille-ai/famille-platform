@@ -6,6 +6,7 @@ use App\Models\NewsItem;
 use App\Services\NewsBucketClassifier;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -18,6 +19,14 @@ class ImportNewsRss extends Command
 
     public function handle(): int
     {
+        try {
+            Cache::put('ops.news_import.last_started_at', now()->toIso8601String(), now()->addDays(7));
+            Cache::put('ops.news_import.last_status', 'running', now()->addDays(7));
+            Cache::put('ops.news_import.last_error', null, now()->addDays(7));
+        } catch (\Throwable) {
+            // ignore
+        }
+
         /** @var NewsBucketClassifier $bucketClassifier */
         $bucketClassifier = app(NewsBucketClassifier::class);
 
@@ -58,6 +67,14 @@ class ImportNewsRss extends Command
                 'has_news_feeds_json' => trim((string) env('NEWS_FEEDS_JSON', '')) !== '',
                 'has_news_feeds_csv' => trim((string) env('NEWS_FEEDS', '')) !== '',
             ]);
+
+            try {
+                Cache::put('ops.news_import.last_finished_at', now()->toIso8601String(), now()->addDays(7));
+                Cache::put('ops.news_import.last_status', 'no-feeds', now()->addDays(7));
+            } catch (\Throwable) {
+                // ignore
+            }
+
             return self::FAILURE;
         }
 
@@ -228,6 +245,15 @@ class ImportNewsRss extends Command
             'total' => $total,
             'any_feed_ok' => $anyFeedOk,
         ]);
+
+        try {
+            Cache::put('ops.news_import.last_finished_at', now()->toIso8601String(), now()->addDays(7));
+            Cache::put('ops.news_import.last_status', $anyFeedOk ? 'ok' : 'failed', now()->addDays(7));
+            Cache::put('ops.news_import.last_total', $total, now()->addDays(7));
+            Cache::put('ops.news_import.last_any_feed_ok', $anyFeedOk, now()->addDays(7));
+        } catch (\Throwable) {
+            // ignore
+        }
 
         // If nothing succeeded at all, return failure so cron/scheduler can detect the problem.
         return $anyFeedOk ? self::SUCCESS : self::FAILURE;

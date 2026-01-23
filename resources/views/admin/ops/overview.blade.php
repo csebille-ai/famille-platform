@@ -35,6 +35,29 @@
                             <div class="mt-2 text-sm text-slate-700">
                                 <div>Sources: <span class="font-semibold text-slate-900">{{ (int) ($news['sources_enabled'] ?? 0) }}</span></div>
                                 <div class="mt-1">Dernier import: <span class="font-semibold text-slate-900">{{ optional($news['latest_fetched_at'] ?? null)?->format('Y-m-d H:i') ?? '—' }}</span></div>
+                                <div class="mt-1">Scheduler: <span class="font-semibold text-slate-900">{{ optional($news['scheduler_heartbeat_at'] ?? null)?->format('Y-m-d H:i') ?? '—' }}</span></div>
+
+                                @if(($news['scheduler_heartbeat_at'] ?? null) === null)
+                                    <div class="mt-2 text-xs text-amber-900 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                                        Scheduler jamais vu. Vérifie le cron: <span class="font-mono">php artisan schedule:run</span> chaque minute.
+                                    </div>
+                                @elseif(optional($news['scheduler_heartbeat_at'])->lt(now()->subMinutes(3)))
+                                    <div class="mt-2 text-xs text-amber-900 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                                        Scheduler en retard (dernier heartbeat &gt; 3 min). Cron probablement KO.
+                                    </div>
+                                @endif
+
+                                @if(($news['import_last_status'] ?? null) !== null)
+                                    <div class="mt-2 text-xs text-slate-600">
+                                        Import status: <span class="font-semibold text-slate-900">{{ $news['import_last_status'] }}</span>
+                                        @if(($news['import_last_total'] ?? null) !== null)
+                                            <span class="text-slate-500">(total: {{ (int) $news['import_last_total'] }})</span>
+                                        @endif
+                                        @if(($news['import_last_finished_at'] ?? null) !== null)
+                                            <span class="text-slate-500">— {{ optional($news['import_last_finished_at'])->format('Y-m-d H:i') }}</span>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
