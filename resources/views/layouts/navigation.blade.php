@@ -17,7 +17,7 @@
 
     $mobileTitle = '—';
     if ($isHome) $mobileTitle = 'Accueil';
-    elseif (request()->routeIs('profile.*')) $mobileTitle = 'Profile';
+    elseif (request()->routeIs('profile.*')) $mobileTitle = 'Profil';
     elseif (request()->routeIs('astro.show')) $mobileTitle = 'Ma fiche astro';
     elseif (request()->routeIs('tarot.*')) $mobileTitle = 'Tarot';
     elseif (request()->routeIs('actu.*')) $mobileTitle = 'Actu locale';
@@ -112,7 +112,7 @@
                                     @endcan
 
                                     <x-dropdown-link :href="route('profile.edit')">
-                                        {{ __('Profile') }}
+                                        {{ __('Profil') }}
                                     </x-dropdown-link>
 
                                     <x-dropdown-link :href="route('astro.show')">
@@ -236,7 +236,7 @@
                             @endcan
 
                             <x-dropdown-link :href="route('profile.edit')">
-                                {{ __('Profile') }}
+                                {{ __('Profil') }}
                             </x-dropdown-link>
 
                             <x-dropdown-link :href="route('astro.show')">
