@@ -254,11 +254,15 @@
                                 href="{{ route('media.photos.show', ['node' => $img, 'return' => request()->getRequestUri()]) }}"
                                 class="block active:scale-[0.99] transition-transform"
                                 aria-label="Ouvrir photo"
-                                data-shared-id="media:{{ (int) $img->id }}"
-                                data-shared-src="{{ route('images.view', $img) }}"
                             >
-                                <div class="aspect-square overflow-hidden rounded-2xl bg-white border border-[color:var(--fam-border-soft)]" data-skel="img" data-loaded="0">
-                                    <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover opacity-0 transition-opacity duration-200" style="object-position: 50% 35%;" loading="lazy" onload="try{const w=this.closest('[data-skel=img]');if(w){w.dataset.loaded='1';this.style.opacity='1';}}catch(e){}" data-shared-id="media:{{ (int) $img->id }}" />
+                                <div
+                                    class="aspect-square overflow-hidden rounded-2xl bg-white border border-[color:var(--fam-border-soft)]"
+                                    data-skel="img"
+                                    data-loaded="0"
+                                    data-shared-id="media:{{ (int) $img->id }}"
+                                    data-shared-src="{{ route('images.view', $img) }}"
+                                >
+                                    <img src="{{ route('images.view', $img) }}" alt="" class="block h-full w-full object-cover opacity-0 transition-opacity duration-200" style="object-position: 50% 35%;" loading="lazy" onload="try{const w=this.closest('[data-skel=img]');if(w){w.dataset.loaded='1';this.style.opacity='1';}}catch(e){}" />
                                 </div>
                             </a>
                         @endforeach

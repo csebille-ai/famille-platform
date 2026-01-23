@@ -281,7 +281,6 @@
                                         class="block h-full w-full object-cover"
                                         :style="{ objectPosition: focalPosition(img) }"
                                         loading="lazy"
-                                        :data-shared-id="'media:' + img.id"
                                     />
                                 </div>
                             </a>

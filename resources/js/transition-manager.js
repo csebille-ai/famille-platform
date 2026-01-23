@@ -268,8 +268,10 @@
 
 	const getRadiusFrom = (el) => {
 		try {
-			const r = window.getComputedStyle(el).borderRadius;
-			const n = Number(String(r || '').replace('px', ''));
+			const r = String(window.getComputedStyle(el).borderRadius || '').trim();
+			// border-radius can be "16px" or "16px 16px 16px 16px" (or mixed). Take the first px value.
+			const m = r.match(/([0-9.]+)px/);
+			const n = m ? Number(m[1]) : NaN;
 			return Number.isFinite(n) ? n : 16;
 		} catch {
 			return 16;
@@ -667,14 +669,10 @@
 			const sharedEl = shared || a;
 			const id = getSharedIdFrom(sharedEl);
 			if (!id) return;
-
-			// Prefer the <img> for rect measurement when available.
-			const img = sharedEl.tagName === 'IMG' ? sharedEl : (sharedEl.querySelector ? sharedEl.querySelector('img') : null);
-			const measureEl = img || sharedEl;
-			if (!measureEl) return;
+			if (!sharedEl) return;
 
 			e.preventDefault();
-			await runOutgoingEnter({ anchor: a, sharedEl: measureEl });
+			await runOutgoingEnter({ anchor: a, sharedEl });
 		}, { capture: true });
 	};
 
