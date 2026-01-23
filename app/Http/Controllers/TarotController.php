@@ -16,8 +16,15 @@ class TarotController extends Controller
     {
         $draft = $request->session()->get('tarot.draft');
 
+        $recentReadings = TarotReading::query()
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->limit(3)
+            ->get();
+
         return view('tarot.index', [
             'draft' => is_array($draft) ? $draft : null,
+            'recentReadings' => $recentReadings,
         ]);
     }
 

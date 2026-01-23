@@ -3,10 +3,24 @@
     $hasDraft = is_array($draft);
     $isActive = $hasDraft && (request()->query('view') === 'active');
     $spread = (string) ($draft['spread'] ?? 'three');
+
+    /** @var \Illuminate\Support\Collection<int, \App\Models\TarotReading> $recentReadings */
+    $recentReadings = $recentReadings ?? collect();
+
+    $quickPrompts = [
+        'Comment aborder sereinement la semaine à venir ?'
+        , 'Quel est le bon prochain pas pour moi ?'
+        , 'Qu’est-ce que je dois lâcher pour avancer ?'
+    ];
 @endphp
 
 <x-app-layout pageBgClass="fam-page-bg">
-    <div class="max-w-3xl mx-auto px-6 pt-3 pb-6 sm:py-6 space-y-5">
+    <div class="max-w-3xl mx-auto px-6 pt-2 pb-[calc(5.5rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))] sm:pt-4 sm:pb-10 space-y-4">
+        <div class="px-1">
+            <div class="text-2xl font-extrabold tracking-tight text-[color:var(--fam-text)]">Tarot</div>
+            <div class="mt-1 text-sm text-[color:var(--fam-muted)]">Tirage du jour (familial)</div>
+        </div>
+
         @if ($errors->any())
             <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {{ $errors->first() }}
@@ -19,65 +33,103 @@
             </div>
         @endif
 
-        <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6">
+        <div class="rounded-2xl border border-[color:var(--fam-border)] bg-white p-4 sm:p-5">
             <div class="flex items-center justify-between gap-3">
-                <h2 class="text-sm font-semibold text-slate-900">Nouveau tirage</h2>
+                <div>
+                    <h2 class="text-sm font-semibold text-[color:var(--fam-text)]">Nouveau tirage</h2>
+                </div>
 
                 @if($hasDraft)
                     <form method="POST" action="{{ route('tarot.reset') }}" class="shrink-0">
                         @csrf
-                        <x-secondary-button type="submit" class="!h-8 !px-3 !text-[13px]">Nouveau</x-secondary-button>
+                        <button type="submit" class="inline-flex items-center h-9 px-3 rounded-xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-semibold text-[color:var(--fam-muted)] hover:bg-[color:var(--fam-primary-100)]">
+                            Nouveau
+                        </button>
                     </form>
                 @endif
             </div>
 
-            <form method="POST" action="{{ route('tarot.draw') }}" class="mt-4 space-y-4" data-tarot-draw-form>
+            <form id="tarot-draw-form" method="POST" action="{{ route('tarot.draw') }}" class="mt-4 space-y-4" data-tarot-draw-form>
                 @csrf
 
                 <div>
-                    <div class="text-sm font-semibold text-slate-900">Choix du tirage</div>
-                    <div class="mt-2 inline-flex items-center rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] p-0.5" role="group" aria-label="Choix du tirage">
+                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">Type de tirage</div>
+                    <div class="mt-2 flex items-center gap-2" role="group" aria-label="Type de tirage">
                         <label class="cursor-pointer">
                             <input type="radio" name="spread" value="three" class="sr-only peer" {{ old('spread', 'three') === 'three' ? 'checked' : '' }}>
-                            <span class="inline-flex h-9 items-center rounded-2xl px-4 text-sm font-semibold text-slate-700 transition peer-checked:bg-white peer-checked:shadow-sm peer-checked:text-slate-900">3 cartes</span>
+                            <span class="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold border transition
+                                bg-[color:var(--fam-surface-2)] text-[color:var(--fam-muted)] border-[color:var(--fam-border-soft)]
+                                peer-checked:bg-[color:var(--fam-primary-100)] peer-checked:text-[color:var(--fam-primary-hover)] peer-checked:border-[color:var(--fam-primary-200)]">
+                                3 cartes
+                            </span>
                         </label>
                         <label class="cursor-pointer">
                             <input type="radio" name="spread" value="five" class="sr-only peer" {{ old('spread') === 'five' ? 'checked' : '' }}>
-                            <span class="inline-flex h-9 items-center rounded-2xl px-4 text-sm font-semibold text-slate-700 transition peer-checked:bg-white peer-checked:shadow-sm peer-checked:text-slate-900">5 cartes</span>
+                            <span class="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold border transition
+                                bg-[color:var(--fam-surface-2)] text-[color:var(--fam-muted)] border-[color:var(--fam-border-soft)]
+                                peer-checked:bg-[color:var(--fam-primary-100)] peer-checked:text-[color:var(--fam-primary-hover)] peer-checked:border-[color:var(--fam-primary-200)]">
+                                5 cartes
+                            </span>
                         </label>
                     </div>
-                    <div class="microcopy mt-1 text-xs text-slate-500">3 pour aller droit au but, 5 pour décortiquer.</div>
+                    <div class="mt-1 text-xs text-[color:var(--fam-muted)]">3 pour aller droit au but, 5 pour décortiquer.</div>
                 </div>
 
                 <div>
-                    <label for="question" class="block text-sm font-semibold text-slate-900">Question <span class="text-slate-500 font-medium">(facultatif)</span></label>
-                    <textarea id="question" name="question" rows="3" class="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
-                    <div class="microcopy mt-1 text-xs text-slate-500">Max 500 caractères.</div>
+                    <label for="question" class="block text-sm font-semibold text-[color:var(--fam-text)]">
+                        Question
+                        <span class="text-[color:var(--fam-muted)] font-medium">(facultatif)</span>
+                    </label>
+                    <textarea id="question" name="question" rows="3" class="mt-1 block w-full rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-4 py-3 text-sm text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary-200)] focus:ring-offset-2" placeholder="Ex: Comment aborder sereinement la semaine à venir ?">{{ old('question') }}</textarea>
 
-                    <div class="mt-2 flex items-center gap-3">
-                        <x-secondary-button type="button" id="tarot-stt-start">Dicter</x-secondary-button>
-                        <x-secondary-button type="button" id="tarot-stt-stop">Stop</x-secondary-button>
-                        <div id="tarot-stt-status" class="text-xs text-slate-500"></div>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <button type="button" id="tarot-stt-toggle" class="inline-flex items-center gap-2 h-9 px-3 rounded-xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-semibold text-[color:var(--fam-muted)] hover:bg-[color:var(--fam-primary-100)]" aria-pressed="false">
+                            <span class="relative inline-flex h-2 w-2">
+                                <span id="tarot-stt-dot" class="hidden absolute inline-flex h-full w-full rounded-full bg-[color:var(--fam-primary)] opacity-75"></span>
+                                <span id="tarot-stt-dot-ping" class="hidden absolute inline-flex h-full w-full rounded-full bg-[color:var(--fam-primary)] opacity-50 animate-ping"></span>
+                            </span>
+                            <span id="tarot-stt-label">Dicter</span>
+                        </button>
+
+                        <div id="tarot-stt-status" class="text-xs text-[color:var(--fam-muted)]"></div>
                     </div>
-                </div>
 
-                <div class="flex items-center gap-3">
-                    <x-primary-button data-tarot-submit>
-                        <span data-tarot-submit-label>Tirer 3 cartes</span>
-                        <span class="hidden items-center gap-2" data-tarot-submit-loading>
-                            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"></path>
-                            </svg>
-                            <span>Tirage en cours…</span>
-                        </span>
-                    </x-primary-button>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        @foreach($quickPrompts as $p)
+                            <button type="button" class="inline-flex items-center h-8 px-3 rounded-full border border-[color:var(--fam-border-soft)] bg-[color:var(--fam-surface-2)] text-xs font-semibold text-[color:var(--fam-muted)] hover:bg-white" data-tarot-prompt="{{ $p }}">{{ $p }}</button>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-1 text-xs text-[color:var(--fam-muted)]">
+                        Max 500 caractères. Besoin d’un point de départ ?
+                        <button type="button" class="font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]" data-tarot-example>Remplir un exemple</button>
+                    </div>
                 </div>
             </form>
         </div>
 
-        <div class="microcopy text-sm text-slate-600 leading-snug">
-            3 pour aller droit au but, 5 pour tout décortiquer. Question facultative.
+        <div class="fixed inset-x-0 bottom-0 z-40" data-tarot-sticky-bar>
+            <div class="mx-auto max-w-3xl px-6">
+                <div class="mb-[calc(0.75rem+env(safe-area-inset-bottom))] rounded-2xl border border-[color:var(--fam-border-soft)] bg-[color:rgba(255,255,255,0.70)] supports-[backdrop-filter]:bg-[color:rgba(255,255,255,0.55)] supports-[backdrop-filter]:backdrop-blur-xl shadow-[0_12px_28px_rgba(17,24,39,0.10)] p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="text-xs font-semibold text-[color:var(--fam-muted)]">Action</div>
+                            <div class="mt-0.5 text-sm font-semibold text-[color:var(--fam-text)]" data-tarot-sticky-subtitle>Prêt pour un tirage</div>
+                        </div>
+
+                        <button type="submit" form="tarot-draw-form" class="inline-flex items-center justify-center h-11 px-5 rounded-2xl text-sm font-semibold text-white bg-[color:var(--fam-primary)] hover:bg-[color:var(--fam-primary-hover)] disabled:opacity-60 disabled:cursor-not-allowed" data-tarot-submit>
+                            <span data-tarot-submit-label>Tirer 3 cartes</span>
+                            <span class="hidden items-center gap-2" data-tarot-submit-loading>
+                                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"></path>
+                                </svg>
+                                <span>Tirage…</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="space-y-4" data-tarot-stage>
@@ -100,8 +152,20 @@
             </div>
 
             @if(!$hasDraft)
-                <div class="bg-white rounded-2xl shadow-sm p-5 sm:p-6" data-tarot-stage-empty>
-                    <div class="text-sm text-slate-600">Aucun tirage pour l’instant. Lance un tirage et on affiche les cartes ici.</div>
+                <div class="rounded-2xl border border-[color:var(--fam-border)] bg-white p-5 sm:p-6" data-tarot-stage-empty>
+                    <div class="flex items-start gap-4">
+                        <div class="h-12 w-12 rounded-2xl bg-[color:var(--fam-primary-100)] border border-[color:var(--fam-primary-200)] flex items-center justify-center text-[color:var(--fam-primary-hover)] shrink-0">
+                            <i class="ph ph-cards-three" aria-hidden="true"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="text-sm font-semibold text-[color:var(--fam-text)]">Aucun tirage pour l’instant</div>
+                            <div class="mt-1 text-sm text-[color:var(--fam-muted)]">Choisis 3 ou 5 cartes, puis lance un tirage.</div>
+                            <div class="mt-2 text-sm text-[color:var(--fam-muted)]">
+                                Exemple :
+                                <button type="button" class="font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]" data-tarot-example>« Comment aborder sereinement la semaine à venir ? »</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             @elseif(!$isActive)
                 @php
@@ -224,14 +288,14 @@
                     <div data-tarot-panel="reading" class="hidden pb-[calc(1.25rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))]">
                         <div class="flex items-center justify-end gap-3">
                             <div class="flex items-center gap-3">
-                                <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                                <label class="inline-flex items-center gap-2 text-sm text-[color:var(--fam-muted)] select-none">
                                     <input type="checkbox" id="tarot-tts-toggle" class="sr-only peer" />
-                                    <span class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-200 transition-colors peer-checked:bg-indigo-600" aria-hidden="true">
+                                    <span class="relative inline-flex h-6 w-11 items-center rounded-full bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border-soft)] transition-colors peer-checked:bg-[color:var(--fam-primary-100)]" aria-hidden="true">
                                         <span class="inline-block h-5 w-5 translate-x-1 rounded-full bg-white transition-transform" id="tarot-tts-toggle-dot"></span>
                                     </span>
-                                    <span class="font-semibold">Audio</span>
+                                    <span class="font-semibold text-[color:var(--fam-text)]">Audio</span>
                                 </label>
-                                <div id="tarot-tts-status" class="text-xs text-slate-500"></div>
+                                <div id="tarot-tts-status" class="text-xs text-[color:var(--fam-muted)]"></div>
                             </div>
                         </div>
 
@@ -242,16 +306,75 @@
 
                     <form method="POST" action="{{ route('tarot.save') }}" class="flex items-center gap-3">
                         @csrf
-                        <x-primary-button type="submit">Enregistrer</x-primary-button>
-                        <div class="text-xs text-slate-500">Stocké en privé dans ton historique.</div>
+                        <button type="submit" class="inline-flex items-center h-10 px-4 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-semibold text-[color:var(--fam-muted)] hover:bg-[color:var(--fam-primary-100)]">Enregistrer</button>
+                        <div class="text-xs text-[color:var(--fam-muted)]">Stocké en privé dans ton historique.</div>
                     </form>
                 </div>
             @endif
         </div>
 
-        <div>
-            <a href="{{ route('tarot.history') }}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 hover:underline">Historique</a>
-        </div>
+        @if($recentReadings instanceof \Illuminate\Support\Collection && $recentReadings->count() > 0)
+            <div class="rounded-2xl border border-[color:var(--fam-border)] bg-white p-4 sm:p-5">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-sm font-semibold text-[color:var(--fam-text)]">Historique</div>
+                        <div class="mt-0.5 text-xs text-[color:var(--fam-muted)]">Tes derniers tirages</div>
+                    </div>
+                    <a href="{{ route('tarot.history') }}" class="fam-link-subtle text-sm font-semibold">Voir tout</a>
+                </div>
+
+                <div class="mt-4 grid gap-3">
+                    @foreach($recentReadings as $r)
+                        @php
+                            $rcards = is_array($r->cards ?? null) ? (array) $r->cards : [];
+                            $first = (array) ($rcards[0] ?? []);
+                            $file = trim((string) ($first['file'] ?? ''));
+                            if ($file !== '' && mb_strtolower((string) pathinfo($file, PATHINFO_EXTENSION)) === 'webp') {
+                                $file = preg_replace('/\.[Ww][Ee][Bb][Pp]$/', '.png', $file) ?? $file;
+                            }
+                            $img = $file !== '' ? asset('tarot/' . ltrim($file, '/')) : '';
+                            $spreadLabel = ((string) ($r->spread ?? 'three')) === 'five' ? '5 cartes' : '3 cartes';
+                            $q = trim((string) ($r->question ?? ''));
+                        @endphp
+
+                        <a href="{{ route('tarot.history.show', $r) }}" class="group rounded-2xl border border-[color:var(--fam-border-soft)] bg-white p-3 hover:bg-[color:var(--fam-primary-100)] transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="h-12 w-9 rounded-xl bg-[color:var(--fam-surface-2)] border border-[color:var(--fam-border-soft)] overflow-hidden shrink-0">
+                                    @if($img !== '')
+                                        @include('tarot._card-frame', [
+                                            'src' => $img,
+                                            'alt' => '',
+                                            'variant' => 'thumb',
+                                            'class' => 'h-12 w-9 rounded-xl bg-white',
+                                            'imgClass' => 'bg-transparent',
+                                            'loading' => 'lazy',
+                                            'decoding' => 'async',
+                                            'rotate' => 0,
+                                        ])
+                                    @else
+                                        <div class="h-full w-full flex items-center justify-center text-[color:var(--fam-muted)]">
+                                            <i class="ph ph-star" aria-hidden="true"></i>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="text-sm font-semibold text-[color:var(--fam-text)] truncate">{{ $spreadLabel }}</div>
+                                        <div class="text-xs text-[color:var(--fam-muted)] shrink-0">{{ optional($r->created_at)->format('Y-m-d H:i') ?? '—' }}</div>
+                                    </div>
+                                    @if($q !== '')
+                                        <div class="mt-1 text-xs text-[color:var(--fam-muted)] line-clamp-2">{{ $q }}</div>
+                                    @else
+                                        <div class="mt-1 text-xs text-[color:var(--fam-muted)]">Sans question</div>
+                                    @endif
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 </x-app-layout>
 
@@ -393,9 +516,11 @@
         if (stageLastEl) stageLastEl.classList.add('hidden');
     }, { passive: true });
 
-    // Speech-to-text (mobile dictation)
-    const sttStartBtn = document.getElementById('tarot-stt-start');
-    const sttStopBtn = document.getElementById('tarot-stt-stop');
+    // Speech-to-text (dictation toggle)
+    const sttToggleBtn = document.getElementById('tarot-stt-toggle');
+    const sttDot = document.getElementById('tarot-stt-dot');
+    const sttDotPing = document.getElementById('tarot-stt-dot-ping');
+    const sttLabelEl = document.getElementById('tarot-stt-label');
     const sttStatusEl = document.getElementById('tarot-stt-status');
     const questionEl = document.getElementById('question');
     if (questionEl) {
@@ -411,39 +536,50 @@
     let recognizer = null;
     let sttActive = false;
 
-    if (sttStartBtn && sttStopBtn && questionEl && SpeechRecognition) {
+    const setSttUi = ({ active, supported }) => {
+        if (sttToggleBtn) {
+            sttToggleBtn.disabled = !supported;
+            sttToggleBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        }
+        if (sttDot) sttDot.classList.toggle('hidden', !active);
+        if (sttDotPing) sttDotPing.classList.toggle('hidden', !active);
+        if (sttLabelEl) sttLabelEl.textContent = active ? 'En écoute…' : 'Dicter';
+    };
+
+    if (sttToggleBtn && questionEl && SpeechRecognition) {
         recognizer = new SpeechRecognition();
         recognizer.lang = 'fr-FR';
         recognizer.interimResults = true;
-        recognizer.continuous = false;
+        recognizer.continuous = true;
 
-        let baseText = '';
+        let dictationBase = '';
+        let dictationInterim = '';
 
         recognizer.onstart = () => {
             sttActive = true;
-            sttStartBtn.disabled = true;
-            sttStopBtn.disabled = false;
-            baseText = (questionEl.value || '').trim();
-            setSttStatus('J’écoute…');
+            dictationBase = (questionEl.value || '').trim();
+            dictationInterim = '';
+            setSttUi({ active: true, supported: true });
+            setSttStatus('');
         };
 
         recognizer.onend = () => {
             sttActive = false;
-            sttStartBtn.disabled = false;
-            sttStopBtn.disabled = true;
+            dictationInterim = '';
+            setSttUi({ active: false, supported: true });
             setSttStatus('');
         };
 
         recognizer.onerror = () => {
             // Usually: not-allowed / no-speech / network
             sttActive = false;
-            sttStartBtn.disabled = false;
-            sttStopBtn.disabled = true;
+            dictationInterim = '';
+            setSttUi({ active: false, supported: true });
             setSttStatus('Dictée indisponible.');
         };
 
         recognizer.onresult = (event) => {
-            let interim = '';
+            let interimText = '';
             let finalText = '';
 
             for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -453,37 +589,54 @@
                 if (res.isFinal) {
                     finalText += (finalText ? ' ' : '') + chunk;
                 } else {
-                    interim += (interim ? ' ' : '') + chunk;
+                    interimText += (interimText ? ' ' : '') + chunk;
                 }
             }
 
-            const combined = [baseText, finalText || interim].filter(Boolean).join(baseText ? ' ' : '');
-            questionEl.value = combined;
-            syncQuestionMirror();
+            if (finalText) {
+                dictationBase = (dictationBase || '').trim();
+                dictationBase = dictationBase ? (dictationBase + ' ' + finalText).trim() : finalText;
+            }
+            dictationInterim = interimText;
+
+            const composed = [dictationBase, dictationInterim].filter(Boolean).join(' ').trim();
+            questionEl.value = composed;
         };
 
-        sttStopBtn.disabled = true;
-
-        sttStartBtn.addEventListener('click', () => {
-            if (sttActive) return;
-            try {
-                // iOS/Safari may not support; Android Chrome does.
-                recognizer.start();
-            } catch (e) {
-                setSttStatus('Dictée indisponible.');
+        sttToggleBtn.addEventListener('click', () => {
+            if (!recognizer) return;
+            if (!sttActive) {
+                try {
+                    recognizer.start();
+                } catch (e) {
+                    setSttStatus('Dictée indisponible.');
+                }
+                return;
             }
+
+            try { recognizer.stop(); } catch (e) {}
         });
 
-        sttStopBtn.addEventListener('click', () => {
-            try {
-                recognizer.stop();
-            } catch (e) {}
-        });
+        setSttUi({ active: false, supported: true });
     } else {
-        if (sttStartBtn) sttStartBtn.disabled = true;
-        if (sttStopBtn) sttStopBtn.disabled = true;
-        if (sttStatusEl) setSttStatus('Dictée non supportée sur ce navigateur.');
+        setSttUi({ active: false, supported: false });
+        setSttStatus('Dictée non supportée sur ce navigateur.');
     }
+
+    // Quick prompts
+    const fillQuestion = (text) => {
+        if (!questionEl) return;
+        questionEl.value = String(text || '');
+        try { questionEl.focus({ preventScroll: true }); } catch (e) {}
+    };
+
+    document.querySelectorAll('[data-tarot-prompt]').forEach((btn) => {
+        btn.addEventListener('click', () => fillQuestion(btn.getAttribute('data-tarot-prompt') || ''));
+    });
+
+    document.querySelectorAll('[data-tarot-example]').forEach((btn) => {
+        btn.addEventListener('click', () => fillQuestion('Comment aborder sereinement la semaine à venir ?'));
+    });
 
     const toggleEl = document.getElementById('tarot-tts-toggle');
     const dotEl = document.getElementById('tarot-tts-toggle-dot');
