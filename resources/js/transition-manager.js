@@ -32,9 +32,37 @@
 		if (!root) {
 			root = document.createElement('div');
 			root.id = 'tm-overlay-root';
+			try {
+				root.style.position = 'fixed';
+				root.style.inset = '0';
+				root.style.width = '100vw';
+				root.style.height = '100vh';
+				root.style.pointerEvents = 'none';
+				root.style.zIndex = '2147483647';
+				root.style.overflow = 'hidden';
+				root.style.contain = 'layout paint style';
+			} catch {
+				// ignore
+			}
 			document.documentElement.appendChild(root);
 		}
 		return root;
+	};
+
+	const getBackdropColorForCurrentPage = () => {
+		// Default app background is light, but the photo viewer page is dark.
+		try {
+			if (document.getElementById('image-viewer')) return '#020617'; // slate-950
+		} catch {
+			// ignore
+		}
+		try {
+			const bodyBg = String(window.getComputedStyle(document.body).backgroundColor || '').trim();
+			if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') return bodyBg;
+		} catch {
+			// ignore
+		}
+		return 'var(--fam-bg, #F6F2EC)';
 	};
 
 	const safeParse = (raw) => {
@@ -137,16 +165,16 @@
 		return false;
 	};
 
-	const makeBackdrop = (opacity = 0) => {
+	const makeBackdrop = (bg, opacity = 0) => {
 		const d = document.createElement('div');
 		d.style.position = 'absolute';
 		d.style.inset = '0';
-		d.style.background = 'var(--fam-bg, #F6F2EC)';
+		d.style.background = String(bg || 'var(--fam-bg, #F6F2EC)');
 		d.style.opacity = String(opacity);
 		return d;
 	};
 
-	const makeCloneImg = (src, rect, radiusPx = 16) => {
+	const makeCloneImg = (src, rect, radiusPx = 16, bg = 'transparent') => {
 		const img = document.createElement('img');
 		img.src = src;
 		img.alt = '';
@@ -158,7 +186,7 @@
 		img.style.height = `${Math.max(0, rect.h)}px`;
 		img.style.objectFit = 'cover';
 		img.style.borderRadius = `${Math.max(0, radiusPx)}px`;
-		img.style.background = 'rgba(255,255,255,0.06)';
+		img.style.background = String(bg || 'transparent');
 		img.style.transformOrigin = 'top left';
 		return img;
 	};
@@ -397,8 +425,9 @@
 
 		const root = getOverlayRoot();
 		root.innerHTML = '';
+		const backdropColor = getBackdropColorForCurrentPage();
 
-		const backdrop = makeBackdrop(type === 'return' ? 1 : 1);
+		const backdrop = makeBackdrop(backdropColor, 1);
 		root.appendChild(backdrop);
 
 		const fromRect = normalizeRect(st.fromRect);
@@ -408,7 +437,7 @@
 			cloneRect = fromRect;
 		}
 
-		const clone = makeCloneImg(src, cloneRect, Number(st.radiusPx || 16));
+		const clone = makeCloneImg(src, cloneRect, Number(st.radiusPx || 16), backdropColor);
 		// Default to source rendering (thumbnail style).
 		clone.style.objectFit = String(st.fit || 'cover');
 		root.appendChild(clone);
@@ -461,7 +490,7 @@
 			}
 		}
 
-		const duration = isLowEnd() ? 240 : 340;
+		const duration = isLowEnd() ? 220 : 300;
 
 		if (!toRect || toRect.w <= 0 || toRect.h <= 0) {
 			// Fallback: simple fade.
@@ -494,9 +523,8 @@
 				fromRadiusPx: Number(st.radiusPx || 16),
 				toRadiusPx: destRadiusPx != null ? Number(destRadiusPx || 0) : 0,
 			}),
-			type === 'return'
-				? animateOpacity(backdrop, 1, 0, { duration })
-				: Promise.resolve(),
+			// Fade the backdrop out for both enter and return so the transition reads less.
+			animateOpacity(backdrop, 1, 0, { duration }),
 		]);
 
 		// Keep the clone until the real image is ready to avoid a blank/blue flash.
@@ -549,14 +577,15 @@
 		root.innerHTML = '';
 		document.documentElement.classList.add('tm-animating');
 		document.documentElement.classList.add('tm-reveal');
-
-		const backdrop = makeBackdrop(0);
+		const enteringViewer = href.includes('/media/photos/');
+		const backdropColor = enteringViewer ? '#020617' : getBackdropColorForCurrentPage();
+		const backdrop = makeBackdrop(backdropColor, 0);
 		root.appendChild(backdrop);
-		const clone = makeCloneImg(src, fromRect, getRadiusFrom(sharedEl));
+		const clone = makeCloneImg(src, fromRect, getRadiusFrom(sharedEl), backdropColor);
 		clone.style.objectFit = getObjectFitFrom(sharedEl, 'cover');
 		root.appendChild(clone);
 
-		const duration = isLowEnd() ? 180 : 220;
+		const duration = isLowEnd() ? 160 : 200;
 		// Match the viewer's image area (maximized contain): expand to a centered contain rect inside a near-full viewport box.
 		const aspectImg = sharedEl.tagName === 'IMG' ? sharedEl : (sharedEl.querySelector ? sharedEl.querySelector('img') : null);
 		const aspectEl = aspectImg || sharedEl;
