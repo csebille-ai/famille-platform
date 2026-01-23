@@ -558,7 +558,9 @@
 
 		const duration = isLowEnd() ? 180 : 220;
 		// Match the viewer's image area (maximized contain): expand to a centered contain rect inside a near-full viewport box.
-		const aspect = getAspectRatioFrom(sharedEl, (fromRect.w > 0 && fromRect.h > 0) ? (fromRect.w / fromRect.h) : 1);
+		const aspectImg = sharedEl.tagName === 'IMG' ? sharedEl : (sharedEl.querySelector ? sharedEl.querySelector('img') : null);
+		const aspectEl = aspectImg || sharedEl;
+		const aspect = getAspectRatioFrom(aspectEl, (fromRect.w > 0 && fromRect.h > 0) ? (fromRect.w / fromRect.h) : 1);
 		const vw = window.innerWidth;
 		const vh = window.innerHeight;
 		const padX = 8;
