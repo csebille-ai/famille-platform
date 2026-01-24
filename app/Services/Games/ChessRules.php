@@ -9,6 +9,9 @@ class ChessRules
 {
     public const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
+    // Helps verify which move-normalization logic is deployed.
+    public const MOVE_PARSER_VERSION = 'uci+lan->playLan(dashed,compact)@2026-01-24';
+
     /**
      * Apply a LAN/UCI move (e.g. e2e4, g1f3, e7e8q, e2-e4, e7-e8=q) on a given FEN.
      *

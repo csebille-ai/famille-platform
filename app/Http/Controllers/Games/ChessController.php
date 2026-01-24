@@ -174,7 +174,14 @@ class ChessController extends Controller
             try {
                 $result = $rules->applyUci((string) $locked->current_fen, $uci);
             } catch (\Throwable $e) {
-                return response()->json(['message' => 'Coup illégal.'], 422);
+                return response()->json([
+                    'message' => 'Coup illégal.',
+                    'code' => 'chess_move_illegal',
+                    'parser' => defined('App\\Services\\Games\\ChessRules::MOVE_PARSER_VERSION')
+                        ? \App\Services\Games\ChessRules::MOVE_PARSER_VERSION
+                        : 'unknown',
+                    'received_uci' => strtolower(trim($uci)),
+                ], 422);
             }
 
             $nextTeam = (string) $result['new_turn'];
