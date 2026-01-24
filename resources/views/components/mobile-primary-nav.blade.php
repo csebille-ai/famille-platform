@@ -6,6 +6,15 @@
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
 
+    $isPlus = request()->routeIs('plus.*')
+        || request()->is('plus')
+        || request()->is('plus/*')
+        || request()->routeIs('tarot.*')
+        || request()->routeIs('actu.*')
+        || request()->routeIs('playlists.*')
+        || request()->routeIs('astro.*')
+        || request()->routeIs('profile.*');
+
     $items = [
         [
             'key' => 'home',
@@ -34,34 +43,18 @@
             'icon' => 'chat-circle-text',
         ],
         [
-            'key' => 'tarot',
-            'href' => route('tarot.index'),
-            'active' => request()->routeIs('tarot.*') || request()->is('tarot') || request()->is('tarot/*'),
-            'label' => 'Tarot',
-            'icon' => null,
-            'badge' => $hasTarotDraft,
-        ],
-        [
-            'key' => 'actu',
-            'href' => route('actu.index'),
-            'active' => request()->routeIs('actu.*') || request()->is('actu') || request()->is('actu/*'),
-            'label' => 'Actu',
-            'icon' => 'newspaper-clipping',
-            'badge' => $hasNewActu,
+            'key' => 'plus',
+            'href' => route('plus.index'),
+            'active' => $isPlus,
+            'label' => 'Plus',
+            'icon' => 'dots-three-outline',
+            'badge' => ($hasTarotDraft || $hasNewActu),
         ],
     ];
 @endphp
 
 @php
-    $tarotIconUrl = asset('images/carte.png');
-    try {
-        $tarotIconPath = public_path('images/carte.png');
-        if (is_string($tarotIconPath) && is_file($tarotIconPath)) {
-            $tarotIconUrl .= '?v=' . (string) filemtime($tarotIconPath);
-        }
-    } catch (\Throwable $e) {
-        // ignore
-    }
+    // Tarot icon no longer used in bottom nav (moved under Plus).
 @endphp
 
 <nav
@@ -79,17 +72,7 @@
                     aria-current="{{ $item['active'] ? 'page' : 'false' }}"
                 >
                     <span class="relative inline-flex h-6 w-6 items-center justify-center">
-                        @if(($item['key'] ?? '') === 'tarot')
-                            <img
-                                src="{{ $tarotIconUrl }}"
-                                alt=""
-                                class="h-6 w-6 object-contain drop-shadow-sm"
-                                aria-hidden="true"
-                                onerror="this.onerror=null;this.src='{{ asset('images/crystal.png') }}';"
-                            />
-                        @else
-                            <i class="ph ph-{{ $item['icon'] }} text-[22px]" aria-hidden="true"></i>
-                        @endif
+                        <i class="ph ph-{{ $item['icon'] }} text-[22px]" aria-hidden="true"></i>
 
                         @if(!empty($item['badge']))
                             <span class="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-[color:var(--fam-primary-300)] ring-2 ring-[color:var(--fam-surface)]" aria-hidden="true"></span>

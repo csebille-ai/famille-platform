@@ -8,17 +8,26 @@
         || request()->is('videos/*');
     $isChat = request()->routeIs('chat.*') || request()->is('chat') || request()->is('chat/*');
 
+    $isPlus = request()->routeIs('plus.*')
+        || request()->is('plus')
+        || request()->is('plus/*')
+        || request()->routeIs('tarot.*')
+        || request()->routeIs('actu.*')
+        || request()->routeIs('playlists.*')
+        || request()->routeIs('astro.*')
+        || request()->routeIs('profile.*');
+
     $isPrimary = $isHome
         || request()->routeIs('media.index')
         || request()->routeIs('chat.index')
         || request()->routeIs('family.*')
-        || request()->routeIs('tarot.index')
-        || request()->routeIs('actu.index');
+        || request()->routeIs('plus.index');
 
     $mobileTitle = '—';
     if ($isHome) $mobileTitle = 'Accueil';
     elseif (request()->routeIs('profile.*')) $mobileTitle = 'Profil';
     elseif (request()->routeIs('astro.show')) $mobileTitle = 'Ma fiche astro';
+    elseif (request()->routeIs('plus.*')) $mobileTitle = 'Plus';
     elseif (request()->routeIs('tarot.*')) $mobileTitle = 'Tarot';
     elseif (request()->routeIs('actu.*')) $mobileTitle = 'Actu locale';
     elseif (request()->routeIs('images.*')) $mobileTitle = 'Photo';
@@ -187,32 +196,14 @@
                             Chat
                         </x-nav-link>
 
-                        <div class="flex items-center gap-8 ms-10">
-                            <x-nav-link :href="route('tarot.index')" :active="request()->routeIs('tarot.*')">
-                                <span class="inline-flex items-center gap-2">
-                                    <img
-                                        src="{{ $tarotIconUrl }}"
-                                        alt=""
-                                        class="h-5 w-5 object-contain drop-shadow-sm"
-                                        aria-hidden="true"
-                                        onerror="this.onerror=null;this.src='{{ asset('images/crystal.png') }}';"
-                                    />
-                                    Tarot
-                                    @if($hasTarotDraft)
-                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary-300)]" aria-hidden="true"></span>
-                                    @endif
-                                </span>
-                            </x-nav-link>
-
-                            <x-nav-link :href="route('actu.index')" :active="request()->routeIs('actu.*')">
-                                <span class="inline-flex items-center">
-                                    Actu locale
-                                    @if($hasNewActu)
-                                        <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary-300)]" aria-hidden="true"></span>
-                                    @endif
-                                </span>
-                            </x-nav-link>
-                        </div>
+                        <x-nav-link :href="route('plus.index')" :active="$isPlus">
+                            <span class="inline-flex items-center">
+                                Plus
+                                @if($hasTarotDraft || $hasNewActu)
+                                    <span class="ms-2 inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary-300)]" aria-hidden="true"></span>
+                                @endif
+                            </span>
+                        </x-nav-link>
                     </div>
                 </div>
 

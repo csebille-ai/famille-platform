@@ -1156,6 +1156,16 @@ Route::middleware('auth')->group(function () {
     
         Route::get('/me/astro', [AstroProfileController::class, 'show'])->name('astro.show');
 
+    Route::get('/plus', function () {
+        $hasTarotDraft = (bool) session()->has('tarot.draft');
+        $hasNewActu = (bool) session()->get('news.has_new', false);
+
+        return view('plus.index', [
+            'hasTarotDraft' => $hasTarotDraft,
+            'hasNewActu' => $hasNewActu,
+        ]);
+    })->name('plus.index');
+
     Route::resource('playlists', PlaylistController::class);
     Route::get('playlists/{playlist}/items/search', [PlaylistItemController::class, 'search'])->name('playlists.items.search');
     Route::post('playlists/{playlist}/items', [PlaylistItemController::class, 'store'])->name('playlists.items.store');
