@@ -136,6 +136,7 @@ class ChessController extends Controller
     {
         $userId = (int) $request->user()->id;
         $uci = (string) $request->input('uci', '');
+        $san = (string) $request->input('san', '');
         $expectedFen = (string) $request->input('expected_fen', '');
 
         if ($uci === '' || $expectedFen === '') {
@@ -151,7 +152,7 @@ class ChessController extends Controller
             return response()->json(['message' => 'Tu dois rejoindre une équipe pour jouer.'], 403);
         }
 
-        return DB::transaction(function () use ($game, $rules, $games, $push, $userId, $uci, $expectedFen, $memberTeam) {
+        return DB::transaction(function () use ($game, $rules, $games, $push, $userId, $uci, $san, $expectedFen, $memberTeam) {
             /** @var \App\Models\ChessGame $locked */
             $locked = ChessGame::query()->whereKey($game->id)->lockForUpdate()->firstOrFail();
 
@@ -172,7 +173,7 @@ class ChessController extends Controller
             }
 
             try {
-                $result = $rules->applyUci((string) $locked->current_fen, $uci);
+                $result = $rules->applyUci((string) $locked->current_fen, $uci, $san !== '' ? $san : null);
             } catch (\Throwable $e) {
                 return response()->json([
                     'message' => 'Coup illégal.',
@@ -181,6 +182,7 @@ class ChessController extends Controller
                         ? \App\Services\Games\ChessRules::MOVE_PARSER_VERSION
                         : 'unknown',
                     'received_uci' => strtolower(trim($uci)),
+                    'received_san' => $san,
                 ], 422);
             }
 

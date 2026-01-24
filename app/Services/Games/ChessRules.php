@@ -17,10 +17,11 @@ class ChessRules
      *
      * @return array{new_fen:string,san:string,new_turn:'w'|'b',is_finished:bool,finish_reason:string|null}
      */
-    public function applyUci(string $fen, string $uci): array
+    public function applyUci(string $fen, string $uci, ?string $sanInput = null): array
     {
         $fen = trim($fen);
         $uci = strtolower(trim($uci));
+        $sanInput = is_string($sanInput) ? trim($sanInput) : null;
 
         if ($fen === '') {
             $fen = self::START_FEN;
@@ -52,6 +53,10 @@ class ChessRules
         $ok = $board->playLan($turn, $lan);
         if (!$ok && $compact) {
             $ok = $board->playLan($turn, $compact);
+        }
+        // Production safety net: accept SAN from chess.js as a fallback.
+        if (!$ok && $sanInput) {
+            $ok = $board->play($turn, $sanInput);
         }
         if (!$ok) {
             throw new UnknownNotationException();

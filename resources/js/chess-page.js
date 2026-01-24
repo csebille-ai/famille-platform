@@ -344,13 +344,14 @@ async function joinTeam(root, team) {
 }
 
 async function playMove(root) {
-    return playMoveUci(root, null)
+    return playMoveUci(root, null, null)
 }
 
-async function playMoveUci(root, uciOverride) {
+async function playMoveUci(root, uciOverride, sanOverride) {
     const moveUrl = root.dataset.moveUrl
     const uciInput = $('#chess-uci')
     const uci = String(uciOverride || (uciInput?.value || '')).trim().toLowerCase()
+    const san = String(sanOverride || '').trim()
 
     if (!uci) {
         showToast('Entre un coup (ex: e2e4).')
@@ -368,7 +369,7 @@ async function playMoveUci(root, uciOverride) {
         return
     }
 
-    const res = await postJson(moveUrl, { uci, expected_fen: expectedFen })
+    const res = await postJson(moveUrl, { uci, san, expected_fen: expectedFen })
     const data = await res.json().catch(() => ({}))
 
     if (res.status === 409) {
@@ -479,9 +480,10 @@ async function onBoardClick(root, square) {
 
     const move = candidates[0]
     const uci = `${move.from}${move.to}${move.promotion || ''}`
+    const san = move.san || ''
 
     clearSelection(root)
-    await playMoveUci(root, uci)
+    await playMoveUci(root, uci, san)
 }
 
 function init() {
@@ -538,10 +540,15 @@ function init() {
         if (!piece) return
         const st = root.state?.promo
         if (!st) return
+
+        const candidates = Array.isArray(st.candidates) ? st.candidates : []
+        const match = candidates.find(c => String(c?.promotion || '').toLowerCase() === String(piece).toLowerCase())
+        const san = match?.san || ''
+
         closePromotionModal(root)
         const uci = `${st.from}${st.to}${piece}`
         clearSelection(root)
-        playMoveUci(root, uci).catch(() => showToast('Erreur.'))
+        playMoveUci(root, uci, san).catch(() => showToast('Erreur.'))
     })
 }
 
