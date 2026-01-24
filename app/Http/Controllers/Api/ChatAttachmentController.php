@@ -78,10 +78,10 @@ class ChatAttachmentController extends Controller
         } else {
             // Treat as video if extension is supported; mime sniffing can be unreliable.
             $ext = strtolower((string) ($file->getClientOriginalExtension() ?? ''));
-            $allowed = ['mp4', 'webm', 'avi', 'mov', 'mkv'];
-            if (!in_array($ext, $allowed, true) && !str_starts_with($mime, 'video/')) {
+            $allowed = ['mp4', 'webm'];
+            if (!in_array($ext, $allowed, true) && !in_array($mime, ['video/mp4', 'video/webm'], true)) {
                 return response()->json([
-                    'message' => 'Type de fichier non supporté (photo ou vidéo uniquement).',
+                    'message' => 'Format vidéo non supporté. Utilise MP4 ou WebM (les formats MOV/MKV/AVI ne se lisent pas toujours dans le navigateur).',
                 ], 422);
             }
 

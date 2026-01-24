@@ -143,6 +143,16 @@ class VideoController extends Controller
             abort(404);
         }
 
+        // When stored on the public disk and viewed inline, prefer a direct URL so the web server
+        // (Apache/Nginx) can handle range requests and buffering efficiently. Streaming via PHP
+        // can be very slow on shared hosting for large videos.
+        if ($diskName === 'public' && !$request->boolean('download')) {
+            $publicUrl = trim((string) $disk->url($video->video_path));
+            if ($publicUrl !== '') {
+                return redirect()->to($publicUrl);
+            }
+        }
+
         $absolutePath = $disk->path($video->video_path);
         $mime = $disk->mimeType($video->video_path) ?: 'application/octet-stream';
         $downloadName = basename($video->video_path);
