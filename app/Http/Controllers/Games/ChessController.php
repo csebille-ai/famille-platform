@@ -19,30 +19,7 @@ class ChessController extends Controller
         $userId = (int) $request->user()->id;
         $game = $games->getOrCreateActiveGame($userId);
 
-        $members = ChessTeamMember::query()
-            ->with('user:id,name')
-            ->where('chess_game_id', $game->id)
-            ->orderBy('team')
-            ->orderBy('id')
-            ->get();
-
-        $myTeam = ChessTeamMember::query()
-            ->where('chess_game_id', $game->id)
-            ->where('user_id', $userId)
-            ->value('team');
-
-        $lastMove = ChessMove::query()
-            ->with('player:id,name')
-            ->where('chess_game_id', $game->id)
-            ->latest('id')
-            ->first();
-
-        return view('games.chess.index', [
-            'game' => $game,
-            'members' => $members,
-            'myTeam' => $myTeam,
-            'lastMove' => $lastMove,
-        ]);
+        return redirect()->route('games.chess.show', $game);
     }
 
     public function show(Request $request, ChessGame $game)

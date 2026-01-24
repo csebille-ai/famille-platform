@@ -87,7 +87,6 @@
                 <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
                     <div class="flex items-center justify-between gap-2">
                         <div class="text-sm font-semibold text-[color:var(--fam-text)]">Derniers coups</div>
-                        <a href="{{ route('games.chess.index') }}" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Voir tout</a>
                     </div>
                     <ol id="chess-recent" class="mt-2 space-y-1.5 text-xs font-semibold text-[color:var(--fam-text)]"></ol>
                 </div>

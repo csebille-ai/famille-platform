@@ -23,7 +23,7 @@ class ChessGameTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('games.chess.index'))
-            ->assertOk();
+            ->assertRedirect();
 
         $game = ChessGame::query()->firstOrFail();
 
@@ -51,7 +51,7 @@ class ChessGameTest extends TestCase
         // Create the active game by hitting the index.
         $this->actingAs($white)
             ->get(route('games.chess.index'))
-            ->assertOk();
+            ->assertRedirect();
 
         $game = ChessGame::query()->firstOrFail();
 
