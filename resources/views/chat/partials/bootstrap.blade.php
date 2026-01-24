@@ -3,6 +3,8 @@
         currentUserId: @json(auth()->id()),
         currentUserName: @json(auth()->user()?->name),
         pollUrl: @json(route('chat.poll')),
+        recipientsUrl: @json(route('chat.recipients')),
+        isAdmin: @json((bool) ($isAdmin ?? false)),
         quotaUrl: @json(url('/api/uploads/quota')),
         presignUrl: @json(url('/api/uploads/presign')),
         mpInitUrl: @json(url('/api/uploads/multipart/init')),

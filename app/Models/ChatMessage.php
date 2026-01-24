@@ -11,12 +11,15 @@ class ChatMessage extends Model
     protected $fillable = [
         'user_id',
         'body',
+        'audience_type',
+        'audience_user_ids',
         'deleted_for_all_at',
         'deleted_for_all_by_user_id',
     ];
 
     protected $casts = [
         'deleted_for_all_at' => 'datetime',
+        'audience_user_ids' => 'array',
     ];
 
     public function user(): BelongsTo

@@ -1163,6 +1163,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
+    Route::get('/chat/recipients', [ChatController::class, 'recipients'])->name('chat.recipients');
     Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
 
     Route::delete('/chat/messages/{message}/me', [ChatMessageDeletionController::class, 'destroyForMe'])

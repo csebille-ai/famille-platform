@@ -2,6 +2,8 @@
         (function () {
             const start = () => {
             const bootstrap = (window && window.__CHAT_BOOTSTRAP__) ? window.__CHAT_BOOTSTRAP__ : {};
+            const recipientsUrl = String(bootstrap.recipientsUrl || '').trim() || null;
+            const isAdmin = !!bootstrap.isAdmin;
 
             function firstExisting(...els) {
                 for (const el of els) {
@@ -49,6 +51,342 @@
 
             function getActiveComposer() {
                 return composer[activeComposerKey] || composer.mobile;
+            }
+
+            // --- Audience (targeted messages) ---
+            const audienceState = {
+                type: 'all',
+                userIds: [],
+            };
+
+            const recipientsIndex = new Map();
+            let recipientsLoaded = false;
+            let recipientsLoading = null;
+
+            function normalizeUserIds(ids) {
+                const out = [];
+                const seen = new Set();
+                for (const raw of (Array.isArray(ids) ? ids : [])) {
+                    const id = Number(raw || 0);
+                    if (!id || id <= 0) continue;
+                    if (currentUserId && Number(id) === Number(currentUserId)) continue;
+                    if (seen.has(id)) continue;
+                    seen.add(id);
+                    out.push(id);
+                }
+                return out;
+            }
+
+            function setAudienceUserIds(ids) {
+                const next = normalizeUserIds(ids);
+                if (!next.length) {
+                    audienceState.type = 'all';
+                    audienceState.userIds = [];
+                } else {
+                    audienceState.type = 'subset';
+                    audienceState.userIds = next;
+                }
+                syncAudienceUi();
+            }
+
+            function resetAudience() {
+                audienceState.type = 'all';
+                audienceState.userIds = [];
+                syncAudienceUi();
+            }
+
+            async function ensureRecipientsLoaded() {
+                if (recipientsLoaded) return;
+                if (recipientsLoading) return recipientsLoading;
+                if (!recipientsUrl) {
+                    recipientsLoaded = true;
+                    return;
+                }
+
+                recipientsLoading = (async () => {
+                    try {
+                        const res = await fetch(recipientsUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+                        if (!res.ok) throw new Error('recipients fetch failed');
+                        const json = await res.json();
+                        const users = Array.isArray(json?.users) ? json.users : [];
+                        recipientsIndex.clear();
+                        for (const u of users) {
+                            const id = Number(u?.id || 0);
+                            if (!id) continue;
+                            recipientsIndex.set(id, {
+                                id,
+                                name: String(u?.name || '—'),
+                                avatar_url: String(u?.avatar_url || ''),
+                            });
+                        }
+                    } catch (e) {
+                        // Best-effort: audience can still work; labels may be generic.
+                    } finally {
+                        recipientsLoaded = true;
+                        recipientsLoading = null;
+                        syncAudienceUi();
+                        decorateExistingAudienceBadges();
+                    }
+                })();
+
+                return recipientsLoading;
+            }
+
+            function audienceLabelForIds(ids) {
+                const list = normalizeUserIds(ids);
+                if (!list.length) return 'Tout le monde';
+                const names = list
+                    .map((id) => recipientsIndex.get(id)?.name)
+                    .filter((n) => typeof n === 'string' && n.trim() !== '');
+
+                if (!names.length) {
+                    return list.length === 1 ? '1 personne' : `${list.length} personnes`;
+                }
+
+                const first = names.slice(0, 3);
+                const more = names.length - first.length;
+                return more > 0 ? `${first.join(', ')} +${more}` : first.join(', ');
+            }
+
+            function audiencePillTextFromPayload(payload) {
+                const t = String(payload?.audience_type || payload?.audience?.type || 'all');
+                if (t !== 'subset') return '';
+                const ids = payload?.audience_user_ids || payload?.audience?.user_ids || [];
+                const users = Array.isArray(payload?.audience_users) ? payload.audience_users : [];
+                if (users.length) {
+                    const names = users.map((u) => String(u?.name || '').trim()).filter(Boolean);
+                    if (names.length) {
+                        const first = names.slice(0, 3);
+                        const more = names.length - first.length;
+                        const label = more > 0 ? `${first.join(', ')} +${more}` : first.join(', ');
+                        return `À: ${label}`;
+                    }
+                }
+                return `À: ${audienceLabelForIds(ids)}`;
+            }
+
+            const audienceUi = {
+                mobile: { bar: null, label: null, btn: null },
+                desktop: { bar: null, label: null, btn: null },
+            };
+
+            function ensureAudienceUiFor(key) {
+                const c = composer[key];
+                if (!c?.form || !c?.textarea) return;
+                if (audienceUi[key]?.bar) return;
+
+                const bar = document.createElement('div');
+                bar.className = 'mb-2 flex items-center justify-between gap-2';
+
+                const left = document.createElement('div');
+                left.className = 'text-xs font-semibold text-slate-600';
+                left.textContent = 'À:';
+
+                const label = document.createElement('div');
+                label.className = 'text-xs font-semibold text-slate-700 truncate';
+                label.textContent = 'Tout le monde';
+                label.style.maxWidth = '58vw';
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'shrink-0 inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700';
+                btn.textContent = 'Cibler';
+                btn.addEventListener('click', async () => {
+                    setActiveComposerKey(key);
+                    await ensureRecipientsLoaded();
+                    openAudienceModal();
+                });
+
+                const leftWrap = document.createElement('div');
+                leftWrap.className = 'min-w-0 flex items-center gap-2';
+                leftWrap.appendChild(left);
+                leftWrap.appendChild(label);
+
+                bar.appendChild(leftWrap);
+                bar.appendChild(btn);
+
+                // Insert above textarea.
+                c.textarea.parentNode?.insertBefore(bar, c.textarea);
+
+                audienceUi[key] = { bar, label, btn };
+            }
+
+            function syncAudienceUi() {
+                const labelText = audienceState.type === 'subset'
+                    ? audienceLabelForIds(audienceState.userIds)
+                    : 'Tout le monde';
+
+                for (const k of ['mobile', 'desktop']) {
+                    const ui = audienceUi[k];
+                    const c = composer[k];
+                    if (ui?.label) ui.label.textContent = labelText;
+                    if (c?.textarea) {
+                        c.textarea.placeholder = audienceState.type === 'subset'
+                            ? `Message pour ${labelText}…`
+                            : 'Votre message…';
+                    }
+                }
+            }
+
+            // --- Audience modal ---
+            let audienceModal = null;
+            let audienceModalBackdrop = null;
+            let audienceModalPanel = null;
+            let audienceModalList = null;
+            let audienceModalSearch = null;
+            let audienceModalSave = null;
+            let audienceModalClear = null;
+
+            function ensureAudienceModal() {
+                if (audienceModal) return;
+
+                audienceModal = document.createElement('div');
+                audienceModal.id = 'chatAudienceModal';
+                audienceModal.className = 'fixed inset-0 z-[70] hidden';
+
+                audienceModalBackdrop = document.createElement('div');
+                audienceModalBackdrop.className = 'absolute inset-0 bg-black/30 backdrop-blur-sm';
+                audienceModalBackdrop.addEventListener('click', () => setAudienceModalOpen(false));
+
+                audienceModalPanel = document.createElement('div');
+                audienceModalPanel.className = 'absolute left-1/2 top-1/2 w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white border border-black/10 shadow-xl p-4';
+
+                const title = document.createElement('div');
+                title.className = 'text-sm font-bold text-slate-900';
+                title.textContent = 'Destinataires';
+
+                const hint = document.createElement('div');
+                hint.className = 'mt-0.5 text-xs text-slate-500';
+                hint.textContent = 'Sélectionne 1 ou plusieurs personnes (vide = tout le monde).';
+
+                audienceModalSearch = document.createElement('input');
+                audienceModalSearch.type = 'search';
+                audienceModalSearch.className = 'mt-3 w-full rounded-xl border border-black/10 bg-white px-3 py-2 text-sm';
+                audienceModalSearch.placeholder = 'Rechercher…';
+                audienceModalSearch.addEventListener('input', () => renderAudienceModalList());
+
+                audienceModalList = document.createElement('div');
+                audienceModalList.className = 'mt-3 max-h-[52vh] overflow-auto rounded-xl border border-black/10';
+
+                const actions = document.createElement('div');
+                actions.className = 'mt-4 flex items-center justify-between gap-2';
+
+                audienceModalClear = document.createElement('button');
+                audienceModalClear.type = 'button';
+                audienceModalClear.className = 'inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-slate-700';
+                audienceModalClear.textContent = 'Tout le monde';
+                audienceModalClear.addEventListener('click', () => {
+                    setAudienceUserIds([]);
+                    setAudienceModalOpen(false);
+                });
+
+                audienceModalSave = document.createElement('button');
+                audienceModalSave.type = 'button';
+                audienceModalSave.className = 'inline-flex items-center justify-center rounded-full bg-slate-900 text-white px-4 py-2 text-xs font-semibold';
+                audienceModalSave.textContent = 'Valider';
+                audienceModalSave.addEventListener('click', () => {
+                    const ids = [];
+                    audienceModalList?.querySelectorAll('input[type="checkbox"][data-recipient-id]').forEach((el) => {
+                        if (el.checked) ids.push(Number(el.dataset.recipientId || 0));
+                    });
+                    setAudienceUserIds(ids);
+                    setAudienceModalOpen(false);
+                });
+
+                actions.appendChild(audienceModalClear);
+                actions.appendChild(audienceModalSave);
+
+                audienceModalPanel.appendChild(title);
+                audienceModalPanel.appendChild(hint);
+                audienceModalPanel.appendChild(audienceModalSearch);
+                audienceModalPanel.appendChild(audienceModalList);
+                audienceModalPanel.appendChild(actions);
+
+                audienceModal.appendChild(audienceModalBackdrop);
+                audienceModal.appendChild(audienceModalPanel);
+                document.body.appendChild(audienceModal);
+            }
+
+            function setAudienceModalOpen(open) {
+                ensureAudienceModal();
+                audienceModal.classList.toggle('hidden', !open);
+                if (open) {
+                    renderAudienceModalList();
+                    try { audienceModalSearch?.focus(); } catch {}
+                }
+            }
+
+            function renderAudienceModalList() {
+                if (!audienceModalList) return;
+                const q = String(audienceModalSearch?.value || '').trim().toLocaleLowerCase();
+                const selected = new Set(normalizeUserIds(audienceState.userIds));
+                audienceModalList.innerHTML = '';
+
+                const users = Array.from(recipientsIndex.values());
+                for (const u of users) {
+                    const name = String(u?.name || '—');
+                    if (q && !name.toLocaleLowerCase().includes(q)) continue;
+
+                    const row = document.createElement('label');
+                    row.className = 'flex items-center gap-3 px-3 py-2 border-b border-black/5 last:border-b-0 cursor-pointer';
+
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox';
+                    cb.className = 'h-4 w-4';
+                    cb.dataset.recipientId = String(u.id);
+                    cb.checked = selected.has(Number(u.id));
+
+                    const txt = document.createElement('div');
+                    txt.className = 'text-sm text-slate-900';
+                    txt.textContent = name;
+
+                    row.appendChild(cb);
+                    row.appendChild(txt);
+                    audienceModalList.appendChild(row);
+                }
+
+                if (!audienceModalList.childElementCount) {
+                    const empty = document.createElement('div');
+                    empty.className = 'px-3 py-6 text-center text-sm text-slate-500';
+                    empty.textContent = 'Aucun résultat.';
+                    audienceModalList.appendChild(empty);
+                }
+            }
+
+            function openAudienceModal() {
+                ensureAudienceModal();
+                setAudienceModalOpen(true);
+            }
+
+            function ensureAudiencePill(rowEl, payload) {
+                if (!rowEl) return;
+                const text = audiencePillTextFromPayload(payload);
+                if (!text) return;
+
+                const width = rowEl.firstElementChild;
+                if (!width) return;
+
+                if (width.querySelector('[data-audience-pill]')) return;
+
+                const pillWrap = document.createElement('div');
+                pillWrap.className = `mb-1 flex ${rowEl.classList.contains('justify-end') ? 'justify-end' : 'justify-start'}`;
+                const pill = document.createElement('div');
+                pill.dataset.audiencePill = '1';
+                pill.className = 'text-[0.7rem] font-semibold text-slate-700 bg-white border border-black/10 rounded-full px-3 py-1';
+                pill.textContent = text;
+                pillWrap.appendChild(pill);
+                width.insertBefore(pillWrap, width.firstChild);
+            }
+
+            function decorateExistingAudienceBadges() {
+                if (!messagesEl) return;
+                messagesEl.querySelectorAll('[data-message-row]').forEach((row) => {
+                    const t = String(row?.dataset?.audienceType || 'all');
+                    if (t !== 'subset') return;
+                    let ids = [];
+                    try { ids = JSON.parse(row?.dataset?.audienceUserIds || '[]'); } catch {}
+                    ensureAudiencePill(row, { audience_type: 'subset', audience_user_ids: ids });
+                });
             }
 
             // --- QuickType (suggestion bar) ---
@@ -2130,6 +2468,19 @@
 
                 if (action === 'reply') {
                     closeActionMenu();
+                    try {
+                        const row = rowForMessageId(mid);
+                        const t = String(row?.dataset?.audienceType || 'all');
+                        if (t === 'subset') {
+                            let ids = [];
+                            try { ids = JSON.parse(row?.dataset?.audienceUserIds || '[]'); } catch {}
+                            setAudienceUserIds(ids);
+                        } else {
+                            resetAudience();
+                        }
+                    } catch {
+                        resetAudience();
+                    }
                     appendQuoteToComposer(mid);
                     return;
                 }
@@ -2369,6 +2720,11 @@
                 outer.dataset.deleted = isDeleted ? '1' : '0';
                 if (id != null) outer.dataset.messageId = String(id);
 
+                const audienceType = String(payload?.audience_type || payload?.audience?.type || 'all');
+                const audienceIds = normalizeUserIds(payload?.audience_user_ids || payload?.audience?.user_ids || []);
+                outer.dataset.audienceType = audienceType;
+                outer.dataset.audienceUserIds = JSON.stringify(audienceIds);
+
                 const initialRs = isDeleted ? [] : toArraySummary(payload?.reaction_summary || []);
                 outer.dataset.reactionSummary = JSON.stringify(initialRs);
                 if (id != null) {
@@ -2386,6 +2742,8 @@
                     meta.textContent = `${firstName(name)} · ${whenTime}`;
                     width.appendChild(meta);
                 }
+
+                ensureAudiencePill(outer, payload);
 
                 const row = document.createElement('div');
                 row.className = `flex items-end gap-2 ${isMe ? 'flex-row-reverse' : ''}`;
@@ -3298,6 +3656,12 @@
                 realtimeStarted = true;
                 console.log('[chat] Echo ready, joining presence channel chat');
 
+                const handleSent = (e) => {
+                    console.log('[chat] message.sent', e);
+                    const appended = appendMessage(e);
+                    if (e?.id) lastMessageId = Math.max(lastMessageId, Number(e.id));
+                };
+
                 window.Echo.join('chat')
                     .here((users) => {
                         console.log('[chat] here(users)=', users);
@@ -3323,9 +3687,7 @@
                         renderOnline(Array.from(online.values()));
                     })
                     .listen('.message.sent', (e) => {
-                        console.log('[chat] message.sent', e);
-                        const appended = appendMessage(e);
-                        if (e?.id) lastMessageId = Math.max(lastMessageId, Number(e.id));
+                        handleSent(e);
                     })
                     .listen('.message.deleted', (e) => {
                         if (!e?.id) return;
@@ -3338,6 +3700,21 @@
                         if (!e?.message_id) return;
                         updateReactionSummary(Number(e.message_id), e.reaction_summary || []);
                     });
+
+                // Targeted messages: listen on private channels.
+                if (currentUserId) {
+                    try {
+                        window.Echo.private(`chat.user.${currentUserId}`)
+                            .listen('.message.sent', handleSent);
+                    } catch {}
+                }
+
+                if (isAdmin) {
+                    try {
+                        window.Echo.private('chat.admin')
+                            .listen('.message.sent', handleSent);
+                    } catch {}
+                }
             }
 
             if (visioBtn) {
@@ -3565,7 +3942,10 @@
                                 ...(socketId ? { 'X-Socket-Id': socketId } : {}),
                             },
                             credentials: 'same-origin',
-                            body: JSON.stringify({ body }),
+                            body: JSON.stringify({
+                                body,
+                                audience_user_ids: audienceState.type === 'subset' ? audienceState.userIds : [],
+                            }),
                         });
 
                         const ct = (res.headers.get('content-type') || '').toLowerCase();
@@ -3593,6 +3973,9 @@
                         autoGrowTextarea(c.textarea);
                         syncSendButtonFor(c);
                         c.textarea.focus();
+
+                        // Safety: reset to "Tout le monde" after send.
+                        resetAudience();
                     } catch (e) {
                         markLocalFailed(tempId, e?.message || 'Envoi impossible.');
                     } finally {
@@ -3604,6 +3987,11 @@
 
             bindComposerHandlers(composer.mobile);
             bindComposerHandlers(composer.desktop);
+
+            ensureAudienceUiFor('mobile');
+            ensureAudienceUiFor('desktop');
+            syncAudienceUi();
+            ensureRecipientsLoaded();
 
             // Voice dictation (Web Speech API)
             if (attachPickVoice) {

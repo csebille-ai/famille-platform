@@ -11,3 +11,11 @@ Broadcast::channel('chat', function ($user) {
         'avatar_url' => avatarUrl($user),
     ];
 });
+
+Broadcast::channel('chat.user.{userId}', function ($user, $userId) {
+    return (int) $user->id === (int) $userId;
+});
+
+Broadcast::channel('chat.admin', function ($user) {
+    return $user->can('manage-users');
+});
