@@ -87,7 +87,22 @@ class CloudFileController extends Controller
 
     public function store(Request $request)
     {
-        $maxKb = (int) config('cloud.max_upload_kb', 10240);
+        $file = $request->file('file');
+        $clientMime = $file ? (string) ($file->getClientMimeType() ?? '') : '';
+        $detectedMime = $file ? (string) ($file->getMimeType() ?? '') : '';
+        $mime = $detectedMime !== '' ? $detectedMime : $clientMime;
+
+        $isVideo = false;
+        if ($mime !== '' && str_starts_with(strtolower($mime), 'video/')) {
+            $isVideo = true;
+        } elseif ($file) {
+            $ext = strtolower((string) ($file->getClientOriginalExtension() ?? ''));
+            $isVideo = in_array($ext, ['mp4', 'webm', 'avi', 'mov', 'mkv'], true);
+        }
+
+        $defaultMaxKb = (int) config('cloud.max_upload_kb', 10240);
+        $videoMaxKb = (int) config('cloud.max_video_upload_kb', 614400);
+        $maxKb = $isVideo ? max(1, $videoMaxKb) : max(1, $defaultMaxKb);
 
         $validated = $request->validate([
             'folder_path' => ['nullable', 'string', 'max:255'],

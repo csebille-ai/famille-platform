@@ -32,8 +32,11 @@ class CloudChunkUploadInitTest extends TestCase
         $user = User::factory()->create(['role' => 'admin']);
         $this->actingAs($user);
 
-        // Cap at 100MB.
-        config(['cloud.max_file_kb' => 102400]);
+        // Cap videos at 100MB.
+        config([
+            'cloud.max_file_kb' => 1048576,
+            'cloud.max_video_file_kb' => 102400,
+        ]);
 
         $this->postJson(route('cloud.uploads.init'), [
             'name' => 'too-big.mp4',

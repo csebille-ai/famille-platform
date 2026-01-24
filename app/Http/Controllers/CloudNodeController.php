@@ -646,25 +646,37 @@ class CloudNodeController extends Controller
         $effectivePerRequestMaxKb = $iniMaxKb > 0 ? min($perRequestMaxKb, $iniMaxKb) : $perRequestMaxKb;
         $effectivePerRequestMaxBytes = max(1, $effectivePerRequestMaxKb) * 1024;
 
-        // Total file size limit (relevant for chunked uploads).
-        $maxFileKb = (int) config('cloud.max_file_kb', 0);
-        $maxFileBytes = $maxFileKb > 0 ? max(1, $maxFileKb) * 1024 : null;
-
-        $sizeRules = ['required', 'integer', 'min:1'];
-        if ($maxFileBytes !== null) {
-            $sizeRules[] = 'max:' . $maxFileBytes;
-        }
-
         $validated = $request->validate([
             'upload_id' => ['nullable', 'string', 'max:64'],
             'name' => ['required', 'string', 'max:255'],
-            'size' => $sizeRules,
+            'size' => ['required', 'integer', 'min:1'],
             'mime' => ['nullable', 'string', 'max:255'],
             'parent_id' => ['nullable', 'integer', 'exists:cloud_nodes,id'],
             'return' => ['nullable', 'string', 'max:2048'],
         ]);
 
         $size = (int) $validated['size'];
+
+        // Total file size limit (relevant for chunked uploads).
+        // Videos can have a distinct (higher) limit.
+        $maxFileKb = (int) config('cloud.max_file_kb', 0);
+        $maxVideoKb = (int) config('cloud.max_video_file_kb', 0);
+
+        $mime = trim((string) ($validated['mime'] ?? ''));
+        $isVideo = $mime !== '' && str_starts_with($mime, 'video/');
+        $effectiveMaxKb = $isVideo && $maxVideoKb > 0 ? $maxVideoKb : $maxFileKb;
+
+        if ($effectiveMaxKb > 0) {
+            $effectiveMaxBytes = max(1, $effectiveMaxKb) * 1024;
+            if ($size > $effectiveMaxBytes) {
+                $human = $this->formatBytes($effectiveMaxBytes);
+                $message = "Fichier trop volumineux (max {$human}).";
+                return response()->json([
+                    'message' => $message,
+                    'errors' => ['size' => [$message]],
+                ], 422);
+            }
+        }
 
         $quotaBytes = $this->cloudQuotaBytes();
         if ($quotaBytes > 0) {
@@ -679,7 +691,6 @@ class CloudNodeController extends Controller
             }
         }
 
-        $mime = trim((string) ($validated['mime'] ?? ''));
         if (str_starts_with($mime, 'video/')) {
             $allowedVideoMimes = ['video/mp4', 'video/webm', 'video/quicktime'];
             if (!in_array($mime, $allowedVideoMimes, true)) {

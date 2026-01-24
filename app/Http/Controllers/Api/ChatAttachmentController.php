@@ -29,7 +29,7 @@ class ChatAttachmentController extends Controller
             abort(403);
         }
 
-        $maxKb = 512000; // 500 MB (upper bound; real limit depends on PHP/server).
+        $maxKb = 614400; // 600 MB (upper bound; real limit depends on PHP/server).
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:' . $maxKb],
