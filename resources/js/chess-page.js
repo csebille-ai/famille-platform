@@ -258,7 +258,88 @@ function cannotMoveToast(root) {
 function clearSelection(root) {
     root.state.selectedFrom = null
     root.state.legalMoves = []
+    closePromotionModal(root)
     renderBoard(root)
+}
+
+function parseSanMovesFromPgn(pgn) {
+    const raw = String(pgn || '').trim()
+    if (!raw) return []
+
+    // Remove bracketed headers (shouldn't exist in our simplified PGN, but safe).
+    let s = raw.replace(/\[[^\]]*\]/g, ' ')
+    // Remove comments and variations.
+    s = s.replace(/\{[^}]*\}/g, ' ')
+    s = s.replace(/;[^\n]*/g, ' ')
+    s = s.replace(/\([^)]*\)/g, ' ')
+    // Normalize whitespace.
+    s = s.replace(/\s+/g, ' ').trim()
+
+    const tokens = s.split(' ').map(t => t.trim()).filter(Boolean)
+    const out = []
+
+    for (const tok of tokens) {
+        if (!tok) continue
+        // Move numbers like "1.", "12..." etc.
+        if (/^\d+\.(?:\.\.)?$/.test(tok)) continue
+        // Results
+        if (tok === '1-0' || tok === '0-1' || tok === '1/2-1/2' || tok === '*') continue
+        // NAGs
+        if (/^\$\d+$/.test(tok)) continue
+
+        // Trim annotation suffixes like "!", "?", "!?".
+        const cleaned = tok.replace(/[!?]+$/g, '')
+        if (!cleaned) continue
+        out.push(cleaned)
+    }
+
+    return out
+}
+
+function capturedGlyph(pieceType, capturedColor) {
+    const p = String(pieceType || '').toLowerCase()
+    if (!p) return ''
+    const key = capturedColor === 'w' ? p.toUpperCase() : p
+    return PIECES_UNICODE[key] || ''
+}
+
+function computeCapturesFromPgn(pgn) {
+    const moves = parseSanMovesFromPgn(pgn)
+    const chess = new Chess()
+    const byWhite = []
+    const byBlack = []
+
+    for (const san of moves) {
+        let mv = null
+        try {
+            mv = chess.move(san, { sloppy: true })
+        } catch {
+            mv = null
+        }
+        if (!mv) break
+        if (!mv.captured) continue
+
+        const capturedColor = mv.color === 'w' ? 'b' : 'w'
+        const glyph = capturedGlyph(mv.captured, capturedColor)
+        if (!glyph) continue
+
+        if (mv.color === 'w') byWhite.push(glyph)
+        else byBlack.push(glyph)
+    }
+
+    return { byWhite, byBlack }
+}
+
+function renderCaptures(root) {
+    const wrapB = document.getElementById('chess-captures-b')
+    const wrapW = document.getElementById('chess-captures-w')
+    if (!wrapB && !wrapW) return
+
+    const byWhite = root.state?.capturesByWhite || []
+    const byBlack = root.state?.capturesByBlack || []
+
+    if (wrapB) wrapB.textContent = byBlack.length ? byBlack.join(' ') : '—'
+    if (wrapW) wrapW.textContent = byWhite.length ? byWhite.join(' ') : '—'
 }
 
 function computeLegalMoves(fen, from) {
@@ -309,10 +390,14 @@ async function loadState(root) {
 
     root.dataset.currentFen = fen
 
-    setText($('#chess-fen'), fen || '—')
     setText($('#chess-team-w'), formatMembers(data.members, 'w'))
     setText($('#chess-team-b'), formatMembers(data.members, 'b'))
-    setText($('#chess-pgn'), data?.game?.pgn || '—')
+
+    const pgn = String(data?.game?.pgn || '')
+    const caps = computeCapturesFromPgn(pgn)
+    root.state.capturesByWhite = caps.byWhite
+    root.state.capturesByBlack = caps.byBlack
+    renderCaptures(root)
 
     setTurnLabel(turn)
     setMyTeamLabel(root.state.myTeam)
@@ -364,14 +449,9 @@ async function joinTeam(root, team) {
     await loadState(root)
 }
 
-async function playMove(root) {
-    return playMoveUci(root, null, null)
-}
-
 async function playMoveUci(root, uciOverride, sanOverride) {
     const moveUrl = root.dataset.moveUrl
-    const uciInput = $('#chess-uci')
-    const uci = String(uciOverride || (uciInput?.value || '')).trim().toLowerCase()
+    const uci = String(uciOverride || '').trim().toLowerCase()
     const san = String(sanOverride || '').trim()
 
     if (!uci) {
@@ -395,7 +475,6 @@ async function playMoveUci(root, uciOverride, sanOverride) {
 
     if (res.status === 409) {
         root.dataset.currentFen = data.current_fen || expectedFen
-        setText($('#chess-fen'), root.dataset.currentFen)
         showToast('Position mise à jour (conflit). Réessaie ton coup.')
         await loadState(root)
         return
@@ -406,7 +485,6 @@ async function playMoveUci(root, uciOverride, sanOverride) {
         return
     }
 
-    if (uciInput) uciInput.value = ''
     showToast(`Coup joué: ${data.san || uci}`)
 
     try {
@@ -520,6 +598,8 @@ function init() {
         legalMoves: [],
         lastMove: null,
         promo: null,
+        capturesByWhite: [],
+        capturesByBlack: [],
     }
 
     $('#chess-refresh')?.addEventListener('click', () => {
@@ -530,14 +610,6 @@ function init() {
 
     $('#chess-join-w')?.addEventListener('click', () => joinTeam(root, 'w'))
     $('#chess-join-b')?.addEventListener('click', () => joinTeam(root, 'b'))
-
-    $('#chess-play')?.addEventListener('click', () => playMove(root))
-    $('#chess-uci')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault()
-            playMove(root)
-        }
-    })
 
     loadState(root).catch(() => showToast('Erreur de chargement.'))
 

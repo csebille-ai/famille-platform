@@ -13,7 +13,10 @@
                             <div class="text-sm font-semibold text-[color:var(--fam-text)]">Partie</div>
                             <div id="chess-turn" class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)]">—</div>
                         </div>
-                        <button type="button" id="chess-refresh" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Rafraîchir</button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="chess-cancel" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Annuler</button>
+                            <button type="button" id="chess-refresh" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Rafraîchir</button>
+                        </div>
                     </div>
 
                     <div class="mt-3 text-xs font-semibold text-[color:var(--fam-muted)]">Ton équipe</div>
@@ -36,7 +39,6 @@
                 <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
                     <div class="flex items-center justify-between gap-2">
                         <div class="text-sm font-semibold text-[color:var(--fam-text)]">Échiquier</div>
-                        <button type="button" id="chess-cancel" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Annuler</button>
                     </div>
 
                     <style>
@@ -45,7 +47,12 @@
                         #chess-board .chess-in-check { box-shadow: inset 0 0 0 2px rgba(251, 113, 133, .85); }
                     </style>
 
-                    <div id="chess-board" class="mt-3 relative w-full aspect-square grid grid-cols-8 grid-rows-8 gap-0 rounded-2xl overflow-hidden border border-[color:var(--fam-border-soft)] bg-[color:var(--fam-surface-alt)] select-none touch-manipulation" aria-label="Échiquier">
+                    <div class="mt-3 flex items-center justify-between gap-2">
+                        <div class="text-xs font-semibold text-[color:var(--fam-muted)]">Noirs — prises</div>
+                        <div id="chess-captures-b" class="flex flex-wrap justify-end gap-1 text-base leading-none text-[color:var(--fam-text)]">—</div>
+                    </div>
+
+                    <div id="chess-board" class="mt-2 relative w-full aspect-square grid grid-cols-8 grid-rows-8 gap-0 rounded-2xl overflow-hidden border border-[color:var(--fam-border-soft)] bg-[color:var(--fam-surface-alt)] select-none touch-manipulation" aria-label="Échiquier">
                         @php
                             $files = ['a','b','c','d','e','f','g','h'];
                         @endphp
@@ -65,21 +72,10 @@
                         </div>
                     </div>
 
-                    <details class="mt-3">
-                        <summary class="text-xs font-semibold text-[color:var(--fam-muted)] cursor-pointer">Debug (UCI)</summary>
-                        <div class="mt-2 text-xs font-semibold text-[color:var(--fam-muted)]">Fallback pour tests: e2e4, g1f3, e7e8q…</div>
-                        <div class="mt-2 flex items-center gap-2">
-                            <input id="chess-uci" type="text" inputmode="latin" autocapitalize="none" autocomplete="off" spellcheck="false"
-                                placeholder="e2e4"
-                                class="flex-1 rounded-xl border border-[color:var(--fam-border)] px-3 py-2 text-sm" />
-                            <button type="button" id="chess-play" class="shrink-0 text-xs font-semibold rounded-xl px-3 py-2 bg-[color:var(--fam-primary)] text-white hover:opacity-90">Jouer</button>
-                        </div>
-
-                        <div class="mt-2">
-                            <div class="text-xs font-semibold text-[color:var(--fam-muted)]">FEN</div>
-                            <div id="chess-fen" class="mt-1 text-xs font-semibold text-[color:var(--fam-text)] break-all">—</div>
-                        </div>
-                    </details>
+                    <div class="mt-3 flex items-center justify-between gap-2">
+                        <div class="text-xs font-semibold text-[color:var(--fam-muted)]">Blancs — prises</div>
+                        <div id="chess-captures-w" class="flex flex-wrap justify-end gap-1 text-base leading-none text-[color:var(--fam-text)]">—</div>
+                    </div>
                 </div>
             </div>
 
