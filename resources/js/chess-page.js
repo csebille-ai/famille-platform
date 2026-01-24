@@ -167,8 +167,8 @@ function renderBoard(root) {
                 'hover:brightness-95',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25',
                 selected === square ? 'ring-2 ring-[color:var(--fam-primary)]' : '',
-                (lastMove && (lastMove.from === square || lastMove.to === square)) ? 'outline outline-2 outline-amber-300' : '',
-                (kingInCheckSquare === square) ? 'outline outline-2 outline-rose-400' : '',
+                (lastMove && (lastMove.from === square || lastMove.to === square)) ? 'chess-last-move' : '',
+                (kingInCheckSquare === square) ? 'chess-in-check' : '',
             ].filter(Boolean).join(' ')
 
             // Piece
@@ -327,6 +327,27 @@ async function loadState(root) {
     renderRecentMoves(data.moves)
 
     return data
+}
+
+async function pollStateIfChanged(root) {
+    if (document.hidden) return
+    if (!root?.dataset?.stateUrl) return
+    // Don't disrupt the user mid-selection or promotion.
+    if (root.state?.selectedFrom) return
+    if (root.state?.promo) return
+
+    try {
+        const res = await fetch(root.dataset.stateUrl, { headers: { 'Accept': 'application/json' } })
+        if (!res.ok) return
+        const data = await res.json()
+        const newFen = data?.game?.fen || ''
+        if (!newFen) return
+        const curFen = root.state?.fen || root.dataset.currentFen || ''
+        if (String(newFen).trim() === String(curFen).trim()) return
+        await loadState(root)
+    } catch {
+        // ignore polling errors
+    }
 }
 
 async function joinTeam(root, team) {
@@ -519,6 +540,14 @@ function init() {
     })
 
     loadState(root).catch(() => showToast('Erreur de chargement.'))
+
+    // Auto-refresh (polling) — important on o2switch where WebSocket may be unavailable.
+    root._poll = window.setInterval(() => {
+        pollStateIfChanged(root)
+    }, 4000)
+    window.addEventListener('beforeunload', () => {
+        if (root._poll) window.clearInterval(root._poll)
+    })
 
     $('#chess-board')?.addEventListener('click', (e) => {
         const btn = e.target?.closest?.('button[data-square]')

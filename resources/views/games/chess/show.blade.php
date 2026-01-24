@@ -49,6 +49,12 @@
                         <button type="button" id="chess-cancel" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Annuler</button>
                     </div>
 
+                    <style>
+                        /* Scoped helpers: avoid browser default outline (black lines) */
+                        #chess-board .chess-last-move { box-shadow: inset 0 0 0 2px rgba(251, 191, 36, .85); }
+                        #chess-board .chess-in-check { box-shadow: inset 0 0 0 2px rgba(251, 113, 133, .85); }
+                    </style>
+
                     <div id="chess-board" class="mt-3 relative w-full aspect-square grid grid-cols-8 grid-rows-8 gap-0 rounded-2xl overflow-hidden border border-[color:var(--fam-border-soft)] bg-[color:var(--fam-surface-alt)] select-none touch-manipulation" aria-label="Échiquier">
                         @php
                             $files = ['a','b','c','d','e','f','g','h'];
