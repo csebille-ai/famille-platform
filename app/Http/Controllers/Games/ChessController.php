@@ -175,14 +175,33 @@ class ChessController extends Controller
             try {
                 $result = $rules->applyUci((string) $locked->current_fen, $uci, $san !== '' ? $san : null);
             } catch (\Throwable $e) {
+                $fenStr = (string) $locked->current_fen;
+                $uciStr = strtolower(trim($uci));
+                $lanStr = null;
+                $compactStr = null;
+                if (preg_match('/^([a-h][1-8])([a-h][1-8])([qrbn])?$/', $uciStr, $m)) {
+                    $lanStr = $m[1] . '-' . $m[2] . ($m[3] ?? '');
+                    $compactStr = $m[1] . $m[2] . ($m[3] ?? '');
+                } elseif (preg_match('/^([a-h][1-8])-([a-h][1-8])(?:=)?([qrbn])?$/', $uciStr, $m)) {
+                    $lanStr = $m[1] . '-' . $m[2] . ($m[3] ?? '');
+                    $compactStr = $m[1] . $m[2] . ($m[3] ?? '');
+                }
+
                 return response()->json([
                     'message' => 'Coup illégal.',
                     'code' => 'chess_move_illegal',
                     'parser' => defined('App\\Services\\Games\\ChessRules::MOVE_PARSER_VERSION')
                         ? \App\Services\Games\ChessRules::MOVE_PARSER_VERSION
                         : 'unknown',
-                    'received_uci' => strtolower(trim($uci)),
+                    'received_uci' => $uciStr,
                     'received_san' => $san,
+                    'computed_lan' => $lanStr,
+                    'computed_compact' => $compactStr,
+                    'fen' => $fenStr,
+                    'turn' => (string) $locked->turn,
+                    'exception' => get_class($e),
+                    'exception_msg' => substr((string) $e->getMessage(), 0, 160),
+                    'selftest' => $rules->selfTest(),
                 ], 422);
             }
 

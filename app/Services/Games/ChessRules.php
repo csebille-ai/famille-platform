@@ -10,7 +10,35 @@ class ChessRules
     public const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
     // Helps verify which move-normalization logic is deployed.
-    public const MOVE_PARSER_VERSION = 'uci+lan->playLan(dashed,compact)@2026-01-24';
+    public const MOVE_PARSER_VERSION = 'uci+lan->playLan(dashed,compact)+san@2026-01-24';
+
+    /**
+     * Lightweight sanity check for production debugging.
+     *
+     * @return array<string,mixed>
+     */
+    public function selfTest(): array
+    {
+        $out = [
+            'php' => PHP_VERSION,
+            'mbstring' => extension_loaded('mbstring'),
+        ];
+
+        try {
+            $board = FenToBoardFactory::create(self::START_FEN);
+            $turn = (string) ($board->turn ?? '');
+            $out['board_turn'] = $turn;
+            $out['playLan_d2d4'] = $board->playLan($turn, 'd2d4');
+            $board2 = FenToBoardFactory::create(self::START_FEN);
+            $turn2 = (string) ($board2->turn ?? '');
+            $out['play_d4'] = $board2->play($turn2, 'd4');
+        } catch (\Throwable $e) {
+            $out['error'] = get_class($e);
+            $out['error_msg'] = substr((string) $e->getMessage(), 0, 160);
+        }
+
+        return $out;
+    }
 
     /**
      * Apply a LAN/UCI move (e.g. e2e4, g1f3, e7e8q, e2-e4, e7-e8=q) on a given FEN.
