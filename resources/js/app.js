@@ -5,6 +5,7 @@ import '@phosphor-icons/web/regular';
 import Alpine from 'alpinejs';
 
 import './transition-manager';
+import './chess-page';
 
 window.Alpine = Alpine;
 

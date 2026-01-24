@@ -5,6 +5,7 @@
 @php
     $hasTarotDraft = (bool) session()->has('tarot.draft');
     $hasNewActu = (bool) session()->get('news.has_new', false);
+    $hasGamesTurn = (bool) session()->get('games.chess.your_turn', false);
 
     $isPlus = request()->routeIs('plus.*')
         || request()->is('plus')
@@ -48,7 +49,7 @@
             'active' => $isPlus,
             'label' => 'Plus',
             'icon' => 'dots-three-outline',
-            'badge' => ($hasTarotDraft || $hasNewActu),
+            'badge' => ($hasTarotDraft || $hasNewActu || $hasGamesTurn),
         ],
     ];
 @endphp

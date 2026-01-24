@@ -14,6 +14,7 @@
         };
 
         $fun = [
+            $card(route('games.index'), 'Games', 'Échecs & jeux', 'game-controller', false),
             $card(route('tarot.index'), 'Tarot', $hasTarotDraft ? 'Brouillon en cours' : 'Tirage & lectures', 'sparkle', $hasTarotDraft),
             $card(route('playlists.index'), 'Playlists', 'Musique & listes', 'music-notes', false),
         ];

@@ -14,6 +14,8 @@ use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\TarotController;
+use App\Http\Controllers\Games\GamesController;
+use App\Http\Controllers\Games\ChessController as GamesChessController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\CalendarFamilyController;
@@ -1165,6 +1167,14 @@ Route::middleware('auth')->group(function () {
             'hasNewActu' => $hasNewActu,
         ]);
     })->name('plus.index');
+
+    Route::get('/games', [GamesController::class, 'index'])->name('games.index');
+    Route::get('/games/chess', [GamesChessController::class, 'index'])->name('games.chess.index');
+    Route::get('/games/chess/{game}', [GamesChessController::class, 'show'])->name('games.chess.show');
+
+    Route::get('/games/chess/{game}/state', [GamesChessController::class, 'state'])->name('games.chess.state');
+    Route::post('/games/chess/{game}/join', [GamesChessController::class, 'join'])->name('games.chess.join');
+    Route::post('/games/chess/{game}/move', [GamesChessController::class, 'move'])->name('games.chess.move');
 
     Route::resource('playlists', PlaylistController::class);
     Route::get('playlists/{playlist}/items/search', [PlaylistItemController::class, 'search'])->name('playlists.items.search');

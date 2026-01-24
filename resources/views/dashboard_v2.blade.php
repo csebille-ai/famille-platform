@@ -78,6 +78,37 @@
 
     <div class="max-w-2xl md:max-w-6xl mx-auto px-4 md:px-6 py-4 space-y-3">
         @php
+            $hasChessActive = (bool) session()->get('games.chess.active', false);
+            $hasChessTurn = (bool) session()->get('games.chess.your_turn', false);
+        @endphp
+
+        @if($hasChessActive)
+            <section class="dash-fade">
+                <a href="{{ route('games.chess.index') }}" class="block rounded-2xl bg-white px-3 py-3 border border-[color:var(--fam-border)] shadow-sm hover:shadow transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25">
+                    <div class="flex items-start gap-3">
+                        <div class="h-10 w-10 shrink-0 rounded-2xl bg-[color:var(--fam-primary-100)] text-[color:var(--fam-primary)] flex items-center justify-center">
+                            <i class="ph ph-chess-rook text-[20px]" aria-hidden="true"></i>
+                        </div>
+
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2">
+                                <div class="text-sm font-semibold text-[color:var(--fam-text)]">Échecs</div>
+                                @if($hasChessTurn)
+                                    <span class="inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary-300)]" aria-hidden="true"></span>
+                                @endif
+                            </div>
+                            <div class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)]">
+                                {{ $hasChessTurn ? 'À ton équipe de jouer' : 'Partie en cours' }}
+                            </div>
+                        </div>
+
+                        <div class="text-[color:var(--fam-muted)] mt-1"><i class="ph ph-caret-right" aria-hidden="true"></i></div>
+                    </div>
+                </a>
+            </section>
+        @endif
+
+        @php
             $familyActivity = $familyActivity ?? [];
             $activityItems = is_array($familyActivity) ? array_slice($familyActivity, 0, 3) : [];
 
