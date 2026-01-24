@@ -49,7 +49,25 @@
                         <button type="button" id="chess-cancel" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Annuler</button>
                     </div>
 
-                    <div id="chess-board" class="mt-3 w-full aspect-square grid grid-cols-8 gap-0 rounded-2xl overflow-hidden border border-[color:var(--fam-border-soft)] select-none touch-manipulation" aria-label="Échiquier"></div>
+                    <div id="chess-board" class="mt-3 relative w-full aspect-square grid grid-cols-8 grid-rows-8 gap-0 rounded-2xl overflow-hidden border border-[color:var(--fam-border-soft)] bg-[color:var(--fam-surface-alt)] select-none touch-manipulation" aria-label="Échiquier">
+                        @php
+                            $files = ['a','b','c','d','e','f','g','h'];
+                        @endphp
+                        @for($rank = 8; $rank >= 1; $rank--)
+                            @foreach($files as $idx => $file)
+                                @php
+                                    // a1 is dark.
+                                    $fileNum = $idx + 1;
+                                    $isDark = (($fileNum + $rank) % 2) === 0;
+                                @endphp
+                                <div class="aspect-square {{ $isDark ? 'bg-slate-200' : 'bg-white' }}"></div>
+                            @endforeach
+                        @endfor
+
+                        <div id="chess-board-loading" class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-[color:var(--fam-muted)] bg-white/40">
+                            Chargement de l’échiquier…
+                        </div>
+                    </div>
 
                     <details class="mt-3">
                         <summary class="text-xs font-semibold text-[color:var(--fam-muted)] cursor-pointer">Debug (UCI)</summary>

@@ -55,6 +55,17 @@ function pieceSvg(piece) {
 </svg>`.trim()
 }
 
+function allSquares() {
+    const squares = []
+    for (let rank = 1; rank <= 8; rank++) {
+        for (let f = 0; f < 8; f++) {
+            const file = String.fromCharCode('a'.charCodeAt(0) + f)
+            squares.push(`${file}${rank}`)
+        }
+    }
+    return squares
+}
+
 function parseLastMoveFromUci(uci) {
     const s = String(uci || '').trim().toLowerCase()
     if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(s)) return null
@@ -89,16 +100,20 @@ function renderBoard(root) {
     const el = $('#chess-board')
     if (!el) return
 
+    const loading = $('#chess-board-loading')
+    if (loading) loading.classList.add('hidden')
+
     const fen = root.state?.fen || ''
     let chess
     try {
         chess = new Chess(fen)
     } catch {
-        chess = new Chess()
+        // Keep a visible damier even if FEN is invalid.
+        return
     }
 
     const board = {}
-    for (const sq of chess.SQUARES) {
+    for (const sq of allSquares()) {
         const p = chess.get(sq)
         if (p) {
             const letter = p.color === 'w' ? p.type.toUpperCase() : p.type
@@ -117,7 +132,7 @@ function renderBoard(root) {
         if (chess.inCheck()) {
             const color = chess.turn()
             // Find the king of the side to move.
-            for (const sq of chess.SQUARES) {
+            for (const sq of allSquares()) {
                 const p = chess.get(sq)
                 if (p && p.type === 'k' && p.color === color) {
                     kingInCheckSquare = sq
