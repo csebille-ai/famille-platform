@@ -479,6 +479,8 @@ class UploadsController extends Controller
         $mediaUrl = null;
         $streamUrl = null;
 
+        $isChatContext = (string) ($validated['context'] ?? '') === 'chat';
+
         try {
         if ((string) $validated['kind'] === 'photo') {
             $root = CloudNode::query()
@@ -514,6 +516,7 @@ class UploadsController extends Controller
                 'mime' => $mime,
                 'size' => $size,
                 'uploaded_by' => $userId,
+                'is_chat_only' => $isChatContext,
             ]);
 
             $asset->forceFill(['cloud_node_id' => $node->id])->save();
@@ -523,7 +526,7 @@ class UploadsController extends Controller
             $thumbUrl = route('images.view', $node);
             $mediaUrl = $thumbUrl;
 
-            if ((string) $validated['context'] === 'chat') {
+            if ($isChatContext) {
                 $attachment = [
                     'media_type' => 'image',
                     'media_id' => $mediaId,
@@ -563,6 +566,7 @@ class UploadsController extends Controller
                 'category' => $category,
                 'description' => (string) ($validated['description'] ?? null),
                 'created_by' => $userId,
+                'is_chat_only' => $isChatContext,
                 'video_path' => $key,
                 'storage_disk' => $storageDisk === 'local' ? 'local' : 'r2',
                 'poster_path' => null,
@@ -593,7 +597,7 @@ class UploadsController extends Controller
             $streamUrl = route('videos.stream', $video);
             $mediaUrl = $streamUrl;
 
-            if ((string) $validated['context'] === 'chat') {
+            if ($isChatContext) {
                 $attachment = [
                     'media_type' => 'video',
                     'media_id' => $mediaId,

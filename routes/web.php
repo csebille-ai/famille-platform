@@ -145,14 +145,17 @@ Route::get('/home', function () {
     $latestImages = collect();
     try {
         if (Schema::hasTable('cloud_nodes')) {
-            $latestImages = CloudNode::query()
+            $latestImagesQuery = CloudNode::query()
                 ->with('uploader:id,name')
                 ->where('type', 'file')
                 ->whereNotNull('stored_path')
-                ->where('mime', 'like', 'image/%')
-                ->latest()
-                ->limit(6)
-                ->get();
+                ->where('mime', 'like', 'image/%');
+
+            if (Schema::hasColumn('cloud_nodes', 'is_chat_only')) {
+                $latestImagesQuery->where('is_chat_only', false);
+            }
+
+            $latestImages = $latestImagesQuery->latest()->limit(6)->get();
         }
     } catch (Throwable $e) {
         $latestImages = collect();
@@ -163,16 +166,19 @@ Route::get('/home', function () {
         if (Schema::hasTable('videos')) {
             // Home: show only "perso" videos (exclude Médiathèque films/séries).
             // Convention: Médiathèque uses category=films|series. Personal uploads use category=docs or NULL.
-            $latestVideos = Video::query()
+            $latestVideosQuery = Video::query()
                 ->with('creator:id,name')
                 ->where(function ($q) {
                     $q->whereNull('category')
                         ->orWhere('category', '')
                         ->orWhere('category', 'docs');
-                })
-                ->latest()
-                ->limit(6)
-                ->get();
+                });
+
+            if (Schema::hasColumn('videos', 'is_chat_only')) {
+                $latestVideosQuery->where('is_chat_only', false);
+            }
+
+            $latestVideos = $latestVideosQuery->latest()->limit(6)->get();
         }
     } catch (Throwable $e) {
         $latestVideos = collect();
@@ -495,16 +501,20 @@ Route::get('/home', function () {
                 if (!Schema::hasTable('cloud_nodes')) {
                     return null;
                 }
-                return CloudNode::query()
+                $q = CloudNode::query()
                     ->with('uploader:id,name')
                     ->where('type', 'file')
                     ->whereNotNull('stored_path')
                     ->where('mime', 'like', 'image/%')
                     ->whereMonth('created_at', $today->month)
                     ->whereDay('created_at', $today->day)
-                    ->whereYear('created_at', '!=', $today->year)
-                    ->inRandomOrder()
-                    ->first();
+                    ->whereYear('created_at', '!=', $today->year);
+
+                if (Schema::hasColumn('cloud_nodes', 'is_chat_only')) {
+                    $q->where('is_chat_only', false);
+                }
+
+                return $q->inRandomOrder()->first();
             } catch (Throwable $e) {
                 return null;
             }
@@ -515,13 +525,17 @@ Route::get('/home', function () {
                 if (!Schema::hasTable('cloud_nodes')) {
                     return null;
                 }
-                return CloudNode::query()
+                $q = CloudNode::query()
                     ->with('uploader:id,name')
                     ->where('type', 'file')
                     ->whereNotNull('stored_path')
-                    ->where('mime', 'like', 'image/%')
-                    ->inRandomOrder()
-                    ->first();
+                    ->where('mime', 'like', 'image/%');
+
+                if (Schema::hasColumn('cloud_nodes', 'is_chat_only')) {
+                    $q->where('is_chat_only', false);
+                }
+
+                return $q->inRandomOrder()->first();
             } catch (Throwable $e) {
                 return null;
             }
@@ -792,14 +806,18 @@ Route::get('/media', function () {
     try {
         if (Schema::hasTable('cloud_nodes')) {
             $hasImageFocal = Schema::hasColumn('cloud_nodes', 'focal_x') && Schema::hasColumn('cloud_nodes', 'focal_y');
-            $rows = CloudNode::query()
+            $imagesQuery = CloudNode::query()
                 ->with('uploader:id,name')
                 ->whereNotNull('stored_path')
                 ->where('mime', 'like', 'image/%')
                 ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->limit(24)
-                ->get();
+                ->orderByDesc('id');
+
+            if (Schema::hasColumn('cloud_nodes', 'is_chat_only')) {
+                $imagesQuery->where('is_chat_only', false);
+            }
+
+            $rows = $imagesQuery->limit(24)->get();
 
             $imagesItems = $rows->map(fn ($img) => [
                 'id' => (int) $img->id,
@@ -833,7 +851,7 @@ Route::get('/media', function () {
         if (Schema::hasTable('videos')) {
             $hasDuration = Schema::hasColumn('videos', 'duration_seconds');
             $hasVideoFocal = Schema::hasColumn('videos', 'focal_x') && Schema::hasColumn('videos', 'focal_y');
-            $rows = Video::query()
+            $videosQuery = Video::query()
                 ->with('creator:id,name')
                 // /media (tab=videos) is for personal videos only.
                 ->where(function ($q) {
@@ -842,9 +860,13 @@ Route::get('/media', function () {
                         ->orWhere('category', 'docs');
                 })
                 ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->limit(24)
-                ->get();
+                ->orderByDesc('id');
+
+            if (Schema::hasColumn('videos', 'is_chat_only')) {
+                $videosQuery->where('is_chat_only', false);
+            }
+
+            $rows = $videosQuery->limit(24)->get();
 
             $videosItems = $rows->map(fn ($v) => [
                 'id' => (int) $v->id,
@@ -944,6 +966,10 @@ Route::get('/api/media', function () {
             ->orderByDesc('created_at')
             ->orderByDesc('id');
 
+        if (Schema::hasColumn('cloud_nodes', 'is_chat_only')) {
+            $q->where('is_chat_only', false);
+        }
+
         if ($cursor) {
             $dt = \Carbon\Carbon::createFromTimestamp($cursor['t']);
             $q->where(function ($w) use ($cursor) {
@@ -994,6 +1020,10 @@ Route::get('/api/media', function () {
         ->with('creator:id,name')
         ->orderByDesc('created_at')
         ->orderByDesc('id');
+
+    if (Schema::hasColumn('videos', 'is_chat_only')) {
+        $q->where('is_chat_only', false);
+    }
 
     // /media shows only personal videos.
     $q->where(function ($w) {

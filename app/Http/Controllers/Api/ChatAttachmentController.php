@@ -67,6 +67,7 @@ class ChatAttachmentController extends Controller
                 'mime' => $clientMime !== '' ? $clientMime : $mime,
                 'size' => (int) ($file->getSize() ?? 0),
                 'uploaded_by' => $userId,
+                'is_chat_only' => true,
             ]);
 
             $mediaType = 'image';
@@ -97,6 +98,7 @@ class ChatAttachmentController extends Controller
                 'category' => 'docs',
                 'created_by' => $userId,
                 'video_path' => $path,
+                'is_chat_only' => true,
             ]);
 
             $mediaType = 'video';

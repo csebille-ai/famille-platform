@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Video extends Model
 {
-    protected $fillable = ['cloud_node_id', 'title', 'category', 'video_path', 'storage_disk', 'poster_path', 'description', 'created_by', 'duration_seconds', 'focal_x', 'focal_y'];
+    protected $fillable = ['cloud_node_id', 'title', 'category', 'video_path', 'storage_disk', 'poster_path', 'description', 'created_by', 'is_chat_only', 'duration_seconds', 'focal_x', 'focal_y'];
 
     protected $casts = [
         'duration_seconds' => 'integer',

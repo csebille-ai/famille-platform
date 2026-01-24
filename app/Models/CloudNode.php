@@ -24,6 +24,7 @@ class CloudNode extends Model
         'focal_x',
         'focal_y',
         'uploaded_by',
+        'is_chat_only',
     ];
 
     protected $casts = [
