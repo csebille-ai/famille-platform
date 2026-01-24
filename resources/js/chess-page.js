@@ -101,7 +101,6 @@ function renderBoard(root) {
     if (!el) return
 
     const loading = $('#chess-board-loading')
-    if (loading) loading.classList.add('hidden')
 
     const fen = root.state?.fen || ''
     let chess
@@ -109,8 +108,11 @@ function renderBoard(root) {
         chess = new Chess(fen)
     } catch {
         // Keep a visible damier even if FEN is invalid.
+        if (loading) loading.classList.remove('hidden')
         return
     }
+
+    if (loading) loading.classList.add('hidden')
 
     const board = {}
     for (const sq of allSquares()) {
@@ -223,6 +225,36 @@ function canInteract(root) {
     return !!root.state?.canMove
 }
 
+function canMoveHint(root) {
+    const myTeam = root.state?.myTeam || 'spectator'
+    const turn = root.state?.turn || 'w'
+
+    if (myTeam !== 'w' && myTeam !== 'b') {
+        return 'Rejoins une équipe pour jouer.'
+    }
+
+    if (myTeam !== turn) {
+        return `En attente — au tour des ${turn === 'w' ? 'Blancs' : 'Noirs'}.`
+    }
+
+    return 'Tu peux jouer.'
+}
+
+function cannotMoveToast(root) {
+    const myTeam = root.state?.myTeam || 'spectator'
+    const turn = root.state?.turn || 'w'
+
+    if (myTeam !== 'w' && myTeam !== 'b') {
+        return 'Rejoins une équipe pour jouer.'
+    }
+
+    if (myTeam !== turn) {
+        return `Pas ton tour — au tour des ${turn === 'w' ? 'Blancs' : 'Noirs'}.`
+    }
+
+    return 'Tu ne peux pas jouer maintenant.'
+}
+
 function clearSelection(root) {
     root.state.selectedFrom = null
     root.state.legalMoves = []
@@ -232,6 +264,15 @@ function clearSelection(root) {
 function computeLegalMoves(fen, from) {
     const chess = new Chess(fen)
     return chess.moves({ square: from, verbose: true })
+}
+
+function pieceAtSquare(fen, square) {
+    try {
+        const chess = new Chess(fen)
+        return chess.get(square) || null
+    } catch {
+        return null
+    }
 }
 
 function openPromotionModal(root, moveCandidates, from, to) {
@@ -281,10 +322,7 @@ async function loadState(root) {
     root.state.legalMoves = []
     renderBoard(root)
 
-    const canMoveText = data.can_move
-        ? `Tu peux jouer (tour ${turn === 'w' ? 'Blancs' : 'Noirs'}).`
-        : `Tu ne peux pas jouer (tour ${turn === 'w' ? 'Blancs' : 'Noirs'}).`
-    setText($('#chess-can-move'), canMoveText)
+    setText($('#chess-can-move'), canMoveHint(root))
 
     renderRecentMoves(data.moves)
 
@@ -355,21 +393,39 @@ async function playMoveUci(root, uciOverride) {
 async function onBoardClick(root, square) {
     const fen = root.state?.fen || root.dataset.currentFen || ''
 
-    // Spectators can still explore selection, but can't submit.
+    // V1: tap-to-move only. No highlights/moves if you cannot play.
+    if (!canInteract(root)) {
+        clearSelection(root)
+        showToast(cannotMoveToast(root))
+        return
+    }
+
     const selected = root.state?.selectedFrom || null
 
     // Selecting a piece
     if (!selected) {
-        try {
-            const legal = computeLegalMoves(fen, square)
-            root.state.selectedFrom = square
-            root.state.legalMoves = legal
-            renderBoard(root)
-        } catch {
-            root.state.selectedFrom = square
-            root.state.legalMoves = []
-            renderBoard(root)
+        const p = pieceAtSquare(fen, square)
+        const myTeam = root.state?.myTeam
+
+        if (!p) {
+            showToast('Sélectionne une de tes pièces.')
+            return
         }
+
+        if (p.color !== myTeam) {
+            showToast('Pas ta pièce.')
+            return
+        }
+
+        const legal = computeLegalMoves(fen, square)
+        if (!legal.length) {
+            showToast('Aucun coup possible.')
+            return
+        }
+
+        root.state.selectedFrom = square
+        root.state.legalMoves = legal
+        renderBoard(root)
         return
     }
 
@@ -384,17 +440,29 @@ async function onBoardClick(root, square) {
     const candidates = legalIndex.get(square) || []
 
     if (!candidates.length) {
-        // New selection
-        try {
-            const legal = computeLegalMoves(fen, square)
-            root.state.selectedFrom = square
-            root.state.legalMoves = legal
-            renderBoard(root)
-        } catch {
-            root.state.selectedFrom = square
-            root.state.legalMoves = []
-            renderBoard(root)
+        // New selection (only if it's one of your pieces)
+        const p = pieceAtSquare(fen, square)
+        const myTeam = root.state?.myTeam
+
+        if (!p) {
+            clearSelection(root)
+            return
         }
+
+        if (p.color !== myTeam) {
+            clearSelection(root)
+            return
+        }
+
+        const legal = computeLegalMoves(fen, square)
+        if (!legal.length) {
+            clearSelection(root)
+            return
+        }
+
+        root.state.selectedFrom = square
+        root.state.legalMoves = legal
+        renderBoard(root)
         return
     }
 

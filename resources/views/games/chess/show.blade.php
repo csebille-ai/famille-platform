@@ -64,7 +64,7 @@
                             @endforeach
                         @endfor
 
-                        <div id="chess-board-loading" class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-[color:var(--fam-muted)] bg-white/40">
+                        <div id="chess-board-loading" class="absolute inset-0 flex items-center justify-center text-xs font-semibold text-[color:var(--fam-muted)] bg-white/40 pointer-events-none">
                             Chargement de l’échiquier…
                         </div>
                     </div>
