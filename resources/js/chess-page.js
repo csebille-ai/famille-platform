@@ -362,7 +362,11 @@ async function playMoveUci(root, uciOverride) {
         return
     }
 
-    const expectedFen = root.dataset.currentFen
+    const expectedFen = root.state?.fen || root.dataset.currentFen || ''
+    if (!expectedFen) {
+        showToast('Position non chargée. Rafraîchis la page.')
+        return
+    }
 
     const res = await postJson(moveUrl, { uci, expected_fen: expectedFen })
     const data = await res.json().catch(() => ({}))
