@@ -13,6 +13,7 @@ use App\Http\Controllers\VideoController;
 use App\Http\Controllers\PlaylistController;
 use App\Http\Controllers\PlaylistItemController;
 use App\Http\Controllers\PushSubscriptionController;
+use App\Http\Controllers\PushTestController;
 use App\Http\Controllers\TarotController;
 use App\Http\Controllers\Games\GamesController;
 use App\Http\Controllers\Games\ChessController as GamesChessController;
@@ -1554,6 +1555,7 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/push/subscribe', [PushSubscriptionController::class, 'store'])->name('push.subscribe');
     Route::delete('/push/unsubscribe', [PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
+    Route::post('/push/test', PushTestController::class)->name('push.test');
 
     Route::get('/actu', function () {
         session()->put('news.has_new', false);
