@@ -1,4 +1,4 @@
-<x-app-layout pageBgClass="fam-page-bg">
+<x-app-layout pageBgClass="fam-page-bg" pageTitle="Échecs">
     <div class="max-w-2xl md:max-w-6xl mx-auto px-4 md:px-6 py-4 space-y-4" id="chess-index" data-game-id="{{ $game?->id }}">
         <div class="rounded-2xl bg-white px-3 py-3 border border-[color:var(--fam-border)] shadow-sm">
             <div class="flex items-start justify-between gap-3">

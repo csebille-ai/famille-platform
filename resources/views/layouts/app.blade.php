@@ -385,7 +385,7 @@
         <div class="{{ $attributes->get('pageBgClass', '') }}" style="min-height: 100dvh; background: transparent;">
             @unless($attributes->get('hideNavigation'))
                 <div class="{{ $attributes->get('navigationClass', '') }}">
-                    @include('layouts.navigation')
+                    @include('layouts.navigation', ['pageTitle' => $attributes->get('pageTitle')])
                 </div>
 
                 <script>

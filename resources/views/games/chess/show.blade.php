@@ -1,19 +1,9 @@
-<x-app-layout pageBgClass="fam-page-bg">
+<x-app-layout pageBgClass="fam-page-bg" pageTitle="Échecs">
     <div class="max-w-2xl md:max-w-6xl mx-auto px-4 md:px-6 py-4 space-y-4" id="chess-show"
         data-game-id="{{ $game->id }}"
         data-state-url="{{ route('games.chess.state', $game) }}"
         data-join-url="{{ route('games.chess.join', $game) }}"
         data-move-url="{{ route('games.chess.move', $game) }}">
-
-        <div class="rounded-2xl bg-white px-3 py-3 border border-[color:var(--fam-border)] shadow-sm">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">Échecs</div>
-                    <div class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)]">Partie #{{ $game->id }}</div>
-                </div>
-                <a href="{{ route('games.chess.index') }}" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Retour</a>
-            </div>
-        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="space-y-3">
@@ -100,11 +90,6 @@
                         <a href="{{ route('games.chess.index') }}" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Voir tout</a>
                     </div>
                     <ol id="chess-recent" class="mt-2 space-y-1.5 text-xs font-semibold text-[color:var(--fam-text)]"></ol>
-                </div>
-
-                <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
-                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">PGN (simplifié)</div>
-                    <pre id="chess-pgn" class="mt-2 text-xs whitespace-pre-wrap text-[color:var(--fam-text)]">—</pre>
                 </div>
             </div>
         </div>

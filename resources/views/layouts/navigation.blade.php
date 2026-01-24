@@ -23,6 +23,8 @@
         || request()->routeIs('family.*')
         || request()->routeIs('plus.index');
 
+    $pageTitle = isset($pageTitle) ? trim((string) $pageTitle) : '';
+
     $mobileTitle = '—';
     if ($isHome) $mobileTitle = 'Accueil';
     elseif (request()->routeIs('profile.*')) $mobileTitle = 'Profil';
@@ -35,6 +37,10 @@
     elseif ($isMedia) $mobileTitle = 'Médias';
     elseif ($isChat) $mobileTitle = 'Chat';
     else $mobileTitle = 'Famille';
+
+    if ($pageTitle !== '') {
+        $mobileTitle = $pageTitle;
+    }
 
     $showBack = !$isPrimary;
     $userName = Auth::user()->name ?? '';
