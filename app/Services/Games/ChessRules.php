@@ -10,7 +10,7 @@ class ChessRules
     public const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
     /**
-     * Apply a LAN/UCI move (e.g. e2e4, g1f3, e7e8q) on a given FEN.
+     * Apply a LAN/UCI move (e.g. e2e4, g1f3, e7e8q, e2-e4, e7-e8=q) on a given FEN.
      *
      * @return array{new_fen:string,san:string,new_turn:'w'|'b',is_finished:bool,finish_reason:string|null}
      */
@@ -23,7 +23,15 @@ class ChessRules
             $fen = self::START_FEN;
         }
 
-        if (!preg_match('/^[a-h][1-8][a-h][1-8][qrbn]?$/', $uci)) {
+        // Normalize to dashed LAN format understood by php-chess' playLan().
+        // Accept both UCI (e2e4, e7e8q) and dashed LAN (e2-e4, e7-e8=q).
+        $lan = null;
+        if (preg_match('/^([a-h][1-8])([a-h][1-8])([qrbn])?$/', $uci, $m)) {
+            $lan = $m[1] . '-' . $m[2] . ($m[3] ?? '');
+        } elseif (preg_match('/^([a-h][1-8])-([a-h][1-8])(?:=)?([qrbn])?$/', $uci, $m)) {
+            $lan = $m[1] . '-' . $m[2] . ($m[3] ?? '');
+        }
+        if (!$lan) {
             throw new UnknownNotationException();
         }
 
@@ -34,7 +42,7 @@ class ChessRules
             throw new UnknownNotationException();
         }
 
-        $ok = $board->playLan($turn, $uci);
+        $ok = $board->playLan($turn, $lan);
         if (!$ok) {
             throw new UnknownNotationException();
         }
@@ -49,7 +57,7 @@ class ChessRules
         }
         if ($san === '') {
             // Fallback: keep something readable.
-            $san = $uci;
+            $san = $lan;
         }
 
         $isFinished = false;
