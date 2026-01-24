@@ -187,6 +187,20 @@ class ChessController extends Controller
                     $compactStr = $m[1] . $m[2] . ($m[3] ?? '');
                 }
 
+                $isMissingChessLib = $e instanceof \Error
+                    && str_contains((string) $e->getMessage(), 'Chess\\Variant\\Classical\\FenToBoardFactory');
+
+                if ($isMissingChessLib) {
+                    return response()->json([
+                        'message' => 'Moteur d’échecs indisponible sur le serveur (dépendance manquante).',
+                        'code' => 'chess_engine_missing_dependency',
+                        'parser' => defined('App\\Services\\Games\\ChessRules::MOVE_PARSER_VERSION')
+                            ? \App\Services\Games\ChessRules::MOVE_PARSER_VERSION
+                            : 'unknown',
+                        'selftest' => $rules->selfTest(),
+                    ], 500);
+                }
+
                 return response()->json([
                     'message' => 'Coup illégal.',
                     'code' => 'chess_move_illegal',
