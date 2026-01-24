@@ -137,12 +137,30 @@ self.addEventListener('push', (event) => {
     },
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  event.waitUntil((async () => {
+    await self.registration.showNotification(title, options);
+    try {
+      if (self.registration && typeof self.registration.setAppBadge === 'function') {
+        // We don't track counts yet; presence badge is still useful.
+        await self.registration.setAppBadge(1);
+      }
+    } catch (e) {
+      // ignore
+    }
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = (event.notification && event.notification.data && event.notification.data.url) || '/';
+
+  try {
+    if (self.registration && typeof self.registration.clearAppBadge === 'function') {
+      self.registration.clearAppBadge();
+    }
+  } catch (e) {
+    // ignore
+  }
 
   event.waitUntil(
     (async () => {
@@ -163,4 +181,17 @@ self.addEventListener('notificationclick', (event) => {
       }
     })()
   );
+});
+
+// Allow the page to clear the badge on open.
+self.addEventListener('message', (event) => {
+  try {
+    if (event && event.data && event.data.type === 'CLEAR_BADGE') {
+      if (self.registration && typeof self.registration.clearAppBadge === 'function') {
+        self.registration.clearAppBadge();
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
 });

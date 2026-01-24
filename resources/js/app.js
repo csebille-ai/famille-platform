@@ -99,7 +99,6 @@ async function sendUnsubscribeToBackend(endpoint) {
 
 async function ensurePushSubscription() {
 	if (isPushOptedOut()) return;
-	if (!isPushOptedIn()) return;
 	const vapidPublicKey = getMeta('vapid-public-key');
 	if (!vapidPublicKey) return;
 	if (!('serviceWorker' in navigator)) return;
@@ -109,6 +108,17 @@ async function ensurePushSubscription() {
 
 	const registration = await navigator.serviceWorker.ready;
 	let subscription = await registration.pushManager.getSubscription();
+
+	// If we already have a subscription (common on Android/PWA even after storage resets),
+	// always ensure the backend has it as well.
+	if (subscription) {
+		await sendSubscriptionToBackend(subscription);
+		return;
+	}
+
+	// Do not create a new subscription unless the user explicitly opted in.
+	if (!isPushOptedIn()) return;
+
 	if (!subscription) {
 		subscription = await registration.pushManager.subscribe({
 			userVisibleOnly: true,
@@ -376,6 +386,13 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 		navigator.serviceWorker
 			.register(swUrl, { scope: '/' })
 			.then(() => {
+				try {
+					if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+						navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_BADGE' });
+					}
+				} catch (e) {
+					// ignore
+				}
 				// If the user already granted permission previously, keep the subscription fresh.
 				ensurePushSubscription().catch(() => {});
 			})
