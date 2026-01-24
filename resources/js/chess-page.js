@@ -86,6 +86,20 @@ function setTurnLabel(turn) {
     el.textContent = turn === 'w' ? 'Au tour des Blancs' : 'Au tour des Noirs'
 }
 
+function setGameStatusLabel(status, turn, winnerTeam) {
+    const el = $('#chess-turn')
+    if (!el) return
+
+    if (status === 'finished') {
+        if (winnerTeam === 'w') el.textContent = 'Partie terminée — victoire des Blancs'
+        else if (winnerTeam === 'b') el.textContent = 'Partie terminée — victoire des Noirs'
+        else el.textContent = 'Partie terminée'
+        return
+    }
+
+    setTurnLabel(turn)
+}
+
 function buildLegalMoveIndex(movesVerbose) {
     const byTo = new Map()
     for (const m of movesVerbose || []) {
@@ -226,6 +240,14 @@ function canInteract(root) {
 }
 
 function canMoveHint(root) {
+    const status = String(root.state?.status || 'active')
+    const winner = root.state?.winnerTeam || null
+    if (status === 'finished') {
+        if (winner === 'w') return 'Partie terminée — victoire des Blancs.'
+        if (winner === 'b') return 'Partie terminée — victoire des Noirs.'
+        return 'Partie terminée.'
+    }
+
     const myTeam = root.state?.myTeam || 'spectator'
     const turn = root.state?.turn || 'w'
 
@@ -241,6 +263,14 @@ function canMoveHint(root) {
 }
 
 function cannotMoveToast(root) {
+    const status = String(root.state?.status || 'active')
+    const winner = root.state?.winnerTeam || null
+    if (status === 'finished') {
+        if (winner === 'w') return 'Partie terminée — victoire des Blancs.'
+        if (winner === 'b') return 'Partie terminée — victoire des Noirs.'
+        return 'Partie terminée.'
+    }
+
     const myTeam = root.state?.myTeam || 'spectator'
     const turn = root.state?.turn || 'w'
 
@@ -378,9 +408,13 @@ async function loadState(root) {
 
     const fen = data?.game?.fen || ''
     const turn = data?.game?.turn || 'w'
+    const status = data?.game?.status || 'active'
+    const winnerTeam = data?.game?.winner_team || null
 
     root.state.fen = fen
     root.state.turn = turn
+    root.state.status = status
+    root.state.winnerTeam = winnerTeam
     root.state.myTeam = data?.my_team || 'spectator'
     root.state.canMove = !!data?.can_move
 
@@ -399,7 +433,7 @@ async function loadState(root) {
     root.state.capturesByBlack = caps.byBlack
     renderCaptures(root)
 
-    setTurnLabel(turn)
+    setGameStatusLabel(status, turn, winnerTeam)
     setMyTeamLabel(root.state.myTeam)
 
     // If the game advanced, selection is no longer reliable.
@@ -592,6 +626,8 @@ function init() {
     root.state = {
         fen: '',
         turn: 'w',
+        status: 'active',
+        winnerTeam: null,
         myTeam: 'spectator',
         canMove: false,
         selectedFrom: null,
@@ -606,7 +642,30 @@ function init() {
         loadState(root).catch(() => showToast('Erreur de chargement.'))
     })
 
-    $('#chess-cancel')?.addEventListener('click', () => clearSelection(root))
+    const resign = async (team) => {
+        if (!team) return
+        const label = team === 'w' ? 'Blancs' : 'Noirs'
+        if (!window.confirm(`Confirmer l’abandon des ${label} ?`)) return
+
+        const url = root.dataset.resignUrl
+        if (!url) {
+            showToast('Action indisponible.')
+            return
+        }
+
+        const res = await postJson(url, { team })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+            showToast(data.message || 'Impossible d’abandonner.')
+            return
+        }
+
+        showToast('Partie terminée.')
+        await loadState(root)
+    }
+
+    $('#chess-resign-w')?.addEventListener('click', () => resign('w').catch(() => showToast('Erreur.')))
+    $('#chess-resign-b')?.addEventListener('click', () => resign('b').catch(() => showToast('Erreur.')))
 
     $('#chess-join-w')?.addEventListener('click', () => joinTeam(root, 'w'))
     $('#chess-join-b')?.addEventListener('click', () => joinTeam(root, 'b'))

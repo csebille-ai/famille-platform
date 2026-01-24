@@ -68,6 +68,9 @@ class ChessController extends Controller
                 'status' => $game->status,
                 'fen' => $game->current_fen,
                 'turn' => $game->turn,
+                'winner_team' => $game->winner_team,
+                'ended_reason' => $game->ended_reason,
+                'ended_at' => optional($game->ended_at)->toIso8601String(),
                 'pgn' => $game->pgn,
                 'last_move_at' => optional($game->last_move_at)->toIso8601String(),
             ],
@@ -87,6 +90,45 @@ class ChessController extends Controller
                 'at' => optional($m->created_at)->toIso8601String(),
             ])->values(),
         ]);
+    }
+
+    public function resign(Request $request, ChessGame $game)
+    {
+        $team = (string) $request->input('team', '');
+        if (!in_array($team, ['w', 'b'], true)) {
+            return response()->json(['message' => 'Équipe invalide.'], 422);
+        }
+
+        return DB::transaction(function () use ($game, $team) {
+            /** @var \App\Models\ChessGame $locked */
+            $locked = ChessGame::query()->whereKey($game->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== 'active') {
+                return response()->json(['message' => 'Partie déjà terminée.'], 409);
+            }
+
+            $winner = $team === 'w' ? 'b' : 'w';
+
+            $locked->status = 'finished';
+            $locked->winner_team = $winner;
+            $locked->ended_reason = 'resign';
+            $locked->ended_at = now();
+
+            $pgn = trim((string) ($locked->pgn ?? ''));
+            $hasResult = preg_match('/\b(1-0|0-1|1\/2-1\/2|\*)\b/', $pgn) === 1;
+            if (!$hasResult) {
+                $result = $winner === 'w' ? '1-0' : '0-1';
+                $locked->pgn = trim($pgn . ($pgn !== '' ? ' ' : '') . $result);
+            }
+
+            $locked->save();
+
+            return response()->json([
+                'ok' => true,
+                'status' => $locked->status,
+                'winner_team' => $locked->winner_team,
+            ]);
+        });
     }
 
     public function join(Request $request, ChessGame $game)

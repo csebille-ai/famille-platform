@@ -1175,6 +1175,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/games/chess/{game}/state', [GamesChessController::class, 'state'])->name('games.chess.state');
     Route::post('/games/chess/{game}/join', [GamesChessController::class, 'join'])->name('games.chess.join');
     Route::post('/games/chess/{game}/move', [GamesChessController::class, 'move'])->name('games.chess.move');
+    Route::post('/games/chess/{game}/resign', [GamesChessController::class, 'resign'])->name('games.chess.resign');
 
     Route::resource('playlists', PlaylistController::class);
     Route::get('playlists/{playlist}/items/search', [PlaylistItemController::class, 'search'])->name('playlists.items.search');

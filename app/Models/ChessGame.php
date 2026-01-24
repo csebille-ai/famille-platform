@@ -12,6 +12,9 @@ class ChessGame extends Model
         'status',
         'current_fen',
         'turn',
+        'winner_team',
+        'ended_reason',
+        'ended_at',
         'pgn',
         'last_move_at',
         'created_by',
@@ -19,6 +22,7 @@ class ChessGame extends Model
 
     protected $casts = [
         'last_move_at' => 'datetime',
+        'ended_at' => 'datetime',
     ];
 
     public function creator(): BelongsTo

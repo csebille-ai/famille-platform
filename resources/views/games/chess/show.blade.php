@@ -3,7 +3,8 @@
         data-game-id="{{ $game->id }}"
         data-state-url="{{ route('games.chess.state', $game) }}"
         data-join-url="{{ route('games.chess.join', $game) }}"
-        data-move-url="{{ route('games.chess.move', $game) }}">
+        data-move-url="{{ route('games.chess.move', $game) }}"
+        data-resign-url="{{ route('games.chess.resign', $game) }}">
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="space-y-3">
@@ -14,7 +15,8 @@
                             <div id="chess-turn" class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)]">—</div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button type="button" id="chess-cancel" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Annuler</button>
+                            <button type="button" id="chess-resign-w" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Abandon Blancs</button>
+                            <button type="button" id="chess-resign-b" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Abandon Noirs</button>
                             <button type="button" id="chess-refresh" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Rafraîchir</button>
                         </div>
                     </div>

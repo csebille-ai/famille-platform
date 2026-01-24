@@ -133,4 +133,27 @@ class ChessGameTest extends TestCase
             ->assertJsonPath('code', 'fen_mismatch')
             ->assertJsonPath('current_fen', $fenAfterE7E5);
     }
+
+    public function test_resign_marks_game_finished_and_sets_winner(): void
+    {
+        $user = User::factory()->create();
+
+        // Ensure we have an active game.
+        $this->actingAs($user)
+            ->get(route('games.chess.index'))
+            ->assertRedirect();
+
+        $game = ChessGame::query()->firstOrFail();
+
+        $this->actingAs($user)
+            ->postJson(route('games.chess.resign', $game), ['team' => 'w'])
+            ->assertOk()
+            ->assertJsonPath('winner_team', 'b');
+
+        $game->refresh();
+        $this->assertSame('finished', (string) $game->status);
+        $this->assertSame('b', (string) $game->winner_team);
+        $this->assertNotNull($game->ended_at);
+        $this->assertSame('resign', (string) $game->ended_reason);
+    }
 }
