@@ -26,10 +26,13 @@ class ChessRules
         // Normalize to dashed LAN format understood by php-chess' playLan().
         // Accept both UCI (e2e4, e7e8q) and dashed LAN (e2-e4, e7-e8=q).
         $lan = null;
+        $compact = null;
         if (preg_match('/^([a-h][1-8])([a-h][1-8])([qrbn])?$/', $uci, $m)) {
             $lan = $m[1] . '-' . $m[2] . ($m[3] ?? '');
+            $compact = $m[1] . $m[2] . ($m[3] ?? '');
         } elseif (preg_match('/^([a-h][1-8])-([a-h][1-8])(?:=)?([qrbn])?$/', $uci, $m)) {
             $lan = $m[1] . '-' . $m[2] . ($m[3] ?? '');
+            $compact = $m[1] . $m[2] . ($m[3] ?? '');
         }
         if (!$lan) {
             throw new UnknownNotationException();
@@ -42,7 +45,11 @@ class ChessRules
             throw new UnknownNotationException();
         }
 
+        // Compatibility: some versions accept compact LAN/UCI, others prefer dashed LAN.
         $ok = $board->playLan($turn, $lan);
+        if (!$ok && $compact) {
+            $ok = $board->playLan($turn, $compact);
+        }
         if (!$ok) {
             throw new UnknownNotationException();
         }
