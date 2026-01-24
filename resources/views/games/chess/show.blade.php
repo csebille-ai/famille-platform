@@ -16,58 +16,94 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
-                <div class="flex items-center justify-between gap-2">
-                    <div class="text-xs font-semibold text-[color:var(--fam-muted)]">Position</div>
-                    <button type="button" id="chess-refresh" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Rafraîchir</button>
+            <div class="space-y-3">
+                <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <div class="text-sm font-semibold text-[color:var(--fam-text)]">Partie</div>
+                            <div id="chess-turn" class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)]">—</div>
+                        </div>
+                        <button type="button" id="chess-refresh" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Rafraîchir</button>
+                    </div>
+
+                    <div class="mt-3 text-xs font-semibold text-[color:var(--fam-muted)]">Ton équipe</div>
+                    <div id="chess-my-team" class="mt-0.5 text-sm font-semibold text-[color:var(--fam-text)]">—</div>
+
+                    <div class="mt-3 grid grid-cols-2 gap-2">
+                        <button type="button" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50" data-team="w" id="chess-join-w">Rejoindre Blancs</button>
+                        <button type="button" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50" data-team="b" id="chess-join-b">Rejoindre Noirs</button>
+                    </div>
+
+                    <div class="mt-3 text-xs font-semibold text-[color:var(--fam-muted)]">Équipes</div>
+                    <div class="mt-1 text-xs font-semibold text-[color:var(--fam-text)]">
+                        <div><span class="text-[color:var(--fam-muted)]">Blancs:</span> <span id="chess-team-w">—</span></div>
+                        <div><span class="text-[color:var(--fam-muted)]">Noirs:</span> <span id="chess-team-b">—</span></div>
+                    </div>
+
+                    <div id="chess-can-move" class="mt-3 text-xs font-semibold text-[color:var(--fam-muted)]">—</div>
                 </div>
 
-                <div class="mt-3">
-                    <div class="text-xs font-semibold text-[color:var(--fam-muted)]">Échiquier</div>
-                    <div id="chess-board" class="mt-2 grid grid-cols-8 gap-0 rounded-2xl overflow-hidden border border-[color:var(--fam-border-soft)] select-none" aria-label="Échiquier"></div>
-                    <div class="mt-2 text-xs font-semibold text-[color:var(--fam-muted)]">Tape une pièce puis une case d’arrivée (promotion: on te demandera q/r/b/n).</div>
-                </div>
+                <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="text-sm font-semibold text-[color:var(--fam-text)]">Échiquier</div>
+                        <button type="button" id="chess-cancel" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Annuler</button>
+                    </div>
 
-                <div class="mt-2">
-                    <div class="text-xs font-semibold text-[color:var(--fam-muted)]">FEN</div>
-                    <div id="chess-fen" class="mt-1 text-xs font-semibold text-[color:var(--fam-text)] break-all">—</div>
-                </div>
+                    <div id="chess-board" class="mt-3 w-full aspect-square grid grid-cols-8 gap-0 rounded-2xl overflow-hidden border border-[color:var(--fam-border-soft)] select-none touch-manipulation" aria-label="Échiquier"></div>
 
-                <div class="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50" data-team="w" id="chess-join-w">Rejoindre Blancs</button>
-                    <button type="button" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50" data-team="b" id="chess-join-b">Rejoindre Noirs</button>
-                </div>
+                    <details class="mt-3">
+                        <summary class="text-xs font-semibold text-[color:var(--fam-muted)] cursor-pointer">Debug (UCI)</summary>
+                        <div class="mt-2 text-xs font-semibold text-[color:var(--fam-muted)]">Fallback pour tests: e2e4, g1f3, e7e8q…</div>
+                        <div class="mt-2 flex items-center gap-2">
+                            <input id="chess-uci" type="text" inputmode="latin" autocapitalize="none" autocomplete="off" spellcheck="false"
+                                placeholder="e2e4"
+                                class="flex-1 rounded-xl border border-[color:var(--fam-border)] px-3 py-2 text-sm" />
+                            <button type="button" id="chess-play" class="shrink-0 text-xs font-semibold rounded-xl px-3 py-2 bg-[color:var(--fam-primary)] text-white hover:opacity-90">Jouer</button>
+                        </div>
 
-                <div class="mt-3 text-xs font-semibold text-[color:var(--fam-muted)]">Équipes</div>
-                <div class="mt-1 text-xs font-semibold text-[color:var(--fam-text)]">
-                    <div><span class="text-[color:var(--fam-muted)]">Blancs:</span> <span id="chess-team-w">—</span></div>
-                    <div><span class="text-[color:var(--fam-muted)]">Noirs:</span> <span id="chess-team-b">—</span></div>
+                        <div class="mt-2">
+                            <div class="text-xs font-semibold text-[color:var(--fam-muted)]">FEN</div>
+                            <div id="chess-fen" class="mt-1 text-xs font-semibold text-[color:var(--fam-text)] break-all">—</div>
+                        </div>
+                    </details>
                 </div>
             </div>
 
-            <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
-                <div class="text-sm font-semibold text-[color:var(--fam-text)]">Jouer un coup</div>
-                <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">Saisis un coup en UCI (ex: e2e4, g1f3, e7e8q).</div>
-
-                <div class="mt-3 flex items-center gap-2">
-                    <input id="chess-uci" type="text" inputmode="latin" autocapitalize="none" autocomplete="off" spellcheck="false"
-                        placeholder="e2e4"
-                        class="flex-1 rounded-xl border border-[color:var(--fam-border)] px-3 py-2 text-sm" />
-                    <button type="button" id="chess-play" class="shrink-0 text-xs font-semibold rounded-xl px-3 py-2 bg-[color:var(--fam-primary)] text-white hover:opacity-90">Jouer</button>
+            <div class="space-y-3">
+                <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="text-sm font-semibold text-[color:var(--fam-text)]">Derniers coups</div>
+                        <a href="{{ route('games.chess.index') }}" class="text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50">Voir tout</a>
+                    </div>
+                    <ol id="chess-recent" class="mt-2 space-y-1.5 text-xs font-semibold text-[color:var(--fam-text)]"></ol>
                 </div>
 
-                <div id="chess-can-move" class="mt-3 text-xs font-semibold text-[color:var(--fam-muted)]">—</div>
-
-                <div class="mt-3 text-xs font-semibold text-[color:var(--fam-muted)]">Derniers coups</div>
-                <ol id="chess-recent" class="mt-1 space-y-1 text-xs font-semibold text-[color:var(--fam-text)]"></ol>
-
-                <div class="mt-3 text-xs font-semibold text-[color:var(--fam-muted)]">PGN (simplifié)</div>
-                <pre id="chess-pgn" class="mt-1 text-xs whitespace-pre-wrap text-[color:var(--fam-text)]">—</pre>
+                <div class="rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
+                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">PGN (simplifié)</div>
+                    <pre id="chess-pgn" class="mt-2 text-xs whitespace-pre-wrap text-[color:var(--fam-text)]">—</pre>
+                </div>
             </div>
         </div>
 
         <div id="chess-toast" class="hidden rounded-2xl bg-white p-3 border border-[color:var(--fam-border)] shadow-sm">
             <div class="text-xs font-semibold text-[color:var(--fam-text)]" id="chess-toast-msg"></div>
+        </div>
+
+        <div id="chess-promo" class="hidden fixed inset-0 z-50">
+            <div class="absolute inset-0 bg-black/40" data-close="1"></div>
+            <div class="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center p-4">
+                <div class="w-full sm:max-w-sm rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-xl p-4">
+                    <div class="text-sm font-semibold text-[color:var(--fam-text)]">Promotion</div>
+                    <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">Choisis la pièce</div>
+                    <div class="mt-3 grid grid-cols-4 gap-2">
+                        <button type="button" class="chess-promo-btn rounded-xl border border-[color:var(--fam-border)] bg-white hover:bg-slate-50 px-3 py-3 text-xl" data-piece="q">♛</button>
+                        <button type="button" class="chess-promo-btn rounded-xl border border-[color:var(--fam-border)] bg-white hover:bg-slate-50 px-3 py-3 text-xl" data-piece="r">♜</button>
+                        <button type="button" class="chess-promo-btn rounded-xl border border-[color:var(--fam-border)] bg-white hover:bg-slate-50 px-3 py-3 text-xl" data-piece="b">♝</button>
+                        <button type="button" class="chess-promo-btn rounded-xl border border-[color:var(--fam-border)] bg-white hover:bg-slate-50 px-3 py-3 text-xl" data-piece="n">♞</button>
+                    </div>
+                    <button type="button" class="mt-3 w-full text-xs font-semibold rounded-xl px-3 py-2 border border-[color:var(--fam-border)] bg-white hover:bg-slate-50" data-close="1">Annuler</button>
+                </div>
+            </div>
         </div>
 
     </div>
