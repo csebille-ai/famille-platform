@@ -116,6 +116,18 @@ class VideoController extends Controller
 
     public function stream(Request $request, Video $video, \App\Services\Uploads\R2UploadService $r2): \Symfony\Component\HttpFoundation\Response
     {
+        // IMPORTANT: Streaming responses can keep the PHP session lock open for a long time.
+        // Some browsers (notably iOS Safari/PWA) issue multiple parallel Range requests.
+        // If the session is locked, those requests serialize and playback can take minutes
+        // or never start.
+        try {
+            if (function_exists('session_write_close')) {
+                @session_write_close();
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+
         if (!$video->video_path) {
             abort(404);
         }
