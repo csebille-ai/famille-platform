@@ -1465,6 +1465,65 @@
 
             let mediaImgLoadToken = 0;
 
+            // --- Scroll locking for fullscreen modals (iOS-friendly) ---
+            const scrollLockState = {
+                active: false,
+                y: 0,
+                bodyPosition: '',
+                bodyTop: '',
+                bodyLeft: '',
+                bodyRight: '',
+                bodyWidth: '',
+                bodyOverflowY: '',
+                bodyPaddingRight: '',
+            };
+
+            function lockPageScroll() {
+                if (scrollLockState.active) return;
+                const body = document.body;
+                if (!body) return;
+
+                const y = (window.scrollY || document.documentElement.scrollTop || 0);
+                scrollLockState.active = true;
+                scrollLockState.y = y;
+
+                scrollLockState.bodyPosition = body.style.position;
+                scrollLockState.bodyTop = body.style.top;
+                scrollLockState.bodyLeft = body.style.left;
+                scrollLockState.bodyRight = body.style.right;
+                scrollLockState.bodyWidth = body.style.width;
+                scrollLockState.bodyOverflowY = body.style.overflowY;
+                scrollLockState.bodyPaddingRight = body.style.paddingRight;
+
+                const scrollbarW = Math.max(0, (window.innerWidth || 0) - (document.documentElement?.clientWidth || 0));
+                body.style.position = 'fixed';
+                body.style.top = `-${y}px`;
+                body.style.left = '0';
+                body.style.right = '0';
+                body.style.width = '100%';
+                body.style.overflowY = 'scroll';
+                if (scrollbarW > 0) body.style.paddingRight = `${scrollbarW}px`;
+            }
+
+            function unlockPageScroll() {
+                if (!scrollLockState.active) return;
+                const body = document.body;
+                if (!body) return;
+
+                const y = scrollLockState.y || 0;
+                body.style.position = scrollLockState.bodyPosition;
+                body.style.top = scrollLockState.bodyTop;
+                body.style.left = scrollLockState.bodyLeft;
+                body.style.right = scrollLockState.bodyRight;
+                body.style.width = scrollLockState.bodyWidth;
+                body.style.overflowY = scrollLockState.bodyOverflowY;
+                body.style.paddingRight = scrollLockState.bodyPaddingRight;
+
+                scrollLockState.active = false;
+                scrollLockState.y = 0;
+                try { window.scrollTo(0, y); } catch {}
+            }
+
             function isMediaModalOpen() {
                 try {
                     return !!(mediaModal && !mediaModal.classList.contains('hidden'));
@@ -4715,6 +4774,7 @@
                 mediaModal.classList.toggle('hidden', !open);
 
                 if (!open) {
+                    unlockPageScroll();
                     mediaImgLoadToken++;
                     mediaImg.classList.add('hidden');
                     mediaVideo.classList.add('hidden');
@@ -4730,6 +4790,19 @@
                     mediaOpenLink.href = '#';
                     return;
                 }
+
+                lockPageScroll();
+
+                // Fade-in the backdrop to avoid harsh flashes on mobile engines.
+                try {
+                    if (mediaBackdrop) {
+                        mediaBackdrop.style.transition = 'opacity 160ms ease-out';
+                        mediaBackdrop.style.opacity = '0';
+                        requestAnimationFrame(() => {
+                            if (isMediaModalOpen()) mediaBackdrop.style.opacity = '1';
+                        });
+                    }
+                } catch {}
 
                 // Once the media modal is open, stop any background bottom-pinning loops.
                 cancelEnsureBottomTimers();
@@ -4810,7 +4883,10 @@
                 if (type === 'video') {
                     mediaImg.classList.add('hidden');
                     mediaVideo.classList.remove('hidden');
-                    try { mediaVideo.style.opacity = ''; } catch {}
+                    try {
+                        mediaVideo.style.transition = 'opacity 160ms ease-out';
+                        mediaVideo.style.opacity = '0';
+                    } catch {}
                     if (thumb) {
                         mediaVideo.setAttribute('poster', thumb);
                     } else {
@@ -4818,6 +4894,19 @@
                     }
                     mediaVideo.src = url;
                     mediaVideo.load();
+
+                    const token = ++mediaImgLoadToken;
+                    const revealVideoIfCurrent = () => {
+                        if (token !== mediaImgLoadToken) return;
+                        try { mediaVideo.style.opacity = '1'; } catch {}
+                    };
+
+                    try {
+                        mediaVideo.addEventListener('loadedmetadata', revealVideoIfCurrent, { once: true });
+                        mediaVideo.addEventListener('canplay', revealVideoIfCurrent, { once: true });
+                        mediaVideo.addEventListener('error', revealVideoIfCurrent, { once: true });
+                    } catch {}
+                    setTimeout(revealVideoIfCurrent, 120);
                 } else {
                     mediaVideo.classList.add('hidden');
                     try { mediaVideo.pause(); } catch {}
@@ -4825,8 +4914,11 @@
                     mediaVideo.load();
                     // Avoid showing progressive/intermediate image paints: keep hidden until loaded/decoded.
                     const token = ++mediaImgLoadToken;
-                    mediaImg.classList.add('hidden');
-                    try { mediaImg.style.opacity = ''; } catch {}
+                    mediaImg.classList.remove('hidden');
+                    try {
+                        mediaImg.style.transition = 'opacity 160ms ease-out';
+                        mediaImg.style.opacity = '0';
+                    } catch {}
                     try { mediaImg.decoding = 'async'; } catch {}
                     try { mediaImg.loading = 'eager'; } catch {}
                     // Reset first to avoid some browsers briefly reusing the previous frame.
@@ -4838,7 +4930,7 @@
                         if (token !== mediaImgLoadToken) return;
                         try {
                             if (mediaImg.complete && mediaImg.naturalWidth > 0) {
-                                mediaImg.classList.remove('hidden');
+                                mediaImg.style.opacity = '1';
                             }
                         } catch {}
                     };
@@ -4857,7 +4949,7 @@
                     const onErr = () => {
                         if (token !== mediaImgLoadToken) return;
                         // Fallback: show the element so the user sees the broken-state instead of a blank.
-                        try { mediaImg.classList.remove('hidden'); } catch {}
+                        try { mediaImg.style.opacity = '1'; } catch {}
                     };
 
                     try { mediaImg.addEventListener('load', onLoad, { once: true }); } catch {}
