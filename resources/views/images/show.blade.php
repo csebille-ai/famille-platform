@@ -31,6 +31,13 @@
     if ($displayTitle === '') {
         $displayTitle = $baseName !== '' ? $baseName : 'Photo';
     }
+
+    $canDelete = false;
+    try {
+        $canDelete = auth()->check() && Illuminate\Support\Facades\Gate::allows('images-delete');
+    } catch (Throwable $e) {
+        $canDelete = false;
+    }
 @endphp
 
 <x-app-layout hideNavigation="1" pageBgClass="bg-slate-950">
@@ -81,6 +88,50 @@
         </style>
 
         <a href="{{ $backUrl }}" class="hidden" aria-hidden="true" tabindex="-1" data-tm-back="1">Retour</a>
+
+        <div
+            id="image-viewer-header"
+            data-viewer-ui
+            class="absolute left-0 right-0 top-0 z-20"
+            style="padding: calc(env(safe-area-inset-top) + 0.75rem) 0.75rem 0.75rem 0.75rem"
+        >
+            <div class="flex items-center gap-2">
+                <a href="{{ $backUrl }}" class="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-slate-900/60 text-white" aria-label="Retour">
+                    <span aria-hidden="true">←</span>
+                </a>
+
+                <div class="min-w-0 flex-1 text-center text-sm font-semibold text-white/90 truncate px-2">{{ $displayTitle }}</div>
+
+                <button
+                    type="button"
+                    id="image-details-btn"
+                    class="inline-flex items-center justify-center w-11 h-11 rounded-2xl bg-slate-900/60 text-white"
+                    aria-label="Menu"
+                >
+                    <span aria-hidden="true">⋯</span>
+                </button>
+            </div>
+
+            <div id="image-details-panel" class="mt-2 hidden w-full max-w-[520px] mx-auto rounded-2xl bg-slate-900/70 ring-1 ring-white/10 p-2">
+                <div class="grid gap-1">
+                    <a href="{{ route('cloud.files.download', $node) }}" class="w-full min-h-[44px] rounded-2xl bg-white/10 hover:bg-white/15 px-3 inline-flex items-center justify-between text-sm font-semibold text-white">
+                        <span>Télécharger</span>
+                        <span aria-hidden="true">↓</span>
+                    </a>
+
+                    @if($canDelete)
+                        <form method="POST" action="{{ route('images.destroy', $node) }}" onsubmit="return confirm('Supprimer cette photo ?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="w-full min-h-[44px] rounded-2xl bg-red-600/90 hover:bg-red-600 px-3 inline-flex items-center justify-between text-sm font-semibold text-white">
+                                <span>Supprimer</span>
+                                <span aria-hidden="true">🗑</span>
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </div>
 
         <div
             id="image-viewer-footer"
@@ -146,8 +197,8 @@
                 const stage = document.getElementById('image-viewer-stage');
                 const img = document.getElementById('image-viewer-img') || root.querySelector('img[data-shared-id]');
                 const bg = document.getElementById('image-viewer-bg');
-                const detailsBtn = null;
-                const detailsPanel = null;
+                const detailsBtn = document.getElementById('image-details-btn');
+                const detailsPanel = document.getElementById('image-details-panel');
                 const fitBtn = null;
 
                 if (stage) {

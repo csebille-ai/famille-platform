@@ -29,6 +29,12 @@
             tab: 'photos',
             canImagesUpload: @json(auth()->user()?->can('images-upload') ?? false),
             canCloudWrite: @json(auth()->user()?->can('cloud-write') ?? false),
+            canImagesDelete: @json(Illuminate\Support\Facades\Gate::allows('images-delete')),
+            canVideosDelete: @json(Illuminate\Support\Facades\Gate::allows('videos-delete')),
+            confirmOpen: false,
+            confirmAction: '',
+            confirmReturn: '',
+            confirmLabel: '',
             pageSize: {{ (int) ($pageSize ?? 24) }},
             photos: [],
             videos: [],
@@ -108,6 +114,29 @@
                 const url = String(item?.open_url || '').trim();
                 if (!url) return;
                 window.location.href = url;
+            },
+            openDelete(type, id) {
+                const t = String(type || '');
+                const n = Number(id || 0);
+                if (!Number.isFinite(n) || n <= 0) return;
+
+                if (t === 'image') {
+                    if (!this.canImagesDelete) return;
+                    this.confirmAction = `/galerie/${n}`;
+                    this.confirmReturn = '/media?tab=photos';
+                    this.confirmLabel = 'Supprimer cette photo ?';
+                    this.confirmOpen = true;
+                    return;
+                }
+
+                if (t === 'video') {
+                    if (!this.canVideosDelete) return;
+                    this.confirmAction = `/videos/${n}`;
+                    this.confirmReturn = '/media?tab=videos';
+                    this.confirmLabel = 'Supprimer cette vidéo ?';
+                    this.confirmOpen = true;
+                    return;
+                }
             },
             async loadMore(type) {
                 const isPhotos = (type === 'photos');
@@ -267,23 +296,37 @@
                 <div>
                     <div class="grid grid-cols-3 gap-2">
                         <template x-for="(img, idx) in (photos || [])" :key="'photo_' + img.id">
-                            <a
-                                :href="img.open_url"
-                                class="block overflow-hidden rounded-xl bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] active:scale-[0.99] transition"
-                                :aria-label="'Ouvrir photo ' + (idx + 1)"
-                                :data-shared-id="'media:' + img.id"
-                                :data-shared-src="img.thumb_url"
-                            >
-                                <div class="aspect-square bg-[color:var(--fam-surface-alt)]">
-                                    <img
-                                        :src="img.thumb_url"
-                                        alt=""
-                                        class="block h-full w-full object-cover"
-                                        :style="{ objectPosition: focalPosition(img) }"
-                                        loading="lazy"
-                                    />
-                                </div>
-                            </a>
+                            <div class="relative">
+                                <a
+                                    :href="img.open_url"
+                                    class="block overflow-hidden rounded-xl bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] active:scale-[0.99] transition"
+                                    :aria-label="'Ouvrir photo ' + (idx + 1)"
+                                    :data-shared-id="'media:' + img.id"
+                                    :data-shared-src="img.thumb_url"
+                                >
+                                    <div class="aspect-square bg-[color:var(--fam-surface-alt)]">
+                                        <img
+                                            :src="img.thumb_url"
+                                            alt=""
+                                            class="block h-full w-full object-cover"
+                                            :style="{ objectPosition: focalPosition(img) }"
+                                            loading="lazy"
+                                        />
+                                    </div>
+                                </a>
+
+                                <button
+                                    type="button"
+                                    class="absolute top-2 right-2 inline-flex items-center justify-center w-9 h-9 rounded-xl bg-black/55 text-white hover:bg-black/65"
+                                    x-show="canImagesDelete"
+                                    x-cloak
+                                    @click.prevent.stop="openDelete('image', img.id)"
+                                    aria-label="Supprimer"
+                                    title="Supprimer"
+                                >
+                                    <i class="ph ph-trash" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </template>
                     </div>
 
@@ -332,8 +375,9 @@
                 <div>
                     <div class="grid grid-cols-2 gap-2">
                         <template x-for="v in (videos || [])" :key="'vid_' + v.id">
-                            <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] transition">
-                                <div class="aspect-video bg-[color:var(--fam-surface-alt)] overflow-hidden flex items-center justify-center relative">
+                            <div class="relative">
+                                <a :href="v.open_url" class="block rounded-xl overflow-hidden bg-[color:var(--fam-surface)] ring-1 ring-black/10 hover:bg-[color:var(--fam-surface-alt)] hover:ring-[color:rgba(14,165,160,0.25)] transition">
+                                    <div class="aspect-video bg-[color:var(--fam-surface-alt)] overflow-hidden flex items-center justify-center relative">
                                     <template x-if="!!v.poster_url">
                                         <img :src="v.poster_url" :alt="v.title || 'Vidéo'" class="block w-full h-full object-cover" :style="{ objectPosition: focalPosition(v) }" loading="lazy" />
                                     </template>
@@ -356,8 +400,21 @@
                                     <div class="absolute inset-x-0 bottom-0 pointer-events-none bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2.5 pt-10">
                                         <div class="text-[0.72rem] font-semibold text-white truncate" x-text="v.title || 'Vidéo'"></div>
                                     </div>
-                                </div>
-                            </a>
+                                    </div>
+                                </a>
+
+                                <button
+                                    type="button"
+                                    class="absolute top-2 right-2 inline-flex items-center justify-center w-9 h-9 rounded-xl bg-black/55 text-white hover:bg-black/65"
+                                    x-show="canVideosDelete"
+                                    x-cloak
+                                    @click.prevent.stop="openDelete('video', v.id)"
+                                    aria-label="Supprimer"
+                                    title="Supprimer"
+                                >
+                                    <i class="ph ph-trash" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </template>
                     </div>
 
@@ -394,6 +451,33 @@
                     </template>
                 </div>
             </template>
+        </div>
+
+        <div
+            class="fixed inset-0 z-50 flex items-center justify-center px-4"
+            x-show="confirmOpen"
+            x-cloak
+            role="dialog"
+            aria-modal="true"
+        >
+            <div class="absolute inset-0 bg-black/40" @click="confirmOpen = false"></div>
+            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-sm p-6">
+                <div class="text-base font-semibold text-gray-900" x-text="confirmLabel || 'Supprimer ?'"></div>
+                <div class="microcopy text-sm text-slate-500 mt-2">Cette action est irréversible.</div>
+
+                <form method="POST" :action="confirmAction" class="mt-6 flex items-center justify-end gap-2">
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="return" :value="confirmReturn" />
+
+                    <button type="button" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-gray-900" @click="confirmOpen = false">
+                        Annuler
+                    </button>
+                    <button type="submit" class="bg-slate-900 text-white rounded-xl px-4 py-2 text-sm font-semibold" @click="confirmOpen = false">
+                        Supprimer
+                    </button>
+                </form>
+            </div>
         </div>
 
     </div>
