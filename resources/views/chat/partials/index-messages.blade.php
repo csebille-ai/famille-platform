@@ -148,6 +148,8 @@
                                                     data-type="{{ $attType }}"
                                                     data-name="{{ $attName }}"
                                                     data-thumb="{{ $attThumb }}"
+                                                    data-media-w="{{ $attW }}"
+                                                    data-media-h="{{ $attH }}"
                                                 >
                                                     <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
                                                         <div class="relative w-full {{ $attMediaH }} bg-slate-100 animate-pulse" data-chat-media-card>

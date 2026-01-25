@@ -3112,6 +3112,8 @@
 
                     const rawW = Number(att.width || 0);
                     const rawH = Number(att.height || 0);
+                    btn.dataset.mediaW = String(Number.isFinite(rawW) ? rawW : 0);
+                    btn.dataset.mediaH = String(Number.isFinite(rawH) ? rawH : 0);
                     const isLandscape = rawW > 0 && rawH > 0 ? rawW > rawH : false;
                     const isVideo = String(att.media_type) === 'video';
                     const mediaH = isVideo
@@ -4640,6 +4642,110 @@
 
             refreshNotifBanner().catch(() => {});
 
+            function prefersReducedMotion() {
+                try {
+                    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+                } catch {
+                    return false;
+                }
+            }
+
+            function waapi(el, keyframes, options) {
+                try {
+                    if (!el || !el.animate) return Promise.resolve();
+                    const anim = el.animate(keyframes, { fill: 'forwards', ...options });
+                    return anim.finished.catch(() => {});
+                } catch {
+                    return Promise.resolve();
+                }
+            }
+
+            function waitForImageReady(imgEl, timeoutMs) {
+                const ms = Number(timeoutMs || 1400);
+                if (!imgEl) return Promise.resolve(false);
+
+                const alreadyOk = () => {
+                    try {
+                        return !!(imgEl.complete && imgEl.naturalWidth > 0);
+                    } catch {
+                        return false;
+                    }
+                };
+                if (alreadyOk()) return Promise.resolve(true);
+
+                // Prefer decode when available; it's usually smoother.
+                try {
+                    if (typeof imgEl.decode === 'function') {
+                        const t = new Promise((r) => setTimeout(() => r(false), ms));
+                        const d = imgEl.decode().then(() => true).catch(() => false);
+                        return Promise.race([d, t]);
+                    }
+                } catch {}
+
+                return new Promise((resolve) => {
+                    let done = false;
+                    const finish = (ok) => {
+                        if (done) return;
+                        done = true;
+                        cleanup();
+                        resolve(!!ok);
+                    };
+                    const onLoad = () => finish(alreadyOk());
+                    const onErr = () => finish(false);
+                    const cleanup = () => {
+                        try { imgEl.removeEventListener('load', onLoad); } catch {}
+                        try { imgEl.removeEventListener('error', onErr); } catch {}
+                    };
+                    try { imgEl.addEventListener('load', onLoad, { once: true }); } catch {}
+                    try { imgEl.addEventListener('error', onErr, { once: true }); } catch {}
+                    setTimeout(() => finish(alreadyOk()), ms);
+                });
+            }
+
+            function getMediaStageRect() {
+                // The center stage that contains the image/video in the modal.
+                const stage = (mediaImg && mediaImg.parentElement) ? mediaImg.parentElement : null;
+                try {
+                    if (stage && stage.getBoundingClientRect) return stage.getBoundingClientRect();
+                } catch {}
+                return null;
+            }
+
+            function computeContainRect(stageRect, mediaW, mediaH) {
+                if (!stageRect) return null;
+                const sw = Math.max(0, Number(stageRect.width || 0));
+                const sh = Math.max(0, Number(stageRect.height || 0));
+                if (sw < 2 || sh < 2) return null;
+
+                const w = Number(mediaW || 0);
+                const h = Number(mediaH || 0);
+                if (!(w > 0 && h > 0)) {
+                    // Fallback: animate to the stage itself.
+                    return {
+                        top: stageRect.top,
+                        left: stageRect.left,
+                        width: stageRect.width,
+                        height: stageRect.height,
+                    };
+                }
+
+                const r = w / h;
+                let tw = sw;
+                let th = tw / r;
+                if (th > sh) {
+                    th = sh;
+                    tw = th * r;
+                }
+
+                const left = stageRect.left + (sw - tw) / 2;
+                const top = stageRect.top + (sh - th) / 2;
+                return { top, left, width: tw, height: th };
+            }
+
+            let lastMediaTrigger = null;
+            let lastMediaOpts = null;
+            let mediaAnimating = false;
+
             function setMediaOpen(open, opts) {
                 if (!mediaModal || !mediaImg || !mediaVideo || !mediaTitle || !mediaOpenLink) return;
                 mediaModal.classList.toggle('hidden', !open);
@@ -4649,6 +4755,9 @@
                     mediaVideo.classList.add('hidden');
                     mediaImg.src = '';
                     mediaImg.alt = '';
+                    try { mediaImg.style.opacity = ''; } catch {}
+                    try { mediaVideo.style.opacity = ''; } catch {}
+                    try { mediaBackdrop && (mediaBackdrop.style.opacity = ''); } catch {}
                     try { mediaVideo.pause(); } catch {}
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
@@ -4732,6 +4841,7 @@
                 if (type === 'video') {
                     mediaImg.classList.add('hidden');
                     mediaVideo.classList.remove('hidden');
+                    try { mediaVideo.style.opacity = ''; } catch {}
                     if (thumb) {
                         mediaVideo.setAttribute('poster', thumb);
                     } else {
@@ -4745,9 +4855,197 @@
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
                     mediaImg.classList.remove('hidden');
+                    try { mediaImg.style.opacity = ''; } catch {}
                     mediaImg.src = url;
                     mediaImg.alt = name;
                 }
+            }
+
+            async function openMediaAnimated(triggerEl, opts) {
+                if (mediaAnimating) return;
+                if (!mediaModal || !mediaBackdrop || !mediaImg || !mediaVideo) {
+                    setMediaOpen(true, opts);
+                    return;
+                }
+                if (prefersReducedMotion()) {
+                    setMediaOpen(true, opts);
+                    return;
+                }
+
+                const type = String(opts?.type || '');
+                const thumbEl = triggerEl?.querySelector ? triggerEl.querySelector('[data-chat-media-thumb]') : null;
+                const startRect = (() => {
+                    try {
+                        return (thumbEl && thumbEl.getBoundingClientRect) ? thumbEl.getBoundingClientRect() : (triggerEl && triggerEl.getBoundingClientRect ? triggerEl.getBoundingClientRect() : null);
+                    } catch {
+                        return null;
+                    }
+                })();
+
+                if (!startRect || startRect.width < 2 || startRect.height < 2) {
+                    setMediaOpen(true, opts);
+                    return;
+                }
+
+                lastMediaTrigger = triggerEl || null;
+                lastMediaOpts = opts || null;
+                mediaAnimating = true;
+
+                const ghost = document.createElement('img');
+                ghost.decoding = 'async';
+                ghost.loading = 'eager';
+                ghost.alt = '';
+                ghost.src = String(thumbEl?.currentSrc || thumbEl?.src || opts?.thumb || opts?.thumb_url || opts?.url || '');
+                ghost.style.position = 'fixed';
+                ghost.style.top = `${startRect.top}px`;
+                ghost.style.left = `${startRect.left}px`;
+                ghost.style.width = `${startRect.width}px`;
+                ghost.style.height = `${startRect.height}px`;
+                ghost.style.borderRadius = '16px';
+                ghost.style.objectFit = 'cover';
+                ghost.style.background = 'rgba(0,0,0,0.15)';
+                ghost.style.zIndex = '1000';
+                ghost.style.willChange = 'top,left,width,height,opacity,transform';
+                ghost.style.transform = 'translateZ(0)';
+                ghost.style.boxShadow = '0 20px 60px rgba(0,0,0,0.35)';
+
+                try { if (thumbEl) thumbEl.style.visibility = 'hidden'; } catch {}
+                try { document.body.appendChild(ghost); } catch {}
+
+                // Open the real modal, but keep the real media hidden until the end of the transition.
+                setMediaOpen(true, opts);
+                try { mediaBackdrop.style.opacity = '0'; } catch {}
+                try {
+                    if (type === 'video') {
+                        mediaVideo.style.opacity = '0';
+                    } else {
+                        mediaImg.style.opacity = '0';
+                    }
+                } catch {}
+
+                const stageRect = getMediaStageRect();
+                const mw = Number(triggerEl?.dataset?.mediaW || 0) || 0;
+                const mh = Number(triggerEl?.dataset?.mediaH || 0) || 0;
+                const target = computeContainRect(stageRect, mw, mh) || {
+                    top: stageRect?.top ?? startRect.top,
+                    left: stageRect?.left ?? startRect.left,
+                    width: stageRect?.width ?? startRect.width,
+                    height: stageRect?.height ?? startRect.height,
+                };
+
+                const openDur = 220;
+                await Promise.all([
+                    waapi(mediaBackdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                    waapi(ghost, [
+                        { top: `${startRect.top}px`, left: `${startRect.left}px`, width: `${startRect.width}px`, height: `${startRect.height}px`, opacity: 1, transform: 'scale(1)' },
+                        { top: `${target.top}px`, left: `${target.left}px`, width: `${target.width}px`, height: `${target.height}px`, opacity: 1, transform: 'scale(1)' },
+                    ], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                ]);
+
+                // Crossfade to the real media once ready (prevents "movement" when decode/layout happens).
+                if (type !== 'video') {
+                    try { await waitForImageReady(mediaImg, 1800); } catch {}
+                }
+
+                const settleDur = 140;
+                try {
+                    if (type === 'video') {
+                        mediaVideo.style.opacity = '1';
+                        await Promise.all([
+                            waapi(mediaVideo, [{ opacity: 0 }, { opacity: 1 }], { duration: settleDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                            waapi(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'linear' }),
+                        ]);
+                    } else {
+                        mediaImg.style.opacity = '1';
+                        await Promise.all([
+                            waapi(mediaImg, [{ opacity: 0 }, { opacity: 1 }], { duration: settleDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                            waapi(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'linear' }),
+                        ]);
+                    }
+                } catch {}
+
+                try { ghost.remove(); } catch {}
+                try { if (thumbEl) thumbEl.style.visibility = ''; } catch {}
+                mediaAnimating = false;
+            }
+
+            async function closeMediaAnimated() {
+                if (mediaAnimating) return;
+                if (!mediaModal || mediaModal.classList.contains('hidden')) return;
+                if (!mediaBackdrop || !mediaImg || !mediaVideo) {
+                    setMediaOpen(false);
+                    return;
+                }
+                if (prefersReducedMotion()) {
+                    setMediaOpen(false);
+                    return;
+                }
+
+                const triggerEl = lastMediaTrigger;
+                const opts = lastMediaOpts || {};
+                const type = String(opts?.type || (mediaVideo && !mediaVideo.classList.contains('hidden') ? 'video' : 'image'));
+                const thumbEl = triggerEl?.querySelector ? triggerEl.querySelector('[data-chat-media-thumb]') : null;
+                const endRect = (() => {
+                    try {
+                        return (thumbEl && thumbEl.getBoundingClientRect) ? thumbEl.getBoundingClientRect() : (triggerEl && triggerEl.getBoundingClientRect ? triggerEl.getBoundingClientRect() : null);
+                    } catch {
+                        return null;
+                    }
+                })();
+                if (!endRect || endRect.width < 2 || endRect.height < 2) {
+                    setMediaOpen(false);
+                    return;
+                }
+
+                const activeEl = type === 'video' ? mediaVideo : mediaImg;
+                const startRect = (() => {
+                    try { return activeEl?.getBoundingClientRect ? activeEl.getBoundingClientRect() : null; } catch { return null; }
+                })();
+
+                if (!startRect || startRect.width < 2 || startRect.height < 2) {
+                    setMediaOpen(false);
+                    return;
+                }
+
+                mediaAnimating = true;
+
+                const ghost = document.createElement('img');
+                ghost.decoding = 'async';
+                ghost.loading = 'eager';
+                ghost.alt = '';
+                const src = type === 'video'
+                    ? String(mediaVideo?.getAttribute('poster') || opts?.thumb || opts?.thumb_url || '')
+                    : String(mediaImg?.currentSrc || mediaImg?.src || '');
+                ghost.src = src;
+                ghost.style.position = 'fixed';
+                ghost.style.top = `${startRect.top}px`;
+                ghost.style.left = `${startRect.left}px`;
+                ghost.style.width = `${startRect.width}px`;
+                ghost.style.height = `${startRect.height}px`;
+                ghost.style.borderRadius = '16px';
+                ghost.style.objectFit = 'contain';
+                ghost.style.background = 'rgba(0,0,0,0.15)';
+                ghost.style.zIndex = '1000';
+                ghost.style.willChange = 'top,left,width,height,opacity,transform';
+                ghost.style.transform = 'translateZ(0)';
+                ghost.style.boxShadow = '0 20px 60px rgba(0,0,0,0.35)';
+
+                try { document.body.appendChild(ghost); } catch {}
+                try { activeEl.style.opacity = '0'; } catch {}
+
+                const dur = 210;
+                await Promise.all([
+                    waapi(mediaBackdrop, [{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                    waapi(ghost, [
+                        { top: `${startRect.top}px`, left: `${startRect.left}px`, width: `${startRect.width}px`, height: `${startRect.height}px`, opacity: 1 },
+                        { top: `${endRect.top}px`, left: `${endRect.left}px`, width: `${endRect.width}px`, height: `${endRect.height}px`, opacity: 1 },
+                    ], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                ]);
+
+                try { ghost.remove(); } catch {}
+                try { if (thumbEl) thumbEl.style.visibility = ''; } catch {}
+                setMediaOpen(false);
+                mediaAnimating = false;
             }
 
             if (messagesEl) {
@@ -4760,20 +5058,20 @@
                     const type = String(el.dataset.type || '');
                     const name = String(el.dataset.name || (type === 'video' ? 'Vidéo' : 'Photo'));
                     const thumb = String(el.dataset.thumb || '');
-                    setMediaOpen(true, { url, openUrl, type, name, thumb });
+                    openMediaAnimated(el, { url, openUrl, type, name, thumb });
                 });
             }
 
             if (mediaBackdrop) {
-                mediaBackdrop.addEventListener('click', () => setMediaOpen(false));
+                mediaBackdrop.addEventListener('click', () => closeMediaAnimated());
             }
             if (mediaClose) {
-                mediaClose.addEventListener('click', () => setMediaOpen(false));
+                mediaClose.addEventListener('click', () => closeMediaAnimated());
             }
             document.addEventListener('keydown', (e) => {
                 if (e.key !== 'Escape') return;
                 if (!mediaModal || mediaModal.classList.contains('hidden')) return;
-                setMediaOpen(false);
+                closeMediaAnimated();
             });
 
             function setInfoOpen(open) {
