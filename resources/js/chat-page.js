@@ -4785,6 +4785,41 @@
                 });
             }
 
+            async function fetchImageObjectUrl(url, timeoutMs) {
+                const src = String(url || '').trim();
+                if (!src) return null;
+                if (typeof fetch !== 'function') return null;
+                if (!(window.URL && typeof URL.createObjectURL === 'function')) return null;
+
+                const ms = Math.max(400, Number(timeoutMs || 2800));
+                const ac = (typeof AbortController === 'function') ? new AbortController() : null;
+                const signal = ac ? ac.signal : undefined;
+
+                let t = null;
+                try {
+                    if (ac) t = setTimeout(() => { try { ac.abort(); } catch {} }, ms);
+                    const res = await fetch(src, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        cache: 'force-cache',
+                        signal,
+                    });
+                    if (!res.ok) return null;
+                    const blob = await res.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+                    return {
+                        objectUrl,
+                        revoke: () => {
+                            try { URL.revokeObjectURL(objectUrl); } catch {}
+                        },
+                    };
+                } catch {
+                    return null;
+                } finally {
+                    try { t && clearTimeout(t); } catch {}
+                }
+            }
+
             function getMediaStageRect() {
                 // The center stage that contains the image/video in the modal.
                 const stage = (mediaImg && mediaImg.parentElement) ? mediaImg.parentElement : null;
@@ -4834,6 +4869,13 @@
             let activeMediaOverlayFull = null;
 
             function teardownActiveMediaOverlay() {
+                // Revoke object URLs to avoid leaking memory across opens.
+                try {
+                    const u = activeMediaOverlayFull?.dataset?.objectUrl;
+                    if (u && window.URL && typeof URL.revokeObjectURL === 'function') {
+                        URL.revokeObjectURL(u);
+                    }
+                } catch {}
                 try { activeMediaOverlay && activeMediaOverlay.remove(); } catch {}
                 activeMediaOverlay = null;
                 activeMediaOverlayThumb = null;
@@ -5084,14 +5126,25 @@
                         waapi(overlay, [{ transform: overlay.style.transform }, { transform: 'translate(0px, 0px) scale(1, 1)' }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
                     ]);
 
-                    // Wait for viewport (iOS URL bar) to settle before swapping to the full-res layer.
-                    try { await waitForStableViewport(140, 900); } catch {}
-
+                    // Swap to the full-res layer only once it's fully fetched + decoded.
+                    // We do the viewport settle and the fetch concurrently to avoid a "pause then flashes" feel.
                     const pendingUrl = String(opts?.url || '').trim();
                     if (pendingUrl) {
-                        try { await preloadImageUrl(pendingUrl, 2600); } catch {}
-                        try { fullImg.src = pendingUrl; } catch {}
-                        try { await waitForImageReady(fullImg, 1600); } catch {}
+                        const viewportP = waitForStableViewport(90, 650).catch(() => false);
+                        const fetchP = fetchImageObjectUrl(pendingUrl, 3200).catch(() => null);
+                        const [, fetched] = await Promise.all([viewportP, fetchP]);
+
+                        if (fetched?.objectUrl) {
+                            try { fullImg.dataset.objectUrl = fetched.objectUrl; } catch {}
+                            try { fullImg.src = fetched.objectUrl; } catch {}
+                        } else {
+                            // Fallback: best-effort preload; may still be progressive on some formats.
+                            try { await preloadImageUrl(pendingUrl, 2600); } catch {}
+                            try { fullImg.src = pendingUrl; } catch {}
+                        }
+
+                        // Decode before revealing to prevent any intermediate paints.
+                        try { await waitForImageReady(fullImg, 2200); } catch {}
                     }
 
                     const settleDur = 160;
