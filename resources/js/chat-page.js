@@ -4642,184 +4642,6 @@
 
             refreshNotifBanner().catch(() => {});
 
-            function prefersReducedMotion() {
-                try {
-                    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-                } catch {
-                    return false;
-                }
-            }
-
-            function waapi(el, keyframes, options) {
-                try {
-                    if (!el || !el.animate) return Promise.resolve();
-                    const anim = el.animate(keyframes, { fill: 'forwards', ...options });
-                    return anim.finished.catch(() => {});
-                } catch {
-                    return Promise.resolve();
-                }
-            }
-
-            function waitForImageReady(imgEl, timeoutMs) {
-                const ms = Number(timeoutMs || 1400);
-                if (!imgEl) return Promise.resolve(false);
-
-                const alreadyOk = () => {
-                    try {
-                        return !!(imgEl.complete && imgEl.naturalWidth > 0);
-                    } catch {
-                        return false;
-                    }
-                };
-                if (alreadyOk()) return Promise.resolve(true);
-
-                // Prefer decode when available; it's usually smoother.
-                try {
-                    if (typeof imgEl.decode === 'function') {
-                        const t = new Promise((r) => setTimeout(() => r(false), ms));
-                        const d = imgEl.decode().then(() => true).catch(() => false);
-                        return Promise.race([d, t]);
-                    }
-                } catch {}
-
-                return new Promise((resolve) => {
-                    let done = false;
-                    const finish = (ok) => {
-                        if (done) return;
-                        done = true;
-                        cleanup();
-                        resolve(!!ok);
-                    };
-                    const onLoad = () => finish(alreadyOk());
-                    const onErr = () => finish(false);
-                    const cleanup = () => {
-                        try { imgEl.removeEventListener('load', onLoad); } catch {}
-                        try { imgEl.removeEventListener('error', onErr); } catch {}
-                    };
-                    try { imgEl.addEventListener('load', onLoad, { once: true }); } catch {}
-                    try { imgEl.addEventListener('error', onErr, { once: true }); } catch {}
-                    setTimeout(() => finish(alreadyOk()), ms);
-                });
-            }
-
-            function preloadImageUrl(url, timeoutMs) {
-                const src = String(url || '').trim();
-                if (!src) return Promise.resolve(false);
-                const ms = Number(timeoutMs || 2000);
-
-                return new Promise((resolve) => {
-                    let done = false;
-                    const finish = (ok) => {
-                        if (done) return;
-                        done = true;
-                        cleanup();
-                        resolve(!!ok);
-                    };
-
-                    const img = new Image();
-                    try { img.decoding = 'async'; } catch {}
-                    try { img.loading = 'eager'; } catch {}
-
-                    const alreadyOk = () => {
-                        try { return !!(img.complete && img.naturalWidth > 0); } catch { return false; }
-                    };
-
-                    const onLoad = () => finish(alreadyOk());
-                    const onErr = () => finish(false);
-                    const cleanup = () => {
-                        try { img.removeEventListener('load', onLoad); } catch {}
-                        try { img.removeEventListener('error', onErr); } catch {}
-                    };
-
-                    try { img.addEventListener('load', onLoad, { once: true }); } catch {}
-                    try { img.addEventListener('error', onErr, { once: true }); } catch {}
-
-                    // decode() helps avoid intermediate paints on some browsers.
-                    try {
-                        if (typeof img.decode === 'function') {
-                            img.decode().then(() => finish(true)).catch(() => {});
-                        }
-                    } catch {}
-
-                    try { img.src = src; } catch { finish(false); return; }
-                    setTimeout(() => finish(alreadyOk()), ms);
-                });
-            }
-
-            function waitForStableViewport(settleMs, maxMs) {
-                const settle = Math.max(60, Number(settleMs || 120));
-                const max = Math.max(settle, Number(maxMs || 900));
-                return new Promise((resolve) => {
-                    let lastChange = Date.now();
-                    let done = false;
-
-                    const mark = () => { lastChange = Date.now(); };
-                    const finish = () => {
-                        if (done) return;
-                        done = true;
-                        cleanup();
-                        resolve(true);
-                    };
-
-                    const cleanup = () => {
-                        try { window.removeEventListener('resize', mark); } catch {}
-                        try { window.removeEventListener('scroll', mark, true); } catch {}
-                        try { window.visualViewport && window.visualViewport.removeEventListener('resize', mark); } catch {}
-                        try { window.visualViewport && window.visualViewport.removeEventListener('scroll', mark); } catch {}
-                    };
-
-                    try { window.addEventListener('resize', mark); } catch {}
-                    try { window.addEventListener('scroll', mark, true); } catch {}
-                    try { window.visualViewport && window.visualViewport.addEventListener('resize', mark); } catch {}
-                    try { window.visualViewport && window.visualViewport.addEventListener('scroll', mark); } catch {}
-
-                    const started = Date.now();
-                    const tick = () => {
-                        if (done) return;
-                        const now = Date.now();
-                        if (now - lastChange >= settle) return finish();
-                        if (now - started >= max) return finish();
-                        setTimeout(tick, 40);
-                    };
-                    setTimeout(tick, 40);
-                });
-            }
-
-            async function fetchImageObjectUrl(url, timeoutMs) {
-                const src = String(url || '').trim();
-                if (!src) return null;
-                if (typeof fetch !== 'function') return null;
-                if (!(window.URL && typeof URL.createObjectURL === 'function')) return null;
-
-                const ms = Math.max(400, Number(timeoutMs || 2800));
-                const ac = (typeof AbortController === 'function') ? new AbortController() : null;
-                const signal = ac ? ac.signal : undefined;
-
-                let t = null;
-                try {
-                    if (ac) t = setTimeout(() => { try { ac.abort(); } catch {} }, ms);
-                    const res = await fetch(src, {
-                        method: 'GET',
-                        credentials: 'same-origin',
-                        cache: 'force-cache',
-                        signal,
-                    });
-                    if (!res.ok) return null;
-                    const blob = await res.blob();
-                    const objectUrl = URL.createObjectURL(blob);
-                    return {
-                        objectUrl,
-                        revoke: () => {
-                            try { URL.revokeObjectURL(objectUrl); } catch {}
-                        },
-                    };
-                } catch {
-                    return null;
-                } finally {
-                    try { t && clearTimeout(t); } catch {}
-                }
-            }
-
             function getMediaStageRect() {
                 // The center stage that contains the image/video in the modal.
                 const stage = (mediaImg && mediaImg.parentElement) ? mediaImg.parentElement : null;
@@ -4860,28 +4682,6 @@
                 return { top, left, width: tw, height: th };
             }
 
-            let lastMediaTrigger = null;
-            let lastMediaOpts = null;
-            let mediaAnimating = false;
-
-            let activeMediaOverlay = null;
-            let activeMediaOverlayThumb = null;
-            let activeMediaOverlayFull = null;
-
-            function teardownActiveMediaOverlay() {
-                // Revoke object URLs to avoid leaking memory across opens.
-                try {
-                    const u = activeMediaOverlayFull?.dataset?.objectUrl;
-                    if (u && window.URL && typeof URL.revokeObjectURL === 'function') {
-                        URL.revokeObjectURL(u);
-                    }
-                } catch {}
-                try { activeMediaOverlay && activeMediaOverlay.remove(); } catch {}
-                activeMediaOverlay = null;
-                activeMediaOverlayThumb = null;
-                activeMediaOverlayFull = null;
-            }
-
             function setMediaOpen(open, opts) {
                 if (!mediaModal || !mediaImg || !mediaVideo || !mediaTitle || !mediaOpenLink) return;
                 mediaModal.classList.toggle('hidden', !open);
@@ -4889,7 +4689,6 @@
                 if (!open) {
                     mediaImg.classList.add('hidden');
                     mediaVideo.classList.add('hidden');
-                    try { delete mediaImg.dataset.pendingSrc; } catch {}
                     mediaImg.src = '';
                     mediaImg.alt = '';
                     try { mediaImg.style.opacity = ''; } catch {}
@@ -4904,7 +4703,6 @@
                 }
 
                 const type = String(opts?.type || '');
-                const deferImageLoad = !!opts?.deferImageLoad;
                 const rawUrl = String(opts?.url || '');
                 const rawOpenUrl = String(opts?.openUrl || opts?.open_url || '');
                 const thumb = String(opts?.thumb || opts?.thumb_url || '');
@@ -4992,301 +4790,11 @@
                     try { mediaVideo.pause(); } catch {}
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
-                    if (deferImageLoad) {
-                        try { mediaImg.dataset.pendingSrc = url; } catch {}
-                        mediaImg.classList.add('hidden');
-                        try { mediaImg.style.opacity = '0'; } catch {}
-                        try { mediaImg.src = ''; } catch {}
-                    } else {
-                        try { delete mediaImg.dataset.pendingSrc; } catch {}
-                        mediaImg.classList.remove('hidden');
-                        try { mediaImg.style.opacity = ''; } catch {}
-                        mediaImg.src = url;
-                    }
+                    mediaImg.classList.remove('hidden');
+                    try { mediaImg.style.opacity = ''; } catch {}
+                    mediaImg.src = url;
                     mediaImg.alt = name;
                 }
-            }
-
-            async function openMediaAnimated(triggerEl, opts) {
-                if (mediaAnimating) return;
-                if (!mediaModal || !mediaBackdrop || !mediaImg || !mediaVideo) {
-                    setMediaOpen(true, opts);
-                    return;
-                }
-                if (prefersReducedMotion()) {
-                    setMediaOpen(true, opts);
-                    return;
-                }
-
-                const type = String(opts?.type || '');
-                const thumbEl = triggerEl?.querySelector ? triggerEl.querySelector('[data-chat-media-thumb]') : null;
-                const startRect = (() => {
-                    try {
-                        return (thumbEl && thumbEl.getBoundingClientRect) ? thumbEl.getBoundingClientRect() : (triggerEl && triggerEl.getBoundingClientRect ? triggerEl.getBoundingClientRect() : null);
-                    } catch {
-                        return null;
-                    }
-                })();
-
-                if (!startRect || startRect.width < 2 || startRect.height < 2) {
-                    setMediaOpen(true, opts);
-                    return;
-                }
-
-                lastMediaTrigger = triggerEl || null;
-                lastMediaOpts = opts || null;
-                mediaAnimating = true;
-
-                // Always open the modal shell (backdrop + header). For images, render via a
-                // dedicated fixed overlay so the content can't "fight" with layout/resize.
-                const openOpts = (type === 'video') ? (opts || {}) : { ...(opts || {}), deferImageLoad: true };
-                setMediaOpen(true, openOpts);
-                try { mediaBackdrop.style.opacity = '0'; } catch {}
-                try { mediaVideo.style.opacity = '0'; } catch {}
-                try { mediaImg.style.opacity = '0'; } catch {}
-
-                teardownActiveMediaOverlay();
-
-                const stageRect = getMediaStageRect();
-                const mw = Number(triggerEl?.dataset?.mediaW || 0) || 0;
-                const mh = Number(triggerEl?.dataset?.mediaH || 0) || 0;
-                const target = computeContainRect(stageRect, mw, mh) || {
-                    top: stageRect?.top ?? startRect.top,
-                    left: stageRect?.left ?? startRect.left,
-                    width: stageRect?.width ?? startRect.width,
-                    height: stageRect?.height ?? startRect.height,
-                };
-
-                const openDur = 240;
-
-                if (type !== 'video') {
-                    // Build overlay layers.
-                    const overlay = document.createElement('div');
-                    overlay.style.position = 'fixed';
-                    overlay.style.top = `${target.top}px`;
-                    overlay.style.left = `${target.left}px`;
-                    overlay.style.width = `${target.width}px`;
-                    overlay.style.height = `${target.height}px`;
-                    overlay.style.zIndex = '1000';
-                    overlay.style.borderRadius = '16px';
-                    overlay.style.overflow = 'hidden';
-                    overlay.style.background = 'rgba(0,0,0,0.15)';
-                    overlay.style.boxShadow = '0 20px 60px rgba(0,0,0,0.35)';
-                    overlay.style.willChange = 'transform,opacity';
-                    overlay.style.transformOrigin = 'top left';
-                    overlay.style.transform = 'translateZ(0)';
-
-                    const thumbImg = document.createElement('img');
-                    thumbImg.decoding = 'async';
-                    thumbImg.loading = 'eager';
-                    thumbImg.alt = '';
-                    thumbImg.src = String(thumbEl?.currentSrc || thumbEl?.src || opts?.thumb || opts?.thumb_url || opts?.url || '');
-                    thumbImg.style.position = 'absolute';
-                    thumbImg.style.inset = '0';
-                    thumbImg.style.width = '100%';
-                    thumbImg.style.height = '100%';
-                    thumbImg.style.objectFit = 'contain';
-                    thumbImg.style.background = 'rgba(0,0,0,0.10)';
-                    thumbImg.style.opacity = '1';
-                    thumbImg.style.willChange = 'opacity';
-                    thumbImg.style.transform = 'translateZ(0)';
-
-                    const fullImg = document.createElement('img');
-                    fullImg.decoding = 'async';
-                    fullImg.loading = 'eager';
-                    fullImg.alt = '';
-                    fullImg.style.position = 'absolute';
-                    fullImg.style.inset = '0';
-                    fullImg.style.width = '100%';
-                    fullImg.style.height = '100%';
-                    fullImg.style.objectFit = 'contain';
-                    fullImg.style.opacity = '0';
-                    fullImg.style.willChange = 'opacity';
-                    fullImg.style.transform = 'translateZ(0)';
-
-                    overlay.appendChild(thumbImg);
-                    overlay.appendChild(fullImg);
-
-                    // FLIP: set initial transform so overlay appears at the thumbnail rect, then animate to identity.
-                    const sx = (target.width > 0) ? (startRect.width / target.width) : 1;
-                    const sy = (target.height > 0) ? (startRect.height / target.height) : 1;
-                    const dx = startRect.left - target.left;
-                    const dy = startRect.top - target.top;
-                    overlay.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
-
-                    try { if (thumbEl) thumbEl.style.visibility = 'hidden'; } catch {}
-                    try { document.body.appendChild(overlay); } catch {}
-
-                    activeMediaOverlay = overlay;
-                    activeMediaOverlayThumb = thumbImg;
-                    activeMediaOverlayFull = fullImg;
-
-                    await Promise.all([
-                        waapi(mediaBackdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                        waapi(overlay, [{ transform: overlay.style.transform }, { transform: 'translate(0px, 0px) scale(1, 1)' }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                    ]);
-
-                    // Swap to the full-res layer only once it's fully fetched + decoded.
-                    // We do the viewport settle and the fetch concurrently to avoid a "pause then flashes" feel.
-                    const pendingUrl = String(opts?.url || '').trim();
-                    if (pendingUrl) {
-                        const viewportP = waitForStableViewport(90, 650).catch(() => false);
-                        const fetchP = fetchImageObjectUrl(pendingUrl, 3200).catch(() => null);
-                        const [, fetched] = await Promise.all([viewportP, fetchP]);
-
-                        if (fetched?.objectUrl) {
-                            try { fullImg.dataset.objectUrl = fetched.objectUrl; } catch {}
-                            try { fullImg.src = fetched.objectUrl; } catch {}
-                        } else {
-                            // Fallback: best-effort preload; may still be progressive on some formats.
-                            try { await preloadImageUrl(pendingUrl, 2600); } catch {}
-                            try { fullImg.src = pendingUrl; } catch {}
-                        }
-
-                        // Decode before revealing to prevent any intermediate paints.
-                        try { await waitForImageReady(fullImg, 2200); } catch {}
-                    }
-
-                    const settleDur = 160;
-                    await Promise.all([
-                        waapi(fullImg, [{ opacity: 0 }, { opacity: 1 }], { duration: settleDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                        waapi(thumbImg, [{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'linear' }),
-                    ]);
-
-                    mediaAnimating = false;
-                    return;
-                }
-
-                // Video path: keep existing behavior (poster is stable).
-                await Promise.all([
-                    waapi(mediaBackdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                ]);
-                try { mediaVideo.style.opacity = '1'; } catch {}
-                await waapi(mediaVideo, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
-                mediaAnimating = false;
-            }
-
-            async function closeMediaAnimated() {
-                if (mediaAnimating) return;
-                if (!mediaModal || mediaModal.classList.contains('hidden')) return;
-                if (!mediaBackdrop || !mediaImg || !mediaVideo) {
-                    setMediaOpen(false);
-                    return;
-                }
-                if (prefersReducedMotion()) {
-                    setMediaOpen(false);
-                    return;
-                }
-
-                const triggerEl = lastMediaTrigger;
-                const opts = lastMediaOpts || {};
-                const type = String(opts?.type || (mediaVideo && !mediaVideo.classList.contains('hidden') ? 'video' : 'image'));
-                const thumbEl = triggerEl?.querySelector ? triggerEl.querySelector('[data-chat-media-thumb]') : null;
-                const endRect = (() => {
-                    try {
-                        return (thumbEl && thumbEl.getBoundingClientRect) ? thumbEl.getBoundingClientRect() : (triggerEl && triggerEl.getBoundingClientRect ? triggerEl.getBoundingClientRect() : null);
-                    } catch {
-                        return null;
-                    }
-                })();
-                if (!endRect || endRect.width < 2 || endRect.height < 2) {
-                    setMediaOpen(false);
-                    return;
-                }
-
-                // If we have an overlay (images), animate that back; it's the only visible layer.
-                if (type !== 'video' && activeMediaOverlay) {
-                    mediaAnimating = true;
-
-                    const overlay = activeMediaOverlay;
-                    const startRect = (() => {
-                        try { return overlay.getBoundingClientRect ? overlay.getBoundingClientRect() : null; } catch { return null; }
-                    })();
-
-                    if (!startRect || startRect.width < 2 || startRect.height < 2) {
-                        teardownActiveMediaOverlay();
-                        try { if (thumbEl) thumbEl.style.visibility = ''; } catch {}
-                        setMediaOpen(false);
-                        mediaAnimating = false;
-                        return;
-                    }
-
-                    // Normalize overlay geometry to current rect and animate with transform-only.
-                    try {
-                        overlay.style.top = `${startRect.top}px`;
-                        overlay.style.left = `${startRect.left}px`;
-                        overlay.style.width = `${startRect.width}px`;
-                        overlay.style.height = `${startRect.height}px`;
-                        overlay.style.transform = 'translate(0px, 0px) scale(1, 1)';
-                    } catch {}
-
-                    const dx = endRect.left - startRect.left;
-                    const dy = endRect.top - startRect.top;
-                    const sx = (startRect.width > 0) ? (endRect.width / startRect.width) : 1;
-                    const sy = (startRect.height > 0) ? (endRect.height / startRect.height) : 1;
-
-                    const dur = 220;
-                    await Promise.all([
-                        waapi(mediaBackdrop, [{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                        waapi(overlay, [{ transform: 'translate(0px, 0px) scale(1, 1)', opacity: 1 }, { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, opacity: 1 }], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                    ]);
-
-                    teardownActiveMediaOverlay();
-                    try { if (thumbEl) thumbEl.style.visibility = ''; } catch {}
-                    setMediaOpen(false);
-                    mediaAnimating = false;
-                    return;
-                }
-
-                const activeEl = type === 'video' ? mediaVideo : mediaImg;
-                const startRect = (() => {
-                    try { return activeEl?.getBoundingClientRect ? activeEl.getBoundingClientRect() : null; } catch { return null; }
-                })();
-
-                if (!startRect || startRect.width < 2 || startRect.height < 2) {
-                    setMediaOpen(false);
-                    return;
-                }
-
-                mediaAnimating = true;
-
-                const ghost = document.createElement('img');
-                ghost.decoding = 'async';
-                ghost.loading = 'eager';
-                ghost.alt = '';
-                const src = type === 'video'
-                    ? String(mediaVideo?.getAttribute('poster') || opts?.thumb || opts?.thumb_url || '')
-                    : String(mediaImg?.currentSrc || mediaImg?.src || '');
-                ghost.src = src;
-                ghost.style.position = 'fixed';
-                ghost.style.top = `${startRect.top}px`;
-                ghost.style.left = `${startRect.left}px`;
-                ghost.style.width = `${startRect.width}px`;
-                ghost.style.height = `${startRect.height}px`;
-                ghost.style.borderRadius = '16px';
-                ghost.style.objectFit = 'contain';
-                ghost.style.background = 'rgba(0,0,0,0.15)';
-                ghost.style.zIndex = '1000';
-                ghost.style.willChange = 'top,left,width,height,opacity,transform';
-                ghost.style.transform = 'translateZ(0)';
-                ghost.style.boxShadow = '0 20px 60px rgba(0,0,0,0.35)';
-
-                try { document.body.appendChild(ghost); } catch {}
-                try { activeEl.style.opacity = '0'; } catch {}
-
-                const dur = 210;
-                await Promise.all([
-                    waapi(mediaBackdrop, [{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                    waapi(ghost, [
-                        { top: `${startRect.top}px`, left: `${startRect.left}px`, width: `${startRect.width}px`, height: `${startRect.height}px`, opacity: 1 },
-                        { top: `${endRect.top}px`, left: `${endRect.left}px`, width: `${endRect.width}px`, height: `${endRect.height}px`, opacity: 1 },
-                    ], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                ]);
-
-                try { ghost.remove(); } catch {}
-                try { if (thumbEl) thumbEl.style.visibility = ''; } catch {}
-                setMediaOpen(false);
-                mediaAnimating = false;
             }
 
             if (messagesEl) {
@@ -5299,20 +4807,20 @@
                     const type = String(el.dataset.type || '');
                     const name = String(el.dataset.name || (type === 'video' ? 'Vidéo' : 'Photo'));
                     const thumb = String(el.dataset.thumb || '');
-                    openMediaAnimated(el, { url, openUrl, type, name, thumb });
+                    setMediaOpen(true, { url, openUrl, type, name, thumb });
                 });
             }
 
             if (mediaBackdrop) {
-                mediaBackdrop.addEventListener('click', () => closeMediaAnimated());
+                mediaBackdrop.addEventListener('click', () => setMediaOpen(false));
             }
             if (mediaClose) {
-                mediaClose.addEventListener('click', () => closeMediaAnimated());
+                mediaClose.addEventListener('click', () => setMediaOpen(false));
             }
             document.addEventListener('keydown', (e) => {
                 if (e.key !== 'Escape') return;
                 if (!mediaModal || mediaModal.classList.contains('hidden')) return;
-                closeMediaAnimated();
+                setMediaOpen(false);
             });
 
             function setInfoOpen(open) {
