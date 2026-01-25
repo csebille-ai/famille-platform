@@ -18,6 +18,421 @@ use Illuminate\Support\Str;
 
 class ChatController extends Controller
 {
+    public function publicIndex(Request $request)
+    {
+        $this->touchPresence();
+
+        $viewerId = (int) (Auth::id() ?? 0);
+        $isAdmin = Gate::allows('manage-users');
+        $hasAudience = Schema::hasColumn('chat_messages', 'audience_type') && Schema::hasColumn('chat_messages', 'audience_user_ids');
+
+        $messages = ChatMessage::query()
+            ->with('user:id,name,avatar_path,avatar_updated_at')
+            ->when($hasAudience, function ($q) {
+                $q->where(function ($qq) {
+                    $qq->whereNull('audience_type')
+                        ->orWhere('audience_type', 'all');
+                });
+            })
+            ->when(!$isAdmin && $viewerId > 0 && !$hasAudience, function ($q) {
+                // Legacy schema: all messages are public.
+            })
+            ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->reverse()
+            ->values();
+
+        $reactionSummaries = app(ChatReactions::class)
+            ->summaryForMessageIds($messages->pluck('id')->map(fn ($v) => (int) $v)->all(), Auth::id());
+
+        $initialOnline = $this->onlineUsers();
+        $lastMessageId = (int) ($messages->last()?->id ?? 0);
+
+        return view('chat.index', [
+            'messages' => $messages,
+            'initialOnline' => $initialOnline,
+            'lastMessageId' => $lastMessageId,
+            'reactionSummaries' => $reactionSummaries,
+            'isAdmin' => $isAdmin,
+            'conversationWithUserId' => 0,
+            'conversationWithUser' => null,
+            'chatMode' => 'public',
+            'chatTitle' => 'Famille — Public',
+            'backUrl' => route('conversations.index'),
+            'chatUrl' => route('chat.index'),
+            'pollUrl' => route('chat.poll'),
+            'storeUrl' => route('chat.store'),
+            'dmBaseUrl' => url('/chat/dm'),
+        ]);
+    }
+
+    public function publicPoll(Request $request)
+    {
+        $this->touchPresence();
+
+        $viewerId = (int) (Auth::id() ?? 0);
+        $isAdmin = Gate::allows('manage-users');
+        $hasAudience = Schema::hasColumn('chat_messages', 'audience_type') && Schema::hasColumn('chat_messages', 'audience_user_ids');
+
+        $validated = $request->validate([
+            'since_id' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $sinceId = (int) ($validated['since_id'] ?? 0);
+
+        $messages = ChatMessage::query()
+            ->with('user:id,name,avatar_path,avatar_updated_at')
+            ->when($sinceId > 0, fn ($q) => $q->where('id', '>', $sinceId))
+            ->when($hasAudience, function ($q) {
+                $q->where(function ($qq) {
+                    $qq->whereNull('audience_type')
+                        ->orWhere('audience_type', 'all');
+                });
+            })
+            ->when(!$isAdmin && $viewerId > 0 && !$hasAudience, function ($q) {
+                // Legacy schema: all messages are public.
+            })
+            ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
+            ->orderBy('id')
+            ->limit(50)
+            ->get();
+
+        $reactionSummaries = app(ChatReactions::class)
+            ->summaryForMessageIds($messages->pluck('id')->map(fn ($v) => (int) $v)->all(), Auth::id());
+
+        $messages = $messages
+            ->map(fn (ChatMessage $m) => [
+                'id' => $m->id,
+                'body' => $m->deleted_for_all_at ? '' : $m->body,
+                'is_deleted' => (bool) ($m->deleted_for_all_at !== null),
+                'deleted_for_all_at' => $m->deleted_for_all_at?->toISOString(),
+                'created_at' => $m->created_at?->toISOString(),
+                'audience_type' => 'all',
+                'audience_user_ids' => [],
+                'audience_users' => [],
+                'user' => [
+                    'id' => $m->user?->id,
+                    'name' => $m->user?->name,
+                    'avatar_url' => avatarUrl($m->user),
+                ],
+                'reaction_summary' => $m->deleted_for_all_at ? [] : ($reactionSummaries[(int) $m->id] ?? []),
+            ])
+            ->values();
+
+        $onlineUsers = $this->onlineUsers();
+
+        return response()->json([
+            'online' => $onlineUsers,
+            'messages' => $messages,
+            'last_id' => (int) ($messages->last()['id'] ?? $sinceId),
+        ]);
+    }
+
+    public function publicStore(Request $request)
+    {
+        $this->touchPresence();
+
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+            // Ignore any targeting on the public page.
+            'audience_user_ids' => ['nullable', 'array'],
+            'audience_user_ids.*' => ['integer', 'min:1'],
+        ]);
+
+        $senderId = (int) (Auth::id() ?? 0);
+        $hasAudience = Schema::hasColumn('chat_messages', 'audience_type') && Schema::hasColumn('chat_messages', 'audience_user_ids');
+
+        $message = ChatMessage::create([
+            'user_id' => $senderId,
+            'body' => $validated['body'],
+            ...($hasAudience ? [
+                'audience_type' => 'all',
+                'audience_user_ids' => null,
+            ] : []),
+        ]);
+
+        $message->loadMissing('user:id,name,avatar_path,avatar_updated_at');
+        broadcast(new ChatMessageSent($message))->toOthers();
+
+        try {
+            $senderName = (string) ($message->user?->name ?? 'Quelqu\'un');
+
+            $payload = [
+                'title' => $senderName . ' – Nouveau message',
+                'body' => (string) Str::limit((string) $message->body, 140, '…'),
+                'url' => route('chat.index'),
+            ];
+
+            if ($senderId > 0) {
+                app(WebPushNotifier::class)->notifyAllExceptUser($senderId, $payload, [
+                    'TTL' => 600,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[chat] webpush notify failed: ' . $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
+            $reactionSummary = app(ChatReactions::class)->summaryForMessage((int) $message->id, Auth::id());
+
+            return response()->json([
+                'id' => $message->id,
+                'body' => $message->deleted_for_all_at ? '' : $message->body,
+                'is_deleted' => (bool) ($message->deleted_for_all_at !== null),
+                'deleted_for_all_at' => $message->deleted_for_all_at?->toISOString(),
+                'created_at' => $message->created_at?->toISOString(),
+                'audience_type' => 'all',
+                'audience_user_ids' => [],
+                'audience_users' => [],
+                'user' => [
+                    'id' => $message->user?->id,
+                    'name' => $message->user?->name,
+                    'avatar_url' => avatarUrl($message->user),
+                ],
+                'reaction_summary' => $message->deleted_for_all_at ? [] : $reactionSummary,
+            ]);
+        }
+
+        return redirect()->route('chat.index')->with('status', __('Message envoyé.'));
+    }
+
+    public function dmIndex(Request $request, User $user)
+    {
+        $this->touchPresence();
+
+        $viewerId = (int) (Auth::id() ?? 0);
+        if ($viewerId <= 0) abort(403);
+
+        $otherId = (int) $user->id;
+        if ($otherId <= 0 || $otherId === $viewerId) {
+            abort(404);
+        }
+
+        $isAdmin = Gate::allows('manage-users');
+        $hasAudience = Schema::hasColumn('chat_messages', 'audience_type') && Schema::hasColumn('chat_messages', 'audience_user_ids');
+        if (!$hasAudience) {
+            abort(422, 'Chat privé indisponible sur ce schéma de base de données.');
+        }
+
+        $messagesRaw = ChatMessage::query()
+            ->with('user:id,name,avatar_path,avatar_updated_at')
+            ->where('audience_type', 'subset')
+            ->where(function ($q) use ($viewerId, $otherId) {
+                $q->where(function ($p) use ($viewerId, $otherId) {
+                    $p->where('user_id', $viewerId)
+                        ->whereJsonContains('audience_user_ids', $otherId);
+                })->orWhere(function ($p) use ($viewerId, $otherId) {
+                    $p->where('user_id', $otherId)
+                        ->whereJsonContains('audience_user_ids', $viewerId);
+                })->orWhere(function ($p) use ($viewerId, $otherId) {
+                    // Fallback: messages from a group where both are recipients.
+                    $p->whereJsonContains('audience_user_ids', $viewerId)
+                        ->whereJsonContains('audience_user_ids', $otherId);
+                });
+            })
+            ->when(!$isAdmin && $viewerId > 0, function ($q) use ($viewerId) {
+                $q->where(function ($qq) use ($viewerId) {
+                    $qq->where('user_id', $viewerId)
+                        ->orWhereJsonContains('audience_user_ids', $viewerId);
+                });
+            })
+            ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
+            ->latest()
+            ->limit(200)
+            ->get();
+
+        $messages = $messagesRaw
+            ->filter(function (ChatMessage $m) use ($viewerId, $otherId) {
+                $audIds = is_array($m->audience_user_ids) ? $m->audience_user_ids : [];
+                $participants = array_values(array_unique(array_filter([(int) $m->user_id, ...collect($audIds)->map(fn ($v) => (int) $v)->all()])));
+                sort($participants);
+                $want = [$viewerId, $otherId];
+                sort($want);
+                return $participants === $want;
+            })
+            ->sortBy('id')
+            ->take(-50)
+            ->values();
+
+        $reactionSummaries = app(ChatReactions::class)
+            ->summaryForMessageIds($messages->pluck('id')->map(fn ($v) => (int) $v)->all(), Auth::id());
+
+        $initialOnline = $this->onlineUsers();
+        $lastMessageId = (int) ($messages->last()?->id ?? 0);
+
+        return view('chat.index', [
+            'messages' => $messages,
+            'initialOnline' => $initialOnline,
+            'lastMessageId' => $lastMessageId,
+            'reactionSummaries' => $reactionSummaries,
+            'isAdmin' => $isAdmin,
+            'conversationWithUserId' => 0,
+            'conversationWithUser' => null,
+            'chatMode' => 'dm',
+            'chatTitle' => ((string) ($user->name ?? '—')) . ' — Privé',
+            'backUrl' => route('conversations.index'),
+            'chatUrl' => route('chat.dm', ['user' => $user]),
+            'pollUrl' => route('chat.dm.poll', ['user' => $user]),
+            'storeUrl' => route('chat.dm.store', ['user' => $user]),
+            'dmUserId' => $otherId,
+            'dmBaseUrl' => url('/chat/dm'),
+        ]);
+    }
+
+    public function dmPoll(Request $request, User $user)
+    {
+        $this->touchPresence();
+
+        $viewerId = (int) (Auth::id() ?? 0);
+        if ($viewerId <= 0) abort(403);
+
+        $otherId = (int) $user->id;
+        if ($otherId <= 0 || $otherId === $viewerId) abort(404);
+
+        $hasAudience = Schema::hasColumn('chat_messages', 'audience_type') && Schema::hasColumn('chat_messages', 'audience_user_ids');
+        if (!$hasAudience) {
+            abort(422);
+        }
+
+        $validated = $request->validate([
+            'since_id' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $sinceId = (int) ($validated['since_id'] ?? 0);
+
+        $raw = ChatMessage::query()
+            ->with('user:id,name,avatar_path,avatar_updated_at')
+            ->where('audience_type', 'subset')
+            ->when($sinceId > 0, fn ($q) => $q->where('id', '>', $sinceId))
+            ->where(function ($q) use ($viewerId, $otherId) {
+                $q->where(function ($p) use ($viewerId, $otherId) {
+                    $p->where('user_id', $viewerId)
+                        ->whereJsonContains('audience_user_ids', $otherId);
+                })->orWhere(function ($p) use ($viewerId, $otherId) {
+                    $p->where('user_id', $otherId)
+                        ->whereJsonContains('audience_user_ids', $viewerId);
+                })->orWhere(function ($p) use ($viewerId, $otherId) {
+                    $p->whereJsonContains('audience_user_ids', $viewerId)
+                        ->whereJsonContains('audience_user_ids', $otherId);
+                });
+            })
+            ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
+            ->orderBy('id')
+            ->limit(200)
+            ->get();
+
+        $messages = $raw
+            ->filter(function (ChatMessage $m) use ($viewerId, $otherId) {
+                $audIds = is_array($m->audience_user_ids) ? $m->audience_user_ids : [];
+                $participants = array_values(array_unique(array_filter([(int) $m->user_id, ...collect($audIds)->map(fn ($v) => (int) $v)->all()])));
+                sort($participants);
+                $want = [$viewerId, $otherId];
+                sort($want);
+                return $participants === $want;
+            })
+            ->values();
+
+        $reactionSummaries = app(ChatReactions::class)
+            ->summaryForMessageIds($messages->pluck('id')->map(fn ($v) => (int) $v)->all(), Auth::id());
+
+        $messages = $messages
+            ->map(fn (ChatMessage $m) => [
+                'id' => $m->id,
+                'body' => $m->deleted_for_all_at ? '' : $m->body,
+                'is_deleted' => (bool) ($m->deleted_for_all_at !== null),
+                'deleted_for_all_at' => $m->deleted_for_all_at?->toISOString(),
+                'created_at' => $m->created_at?->toISOString(),
+                'audience_type' => 'subset',
+                'audience_user_ids' => $m->audience_user_ids ?? [],
+                'audience_users' => [],
+                'user' => [
+                    'id' => $m->user?->id,
+                    'name' => $m->user?->name,
+                    'avatar_url' => avatarUrl($m->user),
+                ],
+                'reaction_summary' => $m->deleted_for_all_at ? [] : ($reactionSummaries[(int) $m->id] ?? []),
+            ])
+            ->values();
+
+        $onlineUsers = $this->onlineUsers();
+
+        return response()->json([
+            'online' => $onlineUsers,
+            'messages' => $messages,
+            'last_id' => (int) ($messages->last()['id'] ?? $sinceId),
+        ]);
+    }
+
+    public function dmStore(Request $request, User $user)
+    {
+        $this->touchPresence();
+
+        $validated = $request->validate([
+            'body' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $senderId = (int) (Auth::id() ?? 0);
+        if ($senderId <= 0) abort(403);
+
+        $otherId = (int) $user->id;
+        if ($otherId <= 0 || $otherId === $senderId) abort(404);
+
+        $hasAudience = Schema::hasColumn('chat_messages', 'audience_type') && Schema::hasColumn('chat_messages', 'audience_user_ids');
+        if (!$hasAudience) {
+            abort(422, 'Chat privé indisponible sur ce schéma de base de données.');
+        }
+
+        $message = ChatMessage::create([
+            'user_id' => $senderId,
+            'body' => $validated['body'],
+            'audience_type' => 'subset',
+            'audience_user_ids' => [$otherId],
+        ]);
+
+        $message->loadMissing('user:id,name,avatar_path,avatar_updated_at');
+        broadcast(new ChatMessageSent($message))->toOthers();
+
+        try {
+            $senderName = (string) ($message->user?->name ?? 'Quelqu\'un');
+            $payload = [
+                'title' => 'Message privé de ' . $senderName,
+                'body' => (string) Str::limit((string) $message->body, 140, '…'),
+                'url' => route('chat.dm', ['user' => $senderId]),
+            ];
+
+            app(WebPushNotifier::class)->notifyUsers([$otherId], $payload, [
+                'TTL' => 600,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('[chat] webpush notify failed: ' . $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
+            $reactionSummary = app(ChatReactions::class)->summaryForMessage((int) $message->id, Auth::id());
+
+            return response()->json([
+                'id' => $message->id,
+                'body' => $message->deleted_for_all_at ? '' : $message->body,
+                'is_deleted' => (bool) ($message->deleted_for_all_at !== null),
+                'deleted_for_all_at' => $message->deleted_for_all_at?->toISOString(),
+                'created_at' => $message->created_at?->toISOString(),
+                'audience_type' => 'subset',
+                'audience_user_ids' => [$otherId],
+                'audience_users' => [],
+                'user' => [
+                    'id' => $message->user?->id,
+                    'name' => $message->user?->name,
+                    'avatar_url' => avatarUrl($message->user),
+                ],
+                'reaction_summary' => $message->deleted_for_all_at ? [] : $reactionSummary,
+            ]);
+        }
+
+        return redirect()->route('chat.dm', ['user' => $user])->with('status', __('Message envoyé.'));
+    }
+
     public function index(Request $request)
     {
         $this->touchPresence();

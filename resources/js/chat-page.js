@@ -183,6 +183,7 @@
             };
 
             function ensureAudienceUiFor(key) {
+                if (chatMode !== 'legacy') return;
                 const c = composer[key];
                 if (!c?.form || !c?.textarea) return;
                 if (audienceUi[key]?.bar) return;
@@ -379,6 +380,7 @@
             }
 
             function openAudienceModal() {
+                if (chatMode !== 'legacy') return;
                 ensureAudienceModal();
                 setAudienceModalOpen(true);
             }
@@ -1442,8 +1444,13 @@
             const mediaOpenLink = document.getElementById('chatMediaOpenLink');
             const currentUserId = bootstrap.currentUserId;
             const currentUserName = bootstrap.currentUserName;
+            const chatMode = String(bootstrap.chatMode || 'legacy');
+            const backUrl = String(bootstrap.backUrl || '').trim() || null;
             const chatUrl = String(bootstrap.chatUrl || '').trim() || null;
             const pollUrl = bootstrap.pollUrl;
+            const storeUrl = String(bootstrap.storeUrl || '').trim() || null;
+            const dmBaseUrl = String(bootstrap.dmBaseUrl || '').trim() || '/chat/dm';
+            const dmUserId = Number(bootstrap.dmUserId || 0) || 0;
             const quotaUrl = bootstrap.quotaUrl;
             const presignUrl = bootstrap.presignUrl;
             const mpInitUrl = bootstrap.mpInitUrl;
@@ -1456,7 +1463,45 @@
             const initialReactionSummaries = (bootstrap.initialReactionSummaries || []);
             const reactionSummaries = new Map();
 
+            // Runtime wiring: make sure the forms and header reflect the current mode.
+            try {
+                if (storeUrl) {
+                    if (composer.mobile?.form) composer.mobile.form.action = storeUrl;
+                    if (composer.desktop?.form) composer.desktop.form.action = storeUrl;
+                }
+            } catch {}
+
+            try {
+                const titleText = String(bootstrap.chatTitle || '').trim();
+                if (titleText && backBtn && backBtn.parentElement) {
+                    const titleEl = backBtn.parentElement.querySelector('.min-w-0.flex-1.text-center > div');
+                    if (titleEl) titleEl.textContent = titleText;
+                }
+
+                // DM mode: replace the online subtitle by a simple "Privé" label.
+                if (chatMode === 'dm') {
+                    const onlineCount = document.getElementById('chatOnlineCount');
+                    const presenceLabel = document.getElementById('chatPresenceLabel');
+                    if (onlineCount) onlineCount.classList.add('hidden');
+                    if (presenceLabel) presenceLabel.classList.add('hidden');
+                    const subtitle = presenceLabel?.parentElement || onlineCount?.parentElement;
+                    if (subtitle && !subtitle.querySelector('[data-chat-dm-label]')) {
+                        const sp = document.createElement('span');
+                        sp.dataset.chatDmLabel = '1';
+                        sp.className = 'font-semibold text-gray-900';
+                        sp.textContent = 'Privé';
+                        subtitle.appendChild(sp);
+                    }
+                }
+            } catch {}
+
+            if (chatMode !== 'legacy') {
+                // New UX: no conversation filter inside public/DM pages.
+                conversationUserId = 0;
+            }
+
             function navigateToConversation(nextUserId) {
+                if (chatMode !== 'legacy') return;
                 const nextId = Number(nextUserId || 0) || 0;
                 try {
                     const url = new URL(window.location.href);
@@ -1541,6 +1586,8 @@
 
             function applyConversationFilterToDom() {
                 if (!messagesEl) return;
+
+                if (chatMode !== 'legacy') return;
 
                 const otherId = Number(conversationUserId || 0) || 0;
                 const rows = Array.from(messagesEl.querySelectorAll('[data-message-row]'));
@@ -2177,6 +2224,7 @@
                 root: document.getElementById('chatActionMenu'),
                 panel: document.getElementById('chatActionMenuPanel'),
                 deleteAllBtn: document.getElementById('chatActionDeleteAll'),
+                dmBtn: document.getElementById('chatActionDm'),
                 open: false,
                 messageId: 0,
             };
@@ -2387,6 +2435,15 @@
 
                 const canDeleteAll = row && String(row.dataset.canDelete || '0') === '1';
                 actionMenu.deleteAllBtn?.classList.toggle('hidden', !canDeleteAll);
+
+                // Show "Répondre en privé" only in public mode, and only for messages from someone else.
+                try {
+                    const senderId = Number(row?.dataset?.userId || 0) || 0;
+                    const showDm = chatMode === 'public' && senderId > 0 && (!currentUserId || senderId !== Number(currentUserId));
+                    actionMenu.dmBtn?.classList.toggle('hidden', !showDm);
+                } catch {
+                    actionMenu.dmBtn?.classList.add('hidden');
+                }
 
                 positionPanelNearRect(actionMenu.panel, anchorRect, false);
             }
@@ -2688,6 +2745,16 @@
                 const mid = actionMenu.messageId;
                 if (!mid) return;
 
+                if (action === 'dm') {
+                    closeActionMenu();
+                    const row = rowForMessageId(mid);
+                    const uid = Number(row?.dataset?.userId || 0) || 0;
+                    if (uid > 0 && (!currentUserId || uid !== Number(currentUserId))) {
+                        window.location.href = `${dmBaseUrl}/${encodeURIComponent(String(uid))}`;
+                    }
+                    return;
+                }
+
                 if (action === 'copy') {
                     const txt = getMessagePlainText(mid);
                     await copyToClipboard(txt);
@@ -2697,18 +2764,20 @@
 
                 if (action === 'reply') {
                     closeActionMenu();
-                    try {
-                        const row = rowForMessageId(mid);
-                        const t = String(row?.dataset?.audienceType || 'all');
-                        if (t === 'subset') {
-                            let ids = [];
-                            try { ids = JSON.parse(row?.dataset?.audienceUserIds || '[]'); } catch {}
-                            setAudienceUserIds(ids);
-                        } else {
+                    if (chatMode === 'legacy') {
+                        try {
+                            const row = rowForMessageId(mid);
+                            const t = String(row?.dataset?.audienceType || 'all');
+                            if (t === 'subset') {
+                                let ids = [];
+                                try { ids = JSON.parse(row?.dataset?.audienceUserIds || '[]'); } catch {}
+                                setAudienceUserIds(ids);
+                            } else {
+                                resetAudience();
+                            }
+                        } catch {
                             resetAudience();
                         }
-                    } catch {
-                        resetAudience();
                     }
                     appendQuoteToComposer(mid);
                     return;
@@ -3199,14 +3268,34 @@
                 if (rr) rr.innerHTML = '';
             }
 
+            function effectiveAudience() {
+                if (chatMode === 'dm') {
+                    return {
+                        type: 'subset',
+                        userIds: dmUserId > 0 ? [dmUserId] : [],
+                    };
+                }
+                if (chatMode === 'public') {
+                    return {
+                        type: 'all',
+                        userIds: [],
+                    };
+                }
+                return {
+                    type: audienceState.type,
+                    userIds: audienceState.type === 'subset' ? audienceState.userIds : [],
+                };
+            }
+
             function appendLocalMessage(tempId, body) {
+                const a = effectiveAudience();
                 const payload = {
                     id: tempId,
                     body,
                     created_at: new Date().toISOString(),
                     user: { id: currentUserId, name: currentUserName || 'Vous' },
-                    audience_type: audienceState.type,
-                    audience_user_ids: audienceState.type === 'subset' ? audienceState.userIds : [],
+                    audience_type: a.type,
+                    audience_user_ids: a.userIds,
                 };
                 const ok = appendMessage(payload);
                 if (!ok) return;
@@ -3594,6 +3683,8 @@
                 const mime = String(file.type || 'application/octet-stream');
                 const kind = mime.startsWith('video/') ? 'video' : 'photo';
 
+                const effAud = effectiveAudience();
+
                 const tempId = appendUploadPlaceholder(file.name || 'fichier');
                 setAttachSheetOpen(false);
 
@@ -3649,6 +3740,12 @@
                                     if (file.name) fd.append('filename', String(file.name));
                                     fd.append('chat_thread_id', 'default');
 
+                                    fd.append('audience_type', String(effAud.type || 'all'));
+                                    (Array.isArray(effAud.userIds) ? effAud.userIds : []).forEach((id) => {
+                                        const v = Number(id || 0) || 0;
+                                        if (v > 0) fd.append('audience_user_ids[]', String(v));
+                                    });
+
                                     const posterInfo = await posterPromise;
                                     const posterBlob = posterInfo && typeof posterInfo === 'object' ? posterInfo.blob : null;
                                     if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
@@ -3665,6 +3762,8 @@
                                         storage_disk: storageDisk,
                                         filename: file.name || null,
                                         chat_thread_id: 'default',
+                                        audience_type: effAud.type,
+                                        audience_user_ids: effAud.type === 'subset' ? (effAud.userIds || []) : [],
                                     });
                                 }
                             } else {
@@ -3767,6 +3866,12 @@
                                 if (file.name) fd.append('filename', String(file.name));
                                 fd.append('chat_thread_id', 'default');
 
+                                fd.append('audience_type', String(effAud.type || 'all'));
+                                (Array.isArray(effAud.userIds) ? effAud.userIds : []).forEach((id) => {
+                                    const v = Number(id || 0) || 0;
+                                    if (v > 0) fd.append('audience_user_ids[]', String(v));
+                                });
+
                                 const posterInfo = await posterPromise;
                                 const posterBlob = posterInfo && typeof posterInfo === 'object' ? posterInfo.blob : null;
                                 if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
@@ -3783,6 +3888,8 @@
                                     storage_disk: 'r2',
                                     filename: file.name || null,
                                     chat_thread_id: 'default',
+                                    audience_type: effAud.type,
+                                    audience_user_ids: effAud.type === 'subset' ? (effAud.userIds || []) : [],
                                 });
                             }
 
@@ -3819,6 +3926,12 @@
                                 if (file.name) fd.append('filename', String(file.name));
                                 fd.append('chat_thread_id', 'default');
 
+                                fd.append('audience_type', String(effAud.type || 'all'));
+                                (Array.isArray(effAud.userIds) ? effAud.userIds : []).forEach((id) => {
+                                    const v = Number(id || 0) || 0;
+                                    if (v > 0) fd.append('audience_user_ids[]', String(v));
+                                });
+
                                 const posterInfo = await posterPromise;
                                 const posterBlob = posterInfo && typeof posterInfo === 'object' ? posterInfo.blob : null;
                                 if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
@@ -3835,6 +3948,8 @@
                                     storage_disk: storageDisk,
                                     filename: file.name || null,
                                     chat_thread_id: 'default',
+                                    audience_type: effAud.type,
+                                    audience_user_ids: effAud.type === 'subset' ? (effAud.userIds || []) : [],
                                 });
                             }
                         }
@@ -3870,8 +3985,8 @@
                                 body: '[[ATTACHMENT]]' + JSON.stringify(attachment),
                                 created_at: new Date().toISOString(),
                                 user: { id: currentUserId, name: currentUserName || 'Vous' },
-                                audience_type: audienceState.type,
-                                audience_user_ids: audienceState.type === 'subset' ? audienceState.userIds : [],
+                                audience_type: effAud.type,
+                                audience_user_ids: effAud.type === 'subset' ? effAud.userIds : [],
                             });
 
                             lastMessageId = Math.max(lastMessageId, chatMessageId);
@@ -4424,11 +4539,17 @@
 
             if (backBtn) {
                 backBtn.addEventListener('click', () => {
+                    if (backUrl) {
+                        window.location.href = backUrl;
+                        return;
+                    }
+
                     if (window.history.length > 1) {
                         window.history.back();
-                    } else {
-                        window.location.href = bootstrap.dashboardUrl;
+                        return;
                     }
+
+                    window.location.href = bootstrap.dashboardUrl;
                 });
             }
 

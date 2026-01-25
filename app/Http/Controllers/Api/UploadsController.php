@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatMessage;
 use App\Models\CloudNode;
 use App\Models\UploadAsset;
+use App\Models\User;
 use App\Models\Video;
 use App\Services\Uploads\R2UploadService;
 use Illuminate\Http\Request;
@@ -527,6 +528,9 @@ class UploadsController extends Controller
             'storage_disk' => ['nullable', 'string', 'in:r2,local'],
             'filename' => ['nullable', 'string', 'max:255'],
             'chat_thread_id' => ['nullable', 'string', 'max:100'],
+            'audience_type' => ['nullable', 'string', 'in:all,subset'],
+            'audience_user_ids' => ['nullable', 'array', 'max:50'],
+            'audience_user_ids.*' => ['integer', 'min:1'],
             'title' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:32'],
             'description' => ['nullable', 'string'],
@@ -604,6 +608,32 @@ class UploadsController extends Controller
 
         $isChatContext = (string) ($validated['context'] ?? '') === 'chat';
 
+        $audienceType = (string) ($validated['audience_type'] ?? 'all');
+        $audienceUserIds = collect($validated['audience_user_ids'] ?? [])
+            ->map(fn ($v) => (int) $v)
+            ->filter(fn ($v) => $v > 0)
+            ->unique()
+            ->values()
+            ->take(50)
+            ->all();
+
+        // Audience user IDs represent recipients (exclude sender).
+        $audienceUserIds = array_values(array_filter($audienceUserIds, fn ($id) => (int) $id !== $userId));
+
+        if ($audienceType === 'subset' && !empty($audienceUserIds)) {
+            $audienceUserIds = User::query()
+                ->whereIn('id', $audienceUserIds)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+        }
+
+        if ($audienceType !== 'subset' || empty($audienceUserIds)) {
+            $audienceType = 'all';
+            $audienceUserIds = [];
+        }
+
         try {
         if ((string) $validated['kind'] === 'photo') {
             $root = CloudNode::query()
@@ -664,6 +694,8 @@ class UploadsController extends Controller
                 $msg = ChatMessage::create([
                     'user_id' => $userId,
                     'body' => self::ATTACH_PREFIX . json_encode($attachment, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    'audience_type' => $audienceType,
+                    'audience_user_ids' => $audienceType === 'subset' ? $audienceUserIds : [],
                 ]);
 
                 event(new ChatMessageSent($msg));
@@ -735,6 +767,8 @@ class UploadsController extends Controller
                 $msg = ChatMessage::create([
                     'user_id' => $userId,
                     'body' => self::ATTACH_PREFIX . json_encode($attachment, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    'audience_type' => $audienceType,
+                    'audience_user_ids' => $audienceType === 'subset' ? $audienceUserIds : [],
                 ]);
 
                 event(new ChatMessageSent($msg));

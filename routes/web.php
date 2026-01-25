@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\OpsDashboardController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ConversationsController;
 use App\Http\Controllers\ChatMessageDeletionController;
 use App\Http\Controllers\ChatMessageReactionController;
 use App\Http\Controllers\VideoController;
@@ -1186,10 +1187,23 @@ Route::middleware('auth')->group(function () {
     Route::post('playlists/{playlist}/items', [PlaylistItemController::class, 'store'])->name('playlists.items.store');
     Route::delete('playlists/{playlist}/items/{item}', [PlaylistItemController::class, 'destroy'])->name('playlists.items.destroy');
 
-    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
-    Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
+    Route::get('/conversations', [ConversationsController::class, 'index'])->name('conversations.index');
+
+    // Public chat (Famille)
+    Route::get('/chat', [ChatController::class, 'publicIndex'])->name('chat.index');
+    Route::get('/chat/poll', [ChatController::class, 'publicPoll'])->name('chat.poll');
+    Route::post('/chat', [ChatController::class, 'publicStore'])->name('chat.store');
+
+    // Private 1:1 (DM)
+    Route::get('/chat/dm/{user}', [ChatController::class, 'dmIndex'])->name('chat.dm');
+    Route::get('/chat/dm/{user}/poll', [ChatController::class, 'dmPoll'])->name('chat.dm.poll');
+    Route::post('/chat/dm/{user}', [ChatController::class, 'dmStore'])->name('chat.dm.store');
+
+    // Legacy mixed mode (public + ciblage) kept for groups/admin workflows.
+    Route::get('/chat/legacy', [ChatController::class, 'index'])->name('chat.legacy');
+    Route::get('/chat/legacy/poll', [ChatController::class, 'poll'])->name('chat.legacy.poll');
     Route::get('/chat/recipients', [ChatController::class, 'recipients'])->name('chat.recipients');
-    Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+    Route::post('/chat/legacy', [ChatController::class, 'store'])->name('chat.legacy.store');
 
     Route::delete('/chat/messages/{message}/me', [ChatMessageDeletionController::class, 'destroyForMe'])
         ->middleware(['throttle:30,1'])

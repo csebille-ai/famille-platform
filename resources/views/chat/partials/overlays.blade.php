@@ -121,6 +121,7 @@
             <div id="chatActionMenuPanel" class="absolute pointer-events-auto w-[min(92vw,280px)] rounded-2xl border border-slate-200 bg-white shadow-2xl p-1">
                 <button type="button" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-action-menu="copy">Copier</button>
                 <button type="button" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-action-menu="reply">Répondre</button>
+                <button type="button" id="chatActionDm" class="hidden w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-action-menu="dm">Répondre en privé</button>
                 <div class="h-px bg-slate-100 my-1"></div>
                 <button type="button" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]" data-action-menu="delete_me">Supprimer pour moi</button>
                 <button type="button" id="chatActionDeleteAll" class="hidden w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50" data-action-menu="delete_all">Supprimer pour tout le monde</button>
