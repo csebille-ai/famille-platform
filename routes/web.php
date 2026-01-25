@@ -1509,6 +1509,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/opcache/reset', $opcacheResetHandler)->middleware('throttle:2,1');
 
     Route::get('videos/{video}/stream', [VideoController::class, 'stream'])->whereNumber('video')->name('videos.stream');
+    Route::get('videos/{video}/debug', \App\Http\Controllers\VideoDebugController::class)->whereNumber('video')->name('videos.debug');
     Route::get('videos/{video}/poster', [VideoController::class, 'poster'])->whereNumber('video')->name('videos.poster');
     Route::post('videos/{video}/poster', [VideoController::class, 'storePoster'])->whereNumber('video')->name('videos.poster.store');
 
