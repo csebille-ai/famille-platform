@@ -144,9 +144,11 @@ class VideoController extends Controller
         }
 
         // When stored on the public disk and viewed inline, prefer a direct URL so the web server
-        // (Apache/Nginx) can handle range requests and buffering efficiently. Streaming via PHP
-        // can be very slow on shared hosting for large videos.
-        if ($diskName === 'public' && !$request->boolean('download')) {
+        // (Apache/Nginx) can handle buffering efficiently.
+        // IMPORTANT: do NOT redirect if the client sends a Range header, otherwise some browsers
+        // (notably iOS) can lose the byte-range request and end up downloading the whole file
+        // before playback starts.
+        if ($diskName === 'public' && !$request->boolean('download') && !$request->headers->has('Range')) {
             $publicUrl = trim((string) $disk->url($video->video_path));
             if ($publicUrl !== '') {
                 return redirect()->to($publicUrl);

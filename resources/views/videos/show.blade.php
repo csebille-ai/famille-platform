@@ -171,7 +171,7 @@
                         preload="metadata"
                         poster="{{ $video->poster_path ? route('videos.poster', $video) : '' }}"
                     >
-                        <source src="{{ route('videos.stream', $video) }}" type="video/mp4" />
+                        <source src="{{ ($video->storage_disk ?? 'public') === 'public' && $video->video_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($video->video_path) : route('videos.stream', $video) }}" type="video/mp4" />
                         Votre navigateur ne supporte pas la balise vidéo.
                     </video>
 

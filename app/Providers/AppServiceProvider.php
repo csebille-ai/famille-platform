@@ -7,6 +7,7 @@ use App\Models\ChatMessage;
 use App\Models\Person;
 use App\Observers\EventObserver;
 use App\Observers\UserObserver;
+use App\Observers\VideoObserver;
 use App\Policies\EventPolicy;
 use App\Policies\ChatMessagePolicy;
 use App\Policies\PersonPolicy;
@@ -14,6 +15,7 @@ use App\Services\Astro\NatalChartProvider;
 use App\Services\Astro\NullNatalChartProvider;
 use App\Models\User;
 use App\Models\ActivityEvent;
+use App\Models\Video;
 use App\Events\ChatMessageSent;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -54,6 +56,7 @@ class AppServiceProvider extends ServiceProvider
 
         User::observe(UserObserver::class);
         Event::observe(EventObserver::class);
+        Video::observe(VideoObserver::class);
 
         EventFacade::listen(Login::class, function (Login $event): void {
             try {

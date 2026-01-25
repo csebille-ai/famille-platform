@@ -9,6 +9,7 @@ use App\Models\CloudNode;
 use App\Models\Video;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ChatAttachmentController extends Controller
 {
@@ -105,7 +106,7 @@ class ChatAttachmentController extends Controller
             $mediaId = (int) $video->id;
             $openUrl = route('videos.show', $video);
             $thumbUrl = route('videos.poster', $video);
-            $mediaUrl = route('videos.stream', $video);
+            $mediaUrl = Storage::disk('public')->url($path);
         }
 
         $attachment = [
