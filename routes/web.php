@@ -1350,6 +1350,8 @@ Route::middleware('auth')->group(function () {
             $bucket = (string) $r2->bucket();
             $publicBase = (string) config('uploads.r2_public_base_url');
 
+            $origin = (request()->isSecure() ? 'https' : 'http') . '://' . request()->getHost();
+
             $missing = [];
             if (trim((string) env('R2_ACCESS_KEY_ID', '')) === '') $missing[] = 'R2_ACCESS_KEY_ID';
             if (trim((string) env('R2_SECRET_ACCESS_KEY', '')) === '') $missing[] = 'R2_SECRET_ACCESS_KEY';
@@ -1419,6 +1421,17 @@ Route::middleware('auth')->group(function () {
                     'multipart_part_size_bytes' => (int) config('uploads.multipart_part_size_bytes'),
                     'quota_bytes' => (int) config('uploads.quota_bytes'),
                 ],
+                'cors_recommendation' => [
+                    'note' => 'If browser uploads to R2 fail with a CORS/network error, add a CORS rule on the R2 bucket for your app origin.',
+                    'origin' => $origin,
+                    'rule' => [
+                        'AllowedOrigins' => [$origin],
+                        'AllowedMethods' => ['GET', 'HEAD', 'PUT'],
+                        'AllowedHeaders' => ['*'],
+                        'ExposeHeaders' => ['ETag'],
+                        'MaxAgeSeconds' => 3600,
+                    ],
+                ],
                 'missing' => $missing,
                 'presign' => $presigned,
                 'test' => $test,
@@ -1463,6 +1476,10 @@ Route::middleware('auth')->group(function () {
                 'upload_tmp_dir' => ini_get('upload_tmp_dir'),
                 'sys_temp_dir' => ini_get('sys_temp_dir'),
                 'sys_get_temp_dir' => function_exists('sys_get_temp_dir') ? sys_get_temp_dir() : null,
+            ],
+            'queue' => [
+                'default' => config('queue.default'),
+                'note' => config('queue.default') === 'sync' ? 'sync means jobs run inline (no background). For video faststart optimization, prefer database/redis + worker.' : null,
             ],
             'disk' => [
                 'free_base_mb' => @disk_free_space(base_path()) ? (int) floor(@disk_free_space(base_path()) / 1024 / 1024) : null,
