@@ -97,6 +97,14 @@ class ChatTargetedMessagesTest extends TestCase
             'audience_user_ids' => [],
         ])->assertOk();
 
+        // Another user's public message should NOT appear in the conversation view.
+        $other = User::factory()->create();
+        $this->actingAs($other);
+        $this->postJson(route('chat.store'), [
+            'body' => 'Other public',
+            'audience_user_ids' => [],
+        ])->assertOk();
+
         // Alice -> Me (subset)
         $this->actingAs($alice);
         $this->postJson(route('chat.store'), [
@@ -120,7 +128,8 @@ class ChatTargetedMessagesTest extends TestCase
             ->assertSee('From Alice')
             ->assertDontSee('To Bob')
             ->assertDontSee('From Bob')
-            ->assertDontSee('Public');
+            ->assertSee('Public')
+            ->assertDontSee('Other public');
 
         $poll = $this->getJson(route('chat.poll', ['since_id' => 0, 'with_user_id' => $alice->id]));
         $poll->assertOk();
@@ -133,6 +142,7 @@ class ChatTargetedMessagesTest extends TestCase
         $this->assertContains('From Alice', $bodies);
         $this->assertNotContains('To Bob', $bodies);
         $this->assertNotContains('From Bob', $bodies);
-        $this->assertNotContains('Public', $bodies);
+        $this->assertContains('Public', $bodies);
+        $this->assertNotContains('Other public', $bodies);
     }
 }

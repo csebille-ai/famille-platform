@@ -1488,7 +1488,15 @@
                 const otherId = Number(otherUserId || 0) || 0;
                 if (!otherId) return true;
                 if (!currentUserId) return false;
-                if (payloadAudienceType(payload) !== 'subset') return false;
+                const audType = payloadAudienceType(payload);
+
+                // Public messages: keep only those authored by me or the selected user.
+                if (audType !== 'subset') {
+                    const sender = payloadSenderId(payload);
+                    return sender === Number(currentUserId) || sender === otherId;
+                }
+
+                // Targeted messages: keep only those where both participate (sender or recipient).
                 return payloadHasParticipant(payload, currentUserId) && payloadHasParticipant(payload, otherId);
             }
 
@@ -1954,6 +1962,14 @@
 
                             const row = document.createElement('div');
                             row.className = 'flex items-center gap-3';
+
+                            if (id != null && currentUserId && Number(id) !== Number(currentUserId)) {
+                                row.className += ' cursor-pointer';
+                                row.title = 'Ouvrir la conversation';
+                                row.addEventListener('click', () => {
+                                    navigateToConversation(id);
+                                });
+                            }
 
                             const av = buildAvatarNode({ name, colors, avatarUrl, sizeClass: 'w-9 h-9' });
 

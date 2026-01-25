@@ -48,18 +48,35 @@ class ChatController extends Controller
                         });
                 });
             })
-            ->when($viewerId > 0 && $hasAudience && $withUserId > 0, function ($q) use ($viewerId, $withUserId) {
-                // Conversation view: only targeted messages where BOTH users are part of the audience
-                // (either as sender or as recipient).
-                $q->where('audience_type', 'subset')
-                    ->where(function ($qq) use ($viewerId) {
-                        $qq->where('user_id', $viewerId)
-                            ->orWhereJsonContains('audience_user_ids', $viewerId);
-                    })
-                    ->where(function ($qq) use ($withUserId) {
-                        $qq->where('user_id', $withUserId)
-                            ->orWhereJsonContains('audience_user_ids', $withUserId);
+            ->when($viewerId > 0 && $withUserId > 0, function ($q) use ($viewerId, $withUserId, $hasAudience) {
+                // Conversation view: show only messages between the viewer and the selected user.
+                // - Public messages authored by either of them.
+                // - Targeted messages where BOTH users participate (sender or recipient).
+                $q->where(function ($qq) use ($viewerId, $withUserId, $hasAudience) {
+                    $qq->where(function ($pub) use ($viewerId, $withUserId, $hasAudience) {
+                        $pub->whereIn('user_id', [$viewerId, $withUserId]);
+                        if ($hasAudience) {
+                            $pub->where(function ($a) {
+                                $a->whereNull('audience_type')
+                                    ->orWhere('audience_type', 'all');
+                            });
+                        }
                     });
+
+                    if ($hasAudience) {
+                        $qq->orWhere(function ($sub) use ($viewerId, $withUserId) {
+                            $sub->where('audience_type', 'subset')
+                                ->where(function ($p) use ($viewerId) {
+                                    $p->where('user_id', $viewerId)
+                                        ->orWhereJsonContains('audience_user_ids', $viewerId);
+                                })
+                                ->where(function ($p) use ($withUserId) {
+                                    $p->where('user_id', $withUserId)
+                                        ->orWhereJsonContains('audience_user_ids', $withUserId);
+                                });
+                        });
+                    }
+                });
             })
             ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
             ->latest()
@@ -240,16 +257,32 @@ class ChatController extends Controller
                         });
                 });
             })
-            ->when($viewerId > 0 && $hasAudience && $withUserId > 0, function ($q) use ($viewerId, $withUserId) {
-                $q->where('audience_type', 'subset')
-                    ->where(function ($qq) use ($viewerId) {
-                        $qq->where('user_id', $viewerId)
-                            ->orWhereJsonContains('audience_user_ids', $viewerId);
-                    })
-                    ->where(function ($qq) use ($withUserId) {
-                        $qq->where('user_id', $withUserId)
-                            ->orWhereJsonContains('audience_user_ids', $withUserId);
+            ->when($viewerId > 0 && $withUserId > 0, function ($q) use ($viewerId, $withUserId, $hasAudience) {
+                $q->where(function ($qq) use ($viewerId, $withUserId, $hasAudience) {
+                    $qq->where(function ($pub) use ($viewerId, $withUserId, $hasAudience) {
+                        $pub->whereIn('user_id', [$viewerId, $withUserId]);
+                        if ($hasAudience) {
+                            $pub->where(function ($a) {
+                                $a->whereNull('audience_type')
+                                    ->orWhere('audience_type', 'all');
+                            });
+                        }
                     });
+
+                    if ($hasAudience) {
+                        $qq->orWhere(function ($sub) use ($viewerId, $withUserId) {
+                            $sub->where('audience_type', 'subset')
+                                ->where(function ($p) use ($viewerId) {
+                                    $p->where('user_id', $viewerId)
+                                        ->orWhereJsonContains('audience_user_ids', $viewerId);
+                                })
+                                ->where(function ($p) use ($withUserId) {
+                                    $p->where('user_id', $withUserId)
+                                        ->orWhereJsonContains('audience_user_ids', $withUserId);
+                                });
+                        });
+                    }
+                });
             })
             ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
             ->orderBy('id')
