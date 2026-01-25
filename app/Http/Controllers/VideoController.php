@@ -132,7 +132,8 @@ class VideoController extends Controller
             abort(404);
         }
 
-        $dispositionType = $request->boolean('download') ? 'attachment' : 'inline';
+        $isDownload = $request->boolean('download');
+        $dispositionType = $isDownload ? 'attachment' : 'inline';
 
         $diskName = (string) ($video->storage_disk ?? 'public');
         if (!in_array($diskName, ['public', 'local'], true)) {
@@ -169,25 +170,52 @@ class VideoController extends Controller
 
         $absolutePath = $disk->path($video->video_path);
         $mime = $disk->mimeType($video->video_path) ?: 'application/octet-stream';
+        if ($mime === 'application/octet-stream') {
+            $ext = strtolower((string) pathinfo($absolutePath, PATHINFO_EXTENSION));
+            if ($ext === 'mp4') {
+                $mime = 'video/mp4';
+            }
+        }
         $downloadName = basename($video->video_path);
 
         $size = @filesize($absolutePath);
         if (!is_int($size) || $size <= 0) {
-            return response()->file($absolutePath, [
+            $headers = [
                 'Content-Type' => $mime,
-                'Content-Disposition' => $dispositionType . '; filename="' . addslashes($downloadName) . '"',
                 'Accept-Ranges' => 'bytes',
-            ]);
+            ];
+            if ($isDownload) {
+                $headers['Content-Disposition'] = $dispositionType . '; filename="' . addslashes($downloadName) . '"';
+            }
+            return response()->file($absolutePath, $headers);
         }
 
         $range = (string) $request->header('Range', '');
-        if ($range === '' || !preg_match('/^bytes=(\d*)-(\d*)$/', $range, $m)) {
-            return response()->file($absolutePath, [
+        if ($range === '') {
+            $headers = [
                 'Content-Type' => $mime,
-                'Content-Disposition' => $dispositionType . '; filename="' . addslashes($downloadName) . '"',
                 'Accept-Ranges' => 'bytes',
                 'Content-Length' => (string) $size,
-            ]);
+            ];
+            if ($isDownload) {
+                $headers['Content-Disposition'] = $dispositionType . '; filename="' . addslashes($downloadName) . '"';
+            }
+            return response()->file($absolutePath, $headers);
+        }
+
+        // Some clients send multiple ranges: "bytes=0-1, 200-300".
+        // We don't implement multipart/byteranges; serving the first range is enough for playback.
+        $rangeOne = trim(explode(',', $range, 2)[0]);
+        if (!preg_match('/^bytes\s*=\s*(\d*)-(\d*)\s*$/', $rangeOne, $m)) {
+            $headers = [
+                'Content-Type' => $mime,
+                'Accept-Ranges' => 'bytes',
+                'Content-Length' => (string) $size,
+            ];
+            if ($isDownload) {
+                $headers['Content-Disposition'] = $dispositionType . '; filename="' . addslashes($downloadName) . '"';
+            }
+            return response()->file($absolutePath, $headers);
         }
 
         $startRaw = $m[1];
@@ -244,7 +272,9 @@ class VideoController extends Controller
         }, 206);
 
         $response->headers->set('Content-Type', $mime);
-        $response->headers->set('Content-Disposition', $dispositionType . '; filename="' . addslashes($downloadName) . '"');
+        if ($isDownload) {
+            $response->headers->set('Content-Disposition', $dispositionType . '; filename="' . addslashes($downloadName) . '"');
+        }
         $response->headers->set('Accept-Ranges', 'bytes');
         $response->headers->set('Content-Length', (string) $length);
         $response->headers->set('Content-Range', "bytes {$start}-{$end}/{$size}");
