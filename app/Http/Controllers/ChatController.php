@@ -176,7 +176,7 @@ class ChatController extends Controller
         $onlineList = $this->normalizeOnlineList($initialOnline);
         $lastMessageId = (int) ($messages->last()?->id ?? 0);
 
-        return view('chat.index', [
+        return view('chat.index_v2', [
             'messages' => $messages,
             'initialOnline' => $initialOnline,
             'onlineList' => $onlineList,
@@ -391,7 +391,7 @@ class ChatController extends Controller
         $onlineList = $this->normalizeOnlineList($initialOnline);
         $lastMessageId = (int) ($messages->last()?->id ?? 0);
 
-        return view('chat.index', [
+        return view('chat.index_v2', [
             'messages' => $messages,
             'initialOnline' => $initialOnline,
             'onlineList' => $onlineList,
@@ -638,7 +638,7 @@ class ChatController extends Controller
         $onlineList = $this->normalizeOnlineList($initialOnline);
         $lastMessageId = (int) ($messages->last()?->id ?? 0);
 
-        return view('chat.index', [
+        return view('chat.index_v2', [
             'messages' => $messages,
             'initialOnline' => $initialOnline,
             'onlineList' => $onlineList,
