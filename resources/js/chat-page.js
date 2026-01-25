@@ -1463,6 +1463,8 @@
             const initialReactionSummaries = (bootstrap.initialReactionSummaries || []);
             const reactionSummaries = new Map();
 
+            let mediaImgLoadToken = 0;
+
             // Runtime wiring: make sure the forms and header reflect the current mode.
             try {
                 if (storeUrl) {
@@ -4687,6 +4689,7 @@
                 mediaModal.classList.toggle('hidden', !open);
 
                 if (!open) {
+                    mediaImgLoadToken++;
                     mediaImg.classList.add('hidden');
                     mediaVideo.classList.add('hidden');
                     mediaImg.src = '';
@@ -4790,10 +4793,47 @@
                     try { mediaVideo.pause(); } catch {}
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
-                    mediaImg.classList.remove('hidden');
+                    // Avoid showing progressive/intermediate image paints: keep hidden until loaded/decoded.
+                    const token = ++mediaImgLoadToken;
+                    mediaImg.classList.add('hidden');
                     try { mediaImg.style.opacity = ''; } catch {}
+                    try { mediaImg.decoding = 'async'; } catch {}
+                    try { mediaImg.loading = 'eager'; } catch {}
+                    // Reset first to avoid some browsers briefly reusing the previous frame.
+                    try { mediaImg.src = ''; } catch {}
                     mediaImg.src = url;
                     mediaImg.alt = name;
+
+                    const revealIfCurrent = () => {
+                        if (token !== mediaImgLoadToken) return;
+                        try {
+                            if (mediaImg.complete && mediaImg.naturalWidth > 0) {
+                                mediaImg.classList.remove('hidden');
+                            }
+                        } catch {}
+                    };
+
+                    const onLoad = () => {
+                        // decode() prevents some mid-paint flashes on a few engines.
+                        try {
+                            if (typeof mediaImg.decode === 'function') {
+                                mediaImg.decode().then(revealIfCurrent).catch(revealIfCurrent);
+                                return;
+                            }
+                        } catch {}
+                        revealIfCurrent();
+                    };
+
+                    const onErr = () => {
+                        if (token !== mediaImgLoadToken) return;
+                        // Fallback: show the element so the user sees the broken-state instead of a blank.
+                        try { mediaImg.classList.remove('hidden'); } catch {}
+                    };
+
+                    try { mediaImg.addEventListener('load', onLoad, { once: true }); } catch {}
+                    try { mediaImg.addEventListener('error', onErr, { once: true }); } catch {}
+                    // If cached, load may not fire.
+                    setTimeout(onLoad, 0);
                 }
             }
 
