@@ -15,6 +15,89 @@ class OptimizeVideoFaststart implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    private function isFaststartMp4(string $absolutePath): ?bool
+    {
+        if (!is_file($absolutePath) || !is_readable($absolutePath)) {
+            return null;
+        }
+
+        $size = @filesize($absolutePath);
+        if (!is_int($size) || $size <= 0) {
+            return null;
+        }
+
+        $fh = @fopen($absolutePath, 'rb');
+        if ($fh === false) {
+            return null;
+        }
+
+        try {
+            $offset = 0;
+            $boxes = 0;
+            $maxBoxes = 5000;
+            $moovOffset = null;
+            $mdatOffset = null;
+
+            while ($offset + 8 <= $size && $boxes < $maxBoxes) {
+                $boxes++;
+                if (@fseek($fh, $offset) !== 0) {
+                    break;
+                }
+                $hdr = @fread($fh, 8);
+                if (!is_string($hdr) || strlen($hdr) !== 8) {
+                    break;
+                }
+
+                $u = @unpack('Nsize/a4type', $hdr);
+                if (!is_array($u) || !isset($u['size'], $u['type'])) {
+                    break;
+                }
+
+                $boxSize = (int) $u['size'];
+                $boxType = (string) $u['type'];
+                $headerSize = 8;
+
+                if ($boxSize === 1) {
+                    $ext = @fread($fh, 8);
+                    if (!is_string($ext) || strlen($ext) !== 8) {
+                        break;
+                    }
+                    $uu = @unpack('Nhi/Nlo', $ext);
+                    if (!is_array($uu) || !isset($uu['hi'], $uu['lo'])) {
+                        break;
+                    }
+                    $boxSize = (int) ($uu['hi'] * 4294967296 + $uu['lo']);
+                    $headerSize = 16;
+                } elseif ($boxSize === 0) {
+                    $boxSize = $size - $offset;
+                }
+
+                if ($boxSize < $headerSize) {
+                    break;
+                }
+
+                if ($boxType === 'moov' && $moovOffset === null) {
+                    $moovOffset = $offset;
+                }
+                if ($boxType === 'mdat' && $mdatOffset === null) {
+                    $mdatOffset = $offset;
+                }
+
+                if ($moovOffset !== null && $mdatOffset !== null) {
+                    return $moovOffset < $mdatOffset;
+                }
+
+                $offset += $boxSize;
+            }
+
+            return null;
+        } catch (\Throwable $e) {
+            return null;
+        } finally {
+            @fclose($fh);
+        }
+    }
+
     public function __construct(public int $videoId)
     {
     }
@@ -47,6 +130,12 @@ class OptimizeVideoFaststart implements ShouldQueue
 
         $input = $disk->path($path);
         if (!is_file($input)) {
+            return;
+        }
+
+        $faststart = $this->isFaststartMp4($input);
+        if ($faststart === true) {
+            logger()->info('videos.faststart.skip', ['video_id' => $video->id, 'reason' => 'already_faststart']);
             return;
         }
 
