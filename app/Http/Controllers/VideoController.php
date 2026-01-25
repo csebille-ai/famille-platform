@@ -132,6 +132,8 @@ class VideoController extends Controller
             abort(404);
         }
 
+        $debugLog = (bool) config('videos.stream_debug_log', false);
+
         $isDownload = $request->boolean('download');
         $dispositionType = $isDownload ? 'attachment' : 'inline';
 
@@ -183,6 +185,9 @@ class VideoController extends Controller
             $headers = [
                 'Content-Type' => $mime,
                 'Accept-Ranges' => 'bytes',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
             ];
             if ($isDownload) {
                 $headers['Content-Disposition'] = $dispositionType . '; filename="' . addslashes($downloadName) . '"';
@@ -192,10 +197,23 @@ class VideoController extends Controller
 
         $range = (string) $request->header('Range', '');
         if ($range === '') {
+            if ($debugLog) {
+                logger()->info('videos.stream.request', [
+                    'video_id' => $video->id,
+                    'disk' => $diskName,
+                    'path' => $video->video_path,
+                    'size' => $size,
+                    'range' => null,
+                    'ua' => (string) $request->userAgent(),
+                ]);
+            }
             $headers = [
                 'Content-Type' => $mime,
                 'Accept-Ranges' => 'bytes',
                 'Content-Length' => (string) $size,
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
             ];
             if ($isDownload) {
                 $headers['Content-Disposition'] = $dispositionType . '; filename="' . addslashes($downloadName) . '"';
@@ -207,10 +225,24 @@ class VideoController extends Controller
         // We don't implement multipart/byteranges; serving the first range is enough for playback.
         $rangeOne = trim(explode(',', $range, 2)[0]);
         if (!preg_match('/^bytes\s*=\s*(\d*)-(\d*)\s*$/', $rangeOne, $m)) {
+            if ($debugLog) {
+                logger()->info('videos.stream.request', [
+                    'video_id' => $video->id,
+                    'disk' => $diskName,
+                    'path' => $video->video_path,
+                    'size' => $size,
+                    'range' => $range,
+                    'ua' => (string) $request->userAgent(),
+                    'range_parse' => 'failed',
+                ]);
+            }
             $headers = [
                 'Content-Type' => $mime,
                 'Accept-Ranges' => 'bytes',
                 'Content-Length' => (string) $size,
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
             ];
             if ($isDownload) {
                 $headers['Content-Disposition'] = $dispositionType . '; filename="' . addslashes($downloadName) . '"';
@@ -238,12 +270,45 @@ class VideoController extends Controller
             return response('', 416, [
                 'Content-Range' => 'bytes */' . $size,
                 'Accept-Ranges' => 'bytes',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
             ]);
         }
 
         $length = ($end - $start) + 1;
 
+        if ($debugLog) {
+            logger()->info('videos.stream.request', [
+                'video_id' => $video->id,
+                'disk' => $diskName,
+                'path' => $video->video_path,
+                'size' => $size,
+                'range' => $range,
+                'range_one' => $rangeOne,
+                'start' => $start,
+                'length' => $length,
+                'ua' => (string) $request->userAgent(),
+            ]);
+        }
+
         $response = new StreamedResponse(function () use ($absolutePath, $start, $length) {
+            // Best-effort: disable buffering/compression for smoother playback on mobile/iOS.
+            @set_time_limit(0);
+            @ignore_user_abort(true);
+            if (function_exists('apache_setenv')) {
+                @apache_setenv('no-gzip', '1');
+            }
+            if (function_exists('ini_set')) {
+                @ini_set('zlib.output_compression', '0');
+                @ini_set('output_buffering', 'off');
+            }
+            if (function_exists('ob_get_level')) {
+                while (@ob_get_level() > 0) {
+                    @ob_end_flush();
+                }
+            }
+
             $handle = fopen($absolutePath, 'rb');
             if ($handle === false) {
                 return;
@@ -252,7 +317,7 @@ class VideoController extends Controller
             try {
                 fseek($handle, $start);
                 $remaining = $length;
-                $chunkSize = 1024 * 1024; // 1MB
+                $chunkSize = 256 * 1024; // 256KB (smaller chunks help some mobile clients)
 
                 while ($remaining > 0 && !feof($handle)) {
                     $read = ($remaining > $chunkSize) ? $chunkSize : $remaining;
@@ -262,6 +327,9 @@ class VideoController extends Controller
                     }
                     echo $buffer;
                     $remaining -= strlen($buffer);
+                    if (function_exists('ob_flush')) {
+                        @ob_flush();
+                    }
                     if (function_exists('flush')) {
                         flush();
                     }
@@ -278,6 +346,10 @@ class VideoController extends Controller
         $response->headers->set('Accept-Ranges', 'bytes');
         $response->headers->set('Content-Length', (string) $length);
         $response->headers->set('Content-Range', "bytes {$start}-{$end}/{$size}");
+        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
+        $response->headers->set('X-Accel-Buffering', 'no');
 
         return $response;
     }
