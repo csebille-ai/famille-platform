@@ -1465,6 +1465,14 @@
 
             let mediaImgLoadToken = 0;
 
+            function isMediaModalOpen() {
+                try {
+                    return !!(mediaModal && !mediaModal.classList.contains('hidden'));
+                } catch {
+                    return false;
+                }
+            }
+
             // Runtime wiring: make sure the forms and header reflect the current mode.
             try {
                 if (storeUrl) {
@@ -1866,6 +1874,10 @@
 
             let pinToBottomUntil = 0;
 
+            function cancelPinToBottom() {
+                pinToBottomUntil = 0;
+            }
+
             function pinToBottom(ms = 1200) {
                 const until = Date.now() + Math.max(0, Number(ms || 0));
                 pinToBottomUntil = Math.max(pinToBottomUntil, until);
@@ -1904,6 +1916,9 @@
             function scrollToBottom(opts = {}) {
                 const options = (opts && typeof opts === 'object') ? opts : {};
                 const force = !!options.force;
+
+                // Prevent background scroll adjustments from fighting the media modal.
+                if (isMediaModalOpen()) return;
 
                 const lastRow = messagesEl?.querySelector('[data-message-row]:last-child');
                 if (!lastRow) return;
@@ -1956,6 +1971,7 @@
                     }
 
                     img.addEventListener('load', () => {
+                        if (isMediaModalOpen()) return;
                         // Thumbnails can load after initial scroll, changing layout;
                         // keep the bottom pinned while this happens.
                         markLoaded();
@@ -1965,16 +1981,26 @@
                 });
             }
 
+            let ensureBottomTimers = [];
+            function cancelEnsureBottomTimers() {
+                for (const id of ensureBottomTimers) {
+                    try { clearTimeout(id); } catch {}
+                }
+                ensureBottomTimers = [];
+            }
+
             function ensureBottom(ms = 900) {
+                if (isMediaModalOpen()) return;
+                cancelEnsureBottomTimers();
                 pinToBottom(ms);
                 syncScrollBottomPadding();
                 bindInitialMediaThumbPinning();
                 scrollToBottom({ force: true });
-                setTimeout(() => scrollToBottom({ force: true }), 120);
-                setTimeout(() => scrollToBottom({ force: true }), 360);
-                setTimeout(() => scrollToBottom({ force: true }), 800);
-                setTimeout(() => scrollToBottom({ force: true }), 1600);
-                setTimeout(() => scrollToBottom({ force: true }), 2600);
+                ensureBottomTimers.push(setTimeout(() => scrollToBottom({ force: true }), 120));
+                ensureBottomTimers.push(setTimeout(() => scrollToBottom({ force: true }), 360));
+                ensureBottomTimers.push(setTimeout(() => scrollToBottom({ force: true }), 800));
+                ensureBottomTimers.push(setTimeout(() => scrollToBottom({ force: true }), 1600));
+                ensureBottomTimers.push(setTimeout(() => scrollToBottom({ force: true }), 2600));
             }
 
             // Ensure we land at the bottom on initial load and when navigating back.
@@ -1994,12 +2020,12 @@
 
             window.addEventListener('resize', () => {
                 syncScrollBottomPadding();
-                if (isPinnedToBottom()) scrollToBottom({ force: true });
+                if (!isMediaModalOpen() && isPinnedToBottom()) scrollToBottom({ force: true });
             });
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', () => {
                     syncScrollBottomPadding();
-                    if (isPinnedToBottom()) scrollToBottom({ force: true });
+                    if (!isMediaModalOpen() && isPinnedToBottom()) scrollToBottom({ force: true });
                 });
             }
 
@@ -4704,6 +4730,10 @@
                     mediaOpenLink.href = '#';
                     return;
                 }
+
+                // Once the media modal is open, stop any background bottom-pinning loops.
+                cancelEnsureBottomTimers();
+                cancelPinToBottom();
 
                 const type = String(opts?.type || '');
                 const rawUrl = String(opts?.url || '');
