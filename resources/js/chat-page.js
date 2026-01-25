@@ -4702,6 +4702,50 @@
                 });
             }
 
+            function preloadImageUrl(url, timeoutMs) {
+                const src = String(url || '').trim();
+                if (!src) return Promise.resolve(false);
+                const ms = Number(timeoutMs || 2000);
+
+                return new Promise((resolve) => {
+                    let done = false;
+                    const finish = (ok) => {
+                        if (done) return;
+                        done = true;
+                        cleanup();
+                        resolve(!!ok);
+                    };
+
+                    const img = new Image();
+                    try { img.decoding = 'async'; } catch {}
+                    try { img.loading = 'eager'; } catch {}
+
+                    const alreadyOk = () => {
+                        try { return !!(img.complete && img.naturalWidth > 0); } catch { return false; }
+                    };
+
+                    const onLoad = () => finish(alreadyOk());
+                    const onErr = () => finish(false);
+                    const cleanup = () => {
+                        try { img.removeEventListener('load', onLoad); } catch {}
+                        try { img.removeEventListener('error', onErr); } catch {}
+                    };
+
+                    try { img.addEventListener('load', onLoad, { once: true }); } catch {}
+                    try { img.addEventListener('error', onErr, { once: true }); } catch {}
+
+                    // decode() helps avoid intermediate paints on some browsers.
+                    try {
+                        if (typeof img.decode === 'function') {
+                            img.decode().then(() => finish(true)).catch(() => {});
+                        }
+                    } catch {}
+
+                    try { img.src = src; } catch { finish(false); return; }
+                    setTimeout(() => finish(alreadyOk()), ms);
+                });
+            }
+
             function getMediaStageRect() {
                 // The center stage that contains the image/video in the modal.
                 const stage = (mediaImg && mediaImg.parentElement) ? mediaImg.parentElement : null;
@@ -4753,6 +4797,7 @@
                 if (!open) {
                     mediaImg.classList.add('hidden');
                     mediaVideo.classList.add('hidden');
+                    try { delete mediaImg.dataset.pendingSrc; } catch {}
                     mediaImg.src = '';
                     mediaImg.alt = '';
                     try { mediaImg.style.opacity = ''; } catch {}
@@ -4767,6 +4812,7 @@
                 }
 
                 const type = String(opts?.type || '');
+                const deferImageLoad = !!opts?.deferImageLoad;
                 const rawUrl = String(opts?.url || '');
                 const rawOpenUrl = String(opts?.openUrl || opts?.open_url || '');
                 const thumb = String(opts?.thumb || opts?.thumb_url || '');
@@ -4854,9 +4900,17 @@
                     try { mediaVideo.pause(); } catch {}
                     mediaVideo.removeAttribute('src');
                     mediaVideo.load();
-                    mediaImg.classList.remove('hidden');
-                    try { mediaImg.style.opacity = ''; } catch {}
-                    mediaImg.src = url;
+                    if (deferImageLoad) {
+                        try { mediaImg.dataset.pendingSrc = url; } catch {}
+                        mediaImg.classList.add('hidden');
+                        try { mediaImg.style.opacity = '0'; } catch {}
+                        try { mediaImg.src = ''; } catch {}
+                    } else {
+                        try { delete mediaImg.dataset.pendingSrc; } catch {}
+                        mediaImg.classList.remove('hidden');
+                        try { mediaImg.style.opacity = ''; } catch {}
+                        mediaImg.src = url;
+                    }
                     mediaImg.alt = name;
                 }
             }
@@ -4902,7 +4956,7 @@
                 ghost.style.width = `${startRect.width}px`;
                 ghost.style.height = `${startRect.height}px`;
                 ghost.style.borderRadius = '16px';
-                ghost.style.objectFit = 'cover';
+                ghost.style.objectFit = 'contain';
                 ghost.style.background = 'rgba(0,0,0,0.15)';
                 ghost.style.zIndex = '1000';
                 ghost.style.willChange = 'top,left,width,height,opacity,transform';
@@ -4912,8 +4966,9 @@
                 try { if (thumbEl) thumbEl.style.visibility = 'hidden'; } catch {}
                 try { document.body.appendChild(ghost); } catch {}
 
-                // Open the real modal, but keep the real media hidden until the end of the transition.
-                setMediaOpen(true, opts);
+                // Open the real modal; for images we defer src assignment to avoid progressive flashes.
+                const openOpts = (type === 'video') ? (opts || {}) : { ...(opts || {}), deferImageLoad: true };
+                setMediaOpen(true, openOpts);
                 try { mediaBackdrop.style.opacity = '0'; } catch {}
                 try {
                     if (type === 'video') {
@@ -4942,9 +4997,18 @@
                     ], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
                 ]);
 
-                // Crossfade to the real media once ready (prevents "movement" when decode/layout happens).
+                // Crossfade to the real media once ready.
+                // Key: preload/decode off-DOM, then set the real <img> src once (prevents 2–3 flashes).
                 if (type !== 'video') {
-                    try { await waitForImageReady(mediaImg, 1800); } catch {}
+                    const pending = String(mediaImg?.dataset?.pendingSrc || '').trim();
+                    if (pending) {
+                        try { await preloadImageUrl(pending, 2400); } catch {}
+                        try {
+                            mediaImg.src = pending;
+                            delete mediaImg.dataset.pendingSrc;
+                        } catch {}
+                    }
+                    try { await waitForImageReady(mediaImg, 1200); } catch {}
                 }
 
                 const settleDur = 140;
@@ -4956,6 +5020,7 @@
                             waapi(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'linear' }),
                         ]);
                     } else {
+                        try { mediaImg.classList.remove('hidden'); } catch {}
                         mediaImg.style.opacity = '1';
                         await Promise.all([
                             waapi(mediaImg, [{ opacity: 0 }, { opacity: 1 }], { duration: settleDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
