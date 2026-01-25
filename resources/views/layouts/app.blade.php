@@ -697,52 +697,61 @@
 
                         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-                        const isRetryableStatus = (status) => {
-                            return status === 0 || status === 408 || status === 425 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+                        const csrfToken = () => {
+                            const meta = document.querySelector('meta[name="csrf-token"]');
+                            return meta ? String(meta.getAttribute('content') || '') : '';
                         };
 
-                        const postWithRetry = async (labelForUi, attemptFn, maxRetries = 4) => {
-                            let attempt = 0;
-                            while (true) {
-                                if (aborted) throw new Error('Annulé.');
-                                try {
-                                    return await attemptFn();
-                                } catch (err) {
-                                    const status = Number(err && err.status ? err.status : 0) || 0;
-                                    const retryable = isRetryableStatus(status);
-                                    if (!retryable || attempt >= maxRetries) throw err;
-                                    attempt++;
-                                    const backoff = Math.round(400 * Math.pow(2, attempt - 1) + (Math.random() * 250));
-                                    setProgress(Math.max(0, (bar && bar.style && bar.style.width) ? parseInt(bar.style.width, 10) || 0 : 0), `${labelForUi} (réseau) — reprise… (${attempt}/${maxRetries})`);
-                                    await sleep(backoff);
-                                }
+                        const uploadsApi = {
+                            presignUrl: @json(url('/api/uploads/presign')),
+                            mpInitUrl: @json(url('/api/uploads/multipart/init')),
+                            mpCompleteUrl: @json(url('/api/uploads/multipart/complete')),
+                            finalizeUrl: @json(url('/api/uploads/finalize')),
+                            maxUploadBytes: @json((int) config('uploads.max_upload_bytes')),
+                            multipartThresholdBytes: @json((int) config('uploads.multipart_threshold_bytes')),
+                            multipartPartSizeBytes: @json((int) config('uploads.multipart_part_size_bytes')),
+                        };
+
+                        const postJson = async (url, payload) => {
+                            const token = csrfToken();
+                            const res = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+                                },
+                                credentials: 'same-origin',
+                                body: JSON.stringify(payload || {}),
+                            });
+                            let json = null;
+                            try { json = await res.json(); } catch (e) { json = null; }
+                            if (!res.ok) {
+                                const err = new Error((json && json.message) ? String(json.message) : `HTTP ${res.status}`);
+                                err.status = res.status;
+                                err.json = json;
+                                throw err;
                             }
+                            return json || {};
                         };
 
-                        const postFormData = (url, formData) => new Promise((resolve, reject) => {
+                        const postForm = (url, formData) => new Promise((resolve, reject) => {
                             const xhr = new XMLHttpRequest();
                             currentXhr = xhr;
 
                             xhr.open('POST', url, true);
                             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                            xhr.setRequestHeader('Accept', 'application/json');
 
                             xhr.onload = function () {
+                                let json = null;
+                                try { json = xhr.responseText ? JSON.parse(xhr.responseText) : null; } catch (e) { json = null; }
                                 if (xhr.status >= 200 && xhr.status < 300) {
-                                    try {
-                                        const json = xhr.responseText ? JSON.parse(xhr.responseText) : {};
-                                        resolve({ xhr, json });
-                                    } catch (e) {
-                                        resolve({ xhr, json: {} });
-                                    }
+                                    resolve({ xhr, json: json || {} });
                                     return;
                                 }
-
-                                let message = 'Erreur upload.';
-                                let json = null;
-                                try {
-                                    json = xhr.responseText ? JSON.parse(xhr.responseText) : null;
-                                    if (json && json.message) message = json.message;
-                                } catch (e) {}
+                                const message = (json && json.message) ? String(json.message) : 'Erreur.';
                                 const error = new Error(message);
                                 error.status = xhr.status;
                                 error.json = json;
@@ -772,6 +781,68 @@
                                 reject(error);
                             }
                         });
+
+                        const putWithProgress = (url, blobOrFile, contentType, onProgress) => new Promise((resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.open('PUT', url, true);
+                            if (contentType) xhr.setRequestHeader('Content-Type', contentType);
+
+                            xhr.upload.onprogress = (evt) => {
+                                if (!evt.lengthComputable) return;
+                                if (typeof onProgress === 'function') onProgress(evt.loaded, evt.total);
+                            };
+
+                            xhr.onload = () => {
+                                if (xhr.status >= 200 && xhr.status < 300) {
+                                    resolve({
+                                        status: xhr.status,
+                                        etag: xhr.getResponseHeader('ETag') || xhr.getResponseHeader('etag') || null,
+                                    });
+                                } else {
+                                    const error = new Error(`Upload failed (${xhr.status})`);
+                                    error.status = xhr.status;
+                                    reject(error);
+                                }
+                            };
+
+                            xhr.onerror = () => {
+                                const error = new Error('network_error');
+                                error.status = 0;
+                                reject(error);
+                            };
+
+                            xhr.onabort = () => {
+                                const error = new Error('aborted');
+                                error.status = 0;
+                                reject(error);
+                            };
+
+                            xhr.send(blobOrFile);
+                        });
+
+                        const isRetryableStatus = (status) => {
+                            return status === 0 || status === 408 || status === 425 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+                        };
+
+                        const postWithRetry = async (labelForUi, attemptFn, maxRetries = 4) => {
+                            let attempt = 0;
+                            while (true) {
+                                if (aborted) throw new Error('Annulé.');
+                                try {
+                                    return await attemptFn();
+                                } catch (err) {
+                                    const status = Number(err && err.status ? err.status : 0) || 0;
+                                    const retryable = isRetryableStatus(status);
+                                    if (!retryable || attempt >= maxRetries) throw err;
+                                    attempt++;
+                                    const backoff = Math.round(400 * Math.pow(2, attempt - 1) + (Math.random() * 250));
+                                    setProgress(Math.max(0, (bar && bar.style && bar.style.width) ? parseInt(bar.style.width, 10) || 0 : 0), `${labelForUi} (réseau) — reprise… (${attempt}/${maxRetries})`);
+                                    await sleep(backoff);
+                                }
+                            }
+                        };
+
+                        const postFormData = postForm;
 
                         const chunkedUpload = async (file) => {
                             const token = (form.querySelector('input[name="_token"]') || {}).value;
@@ -865,6 +936,199 @@
                                 return;
                             }
                             window.location.reload();
+                        };
+
+                        const r2Upload = async (file) => {
+                            const size = Number(file && file.size ? file.size : 0) || 0;
+                            const mime = String(file && file.type ? file.type : 'application/octet-stream');
+                            const kind = mime.startsWith('video/') ? 'video' : 'photo';
+
+                            if (uploadsApi.maxUploadBytes && size > uploadsApi.maxUploadBytes) {
+                                throw new Error('Fichier trop volumineux (max 2 Go).');
+                            }
+
+                            setProgress(0, 'Préparation (R2)…');
+                            let presign = null;
+                            try {
+                                presign = await postJson(uploadsApi.presignUrl, {
+                                    filename: file.name || 'file',
+                                    mime,
+                                    size,
+                                    kind,
+                                    context: 'media',
+                                });
+                            } catch (e) {
+                                presign = null;
+                            }
+
+                            // If backend returns local, keep legacy chunked upload.
+                            const storageDisk = presign && presign.storage_disk ? String(presign.storage_disk) : '';
+                            if (storageDisk !== 'r2') {
+                                throw new Error('R2 non disponible.');
+                            }
+
+                            if (size > Number(uploadsApi.multipartThresholdBytes || 0)) {
+                                const init = await postJson(uploadsApi.mpInitUrl, {
+                                    filename: file.name || 'file',
+                                    mime,
+                                    size,
+                                    kind,
+                                    context: 'media',
+                                });
+
+                                const uploadId = String(init.upload_id || '');
+                                const key = String(init.key || '');
+                                const partSize = Number(init.part_size || uploadsApi.multipartPartSizeBytes || (50 * 1024 * 1024));
+                                const parts = Array.isArray(init.parts) ? init.parts : [];
+                                if (!uploadId || !key || !parts.length || !partSize) {
+                                    throw new Error('Multipart init invalide.');
+                                }
+
+                                const totalParts = parts.length;
+                                const perPartBytes = parts.map((_, idx) => {
+                                    const start = idx * partSize;
+                                    const end = Math.min(size, start + partSize);
+                                    return Math.max(0, end - start);
+                                });
+
+                                const loadedArr = parts.map(() => 0);
+                                const etags = [];
+
+                                const updateOverall = () => {
+                                    const loaded = loadedArr.reduce((a, b) => a + (Number(b) || 0), 0);
+                                    const pct = size > 0 ? Math.round((loaded / size) * 100) : 0;
+                                    setProgress(pct, `Upload (R2)… ${pct}% (${formatBytes(loaded)} / ${formatBytes(size)})`);
+                                };
+
+                                const uploadPartAt = async (idx) => {
+                                    const p = parts[idx] || {};
+                                    const uploadUrl = String(p.upload_url || '');
+                                    const partNumber = Number(p.part_number || 0);
+                                    if (!uploadUrl || !partNumber) throw new Error('Part invalide.');
+
+                                    const start = (partNumber - 1) * partSize;
+                                    const end = Math.min(size, start + partSize);
+                                    const blob = file.slice(start, end);
+                                    const partBytes = perPartBytes[idx] || (end - start);
+
+                                    let attempt = 0;
+                                    while (true) {
+                                        try {
+                                            const res = await putWithProgress(uploadUrl, blob, mime, (loaded) => {
+                                                loadedArr[idx] = Math.max(0, Math.min(partBytes, Number(loaded || 0)));
+                                                updateOverall();
+                                            });
+                                            const etag = String(res && res.etag ? res.etag : '').trim();
+                                            if (!etag) throw new Error('ETag manquant (R2).');
+                                            loadedArr[idx] = partBytes;
+                                            updateOverall();
+                                            etags.push({ part_number: partNumber, etag });
+                                            return;
+                                        } catch (e) {
+                                            attempt++;
+                                            if (attempt >= 3) throw e;
+                                            await sleep(750 * attempt);
+                                        }
+                                    }
+                                };
+
+                                const concurrency = 3;
+                                let next = 0;
+                                const workers = Array.from({ length: concurrency }, () => (async () => {
+                                    while (true) {
+                                        const idx = next;
+                                        next++;
+                                        if (idx >= totalParts) return;
+                                        await uploadPartAt(idx);
+                                    }
+                                })());
+                                await Promise.all(workers);
+
+                                etags.sort((a, b) => Number(a.part_number) - Number(b.part_number));
+                                const complete = await postJson(uploadsApi.mpCompleteUrl, {
+                                    key,
+                                    upload_id: uploadId,
+                                    parts: etags,
+                                    mime,
+                                    size,
+                                    kind,
+                                    context: 'media',
+                                });
+                                const finPublicUrl = complete && complete.public_url ? String(complete.public_url) : (init.public_url ? String(init.public_url) : null);
+
+                                setProgress(100, 'Finalisation…');
+                                if (kind === 'video') {
+                                    const posterBlob = await generatePosterBlobFromVideoFile(file);
+                                    const fd = new FormData();
+                                    fd.append('key', key);
+                                    if (finPublicUrl) fd.append('public_url', finPublicUrl);
+                                    fd.append('mime', mime);
+                                    fd.append('size', String(size));
+                                    fd.append('kind', kind);
+                                    fd.append('context', 'media');
+                                    fd.append('storage_disk', 'r2');
+                                    if (file.name) fd.append('filename', String(file.name));
+                                    if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
+                                    const token = csrfToken();
+                                    if (token) fd.append('_token', token);
+                                    const { json: finalized } = await postForm(uploadsApi.finalizeUrl, fd);
+                                    return finalized || {};
+                                }
+
+                                return await postJson(uploadsApi.finalizeUrl, {
+                                    key,
+                                    public_url: finPublicUrl,
+                                    mime,
+                                    size,
+                                    kind,
+                                    context: 'media',
+                                    storage_disk: 'r2',
+                                    filename: file.name || null,
+                                });
+                            }
+
+                            // Single PUT
+                            const uploadUrl = String(presign.upload_url || '');
+                            const key = String(presign.key || '');
+                            const publicUrl = presign.public_url ? String(presign.public_url) : null;
+                            if (!uploadUrl || !key) throw new Error('Presign invalide.');
+
+                            setProgress(0, 'Upload (R2)…');
+                            await putWithProgress(uploadUrl, file, mime, (loaded, total) => {
+                                const t = Number(total || size) || size || 1;
+                                const pct = Math.max(0, Math.min(100, Math.round((Number(loaded || 0) / t) * 100)));
+                                setProgress(pct, `Upload (R2)… ${pct}% (${formatBytes(loaded)} / ${formatBytes(t)})`);
+                            });
+
+                            setProgress(100, 'Finalisation…');
+                            if (kind === 'video') {
+                                const posterBlob = await generatePosterBlobFromVideoFile(file);
+                                const fd = new FormData();
+                                fd.append('key', key);
+                                if (publicUrl) fd.append('public_url', publicUrl);
+                                fd.append('mime', mime);
+                                fd.append('size', String(size));
+                                fd.append('kind', kind);
+                                fd.append('context', 'media');
+                                fd.append('storage_disk', 'r2');
+                                if (file.name) fd.append('filename', String(file.name));
+                                const token = csrfToken();
+                                if (token) fd.append('_token', token);
+                                if (posterBlob) fd.append('poster_file', posterBlob, 'poster.jpg');
+                                const { json: finalized } = await postForm(uploadsApi.finalizeUrl, fd);
+                                return finalized || {};
+                            }
+
+                            return await postJson(uploadsApi.finalizeUrl, {
+                                key,
+                                public_url: publicUrl,
+                                mime,
+                                size,
+                                kind,
+                                context: 'media',
+                                storage_disk: 'r2',
+                                filename: file.name || null,
+                            });
                         };
 
                         const directUpload = async (file) => {
@@ -979,7 +1243,46 @@
                             const chunkThreshold = 25 * 1024 * 1024; // 25MB
                             const useChunked = file.size >= chunkThreshold;
 
-                            (useChunked ? chunkedUpload(file) : directUpload(file))
+                            const mime = String(file.type || 'application/octet-stream');
+                            const isImageOrVideo = mime.startsWith('image/') || mime.startsWith('video/');
+                            const isPdf = mime === 'application/pdf' || (file.name || '').toLowerCase().endsWith('.pdf');
+
+                            const run = async () => {
+                                if (isPdf || !isImageOrVideo) {
+                                    return await (useChunked ? chunkedUpload(file) : directUpload(file));
+                                }
+
+                                // Prefer R2 (direct browser->R2 upload) to avoid shared-hosting limits/timeouts.
+                                try {
+                                    const finalized = await r2Upload(file);
+                                    const redirectUrl = finalized && finalized.open_url ? String(finalized.open_url) : null;
+                                    const returnPath = (form.querySelector('input[name="return"]') || {}).value || null;
+                                    if (redirectUrl) {
+                                        window.location.href = redirectUrl;
+                                        return;
+                                    }
+                                    if (returnPath) {
+                                        window.location.href = returnPath;
+                                        return;
+                                    }
+                                    window.location.reload();
+                                    return;
+                                } catch (e) {
+                                    // If R2 is not available, fall back to existing chunked/local upload.
+                                    const msg = (e && e.message) ? String(e.message) : '';
+                                    if (msg && msg.includes('R2 non disponible')) {
+                                        return await (useChunked ? chunkedUpload(file) : directUpload(file));
+                                    }
+
+                                    // Provide a helpful hint for the most common case: CORS blocks on R2.
+                                    if (msg === 'network_error') {
+                                        throw new Error('Erreur réseau vers R2. Vérifie la config CORS du bucket (PUT + Content-Type + ETag) et R2_* dans .env.');
+                                    }
+                                    throw e;
+                                }
+                            };
+
+                            run()
                                 .catch((err) => {
                                     const msg = (err && err.message) ? err.message : 'Erreur upload.';
                                     setProgress(0, msg);
