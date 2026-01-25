@@ -4746,6 +4746,45 @@
                 });
             }
 
+            function waitForStableViewport(settleMs, maxMs) {
+                const settle = Math.max(60, Number(settleMs || 120));
+                const max = Math.max(settle, Number(maxMs || 900));
+                return new Promise((resolve) => {
+                    let lastChange = Date.now();
+                    let done = false;
+
+                    const mark = () => { lastChange = Date.now(); };
+                    const finish = () => {
+                        if (done) return;
+                        done = true;
+                        cleanup();
+                        resolve(true);
+                    };
+
+                    const cleanup = () => {
+                        try { window.removeEventListener('resize', mark); } catch {}
+                        try { window.removeEventListener('scroll', mark, true); } catch {}
+                        try { window.visualViewport && window.visualViewport.removeEventListener('resize', mark); } catch {}
+                        try { window.visualViewport && window.visualViewport.removeEventListener('scroll', mark); } catch {}
+                    };
+
+                    try { window.addEventListener('resize', mark); } catch {}
+                    try { window.addEventListener('scroll', mark, true); } catch {}
+                    try { window.visualViewport && window.visualViewport.addEventListener('resize', mark); } catch {}
+                    try { window.visualViewport && window.visualViewport.addEventListener('scroll', mark); } catch {}
+
+                    const started = Date.now();
+                    const tick = () => {
+                        if (done) return;
+                        const now = Date.now();
+                        if (now - lastChange >= settle) return finish();
+                        if (now - started >= max) return finish();
+                        setTimeout(tick, 40);
+                    };
+                    setTimeout(tick, 40);
+                });
+            }
+
             function getMediaStageRect() {
                 // The center stage that contains the image/video in the modal.
                 const stage = (mediaImg && mediaImg.parentElement) ? mediaImg.parentElement : null;
@@ -4789,6 +4828,17 @@
             let lastMediaTrigger = null;
             let lastMediaOpts = null;
             let mediaAnimating = false;
+
+            let activeMediaOverlay = null;
+            let activeMediaOverlayThumb = null;
+            let activeMediaOverlayFull = null;
+
+            function teardownActiveMediaOverlay() {
+                try { activeMediaOverlay && activeMediaOverlay.remove(); } catch {}
+                activeMediaOverlay = null;
+                activeMediaOverlayThumb = null;
+                activeMediaOverlayFull = null;
+            }
 
             function setMediaOpen(open, opts) {
                 if (!mediaModal || !mediaImg || !mediaVideo || !mediaTitle || !mediaOpenLink) return;
@@ -4945,38 +4995,15 @@
                 lastMediaOpts = opts || null;
                 mediaAnimating = true;
 
-                const ghost = document.createElement('img');
-                ghost.decoding = 'async';
-                ghost.loading = 'eager';
-                ghost.alt = '';
-                ghost.src = String(thumbEl?.currentSrc || thumbEl?.src || opts?.thumb || opts?.thumb_url || opts?.url || '');
-                ghost.style.position = 'fixed';
-                ghost.style.top = `${startRect.top}px`;
-                ghost.style.left = `${startRect.left}px`;
-                ghost.style.width = `${startRect.width}px`;
-                ghost.style.height = `${startRect.height}px`;
-                ghost.style.borderRadius = '16px';
-                ghost.style.objectFit = 'contain';
-                ghost.style.background = 'rgba(0,0,0,0.15)';
-                ghost.style.zIndex = '1000';
-                ghost.style.willChange = 'top,left,width,height,opacity,transform';
-                ghost.style.transform = 'translateZ(0)';
-                ghost.style.boxShadow = '0 20px 60px rgba(0,0,0,0.35)';
-
-                try { if (thumbEl) thumbEl.style.visibility = 'hidden'; } catch {}
-                try { document.body.appendChild(ghost); } catch {}
-
-                // Open the real modal; for images we defer src assignment to avoid progressive flashes.
+                // Always open the modal shell (backdrop + header). For images, render via a
+                // dedicated fixed overlay so the content can't "fight" with layout/resize.
                 const openOpts = (type === 'video') ? (opts || {}) : { ...(opts || {}), deferImageLoad: true };
                 setMediaOpen(true, openOpts);
                 try { mediaBackdrop.style.opacity = '0'; } catch {}
-                try {
-                    if (type === 'video') {
-                        mediaVideo.style.opacity = '0';
-                    } else {
-                        mediaImg.style.opacity = '0';
-                    }
-                } catch {}
+                try { mediaVideo.style.opacity = '0'; } catch {}
+                try { mediaImg.style.opacity = '0'; } catch {}
+
+                teardownActiveMediaOverlay();
 
                 const stageRect = getMediaStageRect();
                 const mw = Number(triggerEl?.dataset?.mediaW || 0) || 0;
@@ -4988,49 +5015,101 @@
                     height: stageRect?.height ?? startRect.height,
                 };
 
-                const openDur = 220;
-                await Promise.all([
-                    waapi(mediaBackdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                    waapi(ghost, [
-                        { top: `${startRect.top}px`, left: `${startRect.left}px`, width: `${startRect.width}px`, height: `${startRect.height}px`, opacity: 1, transform: 'scale(1)' },
-                        { top: `${target.top}px`, left: `${target.left}px`, width: `${target.width}px`, height: `${target.height}px`, opacity: 1, transform: 'scale(1)' },
-                    ], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                ]);
+                const openDur = 240;
 
-                // Crossfade to the real media once ready.
-                // Key: preload/decode off-DOM, then set the real <img> src once (prevents 2–3 flashes).
                 if (type !== 'video') {
-                    const pending = String(mediaImg?.dataset?.pendingSrc || '').trim();
-                    if (pending) {
-                        try { await preloadImageUrl(pending, 2400); } catch {}
-                        try {
-                            mediaImg.src = pending;
-                            delete mediaImg.dataset.pendingSrc;
-                        } catch {}
+                    // Build overlay layers.
+                    const overlay = document.createElement('div');
+                    overlay.style.position = 'fixed';
+                    overlay.style.top = `${target.top}px`;
+                    overlay.style.left = `${target.left}px`;
+                    overlay.style.width = `${target.width}px`;
+                    overlay.style.height = `${target.height}px`;
+                    overlay.style.zIndex = '1000';
+                    overlay.style.borderRadius = '16px';
+                    overlay.style.overflow = 'hidden';
+                    overlay.style.background = 'rgba(0,0,0,0.15)';
+                    overlay.style.boxShadow = '0 20px 60px rgba(0,0,0,0.35)';
+                    overlay.style.willChange = 'transform,opacity';
+                    overlay.style.transformOrigin = 'top left';
+                    overlay.style.transform = 'translateZ(0)';
+
+                    const thumbImg = document.createElement('img');
+                    thumbImg.decoding = 'async';
+                    thumbImg.loading = 'eager';
+                    thumbImg.alt = '';
+                    thumbImg.src = String(thumbEl?.currentSrc || thumbEl?.src || opts?.thumb || opts?.thumb_url || opts?.url || '');
+                    thumbImg.style.position = 'absolute';
+                    thumbImg.style.inset = '0';
+                    thumbImg.style.width = '100%';
+                    thumbImg.style.height = '100%';
+                    thumbImg.style.objectFit = 'contain';
+                    thumbImg.style.background = 'rgba(0,0,0,0.10)';
+                    thumbImg.style.opacity = '1';
+                    thumbImg.style.willChange = 'opacity';
+                    thumbImg.style.transform = 'translateZ(0)';
+
+                    const fullImg = document.createElement('img');
+                    fullImg.decoding = 'async';
+                    fullImg.loading = 'eager';
+                    fullImg.alt = '';
+                    fullImg.style.position = 'absolute';
+                    fullImg.style.inset = '0';
+                    fullImg.style.width = '100%';
+                    fullImg.style.height = '100%';
+                    fullImg.style.objectFit = 'contain';
+                    fullImg.style.opacity = '0';
+                    fullImg.style.willChange = 'opacity';
+                    fullImg.style.transform = 'translateZ(0)';
+
+                    overlay.appendChild(thumbImg);
+                    overlay.appendChild(fullImg);
+
+                    // FLIP: set initial transform so overlay appears at the thumbnail rect, then animate to identity.
+                    const sx = (target.width > 0) ? (startRect.width / target.width) : 1;
+                    const sy = (target.height > 0) ? (startRect.height / target.height) : 1;
+                    const dx = startRect.left - target.left;
+                    const dy = startRect.top - target.top;
+                    overlay.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
+
+                    try { if (thumbEl) thumbEl.style.visibility = 'hidden'; } catch {}
+                    try { document.body.appendChild(overlay); } catch {}
+
+                    activeMediaOverlay = overlay;
+                    activeMediaOverlayThumb = thumbImg;
+                    activeMediaOverlayFull = fullImg;
+
+                    await Promise.all([
+                        waapi(mediaBackdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                        waapi(overlay, [{ transform: overlay.style.transform }, { transform: 'translate(0px, 0px) scale(1, 1)' }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                    ]);
+
+                    // Wait for viewport (iOS URL bar) to settle before swapping to the full-res layer.
+                    try { await waitForStableViewport(140, 900); } catch {}
+
+                    const pendingUrl = String(opts?.url || '').trim();
+                    if (pendingUrl) {
+                        try { await preloadImageUrl(pendingUrl, 2600); } catch {}
+                        try { fullImg.src = pendingUrl; } catch {}
+                        try { await waitForImageReady(fullImg, 1600); } catch {}
                     }
-                    try { await waitForImageReady(mediaImg, 1200); } catch {}
+
+                    const settleDur = 160;
+                    await Promise.all([
+                        waapi(fullImg, [{ opacity: 0 }, { opacity: 1 }], { duration: settleDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                        waapi(thumbImg, [{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'linear' }),
+                    ]);
+
+                    mediaAnimating = false;
+                    return;
                 }
 
-                const settleDur = 140;
-                try {
-                    if (type === 'video') {
-                        mediaVideo.style.opacity = '1';
-                        await Promise.all([
-                            waapi(mediaVideo, [{ opacity: 0 }, { opacity: 1 }], { duration: settleDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                            waapi(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'linear' }),
-                        ]);
-                    } else {
-                        try { mediaImg.classList.remove('hidden'); } catch {}
-                        mediaImg.style.opacity = '1';
-                        await Promise.all([
-                            waapi(mediaImg, [{ opacity: 0 }, { opacity: 1 }], { duration: settleDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
-                            waapi(ghost, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'linear' }),
-                        ]);
-                    }
-                } catch {}
-
-                try { ghost.remove(); } catch {}
-                try { if (thumbEl) thumbEl.style.visibility = ''; } catch {}
+                // Video path: keep existing behavior (poster is stable).
+                await Promise.all([
+                    waapi(mediaBackdrop, [{ opacity: 0 }, { opacity: 1 }], { duration: openDur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                ]);
+                try { mediaVideo.style.opacity = '1'; } catch {}
+                await waapi(mediaVideo, [{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
                 mediaAnimating = false;
             }
 
@@ -5059,6 +5138,50 @@
                 })();
                 if (!endRect || endRect.width < 2 || endRect.height < 2) {
                     setMediaOpen(false);
+                    return;
+                }
+
+                // If we have an overlay (images), animate that back; it's the only visible layer.
+                if (type !== 'video' && activeMediaOverlay) {
+                    mediaAnimating = true;
+
+                    const overlay = activeMediaOverlay;
+                    const startRect = (() => {
+                        try { return overlay.getBoundingClientRect ? overlay.getBoundingClientRect() : null; } catch { return null; }
+                    })();
+
+                    if (!startRect || startRect.width < 2 || startRect.height < 2) {
+                        teardownActiveMediaOverlay();
+                        try { if (thumbEl) thumbEl.style.visibility = ''; } catch {}
+                        setMediaOpen(false);
+                        mediaAnimating = false;
+                        return;
+                    }
+
+                    // Normalize overlay geometry to current rect and animate with transform-only.
+                    try {
+                        overlay.style.top = `${startRect.top}px`;
+                        overlay.style.left = `${startRect.left}px`;
+                        overlay.style.width = `${startRect.width}px`;
+                        overlay.style.height = `${startRect.height}px`;
+                        overlay.style.transform = 'translate(0px, 0px) scale(1, 1)';
+                    } catch {}
+
+                    const dx = endRect.left - startRect.left;
+                    const dy = endRect.top - startRect.top;
+                    const sx = (startRect.width > 0) ? (endRect.width / startRect.width) : 1;
+                    const sy = (startRect.height > 0) ? (endRect.height / startRect.height) : 1;
+
+                    const dur = 220;
+                    await Promise.all([
+                        waapi(mediaBackdrop, [{ opacity: 1 }, { opacity: 0 }], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                        waapi(overlay, [{ transform: 'translate(0px, 0px) scale(1, 1)', opacity: 1 }, { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, opacity: 1 }], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }),
+                    ]);
+
+                    teardownActiveMediaOverlay();
+                    try { if (thumbEl) thumbEl.style.visibility = ''; } catch {}
+                    setMediaOpen(false);
+                    mediaAnimating = false;
                     return;
                 }
 
