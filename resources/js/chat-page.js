@@ -2972,8 +2972,23 @@
 
                 if (!sameAuthorAsPrev) {
                     const meta = document.createElement('div');
-                    meta.className = `mb-1 text-xs text-slate-500 ${isMe ? 'text-right' : ''}`;
-                    meta.textContent = `${firstName(name)} · ${whenTime}`;
+                    meta.className = `mb-1 flex items-center gap-1.5 text-xs ${isMe ? 'justify-end' : ''}`;
+
+                    const nameEl = document.createElement('span');
+                    nameEl.className = 'font-semibold text-[color:var(--chat-text)]/90';
+                    nameEl.textContent = firstName(name);
+
+                    const dotEl = document.createElement('span');
+                    dotEl.className = 'text-[color:var(--chat-meta)]';
+                    dotEl.textContent = '·';
+
+                    const timeEl = document.createElement('span');
+                    timeEl.className = 'text-[0.7rem] font-semibold text-[color:var(--chat-meta)]';
+                    timeEl.textContent = whenTime;
+
+                    meta.appendChild(nameEl);
+                    meta.appendChild(dotEl);
+                    meta.appendChild(timeEl);
                     width.appendChild(meta);
                 }
 
@@ -2992,7 +3007,9 @@
                 if (att) {
                     wrapper.className = 'relative p-0 border-0 bg-transparent';
                 } else {
-                    wrapper.className = `relative px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
+                    wrapper.className = `relative px-4 py-3 border ${isMe
+                        ? 'bg-[color:var(--chat-primary)] text-white border-[color:rgba(14,165,160,0.35)] shadow-[0_8px_18px_rgba(14,165,160,0.22)] rounded-2xl rounded-br-md'
+                        : 'bg-[color:var(--chat-bubble-other-bg)] text-[color:var(--chat-text)] border-[color:var(--chat-bubble-other-border)] shadow-[var(--chat-bubble-shadow)] rounded-2xl rounded-bl-md'}`;
                 }
                 wrapper.dataset.bubble = '1';
 
@@ -3168,10 +3185,12 @@
                 const isMe = currentUserId && Number(row.dataset.userId || 0) === Number(currentUserId);
                 const bubble = row.querySelector('[data-bubble]');
                 if (bubble) {
-                    bubble.className = `relative px-4 py-3 border ${isMe ? 'bg-slate-900 text-white border-slate-900 rounded-2xl rounded-br-md' : 'bg-white text-gray-900 border-slate-200 rounded-2xl rounded-bl-md'}`;
+                    bubble.className = `relative px-4 py-3 border ${isMe
+                        ? 'bg-[color:var(--chat-primary)] text-white border-[color:rgba(14,165,160,0.35)] shadow-[0_8px_18px_rgba(14,165,160,0.22)] rounded-2xl rounded-br-md'
+                        : 'bg-[color:var(--chat-bubble-other-bg)] text-[color:var(--chat-text)] border-[color:var(--chat-bubble-other-border)] shadow-[var(--chat-bubble-shadow)] rounded-2xl rounded-bl-md'}`;
                     bubble.innerHTML = '';
                     const txt = document.createElement('div');
-                    txt.className = `text-sm italic ${isMe ? 'text-white/80' : 'text-slate-500'}`;
+                    txt.className = `text-sm italic ${isMe ? 'text-white/80' : 'text-[color:var(--chat-meta)]'}`;
                     txt.textContent = 'Message supprimé';
                     bubble.appendChild(txt);
                 }

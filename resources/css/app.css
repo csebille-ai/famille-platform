@@ -63,34 +63,43 @@
 	}
 }
 
+/* Chat theme tokens: keep outside Tailwind layers so they never get purged.
+   (Some environments were omitting @layer components selectors.) */
+.chat-theme {
+	--chat-bg: var(--fam-bg);
+	--chat-surface: var(--fam-surface);
+	--chat-surface-2: var(--fam-surface-alt);
+	--chat-border: var(--fam-border);
+	--chat-border-soft: var(--fam-border-soft);
+	--chat-text: var(--fam-text);
+	--chat-muted: var(--fam-muted);
+	/* Header meta (author + time): slightly stronger than muted */
+	--chat-meta: #4C433A;
+
+	/* Chat bubbles ("other") */
+	--chat-bubble-other-bg: #F3F1EA;
+	--chat-bubble-other-border: #E4DED2;
+	--chat-bubble-shadow: 0 1px 0 rgba(0,0,0,.03), 0 6px 18px rgba(0,0,0,.04);
+
+	--chat-primary: var(--fam-primary);
+	--chat-primary-hover: var(--fam-primary-hover);
+}
+
+.chat-shell {
+	background: var(--chat-surface);
+	border: 1px solid var(--chat-border);
+	box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04), 0 18px 55px rgba(15, 23, 42, 0.10);
+}
+
+.chat-scroll-bg {
+	background:
+		linear-gradient(180deg, rgba(14, 165, 160, 0.035), rgba(14, 165, 160, 0) 42%),
+		var(--chat-bg);
+}
+
 @layer components {
 	.fam-page-bg {
 		background: var(--fam-bg);
-	}
-
-	/* Chat theme: 3 surface levels + subtle accents (premium, low-noise). */
-	.chat-theme {
-		--chat-bg: var(--fam-bg);
-		--chat-surface: var(--fam-surface);
-		--chat-surface-2: var(--fam-surface-alt);
-		--chat-border: var(--fam-border);
-		--chat-border-soft: var(--fam-border-soft);
-		--chat-text: var(--fam-text);
-		--chat-muted: var(--fam-muted);
-		--chat-primary: var(--fam-primary);
-		--chat-primary-hover: var(--fam-primary-hover);
-	}
-
-	.chat-shell {
-		background: var(--chat-surface);
-		border: 1px solid var(--chat-border);
-		box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04), 0 18px 55px rgba(15, 23, 42, 0.10);
-	}
-
-	.chat-scroll-bg {
-		background:
-			linear-gradient(180deg, rgba(14, 165, 160, 0.035), rgba(14, 165, 160, 0) 42%),
-			var(--chat-bg);
 	}
 
 	/* Tarot cards: crop out the external green frame (PNG majors). */
