@@ -1,11 +1,3 @@
-@php
-                $visioDomain = trim((string) (config('visio.jitsi_domain') ?? 'meet.jit.si'));
-                $visioProvider = (string) (config('visio.provider') ?? 'link');
-                $visioUrl = trim((string) (config('visio.url') ?? ''));
-                $visioAvailable = $visioProvider === 'jitsi'
-                    ? ($visioDomain !== '')
-                    : ($visioUrl !== '' || $visioDomain !== '');
-            @endphp
             <div class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-100">
                 <div style="padding-top: calc(env(safe-area-inset-top) + 0.5rem)">
                     <div class="h-14 px-4 sm:px-6 pb-2 flex items-center justify-between gap-3">
@@ -29,18 +21,6 @@
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <button
-                            type="button"
-                            id="chatVisioBtn"
-                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)] disabled:opacity-50 disabled:cursor-not-allowed"
-                            aria-label="Appel vidéo"
-                            title="{{ $visioAvailable ? 'Appel vidéo' : 'Indisponible' }}"
-                            {{ $visioAvailable ? '' : 'disabled' }}
-                            data-jitsi-domain="{{ $visioDomain }}"
-                        >
-                            <i class="ph ph-video-camera" aria-hidden="true"></i>
-                        </button>
-
                         <button
                             type="button"
                             id="chatSearchBtn"

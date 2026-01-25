@@ -46,9 +46,7 @@ class ChatController extends Controller
             }
 
             $url = null;
-            if (preg_match('/^📹\s*Visio:\s*(https?:\/\/\S+)\s*$/u', $b, $m)) {
-                $url = $m[1] ?? null;
-            } elseif (preg_match('/^(https?:\/\/\S+)\s*$/u', $b, $m)) {
+            if (preg_match('/^(https?:\/\/\S+)\s*$/u', $b, $m)) {
                 $url = $m[1] ?? null;
             }
 
@@ -60,15 +58,10 @@ class ChatController extends Controller
             $host = (string) (parse_url($url, PHP_URL_HOST) ?? '');
             $domain = $host !== '' ? $host : preg_replace('/^https?:\/\//i', '', $url);
 
-            $title = 'Lien';
-            if (str_contains($b, 'Visio') || str_contains((string) $domain, 'jit.si')) {
-                $title = 'Appel vidéo';
-            }
-
             return [
                 'url' => $url,
                 'domain' => $domain,
-                'title' => $title,
+                'title' => 'Lien',
             ];
         };
 

@@ -1747,8 +1747,6 @@
 
             const quotaEl = document.getElementById('chatAttachQuota');
 
-            const visioBtn = document.getElementById('chatVisioBtn');
-
             const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
             let recognition = null;
             let dictationActive = false;
@@ -1786,12 +1784,8 @@
                 if (!b) return null;
 
                 let url = null;
-                const m1 = b.match(/^📹\s*Visio:\s*(https?:\/\/\S+)\s*$/u);
-                if (m1) url = m1[1];
-                if (!url) {
-                    const m2 = b.match(/^(https?:\/\/\S+)\s*$/u);
-                    if (m2) url = m2[1];
-                }
+                const m2 = b.match(/^(https?:\/\/\S+)\s*$/u);
+                if (m2) url = m2[1];
                 if (!url) return null;
                 url = String(url).trim();
 
@@ -1801,8 +1795,7 @@
                 } catch {
                     domain = url.replace(/^https?:\/\//i, '').replace(/\/+$/g, '');
                 }
-                const title = (b.includes('Visio') || domain.includes('jit.si')) ? 'Appel vidéo' : 'Lien';
-                return { url, domain, title };
+                return { url, domain, title: 'Lien' };
             }
 
             function setDictationUi(active) {
@@ -1820,62 +1813,6 @@
                 attachPickVoice.title = supported ? 'Dicter' : 'Dictée vocale non supportée par ce navigateur';
             }
 
-            function sanitizeDomain(raw) {
-                const v = String(raw || '').trim();
-                return v.replace(/^https?:\/\//i, '').replace(/\/+$/g, '') || 'meet.jit.si';
-            }
-
-            function randomBase64Url(byteLen) {
-                const len = Number(byteLen || 18);
-                const cryptoObj = (window.crypto || window.msCrypto);
-                if (!cryptoObj || !cryptoObj.getRandomValues) {
-                    throw new Error('Secure random not available');
-                }
-                const bytes = new Uint8Array(len);
-                cryptoObj.getRandomValues(bytes);
-                let binary = '';
-                for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-                return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-            }
-
-            function buildVisioRoom() {
-                return `famille-${randomBase64Url(18)}`;
-            }
-
-            async function postVisioLinkToChat(url) {
-                const form = getAnyForm();
-                if (!form) return;
-                const token = getCsrfToken();
-                if (!token) return;
-
-                const message = `📹 Visio: ${url}`;
-                const body = new URLSearchParams();
-                body.set('_token', token);
-                body.set('body', message);
-
-                try {
-                    await fetch(form.action, {
-                        method: 'POST',
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': token,
-                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-                        },
-                        body: body.toString(),
-                        credentials: 'same-origin',
-                    });
-                } catch (e) {
-                    // Ignore; user still has the link opened.
-                }
-            }
-
-            function openVisioInNewTab(url) {
-                const w = window.open(url, '_blank', 'noopener,noreferrer');
-                if (!w) {
-                    // Pop-up blocked: fallback to normal navigation.
-                    window.location.href = url;
-                }
-            }
 
             const palette = [
                 { chip: 'bg-indigo-50 text-indigo-700 border-indigo-200', avatar: 'bg-indigo-600 text-white' },
@@ -4176,21 +4113,6 @@
                             .listen('.message.sent', handleSent);
                     } catch {}
                 }
-            }
-
-            if (visioBtn) {
-                visioBtn.addEventListener('click', async () => {
-                    const domain = sanitizeDomain(visioBtn.dataset.jitsiDomain);
-                    try {
-                        const room = buildVisioRoom();
-                        const url = `https://${domain}/${encodeURIComponent(room)}`;
-
-                        openVisioInNewTab(url);
-                        await postVisioLinkToChat(url);
-                    } catch (e) {
-                        alert('Impossible de générer un lien visio sur ce navigateur.');
-                    }
-                });
             }
 
             function bindAttachFor(key) {
