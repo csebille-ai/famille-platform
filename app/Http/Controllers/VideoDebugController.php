@@ -11,6 +11,129 @@ use Illuminate\Support\Facades\Storage;
 
 class VideoDebugController extends Controller
 {
+    private function inspectMp4Structure(string $absolutePath, ?int $sizeBytes): array
+    {
+        $result = [
+            'ok' => false,
+            'error' => null,
+            'moov_offset' => null,
+            'moov_size' => null,
+            'mdat_offset' => null,
+            'mdat_size' => null,
+            'faststart' => null,
+            'notes' => null,
+        ];
+
+        if (!is_file($absolutePath) || !is_readable($absolutePath)) {
+            $result['error'] = 'file_not_readable';
+            return $result;
+        }
+
+        $size = $sizeBytes;
+        if (!is_int($size) || $size <= 0) {
+            $s = @filesize($absolutePath);
+            if (!is_int($s) || $s <= 0) {
+                $result['error'] = 'file_size_unknown';
+                return $result;
+            }
+            $size = $s;
+        }
+
+        $fh = @fopen($absolutePath, 'rb');
+        if ($fh === false) {
+            $result['error'] = 'fopen_failed';
+            return $result;
+        }
+
+        try {
+            $offset = 0;
+            $boxes = 0;
+            $maxBoxes = 5000;
+
+            while ($offset + 8 <= $size && $boxes < $maxBoxes) {
+                $boxes++;
+                if (@fseek($fh, $offset) !== 0) {
+                    break;
+                }
+                $hdr = @fread($fh, 8);
+                if (!is_string($hdr) || strlen($hdr) !== 8) {
+                    break;
+                }
+
+                $u = @unpack('Nsize/a4type', $hdr);
+                if (!is_array($u) || !isset($u['size'], $u['type'])) {
+                    break;
+                }
+
+                $boxSize = (int) $u['size'];
+                $boxType = (string) $u['type'];
+                $headerSize = 8;
+
+                if ($boxSize === 1) {
+                    $ext = @fread($fh, 8);
+                    if (!is_string($ext) || strlen($ext) !== 8) {
+                        break;
+                    }
+                    $uu = @unpack('Nhi/Nlo', $ext);
+                    if (!is_array($uu) || !isset($uu['hi'], $uu['lo'])) {
+                        break;
+                    }
+                    $boxSize = (int) ($uu['hi'] * 4294967296 + $uu['lo']);
+                    $headerSize = 16;
+                } elseif ($boxSize === 0) {
+                    // box extends to EOF
+                    $boxSize = $size - $offset;
+                }
+
+                if ($boxSize < $headerSize) {
+                    break;
+                }
+
+                if ($boxType === 'moov' && $result['moov_offset'] === null) {
+                    $result['moov_offset'] = $offset;
+                    $result['moov_size'] = $boxSize;
+                }
+                if ($boxType === 'mdat' && $result['mdat_offset'] === null) {
+                    $result['mdat_offset'] = $offset;
+                    $result['mdat_size'] = $boxSize;
+                }
+
+                if ($result['moov_offset'] !== null && $result['mdat_offset'] !== null) {
+                    // We already have what we need.
+                    break;
+                }
+
+                $offset += $boxSize;
+            }
+
+            $result['ok'] = true;
+
+            if ($result['moov_offset'] === null) {
+                $result['faststart'] = null;
+                $result['notes'] = 'moov box not found in top-level scan.';
+                return $result;
+            }
+
+            if ($result['mdat_offset'] === null) {
+                $result['faststart'] = null;
+                $result['notes'] = 'mdat box not found in top-level scan.';
+                return $result;
+            }
+
+            $result['faststart'] = ($result['moov_offset'] < $result['mdat_offset']);
+            $result['notes'] = $result['faststart']
+                ? 'Faststart OK (moov before mdat).'
+                : 'Likely NOT faststart (moov after mdat).';
+
+            return $result;
+        } catch (\Throwable $e) {
+            $result['error'] = $e->getMessage();
+            return $result;
+        } finally {
+            @fclose($fh);
+        }
+    }
+
     public function __invoke(Request $request, Video $video, R2UploadService $r2)
     {
         Gate::authorize('videos-delete');
@@ -28,6 +151,8 @@ class VideoDebugController extends Controller
             'notes' => null,
         ];
 
+        $mp4_structure = null;
+
         if ($path !== '' && in_array($diskName, ['public', 'local'], true)) {
             $disk = Storage::disk($diskName);
             $exists = $disk->exists($path);
@@ -41,6 +166,8 @@ class VideoDebugController extends Controller
 
                     // Heuristic: faststart MP4 has the 'moov' atom near the beginning.
                     if (strtolower((string) pathinfo($abs, PATHINFO_EXTENSION)) === 'mp4') {
+                        $mp4_structure = $this->inspectMp4Structure($abs, $size);
+
                         $first = @file_get_contents($abs, false, null, 0, 1024 * 1024 * 2);
                         if (is_string($first) && $first !== '') {
                             $moov['found_in_first_bytes'] = (strpos($first, 'moov') !== false);
@@ -126,6 +253,7 @@ class VideoDebugController extends Controller
             'viewer_url' => route('videos.show', $video),
             'stream_url' => route('videos.stream', $video),
             'moov_heuristic' => $moov,
+            'mp4_structure' => $mp4_structure,
             'http_tests' => $tests,
         ]);
     }
