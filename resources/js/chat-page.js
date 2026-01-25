@@ -276,6 +276,10 @@
                 audienceModalClear.className = 'inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-slate-700';
                 audienceModalClear.textContent = 'Tout le monde';
                 audienceModalClear.addEventListener('click', () => {
+                    if (conversationUserId > 0) {
+                        navigateToConversation(0);
+                        return;
+                    }
                     setAudienceUserIds([]);
                     setAudienceModalOpen(false);
                 });
@@ -291,6 +295,15 @@
                     });
                     setAudienceUserIds(ids);
                     setAudienceModalOpen(false);
+
+                    // If the user selected exactly one recipient, switch to a "conversation" view
+                    // showing only the messages shared with that user.
+                    if (ids.length === 1) {
+                        navigateToConversation(ids[0]);
+                    } else if (conversationUserId > 0 && ids.length !== 1) {
+                        // Can't represent multi-recipient conversation yet; return to the full chat.
+                        navigateToConversation(0);
+                    }
                 });
 
                 actions.appendChild(audienceModalClear);
@@ -368,12 +381,55 @@
 
                 if (width.querySelector('[data-audience-pill]')) return;
 
+                const senderId = Number(payload?.user?.id ?? payload?.user_id ?? rowEl?.dataset?.userId ?? 0) || 0;
+                const audienceIds = normalizeUserIds(payload?.audience_user_ids || payload?.audience?.user_ids || []);
+
+                // If this is a 1:1 targeted message involving me, make the pill open the conversation view.
+                // Participants are: sender + recipients.
+                let openConversationWithId = 0;
+                if (currentUserId && senderId > 0 && audienceIds.length) {
+                    const me = Number(currentUserId || 0) || 0;
+                    const participants = new Set([senderId, ...audienceIds]);
+                    if (me > 0 && participants.has(me) && participants.size === 2) {
+                        for (const pid of participants) {
+                            if (pid !== me) {
+                                openConversationWithId = pid;
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 const pillWrap = document.createElement('div');
                 pillWrap.className = `mb-1 flex ${rowEl.classList.contains('justify-end') ? 'justify-end' : 'justify-start'}`;
-                const pill = document.createElement('div');
+
+                const pill = document.createElement(openConversationWithId > 0 || audienceIds.length > 1 ? 'button' : 'div');
                 pill.dataset.audiencePill = '1';
                 pill.className = 'text-[0.7rem] font-semibold text-slate-700 bg-white border border-black/10 rounded-full px-3 py-1';
                 pill.textContent = text;
+
+                if (pill.tagName === 'BUTTON') {
+                    pill.type = 'button';
+                    pill.className += ' hover:bg-white/80 active:scale-[0.99] transition';
+
+                    if (openConversationWithId > 0) {
+                        pill.title = 'Ouvrir la conversation';
+                        pill.addEventListener('click', (ev) => {
+                            ev.preventDefault();
+                            navigateToConversation(openConversationWithId);
+                        });
+                    } else {
+                        // Multi-recipient targeted message: open the targeting UI prefilled.
+                        pill.title = 'Voir les destinataires';
+                        pill.addEventListener('click', async (ev) => {
+                            ev.preventDefault();
+                            setAudienceUserIds(audienceIds);
+                            await ensureRecipientsLoaded();
+                            openAudienceModal();
+                        });
+                    }
+                }
+
                 pillWrap.appendChild(pill);
                 width.insertBefore(pillWrap, width.firstChild);
             }
@@ -1374,16 +1430,106 @@
             const mediaOpenLink = document.getElementById('chatMediaOpenLink');
             const currentUserId = bootstrap.currentUserId;
             const currentUserName = bootstrap.currentUserName;
+            const chatUrl = String(bootstrap.chatUrl || '').trim() || null;
             const pollUrl = bootstrap.pollUrl;
             const quotaUrl = bootstrap.quotaUrl;
             const presignUrl = bootstrap.presignUrl;
             const mpInitUrl = bootstrap.mpInitUrl;
             const mpCompleteUrl = bootstrap.mpCompleteUrl;
             const finalizeUrl = bootstrap.finalizeUrl;
+            let conversationUserId = Number(bootstrap.conversationWithUserId || 0) || 0;
+            const conversationUser = (bootstrap && bootstrap.conversationWithUser) ? bootstrap.conversationWithUser : null;
             let lastMessageId = (bootstrap.lastMessageId ?? 0);
             const initialOnline = (bootstrap.initialOnline || []);
             const initialReactionSummaries = (bootstrap.initialReactionSummaries || []);
             const reactionSummaries = new Map();
+
+            function navigateToConversation(nextUserId) {
+                const nextId = Number(nextUserId || 0) || 0;
+                try {
+                    const url = new URL(window.location.href);
+                    if (nextId > 0) {
+                        url.searchParams.set('with_user_id', String(nextId));
+                    } else {
+                        url.searchParams.delete('with_user_id');
+                    }
+                    const nextHref = url.toString();
+                    if (nextHref !== window.location.href) {
+                        window.location.href = nextHref;
+                    }
+                } catch {
+                    // Fallback: best-effort navigation
+                    if (chatUrl) {
+                        window.location.href = nextId > 0 ? `${chatUrl}?with_user_id=${encodeURIComponent(String(nextId))}` : chatUrl;
+                    }
+                }
+            }
+
+            function payloadSenderId(payload) {
+                return Number(payload?.user?.id ?? payload?.user_id ?? 0) || 0;
+            }
+
+            function payloadAudienceType(payload) {
+                return String(payload?.audience_type || payload?.audience?.type || 'all');
+            }
+
+            function payloadAudienceUserIds(payload) {
+                return normalizeUserIds(payload?.audience_user_ids || payload?.audience?.user_ids || []);
+            }
+
+            function payloadHasParticipant(payload, userId) {
+                const id = Number(userId || 0) || 0;
+                if (!id) return false;
+                if (payloadSenderId(payload) === id) return true;
+                return payloadAudienceUserIds(payload).includes(id);
+            }
+
+            function isPayloadInConversation(payload, otherUserId) {
+                const otherId = Number(otherUserId || 0) || 0;
+                if (!otherId) return true;
+                if (!currentUserId) return false;
+                if (payloadAudienceType(payload) !== 'subset') return false;
+                return payloadHasParticipant(payload, currentUserId) && payloadHasParticipant(payload, otherId);
+            }
+
+            let conversationBar = null;
+            let conversationBarLabel = null;
+
+            function ensureConversationBar() {
+                if (conversationBar) return;
+                if (!scrollEl || !scrollEl.parentNode) return;
+
+                conversationBar = document.createElement('div');
+                conversationBar.className = 'mx-3 sm:mx-4 mt-3 mb-2 rounded-2xl border border-black/10 bg-white/70 supports-[backdrop-filter]:bg-white/55 supports-[backdrop-filter]:backdrop-blur-xl px-3 py-2 flex items-center justify-between gap-2';
+                conversationBar.dataset.conversationBar = '1';
+
+                conversationBarLabel = document.createElement('div');
+                conversationBarLabel.className = 'min-w-0 text-xs font-semibold text-slate-700 truncate';
+                conversationBarLabel.textContent = 'Conversation';
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'shrink-0 inline-flex items-center justify-center rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700';
+                btn.textContent = 'Voir tout';
+                btn.addEventListener('click', () => navigateToConversation(0));
+
+                conversationBar.appendChild(conversationBarLabel);
+                conversationBar.appendChild(btn);
+
+                scrollEl.parentNode.insertBefore(conversationBar, scrollEl);
+            }
+
+            function syncConversationUi() {
+                ensureConversationBar();
+                if (!conversationBar) return;
+
+                const on = conversationUserId > 0;
+                conversationBar.classList.toggle('hidden', !on);
+                if (!on) return;
+
+                const name = String(conversationUser?.name || recipientsIndex.get(conversationUserId)?.name || '—');
+                conversationBarLabel.textContent = `Conversation avec ${name}`;
+            }
 
             function toArraySummary(v) {
                 if (!Array.isArray(v)) return [];
@@ -2674,6 +2820,11 @@
 
             function appendMessage(payload) {
                 if (!messagesEl) return;
+
+                if (conversationUserId > 0 && !isPayloadInConversation(payload, conversationUserId)) {
+                    return false;
+                }
+
                 const id = payload?.id ?? null;
                 if (id != null && messagesEl.querySelector(`[data-message-id="${id}"]`)) {
                     return false;
@@ -2952,6 +3103,8 @@
                     body,
                     created_at: new Date().toISOString(),
                     user: { id: currentUserId, name: currentUserName || 'Vous' },
+                    audience_type: audienceState.type,
+                    audience_user_ids: audienceState.type === 'subset' ? audienceState.userIds : [],
                 };
                 const ok = appendMessage(payload);
                 if (!ok) return;
@@ -3615,6 +3768,8 @@
                                 body: '[[ATTACHMENT]]' + JSON.stringify(attachment),
                                 created_at: new Date().toISOString(),
                                 user: { id: currentUserId, name: currentUserName || 'Vous' },
+                                audience_type: audienceState.type,
+                                audience_user_ids: audienceState.type === 'subset' ? audienceState.userIds : [],
                             });
 
                             lastMessageId = Math.max(lastMessageId, chatMessageId);
@@ -3974,8 +4129,10 @@
                         syncSendButtonFor(c);
                         c.textarea.focus();
 
-                        // Safety: reset to "Tout le monde" after send.
-                        resetAudience();
+                        // Safety: reset to "Tout le monde" after send (except in conversation view).
+                        if (!(conversationUserId > 0)) {
+                            resetAudience();
+                        }
                     } catch (e) {
                         markLocalFailed(tempId, e?.message || 'Envoi impossible.');
                     } finally {
@@ -3992,6 +4149,23 @@
             ensureAudienceUiFor('desktop');
             syncAudienceUi();
             ensureRecipientsLoaded();
+
+            // Conversation view (filter + auto-target)
+            if (conversationUser && Number(conversationUser?.id || 0) > 0) {
+                const id = Number(conversationUser.id);
+                if (!recipientsIndex.has(id)) {
+                    recipientsIndex.set(id, {
+                        id,
+                        name: String(conversationUser?.name || '—'),
+                        avatar_url: String(conversationUser?.avatar_url || ''),
+                    });
+                }
+            }
+
+            if (conversationUserId > 0) {
+                setAudienceUserIds([conversationUserId]);
+            }
+            syncConversationUi();
 
             // Voice dictation (Web Speech API)
             if (attachPickVoice) {

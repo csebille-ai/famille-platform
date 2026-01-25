@@ -71,4 +71,68 @@ class ChatTargetedMessagesTest extends TestCase
             ->assertOk()
             ->assertSee('Admin can see');
     }
+
+    public function test_conversation_filter_shows_only_messages_shared_with_selected_user(): void
+    {
+        $me = User::factory()->create();
+        $alice = User::factory()->create();
+        $bob = User::factory()->create();
+
+        // Me -> Alice (subset)
+        $this->actingAs($me);
+        $this->postJson(route('chat.store'), [
+            'body' => 'To Alice',
+            'audience_user_ids' => [$alice->id],
+        ])->assertOk();
+
+        // Me -> Bob (subset)
+        $this->postJson(route('chat.store'), [
+            'body' => 'To Bob',
+            'audience_user_ids' => [$bob->id],
+        ])->assertOk();
+
+        // Public message (all)
+        $this->postJson(route('chat.store'), [
+            'body' => 'Public',
+            'audience_user_ids' => [],
+        ])->assertOk();
+
+        // Alice -> Me (subset)
+        $this->actingAs($alice);
+        $this->postJson(route('chat.store'), [
+            'body' => 'From Alice',
+            'audience_user_ids' => [$me->id],
+        ])->assertOk();
+
+        // Bob -> Me (subset)
+        $this->actingAs($bob);
+        $this->postJson(route('chat.store'), [
+            'body' => 'From Bob',
+            'audience_user_ids' => [$me->id],
+        ])->assertOk();
+
+        // Conversation view (Me <-> Alice): should show only targeted messages shared with Alice.
+        $this->actingAs($me);
+
+        $this->get(route('chat.index', ['with_user_id' => $alice->id]))
+            ->assertOk()
+            ->assertSee('To Alice')
+            ->assertSee('From Alice')
+            ->assertDontSee('To Bob')
+            ->assertDontSee('From Bob')
+            ->assertDontSee('Public');
+
+        $poll = $this->getJson(route('chat.poll', ['since_id' => 0, 'with_user_id' => $alice->id]));
+        $poll->assertOk();
+        $bodies = collect($poll->json('messages'))
+            ->pluck('body')
+            ->map(fn ($v) => (string) $v)
+            ->all();
+
+        $this->assertContains('To Alice', $bodies);
+        $this->assertContains('From Alice', $bodies);
+        $this->assertNotContains('To Bob', $bodies);
+        $this->assertNotContains('From Bob', $bodies);
+        $this->assertNotContains('Public', $bodies);
+    }
 }

@@ -2,9 +2,12 @@
     window.__CHAT_BOOTSTRAP__ = {
         currentUserId: @json(auth()->id()),
         currentUserName: @json(auth()->user()?->name),
-        pollUrl: @json(route('chat.poll')),
+        chatUrl: @json(route('chat.index')),
+        pollUrl: @json(route('chat.poll', !empty($conversationWithUserId) ? ['with_user_id' => (int) $conversationWithUserId] : [])),
         recipientsUrl: @json(route('chat.recipients')),
         isAdmin: @json((bool) ($isAdmin ?? false)),
+        conversationWithUserId: @json((int) ($conversationWithUserId ?? 0)),
+        conversationWithUser: @json($conversationWithUser ?? null),
         quotaUrl: @json(url('/api/uploads/quota')),
         presignUrl: @json(url('/api/uploads/presign')),
         mpInitUrl: @json(url('/api/uploads/multipart/init')),

@@ -18,13 +18,22 @@ use Illuminate\Support\Str;
 
 class ChatController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $this->touchPresence();
 
         $viewerId = (int) (Auth::id() ?? 0);
         $isAdmin = Gate::allows('manage-users');
         $hasAudience = Schema::hasColumn('chat_messages', 'audience_type') && Schema::hasColumn('chat_messages', 'audience_user_ids');
+
+        $withUserId = (int) $request->query('with_user_id', 0);
+        $withUser = null;
+        if ($withUserId > 0) {
+            $withUser = User::query()->whereKey($withUserId)->first(['id', 'name', 'avatar_path', 'avatar_updated_at']);
+            if (!$withUser) {
+                $withUserId = 0;
+            }
+        }
 
         $messages = ChatMessage::query()
             ->with('user:id,name,avatar_path,avatar_updated_at')
@@ -38,6 +47,19 @@ class ChatController extends Controller
                                 ->whereJsonContains('audience_user_ids', $viewerId);
                         });
                 });
+            })
+            ->when($viewerId > 0 && $hasAudience && $withUserId > 0, function ($q) use ($viewerId, $withUserId) {
+                // Conversation view: only targeted messages where BOTH users are part of the audience
+                // (either as sender or as recipient).
+                $q->where('audience_type', 'subset')
+                    ->where(function ($qq) use ($viewerId) {
+                        $qq->where('user_id', $viewerId)
+                            ->orWhereJsonContains('audience_user_ids', $viewerId);
+                    })
+                    ->where(function ($qq) use ($withUserId) {
+                        $qq->where('user_id', $withUserId)
+                            ->orWhereJsonContains('audience_user_ids', $withUserId);
+                    });
             })
             ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
             ->latest()
@@ -58,6 +80,12 @@ class ChatController extends Controller
             'lastMessageId' => $lastMessageId,
             'reactionSummaries' => $reactionSummaries,
             'isAdmin' => $isAdmin,
+            'conversationWithUserId' => $withUserId,
+            'conversationWithUser' => $withUser ? [
+                'id' => (int) $withUser->id,
+                'name' => (string) ($withUser->name ?? '—'),
+                'avatar_url' => avatarUrl($withUser),
+            ] : null,
         ]);
     }
 
@@ -189,9 +217,14 @@ class ChatController extends Controller
 
         $validated = $request->validate([
             'since_id' => ['nullable', 'integer', 'min:0'],
+            'with_user_id' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $sinceId = (int) ($validated['since_id'] ?? 0);
+        $withUserId = (int) ($validated['with_user_id'] ?? 0);
+        if ($withUserId > 0 && !User::query()->whereKey($withUserId)->exists()) {
+            $withUserId = 0;
+        }
 
         $messages = ChatMessage::query()
             ->with('user:id,name,avatar_path,avatar_updated_at')
@@ -206,6 +239,17 @@ class ChatController extends Controller
                                 ->whereJsonContains('audience_user_ids', $viewerId);
                         });
                 });
+            })
+            ->when($viewerId > 0 && $hasAudience && $withUserId > 0, function ($q) use ($viewerId, $withUserId) {
+                $q->where('audience_type', 'subset')
+                    ->where(function ($qq) use ($viewerId) {
+                        $qq->where('user_id', $viewerId)
+                            ->orWhereJsonContains('audience_user_ids', $viewerId);
+                    })
+                    ->where(function ($qq) use ($withUserId) {
+                        $qq->where('user_id', $withUserId)
+                            ->orWhereJsonContains('audience_user_ids', $withUserId);
+                    });
             })
             ->when($viewerId > 0, fn ($q) => $q->whereDoesntHave('deletions', fn ($dq) => $dq->where('user_id', $viewerId)))
             ->orderBy('id')
