@@ -63,6 +63,9 @@ Route::post('/api/chat/{thread}/attachments', ChatAttachmentController::class)
 Route::get('/api/uploads/quota', [UploadsController::class, 'quota'])
     ->middleware(['auth', 'verified', 'throttle:30,1']);
 
+Route::get('/api/uploads/limits', [UploadsController::class, 'limits'])
+    ->middleware(['auth', 'verified', 'throttle:30,1']);
+
 Route::post('/api/uploads/presign', [UploadsController::class, 'presign'])
     ->middleware(['auth', 'verified', 'throttle:30,1']);
 

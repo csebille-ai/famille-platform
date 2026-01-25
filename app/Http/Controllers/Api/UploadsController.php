@@ -20,6 +20,70 @@ class UploadsController extends Controller
 {
     private const ATTACH_PREFIX = '[[ATTACHMENT]]';
 
+    private function iniSizeToBytes(?string $value): int
+    {
+        if ($value === null) {
+            return 0;
+        }
+
+        $value = trim($value);
+        if ($value === '') {
+            return 0;
+        }
+
+        $lastChar = strtoupper(substr($value, -1));
+        if (ctype_digit($lastChar)) {
+            return (int) $value;
+        }
+
+        $number = (float) substr($value, 0, -1);
+        return match ($lastChar) {
+            'K' => (int) round($number * 1024),
+            'M' => (int) round($number * 1024 * 1024),
+            'G' => (int) round($number * 1024 * 1024 * 1024),
+            'T' => (int) round($number * 1024 * 1024 * 1024 * 1024),
+            default => 0,
+        };
+    }
+
+    private function phpIniMaxBodyBytes(): int
+    {
+        $uploadBytes = $this->iniSizeToBytes(ini_get('upload_max_filesize'));
+        $postBytes = $this->iniSizeToBytes(ini_get('post_max_size'));
+        if ($uploadBytes <= 0 || $postBytes <= 0) {
+            return 0;
+        }
+        return min($uploadBytes, $postBytes);
+    }
+
+    private function effectiveMaxUploadBytes(bool $usingLocalFallback): int
+    {
+        $configMax = (int) config('uploads.max_upload_bytes');
+        if ($configMax <= 0) {
+            $configMax = 0;
+        }
+
+        if (!$usingLocalFallback) {
+            return $configMax;
+        }
+
+        // On shared hosting (o2switch), large request bodies can be rejected by PHP/Apache
+        // and the browser reports a generic "network error". Clamp to PHP ini so we fail early.
+        $iniMax = $this->phpIniMaxBodyBytes();
+        if ($iniMax > 0 && $configMax > 0) {
+            return min($iniMax, $configMax);
+        }
+        return $iniMax > 0 ? $iniMax : $configMax;
+    }
+
+    private function bytesToHumanMb(int $bytes): int
+    {
+        if ($bytes <= 0) {
+            return 0;
+        }
+        return max(1, (int) floor($bytes / (1024 * 1024)));
+    }
+
     private function allowLocalFallback(): bool
     {
         return (bool) config('uploads.allow_local_fallback', false);
@@ -108,6 +172,16 @@ class UploadsController extends Controller
             // Keep permissive: some clients append charset.
         }
 
+        $maxEffective = $this->effectiveMaxUploadBytes(true);
+        $contentLength = (int) $request->headers->get('Content-Length', 0);
+        if ($maxEffective > 0 && $contentLength > 0 && $contentLength > $maxEffective) {
+            $mb = $this->bytesToHumanMb($maxEffective);
+            return response()->json([
+                'message' => "Fichier trop volumineux pour ce serveur (max ~{$mb} Mo).",
+                'hint' => 'Sur o2switch, augmente upload_max_filesize/post_max_size (MultiPHP INI Editor) ou configure un stockage R2/S3 pour upload direct.',
+            ], 413);
+        }
+
         try {
             $stream = fopen('php://input', 'rb');
             if ($stream === false) {
@@ -124,6 +198,32 @@ class UploadsController extends Controller
         }
 
         return response()->noContent(200);
+    }
+
+    public function limits(Request $request)
+    {
+        $r2Configured = trim((string) config('uploads.r2_public_base_url', '')) !== '' || trim((string) env('R2_BUCKET', '')) !== '';
+        $allowLocal = $this->allowLocalFallback();
+        $iniMax = $this->phpIniMaxBodyBytes();
+        $configMax = (int) config('uploads.max_upload_bytes');
+        $effectiveLocal = $this->effectiveMaxUploadBytes(true);
+
+        return response()->json([
+            'r2_configured' => $r2Configured,
+            'allow_local_fallback' => $allowLocal,
+            'php_ini' => [
+                'upload_max_filesize' => (string) ini_get('upload_max_filesize'),
+                'post_max_size' => (string) ini_get('post_max_size'),
+                'max_body_bytes' => $iniMax,
+            ],
+            'config' => [
+                'max_upload_bytes' => $configMax,
+            ],
+            'effective' => [
+                'local_max_upload_bytes' => $effectiveLocal,
+                'local_max_upload_mb' => $this->bytesToHumanMb($effectiveLocal),
+            ],
+        ]);
     }
 
     private function requireMigrations(): ?\Illuminate\Http\JsonResponse
@@ -200,9 +300,22 @@ class UploadsController extends Controller
         ]);
 
         $size = (int) $validated['size'];
-        if ($size > $max) {
+        // If R2 isn't configured and we're going to upload through this server, clamp to PHP ini.
+        $bucket = trim($r2->bucket());
+        $usingLocalFallback = ($bucket === '');
+        if ($usingLocalFallback) {
+            $max = $this->effectiveMaxUploadBytes(true);
+        }
+        if ($max > 0 && $size > $max) {
+            $mb = $this->bytesToHumanMb($max);
+            $msg = $usingLocalFallback
+                ? "Fichier trop volumineux pour ce serveur (max ~{$mb} Mo)."
+                : "Fichier trop volumineux (max ~{$mb} Mo).";
             return response()->json([
-                'message' => 'Fichier trop volumineux (max 2 Go).',
+                'message' => $msg,
+                'hint' => $usingLocalFallback
+                    ? 'Sur o2switch, augmente upload_max_filesize/post_max_size (MultiPHP INI Editor) ou configure R2/S3 pour upload direct.'
+                    : null,
             ], 413);
         }
 
@@ -213,7 +326,6 @@ class UploadsController extends Controller
             ], 422);
         }
 
-        $bucket = trim($r2->bucket());
         if ($bucket === '') {
             if (!$this->allowLocalFallback()) {
                 return response()->json([
@@ -277,8 +389,9 @@ class UploadsController extends Controller
         ]);
 
         $size = (int) $validated['size'];
-        if ($size > $max) {
-            return response()->json(['message' => 'Fichier trop volumineux (max 2 Go).'], 413);
+        if ($max > 0 && $size > $max) {
+            $mb = $this->bytesToHumanMb($max);
+            return response()->json(['message' => "Fichier trop volumineux (max ~{$mb} Mo)."], 413);
         }
         if ($size <= $threshold) {
             return response()->json(['message' => 'Multipart non nécessaire pour ce fichier.'], 422);
@@ -350,8 +463,9 @@ class UploadsController extends Controller
         ]);
 
         $size = (int) $validated['size'];
-        if ($size > $max) {
-            return response()->json(['message' => 'Fichier trop volumineux (max 2 Go).'], 413);
+        if ($max > 0 && $size > $max) {
+            $mb = $this->bytesToHumanMb($max);
+            return response()->json(['message' => "Fichier trop volumineux (max ~{$mb} Mo)."], 413);
         }
 
         $mime = (string) $validated['mime'];
@@ -420,8 +534,21 @@ class UploadsController extends Controller
         ]);
 
         $size = (int) $validated['size'];
-        if ($size > $max) {
-            return response()->json(['message' => 'Fichier trop volumineux (max 2 Go).'], 413);
+        $storageDisk = (string) ($validated['storage_disk'] ?? 'r2');
+        if (!in_array($storageDisk, ['r2', 'local'], true)) {
+            $storageDisk = 'r2';
+        }
+        if ($storageDisk === 'local') {
+            $max = $this->effectiveMaxUploadBytes(true);
+        }
+        if ($max > 0 && $size > $max) {
+            $mb = $this->bytesToHumanMb($max);
+            return response()->json([
+                'message' => "Fichier trop volumineux (max ~{$mb} Mo).",
+                'hint' => $storageDisk === 'local'
+                    ? 'Sur o2switch, augmente upload_max_filesize/post_max_size ou configure R2/S3 pour upload direct.'
+                    : null,
+            ], 413);
         }
 
         $mime = (string) $validated['mime'];
@@ -431,10 +558,6 @@ class UploadsController extends Controller
 
         $userId = (int) Auth::id();
         $key = (string) $validated['key'];
-        $storageDisk = (string) ($validated['storage_disk'] ?? 'r2');
-        if (!in_array($storageDisk, ['r2', 'local'], true)) {
-            $storageDisk = 'r2';
-        }
 
         $provider = $storageDisk === 'local' ? 'local' : 'r2';
 
