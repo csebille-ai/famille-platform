@@ -4211,7 +4211,13 @@
                         c.textarea.value = '';
                         autoGrowTextarea(c.textarea);
                         syncSendButtonFor(c);
-                        c.textarea.focus();
+                        // Avoid re-opening the mobile virtual keyboard after send.
+                        // Keep focus on desktop for fast consecutive messages.
+                        if (c.key === 'desktop') {
+                            c.textarea.focus();
+                        } else {
+                            try { c.textarea.blur(); } catch {}
+                        }
 
                         // Safety: reset to "Tout le monde" after send (except in conversation view).
                         if (!(conversationUserId > 0)) {
