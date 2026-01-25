@@ -23,7 +23,7 @@
                         <div class="text-sm sm:text-base font-semibold text-gray-900 leading-tight">Famille</div>
                         <div class="text-xs text-slate-500 leading-tight">
                             <span class="text-emerald-600">●</span>
-                            <span id="chatOnlineCount" class="font-semibold text-gray-900">{{ $onlineList->count() }}</span>
+                            <span id="chatOnlineCount" class="font-semibold text-gray-900">{{ ($onlineList ?? collect())->count() }}</span>
                             <span id="chatPresenceLabel">en ligne</span>
                         </div>
                     </div>
