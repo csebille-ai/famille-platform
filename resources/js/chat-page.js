@@ -87,6 +87,18 @@
                     audienceState.userIds = next;
                 }
                 syncAudienceUi();
+
+                // UX: if the user targets exactly one person, switch the chat to "conversation" mode
+                // immediately (hide unrelated messages), even if navigation is blocked (PWA/back-forward cache).
+                if (next.length === 1) {
+                    conversationUserId = Number(next[0] || 0) || 0;
+                } else if (!next.length) {
+                    conversationUserId = 0;
+                }
+                try {
+                    syncConversationUi();
+                    applyConversationFilterToDom();
+                } catch {}
             }
 
             function resetAudience() {
@@ -1498,6 +1510,61 @@
 
                 // Targeted messages: keep only those where both participate (sender or recipient).
                 return payloadHasParticipant(payload, currentUserId) && payloadHasParticipant(payload, otherId);
+            }
+
+            function parseJsonArray(raw) {
+                if (!raw) return [];
+                try {
+                    const v = JSON.parse(raw);
+                    return Array.isArray(v) ? v : [];
+                } catch {
+                    return [];
+                }
+            }
+
+            function isRowInConversation(rowEl, otherUserId) {
+                const otherId = Number(otherUserId || 0) || 0;
+                if (!otherId) return true;
+                if (!currentUserId) return false;
+
+                const senderId = Number(rowEl?.dataset?.userId || 0) || 0;
+                const audType = String(rowEl?.dataset?.audienceType || 'all');
+                const audIds = normalizeUserIds(parseJsonArray(rowEl?.dataset?.audienceUserIds || '[]'));
+
+                if (audType !== 'subset') {
+                    return senderId === Number(currentUserId) || senderId === otherId;
+                }
+
+                const participants = new Set([senderId, ...audIds]);
+                return participants.has(Number(currentUserId)) && participants.has(otherId);
+            }
+
+            function applyConversationFilterToDom() {
+                if (!messagesEl) return;
+
+                const otherId = Number(conversationUserId || 0) || 0;
+                const rows = Array.from(messagesEl.querySelectorAll('[data-message-row]'));
+
+                for (const row of rows) {
+                    const show = isRowInConversation(row, otherId);
+                    row.classList.toggle('hidden', !show);
+                }
+
+                // Hide day separators with no visible messages.
+                try {
+                    const visibleDayKeys = new Set(
+                        rows
+                            .filter((r) => !r.classList.contains('hidden'))
+                            .map((r) => String(r?.dataset?.dayKey || ''))
+                            .filter(Boolean)
+                    );
+
+                    messagesEl.querySelectorAll('[data-day-separator]').forEach((sep) => {
+                        const dk = String(sep?.dataset?.dayKey || '');
+                        const keep = !otherId || (dk && visibleDayKeys.has(dk));
+                        sep.classList.toggle('hidden', !keep);
+                    });
+                } catch {}
             }
 
             let conversationBar = null;
@@ -3954,6 +4021,7 @@
                 try {
                     const url = new URL(pollUrl, window.location.origin);
                     if (lastMessageId) url.searchParams.set('since_id', String(lastMessageId));
+                    if (conversationUserId > 0) url.searchParams.set('with_user_id', String(conversationUserId));
 
                     const res = await fetch(url.toString(), {
                         headers: { 'Accept': 'application/json' },
