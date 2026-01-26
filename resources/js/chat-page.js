@@ -760,7 +760,6 @@
             const attachPickMedia = document.getElementById('chatAttachPickMedia');
             const attachPickVoice = document.getElementById('chatAttachPickVoice');
             const scrollToBottomBtn = document.getElementById('chatScrollToBottom');
-            const backBtn = document.getElementById('chatBackBtn');
             const searchBtn = document.getElementById('chatSearchBtn');
             const searchBar = document.getElementById('chatSearchBar');
             const searchInput = document.getElementById('chatSearchInput');
@@ -878,8 +877,8 @@
 
             try {
                 const titleText = String(bootstrap.chatTitle || '').trim();
-                if (titleText && backBtn && backBtn.parentElement) {
-                    const titleEl = backBtn.parentElement.querySelector('.min-w-0.flex-1.text-center > div');
+                if (titleText) {
+                    const titleEl = document.querySelector('.text-sm.sm\\:text-base.font-semibold.text-gray-900');
                     if (titleEl) titleEl.textContent = titleText;
                 }
 
@@ -3952,18 +3951,19 @@
                 });
             }
 
-            if (backBtn) {
-                backBtn.addEventListener('click', () => {
+            // Header menu: Voir les conversations (remplace la flèche retour)
+            const headerMenuConversations = document.getElementById('chatHeaderMenuConversations');
+            if (headerMenuConversations) {
+                headerMenuConversations.addEventListener('click', () => {
+                    closeHeaderMenu();
                     if (backUrl) {
                         window.location.href = backUrl;
                         return;
                     }
-
                     if (window.history.length > 1) {
                         window.history.back();
                         return;
                     }
-
                     window.location.href = bootstrap.dashboardUrl;
                 });
             }
@@ -4039,6 +4039,221 @@
                 headerMenuInfo.addEventListener('click', () => {
                     closeHeaderMenu();
                     setInfoModalOpen(true);
+                });
+            }
+
+            // Visibility Sheet
+            const visibilityChip = document.getElementById('chatVisibilityChip');
+            const visibilityLabel = document.getElementById('chatVisibilityLabel');
+            const visibilitySheet = document.getElementById('chatVisibilitySheet');
+            const visibilityBackdrop = document.getElementById('chatVisibilityBackdrop');
+            const visibilityPanel = document.getElementById('chatVisibilityPanel');
+            const visibilityCancel = document.getElementById('chatVisibilityCancel');
+            const visibilityConfirm = document.getElementById('chatVisibilityConfirm');
+            const visibilityWarning = document.getElementById('chatVisibilityWarning');
+            const visibilityParticipants = document.getElementById('chatVisibilityParticipants');
+            const visibilityPills = document.getElementById('chatVisibilityPills');
+            const visibilityHelper = document.getElementById('chatVisibilityHelper');
+            const visibilityToggleList = document.getElementById('chatVisibilityToggleList');
+            const visibilityToggleIcon = document.getElementById('chatVisibilityToggleIcon');
+            const visibilityMemberList = document.getElementById('chatVisibilityMemberList');
+            const visibilityRadios = document.querySelectorAll('input[name="chatVisibilityMode"]');
+            
+            let visibilityOpen = false;
+            let selectedUserIds = new Set();
+            let allMembers = [];
+            
+            function openVisibilitySheet() {
+                if (!visibilitySheet || !visibilityPanel || !isAdmin) return;
+                visibilityOpen = true;
+                visibilitySheet.classList.remove('hidden');
+                visibilitySheet.setAttribute('aria-hidden', 'false');
+                
+                // Init state
+                const currentMode = visibilityLabel?.textContent.trim().toLowerCase() === 'privé' ? 'private' : 'public';
+                selectedUserIds = new Set([currentUserId]);
+                
+                visibilityRadios.forEach(r => {
+                    r.checked = r.value === currentMode;
+                });
+                
+                updateVisibilityUI();
+                
+                requestAnimationFrame(() => {
+                    visibilityBackdrop?.classList.remove('opacity-0');
+                    visibilityPanel?.classList.remove('opacity-0', 'translate-y-6');
+                });
+            }
+            
+            function closeVisibilitySheet() {
+                if (!visibilitySheet) return;
+                visibilityBackdrop?.classList.add('opacity-0');
+                visibilityPanel?.classList.add('opacity-0', 'translate-y-6');
+                
+                setTimeout(() => {
+                    visibilitySheet.classList.add('hidden');
+                    visibilitySheet.setAttribute('aria-hidden', 'true');
+                    visibilityOpen = false;
+                }, 200);
+            }
+            
+            function updateVisibilityUI() {
+                const isPrivate = Array.from(visibilityRadios).find(r => r.checked)?.value === 'private';
+                
+                visibilityWarning?.classList.toggle('hidden', !isPrivate);
+                visibilityParticipants?.classList.toggle('hidden', !isPrivate);
+                
+                if (isPrivate) {
+                    renderPills();
+                    renderMemberList();
+                    validateSelection();
+                }
+            }
+            
+            function renderPills() {
+                if (!visibilityPills) return;
+                visibilityPills.innerHTML = '';
+                
+                selectedUserIds.forEach(uid => {
+                    const isCurrentUser = uid === currentUserId;
+                    const member = allMembers.find(m => m.id === uid);
+                    const name = isCurrentUser ? 'Vous' : (member?.name || `User ${uid}`);
+                    
+                    const pill = document.createElement('div');
+                    pill.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-600/10 text-teal-700 text-xs font-medium border border-teal-600/20';
+                    pill.innerHTML = `
+                        <span>${name}${isCurrentUser ? ' 🔒' : ''}</span>
+                        ${!isCurrentUser ? `<button type="button" class="hover:text-teal-900 transition-colors" data-remove-user="${uid}">×</button>` : ''}
+                    `;
+                    
+                    visibilityPills.appendChild(pill);
+                });
+                
+                // Attach remove handlers
+                visibilityPills.querySelectorAll('[data-remove-user]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const uid = Number(btn.dataset.removeUser);
+                        if (uid && uid !== currentUserId) {
+                            selectedUserIds.delete(uid);
+                            updateVisibilityUI();
+                        }
+                    });
+                });
+            }
+            
+            function renderMemberList() {
+                if (!visibilityMemberList || !recipientsUrl) return;
+                
+                if (allMembers.length === 0) {
+                    // Fetch members
+                    fetch(recipientsUrl, { credentials: 'same-origin' })
+                        .then(r => r.json())
+                        .then(data => {
+                            allMembers = (data || []).filter(m => m.id !== currentUserId);
+                            renderMemberListHTML();
+                        })
+                        .catch(() => {});
+                } else {
+                    renderMemberListHTML();
+                }
+            }
+            
+            function renderMemberListHTML() {
+                if (!visibilityMemberList) return;
+                visibilityMemberList.innerHTML = '';
+                
+                allMembers.forEach(member => {
+                    const isSelected = selectedUserIds.has(member.id);
+                    const item = document.createElement('label');
+                    item.className = 'flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors';
+                    item.innerHTML = `
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <div class="w-8 h-8 rounded-full bg-teal-600/10 flex items-center justify-center text-xs font-semibold text-teal-700">
+                                ${member.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="text-sm font-medium text-slate-900 truncate">${member.name}</div>
+                        </div>
+                        <input type="checkbox" ${isSelected ? 'checked' : ''} class="h-4 w-4 text-teal-600 focus:ring-teal-600 rounded" data-member-id="${member.id}" />
+                    `;
+                    
+                    visibilityMemberList.appendChild(item);
+                });
+                
+                // Attach checkbox handlers
+                visibilityMemberList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.addEventListener('change', () => {
+                        const uid = Number(cb.dataset.memberId);
+                        if (cb.checked) {
+                            selectedUserIds.add(uid);
+                        } else {
+                            selectedUserIds.delete(uid);
+                        }
+                        updateVisibilityUI();
+                    });
+                });
+            }
+            
+            function validateSelection() {
+                const isPrivate = Array.from(visibilityRadios).find(r => r.checked)?.value === 'private';
+                const hasOtherUsers = Array.from(selectedUserIds).filter(uid => uid !== currentUserId).length > 0;
+                const isValid = !isPrivate || (isPrivate && hasOtherUsers);
+                
+                if (visibilityConfirm) {
+                    visibilityConfirm.disabled = !isValid;
+                }
+                
+                if (visibilityHelper) {
+                    visibilityHelper.classList.toggle('hidden', isValid);
+                }
+            }
+            
+            if (visibilityChip && isAdmin) {
+                visibilityChip.addEventListener('click', openVisibilitySheet);
+            } else if (visibilityChip) {
+                // Non-admin: just a badge, remove chevron
+                visibilityChip.classList.remove('hover:bg-teal-600/15');
+                visibilityChip.classList.add('cursor-default');
+                const chevron = visibilityChip.querySelector('svg');
+                if (chevron) chevron.remove();
+            }
+            
+            if (visibilityBackdrop) {
+                visibilityBackdrop.addEventListener('click', closeVisibilitySheet);
+            }
+            
+            if (visibilityCancel) {
+                visibilityCancel.addEventListener('click', closeVisibilitySheet);
+            }
+            
+            if (visibilityConfirm) {
+                visibilityConfirm.addEventListener('click', () => {
+                    const mode = Array.from(visibilityRadios).find(r => r.checked)?.value || 'public';
+                    const participants = mode === 'private' ? Array.from(selectedUserIds) : [];
+                    
+                    // TODO: Send to backend
+                    console.log('Saving visibility:', { mode, participants });
+                    
+                    // Update UI
+                    if (visibilityLabel) {
+                        visibilityLabel.textContent = mode === 'private' ? 'Privé' : 'Public';
+                    }
+                    
+                    closeVisibilitySheet();
+                    showToast(`Visibilité changée : ${mode === 'private' ? 'Privé' : 'Public'}`);
+                });
+            }
+            
+            if (visibilityRadios.length) {
+                visibilityRadios.forEach(radio => {
+                    radio.addEventListener('change', updateVisibilityUI);
+                });
+            }
+            
+            if (visibilityToggleList) {
+                visibilityToggleList.addEventListener('click', () => {
+                    const isOpen = !visibilityMemberList?.classList.contains('hidden');
+                    visibilityMemberList?.classList.toggle('hidden', isOpen);
+                    visibilityToggleIcon?.classList.toggle('rotate-180', !isOpen);
                 });
             }
 

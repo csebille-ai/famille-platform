@@ -72,12 +72,17 @@
         <div id="chatHeaderMenu" class="fixed inset-0 z-[60] hidden pointer-events-none" aria-hidden="true">
             <div id="chatHeaderMenuBackdrop" class="absolute inset-0"></div>
             <div id="chatHeaderMenuPanel" class="absolute pointer-events-auto min-w-[14rem] rounded-2xl border border-slate-200 bg-white shadow-2xl p-1">
+                <button type="button" id="chatHeaderMenuConversations" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)] flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-96,85.15L52.57,64H203.43ZM98.71,128,40,181.81V74.19Zm11.84,10.85,12,11.05a8,8,0,0,0,10.82,0l12-11.05,58,53.15H52.57ZM157.29,128,216,74.18V181.82Z"></path></svg>
+                    <span>Voir les conversations</span>
+                </button>
+                <div class="h-px bg-slate-100 my-1"></div>
                 <button type="button" id="chatHeaderMenuSearch" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)] flex items-center gap-2">
-                    <i class="ph ph-magnifying-glass text-base" aria-hidden="true"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path></svg>
                     <span>Rechercher</span>
                 </button>
                 <button type="button" id="chatHeaderMenuInfo" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)] flex items-center gap-2">
-                    <i class="ph ph-info text-base" aria-hidden="true"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"></path></svg>
                     <span>Infos & participants</span>
                 </button>
             </div>
@@ -151,4 +156,95 @@
             </div>
         </div>
 
-        
+        <!-- Visibility Sheet -->
+        <div id="chatVisibilitySheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+            <div id="chatVisibilityBackdrop" class="absolute inset-0 bg-black/30 backdrop-blur-sm opacity-0 transition-opacity duration-200"></div>
+            <div class="absolute inset-x-0 bottom-0 flex justify-center">
+                <div
+                    id="chatVisibilityPanel"
+                    class="w-full max-w-[560px] rounded-t-3xl bg-white border border-slate-200 shadow-[0_-18px_55px_rgba(15,23,42,0.18)] px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[85vh] flex flex-col opacity-0 translate-y-6 transition-[transform,opacity] duration-200 ease-out"
+                    role="dialog"
+                    aria-label="Visibilité du salon"
+                >
+                    <div class="mx-auto h-1 w-10 rounded-full bg-slate-300 mb-3"></div>
+                    <div class="text-lg font-semibold text-slate-900 mb-4">Visibilité du salon</div>
+
+                    <div class="flex-1 min-h-0 overflow-y-auto">
+                        <!-- Radio Public -->
+                        <label class="flex items-start gap-3 p-3 rounded-2xl border-2 border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="chatVisibilityMode" value="public" checked class="mt-0.5 h-5 w-5 text-teal-600 focus:ring-teal-600" />
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-slate-900">Public</div>
+                                <div class="text-xs text-slate-600 mt-0.5">Visible et accessible à tous les membres.</div>
+                            </div>
+                        </label>
+
+                        <!-- Radio Privé -->
+                        <label class="mt-3 flex items-start gap-3 p-3 rounded-2xl border-2 border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                            <input type="radio" name="chatVisibilityMode" value="private" class="mt-0.5 h-5 w-5 text-teal-600 focus:ring-teal-600" />
+                            <div class="flex-1">
+                                <div class="text-sm font-semibold text-slate-900">Privé (participants)</div>
+                                <div class="text-xs text-slate-600 mt-0.5">Visible uniquement pour les membres sélectionnés.</div>
+                            </div>
+                        </label>
+
+                        <!-- Warning si privé -->
+                        <div id="chatVisibilityWarning" class="hidden mt-3 p-3 rounded-2xl bg-amber-50 border border-amber-200">
+                            <div class="flex gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="text-amber-600 shrink-0" viewBox="0 0 256 256"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM120,104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm8,88a12,12,0,1,1,12-12A12,12,0,0,1,128,192Z"></path></svg>
+                                <div class="text-xs text-amber-800">Les membres non sélectionnés ne verront plus ce salon.</div>
+                            </div>
+                        </div>
+
+                        <!-- Participants (inline si privé) -->
+                        <div id="chatVisibilityParticipants" class="hidden mt-4">
+                            <div class="text-sm font-medium text-slate-900 mb-2">Participants</div>
+                            
+                            <!-- Pills sélectionnés -->
+                            <div id="chatVisibilityPills" class="flex flex-wrap gap-2 mb-3 empty:hidden">
+                                <!-- Pills générées dynamiquement -->
+                            </div>
+
+                            <!-- Message helper si pas assez de participants -->
+                            <div id="chatVisibilityHelper" class="hidden text-xs text-red-600 mb-3">
+                                Ajoute au moins 1 autre personne.
+                            </div>
+
+                            <!-- Accordéon "Ajouter un membre…" -->
+                            <div class="border border-slate-200 rounded-2xl overflow-hidden">
+                                <button
+                                    type="button"
+                                    id="chatVisibilityToggleList"
+                                    class="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                                >
+                                    <span>Ajouter un membre…</span>
+                                    <svg id="chatVisibilityToggleIcon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256" class="transition-transform duration-200"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+                                </button>
+                                
+                                <div id="chatVisibilityMemberList" class="hidden border-t border-slate-200 max-h-64 overflow-y-auto">
+                                    <!-- Liste avec checkboxes générée dynamiquement -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer buttons -->
+                    <div class="shrink-0 flex gap-2 mt-4 pt-4 border-t border-slate-100">
+                        <button
+                            type="button"
+                            id="chatVisibilityCancel"
+                            class="flex-1 h-11 rounded-2xl border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            type="button"
+                            id="chatVisibilityConfirm"
+                            class="flex-1 h-11 rounded-2xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Confirmer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
