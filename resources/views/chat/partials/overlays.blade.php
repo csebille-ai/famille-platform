@@ -5,39 +5,51 @@
                     id="chatAttachPanel"
                     class="w-full max-w-[560px] rounded-t-3xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] shadow-[0_-18px_55px_rgba(15,23,42,0.18)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] opacity-0 translate-y-6 transition-[transform,opacity] duration-[220ms] ease-out motion-reduce:transition-none motion-reduce:transform-none"
                     role="dialog"
-                    aria-label="Ajouter"
+                    aria-label="Partager un fichier"
                 >
                     <div class="mx-auto h-1 w-9 rounded-full bg-black/10"></div>
 
-                    <div class="mt-3">
-                        <div class="text-sm font-semibold text-[color:var(--fam-text)]">Ajouter</div>
-                        <div id="chatAttachQuota" class="mt-1 text-xs text-slate-600"></div>
+                    <div class="mt-3 flex items-baseline justify-between gap-3">
+                        <div class="text-base font-semibold text-[color:var(--fam-text)]">Partager un fichier</div>
+                        <div id="chatAttachQuota" class="text-xs text-slate-500 font-medium"></div>
                     </div>
 
-                    <div class="mt-3 grid gap-2">
+                    <div class="mt-4 grid gap-3">
                         <button
                             type="button"
                             id="chatAttachPickMedia"
-                            class="group w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] transition-[transform,background-color,border-color] hover:bg-[color:var(--fam-tint)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.35)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
+                            class="group w-full inline-flex items-center gap-4 rounded-2xl border border-[color:var(--fam-border)] bg-gradient-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 p-4 text-left transition-[transform,background] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.35)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
                         >
-                            <span>Photo / Vidéo</span>
-                            <i class="ph ph-image text-[22px] text-slate-500 transition-colors group-active:text-[color:var(--fam-primary)] group-focus-visible:text-[color:var(--fam-primary)]" aria-hidden="true"></i>
+                            <div class="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-sm">
+                                <i class="ph-fill ph-image text-[26px] text-white" aria-hidden="true"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold text-slate-900">Photo ou vidéo</div>
+                                <div class="mt-0.5 text-xs text-slate-600">Depuis votre galerie</div>
+                            </div>
+                            <i class="ph ph-caret-right text-lg text-slate-400 group-hover:text-slate-500" aria-hidden="true"></i>
                         </button>
 
                         <button
                             type="button"
                             id="chatAttachPickVoice"
-                            class="group w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] transition-[transform,background-color,border-color] hover:bg-[color:var(--fam-tint)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.35)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
+                            class="group w-full inline-flex items-center gap-4 rounded-2xl border border-[color:var(--fam-border)] bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 p-4 text-left transition-[transform,background] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.35)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
                         >
-                            <span>Dicter</span>
-                            <i class="ph ph-microphone text-[22px] text-slate-500 transition-colors group-active:text-[color:var(--fam-primary)] group-focus-visible:text-[color:var(--fam-primary)]" aria-hidden="true"></i>
+                            <div class="shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-sm">
+                                <i class="ph-fill ph-microphone text-[26px] text-white" aria-hidden="true"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold text-slate-900">Message vocal</div>
+                                <div class="mt-0.5 text-xs text-slate-600">Enregistrer un audio</div>
+                            </div>
+                            <i class="ph ph-caret-right text-lg text-slate-400 group-hover:text-slate-500" aria-hidden="true"></i>
                         </button>
                     </div>
 
                     <button
                         type="button"
                         id="chatAttachCancel"
-                        class="mt-3 w-full h-11 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-white/60 active:bg-white/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.30)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
+                        class="mt-4 w-full h-11 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-white/60 active:bg-white/75 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(14,165,160,0.30)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--fam-surface-alt)]"
                     >
                         Annuler
                     </button>
