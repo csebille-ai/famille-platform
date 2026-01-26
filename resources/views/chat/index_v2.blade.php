@@ -15,5 +15,7 @@
         @vite(['resources/js/chat-page.js'])
     </div>
     
-    @include('chat.partials.overlays')
+    <x-slot name="afterMain">
+        @include('chat.partials.overlays')
+    </x-slot>
 </x-app-layout>

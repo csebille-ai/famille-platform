@@ -438,6 +438,10 @@
                 {{ $slot }}
             </main>
 
+            @isset($afterMain)
+                {{ $afterMain }}
+            @endisset
+
             @unless($attributes->get('hideNavigation'))
                 @isset($bottomDock)
                     <!-- Mobile: single bottom dock (composer + nav) -->
