@@ -53,7 +53,7 @@
 <x-app-layout hideNavigation="1" pageBgClass="bg-slate-950">
     <div
         id="image-viewer"
-        class="min-h-[100svh] relative overflow-hidden viewer-ui-hidden"
+        class="min-h-[100svh] relative overflow-hidden"
         data-loaded="0"
         data-details="0"
         data-ui-shown="0"
@@ -77,6 +77,10 @@
             #image-viewer [data-viewer-ui] {
                 opacity: 1;
                 pointer-events: auto;
+                /* No transition on initial load to prevent flash */
+            }
+
+            #image-viewer.viewer-ui-ready [data-viewer-ui] {
                 transition: opacity 180ms ease;
             }
 
@@ -296,7 +300,8 @@
                         try { applyFitMode(fitMode); } catch {}
 
                         try { root.dataset.uiShown = '1'; } catch {}
-                        setTimeout(() => setHeaderVisible(true), 180);
+                        // Show UI immediately (no delay) to avoid flash after overlay removal.
+                        setHeaderVisible(true);
                     };
 
                     requestAnimationFrame(revealOnce);
@@ -341,10 +346,18 @@
 
                     root.classList.toggle('viewer-ui-hidden', !show);
                     if (!show) closeDetails();
+                    
+                    // Enable transitions for future UI toggles (after first show).
+                    if (show && !root.classList.contains('viewer-ui-ready')) {
+                        // Small delay to ensure first paint is done before enabling transitions.
+                        requestAnimationFrame(() => {
+                            root.classList.add('viewer-ui-ready');
+                        });
+                    }
                 };
 
-                // On load: keep UI hidden during shared-element OPENING; reveal is gated by markLoaded().
-                setHeaderVisible(forceUiAlways);
+                // UI starts visible (no viewer-ui-hidden class in HTML) so overlay removal doesn't flash.
+                // During tm-animating the overlay covers everything anyway.
 
                 // Keyboard navigation should work even in DIAG C (nozoom).
                 window.addEventListener('keydown', (e) => {
