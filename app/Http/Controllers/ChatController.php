@@ -644,6 +644,13 @@ class ChatController extends Controller
                 'name' => (string) ($withUser->name ?? '—'),
                 'avatar_url' => avatarUrl($withUser),
             ] : null,
+            'chatMode' => 'public',
+            'chatTitle' => 'Famille — Public',
+            'backUrl' => route('conversations.index'),
+            'chatUrl' => route('chat.index'),
+            'pollUrl' => route('chat.poll', $withUserId > 0 ? ['with_user_id' => $withUserId] : []),
+            'storeUrl' => route('chat.store'),
+            'dmBaseUrl' => url('/chat/dm'),
             ...$this->chatViewHelpers(),
         ]);
     }
