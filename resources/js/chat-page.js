@@ -4069,23 +4069,28 @@
                     console.log('Missing elements, aborting');
                     return;
                 }
+                console.log('Opening visibility sheet...');
                 visibilityOpen = true;
                 visibilitySheet.classList.remove('hidden');
                 visibilitySheet.setAttribute('aria-hidden', 'false');
+                console.log('Sheet unhidden, classes:', visibilitySheet.className);
                 
                 // Init state
                 const currentMode = visibilityLabel?.textContent.trim().toLowerCase() === 'privé' ? 'private' : 'public';
                 selectedUserIds = new Set([currentUserId]);
+                console.log('Current mode:', currentMode, 'selectedUserIds:', selectedUserIds);
                 
                 visibilityRadios.forEach(r => {
                     r.checked = r.value === currentMode;
                 });
                 
                 updateVisibilityUI();
+                console.log('UI updated, triggering animation...');
                 
                 requestAnimationFrame(() => {
                     visibilityBackdrop?.classList.remove('opacity-0');
                     visibilityPanel?.classList.remove('opacity-0', 'translate-y-6');
+                    console.log('Animation classes removed, panel should be visible now');
                 });
             }
             
