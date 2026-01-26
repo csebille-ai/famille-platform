@@ -3298,7 +3298,6 @@
                 appendDaySeparator(dk, dl);
 
                 const isMe = currentUserId && uid && Number(uid) === Number(currentUserId);
-                console.log('[appendMessage] currentUserId:', currentUserId, 'uid:', uid, 'isMe:', isMe, 'payload.user:', payload?.user);
                 const colors = paletteFor(uid);
                 const initials = initialsFor(name);
 
@@ -3378,9 +3377,18 @@
                 if (att) {
                     wrapper.className = 'relative p-0 border-0 bg-transparent';
                 } else {
-                    wrapper.className = `relative px-4 py-3 border ${isMe
-                        ? 'bg-[#0EA5A0] text-white border-[color:rgba(14,165,160,0.35)] shadow-[0_8px_18px_rgba(14,165,160,0.22)] rounded-2xl rounded-br-md'
-                        : 'bg-[color:var(--chat-bubble-other-bg)] text-[color:var(--chat-text)] border-[color:var(--chat-bubble-other-border)] shadow-[var(--chat-bubble-shadow)] rounded-2xl rounded-bl-md'}`;
+                    if (isMe) {
+                        wrapper.className = 'relative px-4 py-3 border text-white rounded-2xl rounded-br-md';
+                        wrapper.style.backgroundColor = '#0EA5A0';
+                        wrapper.style.borderColor = 'rgba(14,165,160,0.35)';
+                        wrapper.style.boxShadow = '0 8px 18px rgba(14,165,160,0.22)';
+                    } else {
+                        wrapper.className = 'relative px-4 py-3 border rounded-2xl rounded-bl-md';
+                        wrapper.style.backgroundColor = '#F3F1EA';
+                        wrapper.style.color = '#1B140B';
+                        wrapper.style.borderColor = '#E4DED2';
+                        wrapper.style.boxShadow = '0 1px 0 rgba(0,0,0,.03), 0 6px 18px rgba(0,0,0,.04)';
+                    }
                 }
                 wrapper.dataset.bubble = '1';
 
