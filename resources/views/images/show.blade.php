@@ -57,6 +57,9 @@
         data-loaded="0"
         data-details="0"
         data-ui-shown="0"
+        data-notrans="0"
+        data-uialways="0"
+        data-nozoom="0"
         data-prev-url="{{ $prevUrl }}"
         data-next-url="{{ $nextUrl }}"
         data-back-url="{{ $backUrl }}"
@@ -75,6 +78,14 @@
                 opacity: 1;
                 pointer-events: auto;
                 transition: opacity 180ms ease;
+            }
+
+            /* DIAG A: disable fades/transitions (use ?notrans=1) */
+            #image-viewer[data-notrans="1"] [data-viewer-ui],
+            #image-viewer[data-notrans="1"] #image-details-panel,
+            #image-viewer[data-notrans="1"] #image-viewer-loading,
+            #image-viewer[data-notrans="1"] #image-viewer-img {
+                transition: none !important;
             }
 
             /* Isolate stacking/compositing for the image area. */
@@ -220,6 +231,26 @@
                 const detailsPanel = document.getElementById('image-details-panel');
                 const fitBtn = null;
 
+                // --- DIAG toggles (use query params) ---
+                // A) ?notrans=1  => disable fades/transitions
+                // B) ?uialways=1 => force UI always visible
+                // C) ?nozoom=1   => disable zoom/gestures (no transform/objectFit writes)
+                // Convenience: ?diag=1 enables A+B+C.
+                let diagNoTrans = false;
+                let forceUiAlways = false;
+                let disableZoom = false;
+                try {
+                    const qs = new URLSearchParams(window.location.search || '');
+                    const diag = qs.get('diag') === '1';
+                    diagNoTrans = diag || qs.get('notrans') === '1';
+                    forceUiAlways = diag || qs.get('uialways') === '1';
+                    disableZoom = diag || qs.get('nozoom') === '1';
+
+                    if (diagNoTrans) root.dataset.notrans = '1';
+                    if (forceUiAlways) root.dataset.uialways = '1';
+                    if (disableZoom) root.dataset.nozoom = '1';
+                } catch {}
+
                 if (stage) {
                     try {
                         stage.style.touchAction = 'none';
@@ -243,6 +274,11 @@
                     } catch {}
 
                     try { root.dataset.loaded = '1'; } catch {}
+
+                    if (forceUiAlways) {
+                        setHeaderVisible(true);
+                        return;
+                    }
 
                     // Reveal UI once, after opening animation is done.
                     const revealOnce = () => {
@@ -301,14 +337,26 @@
                 }, { capture: true });
 
                 const setHeaderVisible = (visible) => {
-                    const show = !!visible;
+                    const show = forceUiAlways ? true : !!visible;
 
                     root.classList.toggle('viewer-ui-hidden', !show);
                     if (!show) closeDetails();
                 };
 
                 // On load: keep UI hidden during shared-element OPENING; reveal is gated by markLoaded().
-                setHeaderVisible(false);
+                setHeaderVisible(forceUiAlways);
+
+                // Keyboard navigation should work even in DIAG C (nozoom).
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowLeft' && prevUrl) window.location.href = prevUrl;
+                    if (e.key === 'ArrowRight' && nextUrl) window.location.href = nextUrl;
+                    if (e.key === 'Escape' && backUrl) window.location.href = backUrl;
+                });
+
+                // DIAG C: disable zoom/gestures entirely.
+                if (disableZoom) {
+                    return;
+                }
 
                 // --- True zoom (pinch + pan + double tap) ---
                 let fitMode = 'contain';
@@ -830,12 +878,6 @@
                     stage.addEventListener('pointercancel', onPointerCancel, { passive: true });
                 }
 
-                // Desktop keyboard
-                window.addEventListener('keydown', (e) => {
-                    if (e.key === 'ArrowLeft' && prevUrl) window.location.href = prevUrl;
-                    if (e.key === 'ArrowRight' && nextUrl) window.location.href = nextUrl;
-                    if (e.key === 'Escape' && backUrl) window.location.href = backUrl;
-                });
             })();
         </script>
     </div>
