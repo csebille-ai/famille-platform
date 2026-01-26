@@ -48,8 +48,6 @@
         }
     }
 
-    $thumbW = 480;
-    $thumbUrl = route('images.thumb', $node) . '?' . http_build_query(['w' => $thumbW]);
 @endphp
 
 <x-app-layout hideNavigation="1" pageBgClass="bg-slate-950">
@@ -59,8 +57,6 @@
         data-loaded="0"
         data-details="0"
         data-ui-shown="0"
-        data-no-bg="1"
-        data-bg-loaded="0"
         data-prev-url="{{ $prevUrl }}"
         data-next-url="{{ $nextUrl }}"
         data-back-url="{{ $backUrl }}"
@@ -98,19 +94,6 @@
                 opacity: 1;
                 transform: none;
                 pointer-events: auto;
-            }
-
-            /* Background blur: keep it cheap and avoid large repaints. */
-            #image-viewer-bg {
-                filter: blur(12px);
-                transform: translate3d(0, 0, 0) scale(1.06);
-                will-change: transform, opacity;
-                opacity: 0;
-                transition: opacity 240ms ease;
-            }
-            #image-viewer[data-bg-loaded="1"] #image-viewer-bg { opacity: 0.32; }
-            #image-viewer[data-no-bg="1"] #image-viewer-bg {
-                opacity: 0;
             }
 
             /* Loading: keep it subtle and avoid white flashes. */
@@ -200,18 +183,7 @@
             style="z-index: 0; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0"
         >
             <div class="absolute inset-0">
-                <img
-                    id="image-viewer-bg"
-                    src="{{ $thumbUrl }}"
-                    alt=""
-                    class="absolute inset-0 w-full h-full object-cover"
-                    style="opacity: 0.32;"
-                    aria-hidden="true"
-                    draggable="false"
-                    decoding="async"
-                    fetchpriority="low"
-                />
-                <div class="absolute inset-0" style="background: rgba(2,6,23,0.78);"></div>
+                <div class="absolute inset-0" style="background: #020617;"></div>
             </div>
 
             <div id="image-viewer-loading" class="absolute inset-0 flex items-center justify-center" aria-hidden="true">
@@ -244,30 +216,9 @@
                 const backLink = root.querySelector('a[data-tm-back="1"]');
                 const stage = document.getElementById('image-viewer-stage');
                 const img = document.getElementById('image-viewer-img') || root.querySelector('img[data-shared-id]');
-                const bg = document.getElementById('image-viewer-bg');
                 const detailsBtn = document.getElementById('image-details-btn');
                 const detailsPanel = document.getElementById('image-details-panel');
                 const fitBtn = null;
-
-                // Background image: off by default (prevents fullscreen photo behind).
-                // Enable with ?bg=1. Disable explicitly with ?nobg=1 (or ?noblur=1).
-                try {
-                    const qs = new URLSearchParams(window.location.search || '');
-                    const wantsBg = qs.get('bg') === '1';
-                    const disableBg = (qs.get('nobg') === '1' || qs.get('noblur') === '1');
-                    root.dataset.noBg = (!wantsBg || disableBg) ? '1' : '0';
-                } catch {}
-
-                if (bg) {
-                    try {
-                        bg.addEventListener('load', () => { try { root.dataset.bgLoaded = '1'; } catch {} }, { once: true });
-                        bg.addEventListener('error', () => { try { root.dataset.noBg = '1'; } catch {} }, { once: true });
-                        if (bg.complete) {
-                            // Some browsers won't fire load for cached images.
-                            if ((bg.naturalWidth || 0) > 0) { try { root.dataset.bgLoaded = '1'; } catch {} }
-                        }
-                    } catch {}
-                }
 
                 if (stage) {
                     try {
