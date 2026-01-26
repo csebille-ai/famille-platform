@@ -2100,20 +2100,25 @@
                             const avatarUrl = avatarUrlFor(u);
 
                             const row = document.createElement('div');
-                            row.className = 'flex items-center gap-3';
+                            row.className = 'flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[color:rgba(14,165,160,0.08)] transition-colors';
 
                             if (id != null && currentUserId && Number(id) !== Number(currentUserId)) {
                                 row.className += ' cursor-pointer';
-                                row.title = 'Ouvrir la conversation';
+                                row.title = 'Envoyer un message privé';
                                 row.addEventListener('click', () => {
-                                    navigateToConversation(id);
+                                    if (chatMode === 'legacy') {
+                                        navigateToConversation(id);
+                                    } else {
+                                        // In public/dm mode, navigate to DM page
+                                        window.location.href = `${dmBaseUrl}/${id}`;
+                                    }
                                 });
                             }
 
                             const av = buildAvatarNode({ name, colors, avatarUrl, sizeClass: 'w-9 h-9' });
 
                             const label = document.createElement('div');
-                            label.className = 'text-sm text-gray-900';
+                            label.className = 'text-sm font-medium text-gray-900';
                             label.textContent = name;
 
                             row.appendChild(av);
