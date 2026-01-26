@@ -4259,14 +4259,21 @@
             }
             
             if (visibilityToggleList) {
+                console.log('Toggle list button found, attaching click handler');
                 visibilityToggleList.addEventListener('click', () => {
+                    console.log('Toggle clicked! visibilityMemberList:', visibilityMemberList);
                     const isClosed = visibilityMemberList?.classList.contains('hidden');
+                    console.log('Is closed:', isClosed);
                     if (isClosed) {
+                        console.log('Loading member list...');
                         renderMemberList();
                     }
                     visibilityMemberList?.classList.toggle('hidden');
                     visibilityToggleIcon?.classList.toggle('rotate-180');
+                    console.log('Toggled. New classes:', visibilityMemberList?.className);
                 });
+            } else {
+                console.log('Toggle list button NOT found!');
             }
 
             if (searchBtn && searchBar && searchInput) {
