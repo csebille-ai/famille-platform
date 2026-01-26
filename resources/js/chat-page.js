@@ -23,7 +23,8 @@
                     form: document.getElementById('chatForm'),
                     textarea: document.getElementById('body'),
                     attachBtn: document.getElementById('chatAttachBtn'),
-                    attachInput: document.getElementById('chatAttachInput'),
+                    photoInput: document.getElementById('chatPhotoInput'),
+                    videoInput: document.getElementById('chatVideoInput'),
                     sendBtn: document.getElementById('chatSendBtn'),
                     soloHint: document.getElementById('chatSoloHint'),
                 },
@@ -32,7 +33,8 @@
                     form: document.getElementById('chatFormDesktop'),
                     textarea: document.getElementById('bodyDesktop'),
                     attachBtn: document.getElementById('chatAttachBtnDesktop'),
-                    attachInput: document.getElementById('chatAttachInputDesktop'),
+                    photoInput: document.getElementById('chatPhotoInputDesktop'),
+                    videoInput: document.getElementById('chatVideoInputDesktop'),
                     sendBtn: document.getElementById('chatSendBtnDesktop'),
                     soloHint: document.getElementById('chatSoloHintDesktop'),
                 },
@@ -51,6 +53,275 @@
 
             function getActiveComposer() {
                 return composer[activeComposerKey] || composer.mobile;
+            }
+
+            // --- Focus Dock (3 actions: Photo, Video, Micro) ---
+            const focusDock = {
+                mobile: {
+                    dock: document.getElementById('chatFocusDock'),
+                    backdrop: document.getElementById('chatFocusDockBackdrop'),
+                    panel: document.getElementById('chatFocusDockPanel'),
+                    photo: document.getElementById('chatFocusPhoto'),
+                    video: document.getElementById('chatFocusVideo'),
+                    micro: document.getElementById('chatFocusMicro'),
+                    close: document.getElementById('chatFocusClose'),
+                },
+                desktop: {
+                    dock: document.getElementById('chatFocusDockDesktop'),
+                    panel: document.getElementById('chatFocusDockPanelDesktop'),
+                    photo: document.getElementById('chatFocusPhotoDesktop'),
+                    video: document.getElementById('chatFocusVideoDesktop'),
+                    micro: document.getElementById('chatFocusMicroDesktop'),
+                    close: document.getElementById('chatFocusCloseDesktop'),
+                },
+            };
+
+            let focusDockOpen = false;
+            let dictationRecognition = null;
+            let isDictating = false;
+            let focusDockCloseTimer = null;
+
+            const FOCUS_DOCK_DURATION = 220;
+
+            function isReducedMotion() {
+                try {
+                    return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                } catch {
+                    return false;
+                }
+            }
+
+            function showToast(message) {
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-4 py-2 rounded-xl shadow-2xl text-sm font-medium opacity-0 transition-opacity duration-200';
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                requestAnimationFrame(() => {
+                    toast.style.opacity = '1';
+                });
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 200);
+                }, 2500);
+            }
+
+            function getActiveFocusDock() {
+                return focusDock[activeComposerKey] || focusDock.mobile;
+            }
+
+            function setFocusDockOpen(open) {
+                const els = getActiveFocusDock();
+                if (!els.dock) return;
+
+                if (focusDockCloseTimer) {
+                    clearTimeout(focusDockCloseTimer);
+                    focusDockCloseTimer = null;
+                }
+
+                const c = getActiveComposer();
+                const isMobile = activeComposerKey === 'mobile';
+
+                if (open) {
+                    focusDockOpen = true;
+                    
+                    if (c.attachBtn) {
+                        c.attachBtn.setAttribute('aria-expanded', 'true');
+                    }
+
+                    els.dock.classList.remove('hidden');
+                    els.dock.setAttribute('aria-hidden', 'false');
+
+                    if (isMobile) {
+                        if (els.backdrop) {
+                            els.backdrop.classList.add('opacity-0');
+                            els.backdrop.classList.remove('opacity-100');
+                        }
+                        if (els.panel) {
+                            els.panel.classList.add('opacity-0', 'translate-y-6');
+                            els.panel.classList.remove('opacity-100', 'translate-y-0');
+                        }
+
+                        requestAnimationFrame(() => {
+                            if (els.backdrop) {
+                                els.backdrop.classList.remove('opacity-0');
+                                els.backdrop.classList.add('opacity-100');
+                            }
+                            if (els.panel) {
+                                els.panel.classList.remove('opacity-0', 'translate-y-6');
+                                els.panel.classList.add('opacity-100', 'translate-y-0');
+                            }
+                        });
+                    } else {
+                        if (els.panel) {
+                            els.panel.classList.add('opacity-0', 'scale-95');
+                            els.panel.classList.remove('opacity-100', 'scale-100');
+                        }
+
+                        requestAnimationFrame(() => {
+                            if (els.panel) {
+                                els.panel.classList.remove('opacity-0', 'scale-95');
+                                els.panel.classList.add('opacity-100', 'scale-100');
+                            }
+                        });
+                    }
+
+                    setTimeout(() => {
+                        els.photo?.focus();
+                    }, FOCUS_DOCK_DURATION);
+
+                    return;
+                }
+
+                focusDockOpen = false;
+
+                if (c.attachBtn) {
+                    c.attachBtn.setAttribute('aria-expanded', 'false');
+                }
+
+                els.dock.setAttribute('aria-hidden', 'true');
+
+                if (isMobile) {
+                    if (els.backdrop) {
+                        els.backdrop.classList.add('opacity-0');
+                        els.backdrop.classList.remove('opacity-100');
+                    }
+                    if (els.panel) {
+                        els.panel.classList.add('opacity-0', 'translate-y-6');
+                        els.panel.classList.remove('opacity-100', 'translate-y-0');
+                    }
+                } else {
+                    if (els.panel) {
+                        els.panel.classList.add('opacity-0', 'scale-95');
+                        els.panel.classList.remove('opacity-100', 'scale-100');
+                    }
+                }
+
+                if (!isReducedMotion()) {
+                    focusDockCloseTimer = setTimeout(() => {
+                        els.dock.classList.add('hidden');
+                        focusDockCloseTimer = null;
+                    }, FOCUS_DOCK_DURATION);
+                } else {
+                    els.dock.classList.add('hidden');
+                }
+
+                stopDictation();
+            }
+
+            function startDictation() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    showToast('Dictée non supportée sur cet appareil');
+                    return;
+                }
+
+                if (isDictating) {
+                    stopDictation();
+                    return;
+                }
+
+                const c = getActiveComposer();
+                const els = getActiveFocusDock();
+                if (!c.textarea) return;
+
+                try {
+                    dictationRecognition = new SpeechRecognition();
+                    dictationRecognition.lang = 'fr-FR';
+                    dictationRecognition.continuous = false;
+                    dictationRecognition.interimResults = true;
+                    dictationRecognition.maxAlternatives = 1;
+
+                    let finalTranscript = '';
+                    const initialText = c.textarea.value.trim();
+
+                    dictationRecognition.onstart = () => {
+                        isDictating = true;
+                        if (els.micro) {
+                            els.micro.setAttribute('data-dictating', 'true');
+                            const span = els.micro.querySelector('span');
+                            if (span) span.textContent = 'Stop';
+                            
+                            const iconDiv = els.micro.querySelector('div');
+                            if (iconDiv) {
+                                iconDiv.style.animation = 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+                            }
+                        }
+                    };
+
+                    dictationRecognition.onresult = (event) => {
+                        let interimTranscript = '';
+
+                        for (let i = event.resultIndex; i < event.results.length; i++) {
+                            const transcript = event.results[i][0].transcript;
+                            if (event.results[i].isFinal) {
+                                finalTranscript += transcript + ' ';
+                            } else {
+                                interimTranscript += transcript;
+                            }
+                        }
+
+                        const preview = (initialText ? initialText + ' ' : '') + (finalTranscript + interimTranscript).trim();
+                        c.textarea.value = preview;
+                        
+                        c.textarea.style.height = 'auto';
+                        c.textarea.style.height = c.textarea.scrollHeight + 'px';
+                        
+                        c.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    };
+
+                    dictationRecognition.onend = () => {
+                        if (isDictating) {
+                            const final = (initialText ? initialText + ' ' : '') + finalTranscript.trim();
+                            c.textarea.value = final;
+                            c.textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                        stopDictation();
+                    };
+
+                    dictationRecognition.onerror = (event) => {
+                        console.error('[Dictation] Error:', event.error);
+                        if (event.error === 'no-speech') {
+                            showToast('Aucune parole détectée');
+                        } else if (event.error === 'not-allowed') {
+                            showToast('Autorisation microphone refusée');
+                        } else {
+                            showToast('Erreur de dictée');
+                        }
+                        stopDictation();
+                    };
+
+                    dictationRecognition.start();
+                } catch (e) {
+                    console.error('[Dictation] Failed to start:', e);
+                    showToast('Impossible de démarrer la dictée');
+                    stopDictation();
+                }
+            }
+
+            function stopDictation() {
+                if (dictationRecognition) {
+                    try {
+                        dictationRecognition.stop();
+                    } catch {}
+                    dictationRecognition = null;
+                }
+
+                isDictating = false;
+
+                Object.values(focusDock).forEach(els => {
+                    if (els.micro) {
+                        els.micro.setAttribute('data-dictating', 'false');
+                        const span = els.micro.querySelector('span');
+                        if (span) span.textContent = 'Micro';
+                        
+                        const iconDiv = els.micro.querySelector('div');
+                        if (iconDiv) {
+                            iconDiv.style.animation = '';
+                        }
+                    }
+                });
             }
 
             // --- Audience (targeted messages) ---
@@ -4123,35 +4394,89 @@
 
             function bindAttachFor(key) {
                 const c = composer[key];
+                const fd = focusDock[key];
                 if (!c) return;
 
+                // Focus Dock toggle
                 if (c.attachBtn) {
                     c.attachBtn.addEventListener('click', () => {
                         setActiveComposerKey(key);
-                        setAttachSheetOpen(true);
+                        setFocusDockOpen(!focusDockOpen);
                     });
                 }
 
+                // Textarea focus
                 if (c.textarea) {
                     c.textarea.addEventListener('focus', () => setActiveComposerKey(key));
                 }
 
-                if (c.attachInput) {
-                    c.attachInput.addEventListener('change', () => {
-                        const f = c.attachInput.files && c.attachInput.files[0];
-                        c.attachInput.value = '';
+                // Photo input
+                if (c.photoInput) {
+                    c.photoInput.addEventListener('change', () => {
+                        const f = c.photoInput.files && c.photoInput.files[0];
+                        c.photoInput.value = '';
                         if (f) uploadAttachment(f);
                     });
+                }
+
+                // Video input
+                if (c.videoInput) {
+                    c.videoInput.addEventListener('change', () => {
+                        const f = c.videoInput.files && c.videoInput.files[0];
+                        c.videoInput.value = '';
+                        if (f) uploadAttachment(f);
+                    });
+                }
+
+                // Focus Dock actions
+                if (fd) {
+                    if (fd.photo) {
+                        fd.photo.addEventListener('click', () => {
+                            c.photoInput?.click();
+                            setFocusDockOpen(false);
+                        });
+                    }
+
+                    if (fd.video) {
+                        fd.video.addEventListener('click', () => {
+                            c.videoInput?.click();
+                            setFocusDockOpen(false);
+                        });
+                    }
+
+                    if (fd.micro) {
+                        fd.micro.addEventListener('click', () => {
+                            setActiveComposerKey(key);
+                            startDictation();
+                        });
+                    }
+
+                    if (fd.close) {
+                        fd.close.addEventListener('click', () => setFocusDockOpen(false));
+                    }
+
+                    if (fd.backdrop) {
+                        fd.backdrop.addEventListener('click', () => setFocusDockOpen(false));
+                    }
                 }
             }
 
             bindAttachFor('mobile');
             bindAttachFor('desktop');
 
+            // Global ESC key to close Focus Dock
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && focusDockOpen) {
+                    setFocusDockOpen(false);
+                    e.preventDefault();
+                }
+            });
+
+            // DEPRECATED: Old attach sheet (remove if no longer needed)
             if (attachPickMedia) {
                 attachPickMedia.addEventListener('click', () => {
                     const c = getActiveComposer();
-                    c?.attachInput?.click();
+                    c?.photoInput?.click();
                 });
             }
 
