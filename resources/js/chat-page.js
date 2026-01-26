@@ -4260,12 +4260,12 @@
             
             if (visibilityToggleList) {
                 visibilityToggleList.addEventListener('click', () => {
-                    const isOpen = !visibilityMemberList?.classList.contains('hidden');
-                    if (!isOpen) {
+                    const isClosed = visibilityMemberList?.classList.contains('hidden');
+                    if (isClosed) {
                         renderMemberList();
                     }
-                    visibilityMemberList?.classList.toggle('hidden', isOpen);
-                    visibilityToggleIcon?.classList.toggle('rotate-180', !isOpen);
+                    visibilityMemberList?.classList.toggle('hidden');
+                    visibilityToggleIcon?.classList.toggle('rotate-180');
                 });
             }
 
