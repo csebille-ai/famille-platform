@@ -4207,14 +4207,8 @@
                 }
             }
             
-            if (visibilityChip && isAdmin) {
+            if (visibilityChip) {
                 visibilityChip.addEventListener('click', openVisibilitySheet);
-            } else if (visibilityChip) {
-                // Non-admin: just a badge, remove chevron
-                visibilityChip.classList.remove('hover:bg-teal-600/15');
-                visibilityChip.classList.add('cursor-default');
-                const chevron = visibilityChip.querySelector('svg');
-                if (chevron) chevron.remove();
             }
             
             if (visibilityBackdrop) {
