@@ -10,9 +10,10 @@
         @include('chat.partials.index-messages')
 
         @include('chat.partials.index-composer-desktop')
-        @include('chat.partials.overlays')
         @include('chat.partials.bootstrap')
 
         @vite(['resources/js/chat-page.js'])
     </div>
+    
+    @include('chat.partials.overlays')
 </x-app-layout>
