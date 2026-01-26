@@ -5,7 +5,7 @@
         </div>
     </x-slot>
 
-    <div class="chat-theme flex flex-col h-[calc(100%-var(--mobile-bottom-dock-h,0px))] min-h-0 sm:h-auto" data-chat-view="1">
+    <div class="chat-theme flex flex-col h-full min-h-0 sm:h-auto" data-chat-view="1">
         @include('chat.partials.index-header')
         @include('chat.partials.index-messages')
 
