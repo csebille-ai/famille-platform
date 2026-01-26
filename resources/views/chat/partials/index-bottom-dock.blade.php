@@ -56,35 +56,35 @@
                         <button
                             type="button"
                             id="chatFocusPhoto"
-                            class="group w-full rounded-2xl bg-[color:var(--fam-surface)] border border-[color:var(--fam-border)] px-3 py-3 text-center active:scale-[0.99] transition hover:shadow-[0_10px_25px_rgba(33,24,16,0.10)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/30"
+                            class="group w-full rounded-2xl bg-white border border-slate-200/60 px-3 py-3.5 text-center active:scale-[0.99] transition hover:shadow-md hover:border-teal-600/20 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
                         >
-                            <div class="mb-2 mx-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--fam-primary)]/10 text-[color:var(--fam-primary)] group-hover:bg-[color:var(--fam-primary)]/14">
-                                <i class="ph-fill ph-image text-[22px]" aria-hidden="true"></i>
+                            <div class="mb-1.5 mx-auto inline-flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600/10 text-teal-600 group-hover:bg-teal-600/15">
+                                <i class="ph-fill ph-image text-[20px]" aria-hidden="true"></i>
                             </div>
-                            <div class="text-sm font-medium text-[color:var(--fam-text)]">Photo</div>
+                            <div class="text-[13px] font-medium text-slate-900">Photo</div>
                         </button>
 
                         <button
                             type="button"
                             id="chatFocusVideo"
-                            class="group w-full rounded-2xl bg-[color:var(--fam-surface)] border border-[color:var(--fam-border)] px-3 py-3 text-center active:scale-[0.99] transition hover:shadow-[0_10px_25px_rgba(33,24,16,0.10)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/30"
+                            class="group w-full rounded-2xl bg-white border border-slate-200/60 px-3 py-3.5 text-center active:scale-[0.99] transition hover:shadow-md hover:border-teal-600/20 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
                         >
-                            <div class="mb-2 mx-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--fam-primary)]/10 text-[color:var(--fam-primary)] group-hover:bg-[color:var(--fam-primary)]/14">
-                                <i class="ph-fill ph-video-camera text-[22px]" aria-hidden="true"></i>
+                            <div class="mb-1.5 mx-auto inline-flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600/10 text-teal-600 group-hover:bg-teal-600/15">
+                                <i class="ph-fill ph-video-camera text-[20px]" aria-hidden="true"></i>
                             </div>
-                            <div class="text-sm font-medium text-[color:var(--fam-text)]">Vidéo</div>
+                            <div class="text-[13px] font-medium text-slate-900">Vidéo</div>
                         </button>
 
                         <button
                             type="button"
                             id="chatFocusMicro"
-                            class="group w-full rounded-2xl bg-[color:var(--fam-surface)] border border-[color:var(--fam-border)] px-3 py-3 text-center active:scale-[0.99] transition hover:shadow-[0_10px_25px_rgba(33,24,16,0.10)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/30"
+                            class="group w-full rounded-2xl bg-white border border-slate-200/60 px-3 py-3.5 text-center active:scale-[0.99] transition hover:shadow-md hover:border-teal-600/20 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
                             data-dictating="false"
                         >
-                            <div class="mb-2 mx-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--fam-primary)]/10 text-[color:var(--fam-primary)] group-hover:bg-[color:var(--fam-primary)]/14">
-                                <i class="ph-fill ph-microphone text-[22px]" aria-hidden="true"></i>
+                            <div class="mb-1.5 mx-auto inline-flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600/10 text-teal-600 group-hover:bg-teal-600/15">
+                                <i class="ph-fill ph-microphone text-[20px]" aria-hidden="true"></i>
                             </div>
-                            <div class="text-sm font-medium text-[color:var(--fam-text)]">Micro</div>
+                            <div class="text-[13px] font-medium text-slate-900">Micro</div>
                         </button>
                     </div>
 
