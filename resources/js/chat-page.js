@@ -4564,6 +4564,80 @@
                 });
             }
 
+            // Header overflow menu
+            const menuBtn = document.getElementById('chatMenuBtn');
+            const headerMenu = document.getElementById('chatHeaderMenu');
+            const headerMenuBackdrop = document.getElementById('chatHeaderMenuBackdrop');
+            const headerMenuPanel = document.getElementById('chatHeaderMenuPanel');
+            const headerMenuSearch = document.getElementById('chatHeaderMenuSearch');
+            const headerMenuInfo = document.getElementById('chatHeaderMenuInfo');
+
+            function openHeaderMenu() {
+                if (!headerMenu || !headerMenuPanel || !menuBtn) return;
+                headerMenu.classList.remove('hidden');
+                headerMenu.setAttribute('aria-hidden', 'false');
+                
+                const btn = menuBtn.getBoundingClientRect();
+                const panel = headerMenuPanel;
+                const vw = window.innerWidth || document.documentElement.clientWidth;
+                const vh = window.innerHeight || document.documentElement.clientHeight;
+                const pad = 8;
+                
+                requestAnimationFrame(() => {
+                    const rect = panel.getBoundingClientRect();
+                    const w = rect.width || 220;
+                    const h = rect.height || 120;
+                    
+                    const right = Math.max(pad, vw - btn.right);
+                    const top = Math.max(pad, Math.min(vh - h - pad, btn.bottom + 4));
+                    
+                    panel.style.right = `${right}px`;
+                    panel.style.top = `${top}px`;
+                });
+            }
+
+            function closeHeaderMenu() {
+                if (!headerMenu) return;
+                headerMenu.classList.add('hidden');
+                headerMenu.setAttribute('aria-hidden', 'true');
+            }
+
+            if (menuBtn) {
+                menuBtn.addEventListener('click', () => {
+                    const isOpen = !headerMenu.classList.contains('hidden');
+                    if (isOpen) {
+                        closeHeaderMenu();
+                    } else {
+                        openHeaderMenu();
+                    }
+                });
+            }
+
+            if (headerMenuBackdrop) {
+                headerMenuBackdrop.addEventListener('click', closeHeaderMenu);
+            }
+
+            if (headerMenuSearch && searchBar && searchInput) {
+                headerMenuSearch.addEventListener('click', () => {
+                    closeHeaderMenu();
+                    const open = searchBar.classList.contains('hidden');
+                    searchBar.classList.toggle('hidden', !open);
+                    if (open) {
+                        searchInput.focus();
+                    } else {
+                        searchInput.value = '';
+                        messagesEl?.querySelectorAll('[data-message-row]').forEach(el => el.classList.remove('hidden'));
+                    }
+                });
+            }
+
+            if (headerMenuInfo && infoModal) {
+                headerMenuInfo.addEventListener('click', () => {
+                    closeHeaderMenu();
+                    setInfoModalOpen(true);
+                });
+            }
+
             if (searchBtn && searchBar && searchInput) {
                 searchBtn.addEventListener('click', () => {
                     const open = searchBar.classList.contains('hidden');

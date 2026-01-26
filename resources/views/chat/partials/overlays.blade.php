@@ -57,6 +57,20 @@
             </div>
         </div>
 
+        <div id="chatHeaderMenu" class="fixed inset-0 z-[60] hidden pointer-events-none" aria-hidden="true">
+            <div id="chatHeaderMenuBackdrop" class="absolute inset-0"></div>
+            <div id="chatHeaderMenuPanel" class="absolute pointer-events-auto min-w-[14rem] rounded-2xl border border-slate-200 bg-white shadow-2xl p-1">
+                <button type="button" id="chatHeaderMenuSearch" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)] flex items-center gap-2">
+                    <i class="ph ph-magnifying-glass text-base" aria-hidden="true"></i>
+                    <span>Rechercher</span>
+                </button>
+                <button type="button" id="chatHeaderMenuInfo" class="w-full text-left rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)] flex items-center gap-2">
+                    <i class="ph ph-info text-base" aria-hidden="true"></i>
+                    <span>Infos & participants</span>
+                </button>
+            </div>
+        </div>
+
         <div id="chatMediaModal" class="fixed inset-0 z-[60] hidden">
             <div id="chatMediaBackdrop" class="absolute inset-0 bg-black/80"></div>
             <div class="absolute inset-0 flex flex-col">

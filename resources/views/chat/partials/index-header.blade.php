@@ -21,27 +21,15 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2">
-                        <button
-                            type="button"
-                            id="chatSearchBtn"
-                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]"
-                            aria-label="Rechercher"
-                            title="Rechercher"
-                        >
-                            <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
-                        </button>
-
-                        <button
-                            type="button"
-                            id="chatInfoBtn"
-                            class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]"
-                            aria-label="Infos"
-                            title="Infos"
-                        >
-                            <i class="ph ph-info" aria-hidden="true"></i>
-                        </button>
-                    </div>
+                    <button
+                        type="button"
+                        id="chatMenuBtn"
+                        class="w-10 h-10 rounded-full inline-flex items-center justify-center border border-black/10 bg-white text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)] transition-colors"
+                        aria-label="Menu"
+                        title="Menu"
+                    >
+                        <i class="ph ph-dots-three" aria-hidden="true"></i>
+                    </button>
                     </div>
                 </div>
 
