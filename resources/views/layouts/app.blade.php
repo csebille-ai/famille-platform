@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 @php
     $isProfileRoute = request()->routeIs('profile.*');
+    $internalScroll = (bool) ($attributes->get('internalScroll') ?? false);
 @endphp
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" style="background: {{ $isProfileRoute ? '#FAF7F2' : '#F6F2EC' }};">
     <head>
@@ -422,7 +423,7 @@
 
             <!-- Page Content -->
             <main
-                class="{{ $isProfileRoute ? 'bg-[color:var(--fam-surface-alt)]' : '' }} @unless($attributes->get('hideNavigation')) pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8 @endunless"
+                class="{{ $isProfileRoute ? 'bg-[color:var(--fam-surface-alt)]' : '' }} @unless($attributes->get('hideNavigation')) {{ $internalScroll ? 'overflow-hidden pb-0 sm:pb-0' : 'pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8' }} @endunless"
                 style="@unless($attributes->get('hideNavigation')) padding-top: var(--app-nav-h, 0px) @endunless"
             >
                 <!-- Page Heading (must be below fixed top nav) -->
@@ -446,6 +447,37 @@
                         </div>
                         <x-mobile-primary-nav :fixed="false" />
                     </div>
+
+                    <script>
+                        (() => {
+                            const apply = () => {
+                                const dock = document.getElementById('mobileBottomDock');
+                                const h = dock ? Math.ceil(dock.offsetHeight || dock.getBoundingClientRect().height || 0) : 0;
+                                document.documentElement.style.setProperty('--mobile-bottom-dock-h', `${h}px`);
+                            };
+
+                            const schedule = () => {
+                                requestAnimationFrame(() => requestAnimationFrame(apply));
+                            };
+
+                            schedule();
+                            window.addEventListener('load', schedule, { passive: true });
+                            window.addEventListener('resize', schedule, { passive: true });
+
+                            if (window.visualViewport) {
+                                window.visualViewport.addEventListener('resize', schedule, { passive: true });
+                                window.visualViewport.addEventListener('scroll', schedule, { passive: true });
+                            }
+
+                            if (window.ResizeObserver) {
+                                const dock = document.getElementById('mobileBottomDock');
+                                if (dock) {
+                                    const ro = new ResizeObserver(schedule);
+                                    ro.observe(dock);
+                                }
+                            }
+                        })();
+                    </script>
                 @else
                     <!-- Mobile: single primary navigation (bottom) -->
                     <x-mobile-primary-nav />

@@ -1,4 +1,4 @@
-<div id="chatScroll" class="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-[calc(6rem+var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))] sm:pb-0">
+<div id="chatScroll" class="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-[calc(1rem+env(safe-area-inset-bottom)+var(--mobile-bottom-dock-h,calc(6rem+var(--mobile-bottom-nav-h,4rem))))] sm:pb-0" style="-webkit-overflow-scrolling: touch;">
                 <div class="relative">
                     <button
                         type="button"
