@@ -3,7 +3,7 @@
         @include('chat.partials.index-header')
         @include('chat.partials.index-messages')
 
-        <div class="sm:hidden border-t border-slate-100 bg-white sticky bottom-0 z-40">
+        <div class="sm:hidden border-t border-slate-100 bg-white sticky bottom-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom))] z-40">
             @include('chat.partials.index-bottom-dock')
         </div>
 
