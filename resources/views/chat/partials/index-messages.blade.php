@@ -1,4 +1,4 @@
-<div id="chatScroll" class="flex-1 min-h-0 overflow-y-auto overscroll-contain pb-4 sm:pb-0" style="-webkit-overflow-scrolling: touch;">
+<div id="chatScroll" class="flex-1 min-h-0 overflow-y-auto overscroll-contain" style="-webkit-overflow-scrolling: touch;">
                 <div class="relative">
                     <button
                         type="button"
