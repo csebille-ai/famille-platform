@@ -4064,7 +4064,11 @@
             let allMembers = [];
             
             function openVisibilitySheet() {
-                if (!visibilitySheet || !visibilityPanel || !isAdmin) return;
+                console.log('openVisibilitySheet called', { visibilitySheet, visibilityPanel, isAdmin });
+                if (!visibilitySheet || !visibilityPanel) {
+                    console.log('Missing elements, aborting');
+                    return;
+                }
                 visibilityOpen = true;
                 visibilitySheet.classList.remove('hidden');
                 visibilitySheet.setAttribute('aria-hidden', 'false');
@@ -4208,7 +4212,13 @@
             }
             
             if (visibilityChip) {
-                visibilityChip.addEventListener('click', openVisibilitySheet);
+                console.log('Visibility chip found, attaching click handler');
+                visibilityChip.addEventListener('click', () => {
+                    console.log('Visibility chip clicked!');
+                    openVisibilitySheet();
+                });
+            } else {
+                console.log('Visibility chip NOT found!');
             }
             
             if (visibilityBackdrop) {
