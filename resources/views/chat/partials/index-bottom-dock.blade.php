@@ -49,49 +49,49 @@
             <!-- Focus Dock (3 actions) -->
             <div id="chatFocusDock" class="hidden fixed inset-x-0 bottom-0 z-[45]" role="dialog" aria-label="Actions">
                 <div id="chatFocusDockBackdrop" class="absolute inset-0 bg-black/20 backdrop-blur-sm opacity-0 transition-opacity duration-200"></div>
-                <div id="chatFocusDockPanel" class="relative bg-gradient-to-br from-white to-slate-50/80 rounded-t-3xl border-t border-slate-200/60 shadow-[0_-8px_32px_rgba(15,23,42,0.12)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] opacity-0 translate-y-6 transition-[opacity,transform] duration-220 ease-out">
-                    <div class="mx-auto h-1 w-9 rounded-full bg-slate-300/60 mb-4"></div>
+                <div id="chatFocusDockPanel" class="relative bg-[color:var(--fam-surface-alt)]/95 backdrop-blur-md rounded-t-3xl border-t border-[color:var(--fam-border)] shadow-[0_-20px_50px_rgba(33,24,16,0.12)] px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] opacity-0 translate-y-6 transition-[opacity,transform] duration-200 ease-out">
+                    <div class="mx-auto h-1 w-10 rounded-full bg-[color:var(--fam-border-soft)] mb-3"></div>
                     
-                    <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="grid grid-cols-3 gap-3 mb-3">
                         <button
                             type="button"
                             id="chatFocusPhoto"
-                            class="flex flex-col items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 active:scale-[0.97] border border-blue-200/40 p-4 min-h-[72px] transition-[transform,background] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/50 focus-visible:ring-offset-2"
+                            class="group w-full rounded-2xl bg-[color:var(--fam-surface)] border border-[color:var(--fam-border)] px-3 py-3 text-center active:scale-[0.99] transition hover:shadow-[0_10px_25px_rgba(33,24,16,0.10)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/30"
                         >
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-sm">
-                                <i class="ph-fill ph-image text-[22px] text-white" aria-hidden="true"></i>
+                            <div class="mb-2 mx-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--fam-primary)]/10 text-[color:var(--fam-primary)] group-hover:bg-[color:var(--fam-primary)]/14">
+                                <i class="ph-fill ph-image text-[22px]" aria-hidden="true"></i>
                             </div>
-                            <span class="text-sm font-semibold text-slate-900">Photo</span>
+                            <div class="text-sm font-medium text-[color:var(--fam-text)]">Photo</div>
                         </button>
 
                         <button
                             type="button"
                             id="chatFocusVideo"
-                            class="flex flex-col items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 active:scale-[0.97] border border-purple-200/40 p-4 min-h-[72px] transition-[transform,background] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/50 focus-visible:ring-offset-2"
+                            class="group w-full rounded-2xl bg-[color:var(--fam-surface)] border border-[color:var(--fam-border)] px-3 py-3 text-center active:scale-[0.99] transition hover:shadow-[0_10px_25px_rgba(33,24,16,0.10)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/30"
                         >
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-sm">
-                                <i class="ph-fill ph-video-camera text-[22px] text-white" aria-hidden="true"></i>
+                            <div class="mb-2 mx-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--fam-primary)]/10 text-[color:var(--fam-primary)] group-hover:bg-[color:var(--fam-primary)]/14">
+                                <i class="ph-fill ph-video-camera text-[22px]" aria-hidden="true"></i>
                             </div>
-                            <span class="text-sm font-semibold text-slate-900">Vidéo</span>
+                            <div class="text-sm font-medium text-[color:var(--fam-text)]">Vidéo</div>
                         </button>
 
                         <button
                             type="button"
                             id="chatFocusMicro"
-                            class="flex flex-col items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 hover:from-teal-100 hover:to-emerald-100 active:scale-[0.97] border border-teal-200/40 p-4 min-h-[72px] transition-[transform,background] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50 focus-visible:ring-offset-2"
+                            class="group w-full rounded-2xl bg-[color:var(--fam-surface)] border border-[color:var(--fam-border)] px-3 py-3 text-center active:scale-[0.99] transition hover:shadow-[0_10px_25px_rgba(33,24,16,0.10)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/30"
                             data-dictating="false"
                         >
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-sm">
-                                <i class="ph-fill ph-microphone text-[22px] text-white" aria-hidden="true"></i>
+                            <div class="mb-2 mx-auto inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-[color:var(--fam-primary)]/10 text-[color:var(--fam-primary)] group-hover:bg-[color:var(--fam-primary)]/14">
+                                <i class="ph-fill ph-microphone text-[22px]" aria-hidden="true"></i>
                             </div>
-                            <span class="text-sm font-semibold text-slate-900">Micro</span>
+                            <div class="text-sm font-medium text-[color:var(--fam-text)]">Micro</div>
                         </button>
                     </div>
 
                     <button
                         type="button"
                         id="chatFocusClose"
-                        class="w-full h-11 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-white/60 active:bg-white/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/30 focus-visible:ring-offset-2"
+                        class="mx-3 mb-3 mt-1 w-[calc(100%-1.5rem)] rounded-2xl border border-[color:var(--fam-border)] bg-transparent py-2 text-sm font-medium text-[color:var(--fam-muted)] hover:bg-[color:var(--fam-primary)]/6 transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/30"
                     >
                         Fermer
                     </button>
