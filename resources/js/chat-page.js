@@ -2055,8 +2055,9 @@
                     presenceLabelEl.textContent = c <= 1 ? 'en ligne' : 'en ligne';
                 }
 
-                const hint = c <= 1 ? 'Personne en ligne — votre message sera notifié.' : '';
-                const show = c <= 1;
+                // In public/dm mode, we don't show the "Personne en ligne" hint (not relevant)
+                const hint = (chatMode === 'legacy' && c <= 1) ? 'Personne en ligne — votre message sera notifié.' : '';
+                const show = hint !== '';
                 [composer.mobile.soloHint, composer.desktop.soloHint].forEach((el) => {
                     if (!el) return;
                     el.textContent = hint;
