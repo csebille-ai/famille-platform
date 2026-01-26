@@ -325,6 +325,13 @@ class ImageController extends Controller
         if ($width <= 0) $width = 480;
         $width = max(64, min(960, $width));
 
+        $allowFallback = false;
+        try {
+            $allowFallback = (string) $request->query('fallback', '0') === '1';
+        } catch (\Throwable $e) {
+            $allowFallback = false;
+        }
+
         $thumbs = app(ImageThumbs::class);
 
         $abs = $thumbs->cachedAbsolutePathIfExists($node, $width);
@@ -337,7 +344,10 @@ class ImageController extends Controller
 
         $jpg = $thumbs->getOrCreateJpeg($node, $width);
         if (!is_string($jpg) || $jpg === '') {
-            return redirect()->route('images.view', $node);
+            if ($allowFallback) {
+                return redirect()->route('images.view', $node);
+            }
+            abort(404);
         }
 
         return response($jpg, 200, [

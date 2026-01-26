@@ -59,6 +59,8 @@
         data-loaded="0"
         data-details="0"
         data-ui-shown="0"
+        data-no-bg="1"
+        data-bg-loaded="0"
         data-prev-url="{{ $prevUrl }}"
         data-next-url="{{ $nextUrl }}"
         data-back-url="{{ $backUrl }}"
@@ -103,13 +105,10 @@
                 filter: blur(12px);
                 transform: translate3d(0, 0, 0) scale(1.06);
                 will-change: transform, opacity;
+                opacity: 0;
+                transition: opacity 240ms ease;
             }
-            @media (max-width: 640px) {
-                #image-viewer-bg {
-                    filter: blur(0px);
-                    opacity: 0.18;
-                }
-            }
+            #image-viewer[data-bg-loaded="1"] #image-viewer-bg { opacity: 0.32; }
             #image-viewer[data-no-bg="1"] #image-viewer-bg {
                 opacity: 0;
             }
@@ -250,13 +249,25 @@
                 const detailsPanel = document.getElementById('image-details-panel');
                 const fitBtn = null;
 
-                // Debug/verification: disable background blur with ?nobg=1 (or ?noblur=1)
+                // Background image: off by default (prevents fullscreen photo behind).
+                // Enable with ?bg=1. Disable explicitly with ?nobg=1 (or ?noblur=1).
                 try {
                     const qs = new URLSearchParams(window.location.search || '');
-                    if (qs.get('nobg') === '1' || qs.get('noblur') === '1') {
-                        root.dataset.noBg = '1';
-                    }
+                    const wantsBg = qs.get('bg') === '1';
+                    const disableBg = (qs.get('nobg') === '1' || qs.get('noblur') === '1');
+                    root.dataset.noBg = (!wantsBg || disableBg) ? '1' : '0';
                 } catch {}
+
+                if (bg) {
+                    try {
+                        bg.addEventListener('load', () => { try { root.dataset.bgLoaded = '1'; } catch {} }, { once: true });
+                        bg.addEventListener('error', () => { try { root.dataset.noBg = '1'; } catch {} }, { once: true });
+                        if (bg.complete) {
+                            // Some browsers won't fire load for cached images.
+                            if ((bg.naturalWidth || 0) > 0) { try { root.dataset.bgLoaded = '1'; } catch {} }
+                        }
+                    } catch {}
+                }
 
                 if (stage) {
                     try {

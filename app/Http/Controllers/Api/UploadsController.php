@@ -677,7 +677,7 @@ class UploadsController extends Controller
 
             $mediaId = (int) $node->id;
             $openUrl = route('media.photos.show', $node);
-                $thumbUrl = route('images.thumb', $node) . '?w=480';
+                $thumbUrl = route('images.thumb', $node) . '?w=480&fallback=1';
                 $mediaUrl = route('images.view', $node);
 
                 try {
