@@ -25,6 +25,5 @@
         maxUploadBytes: @json((int) config('uploads.max_upload_bytes')),
         multipartThresholdBytes: @json((int) config('uploads.multipart_threshold_bytes')),
         dashboardUrl: @json(route('dashboard')),
-        quickTypeNameCandidates: @json(($onlineList ?? collect())->pluck('name')->values()),
     };
 </script>

@@ -101,37 +101,6 @@
             </div>
         </div>
 
-        <div id="chatQuickTypeMenu" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
-            <div id="chatQuickTypeMenuBackdrop" class="absolute inset-0"></div>
-            <div id="chatQuickTypeMenuPanel" role="menu" aria-label="Actions suggestion" class="absolute min-w-[14rem] rounded-2xl border border-slate-200 bg-white shadow-xl p-1">
-                <div id="chatQuickTypeMenuMain">
-                    <button type="button" data-qt-action="insert" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Insérer</button>
-                    <button type="button" data-qt-action="copy" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Copier</button>
-                    <button type="button" data-qt-action="pin" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Épingler</button>
-                    <button type="button" data-qt-action="unpin" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Désépingler</button>
-                    <div class="h-px bg-slate-100 my-1"></div>
-                    <button type="button" data-qt-action="remove_recent" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Retirer des récents</button>
-                    <button type="button" data-qt-action="hide" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">Masquer</button>
-                    <div class="h-px bg-slate-100 my-1"></div>
-                    <button type="button" data-qt-action="manage_hidden" role="menuitem" class="w-full text-left rounded-xl px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-[color:rgba(14,165,160,0.10)]">Gérer les masqués…</button>
-                </div>
-
-                <div id="chatQuickTypeMenuHidden" class="hidden">
-                    <div class="flex items-center justify-between gap-2 px-2 py-2">
-                        <button type="button" data-qt-action="hidden_back" class="rounded-xl px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-[color:rgba(14,165,160,0.10)]">← Retour</button>
-                        <div class="text-sm font-semibold text-slate-900">Masqués</div>
-                        <button type="button" data-qt-action="hidden_clear" class="rounded-xl px-2 py-1 text-sm font-semibold text-red-600 hover:bg-red-50">Tout rétablir</button>
-                    </div>
-                    <div class="h-px bg-slate-100 my-1"></div>
-                    <div id="chatQuickTypeHiddenList" class="max-h-64 overflow-auto"></div>
-                </div>
-            </div>
-        </div>
-
-        <div id="chatQuickTypeToast" class="fixed inset-x-0 bottom-[calc(var(--mobile-bottom-nav-h,4rem)+env(safe-area-inset-bottom)+0.75rem)] sm:bottom-6 z-[70] pointer-events-none hidden">
-            <div class="mx-auto w-fit rounded-full bg-slate-900 text-white px-3 py-1.5 text-xs font-semibold shadow-lg">Copié</div>
-        </div>
-
         <div id="chatReactionBar" class="fixed inset-0 z-[78] hidden pointer-events-none" aria-hidden="true">
             <div id="chatReactionBarPanel" class="absolute pointer-events-auto rounded-2xl border border-slate-200 bg-white shadow-2xl px-2 py-1.5">
                 <div class="flex items-center gap-1.5">
