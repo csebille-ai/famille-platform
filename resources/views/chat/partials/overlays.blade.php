@@ -96,7 +96,7 @@
 
                 <div class="flex-1 min-h-0 flex items-center justify-center p-3 sm:p-6">
                     <img id="chatMediaImg" class="hidden max-h-full max-w-full object-contain rounded-2xl bg-black/20" alt="" />
-                    <video id="chatMediaVideo" class="hidden max-h-full max-w-full rounded-2xl bg-black/20" controls playsinline></video>
+                    <video id="chatMediaVideo" class="hidden max-h-full max-w-full rounded-2xl bg-black/20" controls playsinline autoplay></video>
                 </div>
             </div>
         </div>
