@@ -3298,6 +3298,7 @@
                 appendDaySeparator(dk, dl);
 
                 const isMe = currentUserId && uid && Number(uid) === Number(currentUserId);
+                console.log('[appendMessage] currentUserId:', currentUserId, 'uid:', uid, 'isMe:', isMe, 'payload.user:', payload?.user);
                 const colors = paletteFor(uid);
                 const initials = initialsFor(name);
 
