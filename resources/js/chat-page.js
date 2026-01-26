@@ -4518,7 +4518,7 @@
                     const data = await res.json();
                     const onlineUsers = Array.isArray(data?.online) ? data.online : [];
                     renderOnline(onlineUsers);
-                    updateGate(onlineUsers.length);
+                    // updateGate(onlineUsers.length); // TODO: implement or remove
 
                     const msgs = Array.isArray(data?.messages) ? data.messages : [];
                     let appendedAny = false;
