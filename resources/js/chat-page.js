@@ -4261,6 +4261,9 @@
             if (visibilityToggleList) {
                 visibilityToggleList.addEventListener('click', () => {
                     const isOpen = !visibilityMemberList?.classList.contains('hidden');
+                    if (!isOpen) {
+                        renderMemberList();
+                    }
                     visibilityMemberList?.classList.toggle('hidden', isOpen);
                     visibilityToggleIcon?.classList.toggle('rotate-180', !isOpen);
                 });
