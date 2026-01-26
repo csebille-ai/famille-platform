@@ -11,6 +11,8 @@
 
 	const prefersReducedMotion = () => {
 		try {
+			// ?notm=1 disables all transitions for debugging
+			if (window.location.search.includes('notm=1')) return true;
 			return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 		} catch {
 			return false;
