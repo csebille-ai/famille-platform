@@ -4089,7 +4089,7 @@
                 
                 requestAnimationFrame(() => {
                     visibilityBackdrop?.classList.remove('opacity-0');
-                    visibilityPanel?.classList.remove('opacity-0', 'translate-y-6');
+                    visibilityPanel?.classList.remove('opacity-0', 'scale-95');
                     console.log('Animation classes removed, panel should be visible now');
                 });
             }
@@ -4097,7 +4097,7 @@
             function closeVisibilitySheet() {
                 if (!visibilitySheet) return;
                 visibilityBackdrop?.classList.add('opacity-0');
-                visibilityPanel?.classList.add('opacity-0', 'translate-y-6');
+                visibilityPanel?.classList.add('opacity-0', 'scale-95');
                 
                 setTimeout(() => {
                     visibilitySheet.classList.add('hidden');

@@ -159,10 +159,10 @@
         <!-- Visibility Sheet -->
         <div id="chatVisibilitySheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
             <div id="chatVisibilityBackdrop" class="absolute inset-0 bg-black/30 backdrop-blur-sm opacity-0 transition-opacity duration-200"></div>
-            <div class="absolute inset-x-0 bottom-0 flex justify-center px-4">
+            <div class="absolute inset-0 flex items-center justify-center p-4">
                 <div
                     id="chatVisibilityPanel"
-                    class="w-full max-w-[560px] rounded-t-3xl bg-white border border-slate-200 shadow-[0_-18px_55px_rgba(15,23,42,0.18)] px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+16px)] max-h-[85vh] flex flex-col opacity-0 translate-y-6 transition-[transform,opacity] duration-200 ease-out"
+                    class="w-full max-w-[560px] rounded-3xl bg-white border border-slate-200 shadow-[0_-18px_55px_rgba(15,23,42,0.18)] px-4 pt-2 pb-6 max-h-[85vh] flex flex-col opacity-0 scale-95 transition-[transform,opacity] duration-200 ease-out"
                     role="dialog"
                     aria-label="Visibilité du salon"
                 >
