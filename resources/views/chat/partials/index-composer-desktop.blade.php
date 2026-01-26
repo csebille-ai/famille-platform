@@ -57,7 +57,7 @@
                                     class="group w-full rounded-2xl bg-white border border-slate-200/60 px-3 py-3.5 text-center active:scale-[0.99] transition hover:shadow-md hover:border-teal-600/20 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
                                 >
                                     <div class="mb-1.5 mx-auto inline-flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600/10 text-teal-600 group-hover:bg-teal-600/15">
-                                        <i class="ph-fill ph-image text-[20px]" aria-hidden="true"></i>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM156,88a12,12,0,1,1-12,12A12,12,0,0,1,156,88Zm60,112H40V160.69l46.34-46.35a8,8,0,0,1,11.32,0h0L165,181.66a8,8,0,0,0,11.32-11.32l-17.66-17.65L173,138.34a8,8,0,0,1,11.31,0L216,170.07V200Z"></path></svg>
                                     </div>
                                     <div class="text-[13px] font-medium text-slate-900">Photo</div>
                                 </button>
@@ -68,7 +68,7 @@
                                     class="group w-full rounded-2xl bg-white border border-slate-200/60 px-3 py-3.5 text-center active:scale-[0.99] transition hover:shadow-md hover:border-teal-600/20 focus:outline-none focus:ring-2 focus:ring-teal-600/30"
                                 >
                                     <div class="mb-1.5 mx-auto inline-flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600/10 text-teal-600 group-hover:bg-teal-600/15">
-                                        <i class="ph-fill ph-video-camera text-[20px]" aria-hidden="true"></i>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M251.77,73a8,8,0,0,0-8.21.39L208,97.05V72a16,16,0,0,0-16-16H32A16,16,0,0,0,16,72V184a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V159l35.56,23.71A8,8,0,0,0,248,184a8,8,0,0,0,8-8V80A8,8,0,0,0,251.77,73ZM192,184H32V72H192V184Zm48-22.95-32-21.33V116.28L240,95Z"></path></svg>
                                     </div>
                                     <div class="text-[13px] font-medium text-slate-900">Vidéo</div>
                                 </button>
@@ -80,7 +80,7 @@
                                     data-dictating="false"
                                 >
                                     <div class="mb-1.5 mx-auto inline-flex h-9 w-9 items-center justify-center rounded-xl bg-teal-600/10 text-teal-600 group-hover:bg-teal-600/15">
-                                        <i class="ph-fill ph-microphone text-[20px]" aria-hidden="true"></i>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M128,176a48.05,48.05,0,0,0,48-48V64a48,48,0,0,0-96,0v64A48.05,48.05,0,0,0,128,176ZM96,64a32,32,0,0,1,64,0v64a32,32,0,0,1-64,0Zm40,143.6V232a8,8,0,0,1-16,0V207.6A80.11,80.11,0,0,1,48,128a8,8,0,0,1,16,0,64,64,0,0,0,128,0,8,8,0,0,1,16,0A80.11,80.11,0,0,1,136,207.6Z"></path></svg>
                                     </div>
                                     <div class="text-[13px] font-medium text-slate-900">Micro</div>
                                 </button>
