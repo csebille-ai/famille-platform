@@ -117,11 +117,8 @@
                 pointer-events: none;
             }
             #image-viewer-img {
-                opacity: 0;
-                transition: opacity 220ms ease;
-            }
-            #image-viewer[data-loaded="1"] #image-viewer-img {
                 opacity: 1;
+                transition: none;
             }
         </style>
 
@@ -231,6 +228,12 @@
                 const detailsPanel = document.getElementById('image-details-panel');
                 const fitBtn = null;
 
+                const html = document.documentElement;
+                const isOpening = () => {
+                    try { return !!(html && html.classList && html.classList.contains('tm-animating')); }
+                    catch { return false; }
+                };
+
                 // --- DIAG toggles (use query params) ---
                 // A) ?notrans=1  => disable fades/transitions
                 // B) ?uialways=1 => force UI always visible
@@ -284,16 +287,13 @@
                     const revealOnce = () => {
                         if (String(root.dataset.uiShown || '0') === '1') return;
 
-                        const html = document.documentElement;
-                        const isOpening = () => {
-                            try { return !!(html && html.classList && html.classList.contains('tm-animating')); }
-                            catch { return false; }
-                        };
-
                         if (isOpening()) {
                             requestAnimationFrame(revealOnce);
                             return;
                         }
+
+                        // Apply fit/zoom only after the shared-element opening ends.
+                        try { applyFitMode(fitMode); } catch {}
 
                         try { root.dataset.uiShown = '1'; } catch {}
                         setTimeout(() => setHeaderVisible(true), 180);
@@ -442,6 +442,7 @@
                 };
 
                 const recomputeZoomMax = () => {
+                    if (isOpening()) return;
                     // Goal: allow reaching (at least) 1:1 pixel size of the HD image
                     // when the image is displayed smaller than its natural dimensions.
                     const base = getBaseSize();
@@ -532,6 +533,9 @@
 
                 const applyTransform = ({ elastic = false } = {}) => {
                     if (!img) return;
+
+                    // Do NOT touch transforms during the shared-element opening.
+                    if (isOpening()) return;
                     const coverBasePan = (fitMode === 'cover' && zoom.scale <= 1.001);
 
                     const { maxX, maxY } = getMaxPan();
@@ -630,6 +634,7 @@
 
                 const applyFitMode = (mode) => {
                     fitMode = mode === 'cover' ? 'cover' : 'contain';
+                    if (isOpening()) return;
                     if (img) {
                         try { img.style.objectFit = fitMode; } catch {}
                     }
