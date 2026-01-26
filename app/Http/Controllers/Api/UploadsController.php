@@ -9,6 +9,7 @@ use App\Models\CloudNode;
 use App\Models\UploadAsset;
 use App\Models\User;
 use App\Models\Video;
+use App\Services\Images\ImageThumbs;
 use App\Services\Uploads\R2UploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -676,8 +677,14 @@ class UploadsController extends Controller
 
             $mediaId = (int) $node->id;
             $openUrl = route('media.photos.show', $node);
-            $thumbUrl = route('images.view', $node);
-            $mediaUrl = $thumbUrl;
+                $thumbUrl = route('images.thumb', $node) . '?w=480';
+                $mediaUrl = route('images.view', $node);
+
+                try {
+                    app(ImageThumbs::class)->warmUp($node, [480]);
+                } catch (\Throwable $e) {
+                    // best-effort
+                }
 
             if ($isChatContext) {
                 $attachment = [

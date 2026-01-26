@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use App\Services\WebPush\WebPushNotifier;
+use App\Services\Images\ImageThumbs;
 use Symfony\Component\HttpFoundation\Response;
 
 class ImageController extends Controller
@@ -203,6 +205,12 @@ class ImageController extends Controller
         ]);
 
         try {
+            app(ImageThumbs::class)->warmUp($node, [480]);
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+
+        try {
             $actorName = Auth::user()?->name ?: 'Quelqu’un';
             app(WebPushNotifier::class)->notifyAll([
                 'title' => 'Nouvelle photo',
@@ -300,6 +308,42 @@ class ImageController extends Controller
             'ETag' => $etag,
             'Last-Modified' => $lastModified,
         ]));
+    }
+
+    public function thumb(Request $request, CloudNode $node): Response
+    {
+        if (!$node->isFile() || $node->stored_path === null) {
+            abort(404);
+        }
+
+        $mime = (string) ($node->mime ?? '');
+        if (!str_starts_with($mime, 'image/')) {
+            abort(404);
+        }
+
+        $width = (int) $request->query('w', 480);
+        if ($width <= 0) $width = 480;
+        $width = max(64, min(960, $width));
+
+        $thumbs = app(ImageThumbs::class);
+
+        $abs = $thumbs->cachedAbsolutePathIfExists($node, $width);
+        if ($abs) {
+            return response()->file($abs, [
+                'Content-Type' => 'image/jpeg',
+                'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+            ]);
+        }
+
+        $jpg = $thumbs->getOrCreateJpeg($node, $width);
+        if (!is_string($jpg) || $jpg === '') {
+            return redirect()->route('images.view', $node);
+        }
+
+        return response($jpg, 200, [
+            'Content-Type' => 'image/jpeg',
+            'Cache-Control' => 'private, max-age=604800, stale-while-revalidate=86400',
+        ]);
     }
 
     public function show(Request $request, CloudNode $node)

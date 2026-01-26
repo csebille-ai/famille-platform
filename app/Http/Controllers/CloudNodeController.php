@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use App\Services\Images\ImageThumbs;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
 
@@ -560,6 +561,15 @@ class CloudNodeController extends Controller
             'size' => (int) $file->getSize(),
             'uploaded_by' => Auth::id(),
         ]);
+
+        try {
+            $mime = (string) ($node->mime ?? '');
+            if (str_starts_with($mime, 'image/')) {
+                app(ImageThumbs::class)->warmUp($node, [480]);
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
 
         $this->audit('upload_file', $node, ['parent_id' => $parent->id]);
 

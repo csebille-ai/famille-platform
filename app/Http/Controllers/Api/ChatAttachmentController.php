@@ -7,6 +7,7 @@ use App\Events\ChatMessageSent;
 use App\Models\ChatMessage;
 use App\Models\CloudNode;
 use App\Models\Video;
+use App\Services\Images\ImageThumbs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -74,8 +75,14 @@ class ChatAttachmentController extends Controller
             $mediaType = 'image';
             $mediaId = (int) $node->id;
             $openUrl = route('media.photos.show', $node);
-            $thumbUrl = route('images.view', $node);
-            $mediaUrl = $thumbUrl;
+            $thumbUrl = route('images.thumb', $node) . '?w=480';
+            $mediaUrl = route('images.view', $node);
+
+            try {
+                app(ImageThumbs::class)->warmUp($node, [480]);
+            } catch (\Throwable $e) {
+                // best-effort
+            }
         } else {
             // Treat as video if extension is supported; mime sniffing can be unreliable.
             $ext = strtolower((string) ($file->getClientOriginalExtension() ?? ''));

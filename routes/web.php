@@ -1189,19 +1189,28 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/conversations', [ConversationsController::class, 'index'])->name('conversations.index');
 
-    // Public chat (Famille)
-    Route::get('/chat', [ChatController::class, 'publicIndex'])->name('chat.index');
-    Route::get('/chat/poll', [ChatController::class, 'publicPoll'])->name('chat.poll');
-    Route::post('/chat', [ChatController::class, 'publicStore'])->name('chat.store');
+    // Chat (supports public + ciblage)
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/poll', [ChatController::class, 'poll'])->name('chat.poll');
+    Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+
+    // Optional public-only chat view (no ciblage)
+    Route::get('/chat/public', [ChatController::class, 'publicIndex'])->name('chat.public');
+    Route::get('/chat/public/poll', [ChatController::class, 'publicPoll'])->name('chat.public.poll');
+    Route::post('/chat/public', [ChatController::class, 'publicStore'])->name('chat.public.store');
 
     // Private 1:1 (DM)
     Route::get('/chat/dm/{user}', [ChatController::class, 'dmIndex'])->name('chat.dm');
     Route::get('/chat/dm/{user}/poll', [ChatController::class, 'dmPoll'])->name('chat.dm.poll');
     Route::post('/chat/dm/{user}', [ChatController::class, 'dmStore'])->name('chat.dm.store');
 
-    // Legacy mixed mode (public + ciblage) kept for groups/admin workflows.
-    Route::get('/chat/legacy', [ChatController::class, 'index'])->name('chat.legacy');
-    Route::get('/chat/legacy/poll', [ChatController::class, 'poll'])->name('chat.legacy.poll');
+    // Legacy aliases (older links/bookmarks)
+    Route::get('/chat/legacy', function () {
+        return redirect()->route('chat.index', request()->query(), 301);
+    })->name('chat.legacy');
+    Route::get('/chat/legacy/poll', function () {
+        return redirect()->route('chat.poll', request()->query(), 301);
+    })->name('chat.legacy.poll');
     Route::get('/chat/recipients', [ChatController::class, 'recipients'])->name('chat.recipients');
     Route::post('/chat/legacy', [ChatController::class, 'store'])->name('chat.legacy.store');
 
@@ -1584,6 +1593,7 @@ Route::middleware('auth')->group(function () {
 
         return redirect()->route('media.photos.show', $params, 301);
     })->name('images.open');
+    Route::get('/galerie/{node}/thumb', [ImageController::class, 'thumb'])->name('images.thumb');
     Route::get('/galerie/{node}', [ImageController::class, 'view'])->name('images.view');
     Route::post('/galerie/{node}/like', [ImageController::class, 'toggleLike'])->name('images.like');
     Route::delete('/galerie/{node}', [ImageController::class, 'destroy'])->name('images.destroy');

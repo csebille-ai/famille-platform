@@ -38,12 +38,27 @@
     } catch (Throwable $e) {
         $canDelete = false;
     }
+
+    $diskName = (string) ($node->storage_disk ?? 'local');
+    $hdUrl = route('images.view', $node);
+    if ($diskName !== 'local') {
+        $publicUrl = trim((string) ($node->public_url ?? ''));
+        if ($publicUrl !== '') {
+            $hdUrl = $publicUrl;
+        }
+    }
+
+    $thumbW = 480;
+    $thumbUrl = route('images.thumb', $node) . '?' . http_build_query(['w' => $thumbW]);
 @endphp
 
 <x-app-layout hideNavigation="1" pageBgClass="bg-slate-950">
     <div
         id="image-viewer"
         class="min-h-[100svh] relative overflow-hidden viewer-ui-hidden"
+        data-loaded="0"
+        data-details="0"
+        data-ui-shown="0"
         data-prev-url="{{ $prevUrl }}"
         data-next-url="{{ $nextUrl }}"
         data-back-url="{{ $backUrl }}"
@@ -67,6 +82,36 @@
             /* Isolate stacking/compositing for the image area. */
             #image-viewer-stage {
                 isolation: isolate;
+            }
+
+            /* Details panel: never display:none; animate opacity/transform only. */
+            #image-details-panel {
+                opacity: 0;
+                transform: translate3d(0, -6px, 0);
+                pointer-events: none;
+                transition: opacity 160ms ease, transform 160ms ease;
+                will-change: opacity, transform;
+            }
+            #image-viewer[data-details="1"] #image-details-panel {
+                opacity: 1;
+                transform: none;
+                pointer-events: auto;
+            }
+
+            /* Background blur: keep it cheap and avoid large repaints. */
+            #image-viewer-bg {
+                filter: blur(12px);
+                transform: translate3d(0, 0, 0) scale(1.06);
+                will-change: transform, opacity;
+            }
+            @media (max-width: 640px) {
+                #image-viewer-bg {
+                    filter: blur(0px);
+                    opacity: 0.18;
+                }
+            }
+            #image-viewer[data-no-bg="1"] #image-viewer-bg {
+                opacity: 0;
             }
 
             /* Loading: keep it subtle and avoid white flashes. */
@@ -112,7 +157,7 @@
                 </button>
             </div>
 
-            <div id="image-details-panel" class="mt-2 hidden w-full max-w-[520px] mx-auto rounded-2xl bg-slate-900/70 ring-1 ring-white/10 p-2">
+            <div id="image-details-panel" class="mt-2 w-full max-w-[520px] mx-auto rounded-2xl bg-slate-900/70 ring-1 ring-white/10 p-2">
                 <div class="grid gap-1">
                     <a href="{{ route('cloud.files.download', $node) }}" class="w-full min-h-[44px] rounded-2xl bg-white/10 hover:bg-white/15 px-3 inline-flex items-center justify-between text-sm font-semibold text-white">
                         <span>Télécharger</span>
@@ -158,12 +203,14 @@
             <div class="absolute inset-0">
                 <img
                     id="image-viewer-bg"
-                    src="{{ route('images.view', $node) }}"
+                    src="{{ $thumbUrl }}"
                     alt=""
                     class="absolute inset-0 w-full h-full object-cover"
-                    style="filter: blur(28px); transform: scale(1.08); opacity: 0.32;"
+                    style="opacity: 0.32;"
                     aria-hidden="true"
                     draggable="false"
+                    decoding="async"
+                    fetchpriority="low"
                 />
                 <div class="absolute inset-0" style="background: rgba(2,6,23,0.78);"></div>
             </div>
@@ -175,11 +222,13 @@
             <div class="absolute inset-0 flex items-center justify-center">
             <img
                 id="image-viewer-img"
-                src="{{ route('images.view', $node) }}"
+                src="{{ $hdUrl }}"
                 alt="{{ $node->name }}"
                 class="w-full h-full max-w-full object-contain select-none"
                 draggable="false"
                 data-shared-id="media:{{ (int) $node->id }}"
+                decoding="async"
+                fetchpriority="high"
             />
             </div>
         </div>
@@ -200,6 +249,14 @@
                 const detailsBtn = document.getElementById('image-details-btn');
                 const detailsPanel = document.getElementById('image-details-panel');
                 const fitBtn = null;
+
+                // Debug/verification: disable background blur with ?nobg=1 (or ?noblur=1)
+                try {
+                    const qs = new URLSearchParams(window.location.search || '');
+                    if (qs.get('nobg') === '1' || qs.get('noblur') === '1') {
+                        root.dataset.noBg = '1';
+                    }
+                } catch {}
 
                 if (stage) {
                     try {
@@ -222,7 +279,29 @@
                             await img.decode().catch(() => {});
                         }
                     } catch {}
+
                     try { root.dataset.loaded = '1'; } catch {}
+
+                    // Reveal UI once, after opening animation is done.
+                    const revealOnce = () => {
+                        if (String(root.dataset.uiShown || '0') === '1') return;
+
+                        const html = document.documentElement;
+                        const isOpening = () => {
+                            try { return !!(html && html.classList && html.classList.contains('tm-animating')); }
+                            catch { return false; }
+                        };
+
+                        if (isOpening()) {
+                            requestAnimationFrame(revealOnce);
+                            return;
+                        }
+
+                        try { root.dataset.uiShown = '1'; } catch {}
+                        setTimeout(() => setHeaderVisible(true), 180);
+                    };
+
+                    requestAnimationFrame(revealOnce);
                 };
 
                 if (img) {
@@ -238,14 +317,12 @@
 
                 // Details menu (must exist before setHeaderVisible(false) runs)
                 const closeDetails = () => {
-                    if (detailsPanel) detailsPanel.classList.add('hidden');
+                    try { root.dataset.details = '0'; } catch {}
                 };
 
                 const toggleDetails = () => {
-                    if (!detailsPanel) return;
-                    const isOpen = !detailsPanel.classList.contains('hidden');
-                    if (isOpen) detailsPanel.classList.add('hidden');
-                    else detailsPanel.classList.remove('hidden');
+                    const isOpen = String(root.dataset.details || '0') === '1';
+                    try { root.dataset.details = isOpen ? '0' : '1'; } catch {}
                 };
 
                 if (detailsBtn) {
@@ -256,7 +333,7 @@
                     });
                 }
                 document.addEventListener('click', (e) => {
-                    if (!detailsPanel || detailsPanel.classList.contains('hidden')) return;
+                    if (String(root.dataset.details || '0') !== '1') return;
                     if (detailsPanel.contains(e.target) || (detailsBtn && detailsBtn.contains(e.target))) return;
                     closeDetails();
                 }, { capture: true });
@@ -268,28 +345,8 @@
                     if (!show) closeDetails();
                 };
 
-                // On load: keep UI hidden during shared-element OPENING, then fade in.
+                // On load: keep UI hidden during shared-element OPENING; reveal is gated by markLoaded().
                 setHeaderVisible(false);
-                const revealUiAfterOpening = () => {
-                    const html = document.documentElement;
-                    const isOpening = () => {
-                        try { return !!(html && html.classList && html.classList.contains('tm-animating')); }
-                        catch { return false; }
-                    };
-
-                    const tick = () => {
-                        if (isOpening()) {
-                            requestAnimationFrame(tick);
-                            return;
-                        }
-                        setHeaderVisible(true);
-                        // Keep the "iOS Photos" feel: show briefly, then hide.
-                        setTimeout(() => setHeaderVisible(false), 1100);
-                    };
-
-                    requestAnimationFrame(() => requestAnimationFrame(tick));
-                };
-                revealUiAfterOpening();
 
                 // --- True zoom (pinch + pan + double tap) ---
                 let fitMode = 'contain';
@@ -631,7 +688,7 @@
                 };
 
                 const onTap = (x, y) => {
-                    if (detailsPanel && !detailsPanel.classList.contains('hidden')) return;
+                    if (String(root.dataset.details || '0') === '1') return;
                     clearTapTimer();
 
                     if (isDoubleTap(x, y)) {
