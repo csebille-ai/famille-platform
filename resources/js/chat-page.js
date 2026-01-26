@@ -4447,7 +4447,9 @@
                     if (fd.micro) {
                         fd.micro.addEventListener('click', () => {
                             setActiveComposerKey(key);
-                            startDictation();
+                            setFocusDockOpen(false);
+                            // Delay dictation start slightly to let dock close animation finish
+                            setTimeout(() => startDictation(), 100);
                         });
                     }
 
