@@ -3379,7 +3379,7 @@
                     wrapper.className = 'relative p-0 border-0 bg-transparent';
                 } else {
                     wrapper.className = `relative px-4 py-3 border ${isMe
-                        ? 'bg-[color:var(--chat-primary)] text-white border-[color:rgba(14,165,160,0.35)] shadow-[0_8px_18px_rgba(14,165,160,0.22)] rounded-2xl rounded-br-md'
+                        ? 'bg-[#0EA5A0] text-white border-[color:rgba(14,165,160,0.35)] shadow-[0_8px_18px_rgba(14,165,160,0.22)] rounded-2xl rounded-br-md'
                         : 'bg-[color:var(--chat-bubble-other-bg)] text-[color:var(--chat-text)] border-[color:var(--chat-bubble-other-border)] shadow-[var(--chat-bubble-shadow)] rounded-2xl rounded-bl-md'}`;
                 }
                 wrapper.dataset.bubble = '1';
