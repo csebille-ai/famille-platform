@@ -18,20 +18,20 @@
                 </div>
             </a>
 
-            <div class="rounded-2xl border border-[color:var(--fam-border-soft)] bg-white shadow-sm">
-                <div class="px-4 py-3 border-b border-slate-100">
+            <div class="rounded-2xl border border-[color:var(--fam-border-soft)] bg-gradient-to-br from-slate-50 to-slate-100/50 shadow-sm">
+                <div class="px-4 py-3 border-b border-slate-200/60">
                     <div class="text-sm font-bold text-slate-900">Privé</div>
                     <div class="text-xs text-slate-600">Discussions 1:1</div>
                 </div>
 
-                <div class="divide-y divide-slate-100">
+                <div class="divide-y divide-slate-200/40">
                     @if(($dmThreads ?? collect())->count() === 0)
                         <div class="px-4 py-6 text-sm text-slate-600">Aucune discussion privée pour l’instant.</div>
                     @else
                         @foreach($dmThreads as $t)
-                            <a href="{{ route('chat.dm', ['user' => (int) $t['other_id']]) }}" class="block px-4 py-3 hover:bg-[color:var(--fam-tint)]">
+                            <a href="{{ route('chat.dm', ['user' => (int) $t['other_id']]) }}" class="block px-4 py-3 hover:bg-white/70 transition-colors">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full overflow-hidden bg-slate-100 border border-black/10 flex items-center justify-center shrink-0">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-sm">
                                         @if(!empty($t['other_avatar_url']))
                                             <img src="{{ $t['other_avatar_url'] }}" alt="" class="w-full h-full object-cover" loading="lazy" />
                                         @else
