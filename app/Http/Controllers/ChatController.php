@@ -762,8 +762,8 @@ class ChatController extends Controller
                 'audience_user_ids' => $hasAudience ? ($message->audience_user_ids ?? []) : [],
                 'audience_users' => $audienceUsers,
                 'user' => [
-                    'id' => $message->user?->id,
-                    'name' => $message->user?->name,
+                    'id' => (int) ($message->user?->id ?? 0),
+                    'name' => (string) ($message->user?->name ?? '—'),
                     'avatar_url' => avatarUrl($message->user),
                 ],
                 'reaction_summary' => $message->deleted_for_all_at ? [] : $reactionSummary,
