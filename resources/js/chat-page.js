@@ -3379,9 +3379,9 @@
                 } else {
                     if (isMe) {
                         wrapper.className = 'relative px-4 py-3 border text-white rounded-2xl rounded-br-md';
-                        wrapper.style.backgroundColor = '#0EA5A0';
-                        wrapper.style.borderColor = 'rgba(14,165,160,0.35)';
-                        wrapper.style.boxShadow = '0 8px 18px rgba(14,165,160,0.22)';
+                        wrapper.style.backgroundColor = '#0F172A';
+                        wrapper.style.borderColor = 'rgba(15,23,42,0.35)';
+                        wrapper.style.boxShadow = '0 8px 18px rgba(15,23,42,0.22)';
                     } else {
                         wrapper.className = 'relative px-4 py-3 border rounded-2xl rounded-bl-md';
                         wrapper.style.backgroundColor = '#F3F1EA';
