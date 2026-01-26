@@ -169,6 +169,7 @@
                         class="w-full h-full object-contain bg-black"
                         playsinline
                         preload="metadata"
+                        autoplay
                         poster="{{ $video->poster_path ? route('videos.poster', $video) : '' }}"
                     >
                         <source src="{{ ($video->storage_disk ?? 'public') === 'public' && $video->video_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($video->video_path) : route('videos.stream', $video) }}" type="video/mp4" />
