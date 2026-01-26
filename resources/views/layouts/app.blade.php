@@ -423,8 +423,8 @@
 
             <!-- Page Content -->
             <main
-                class="{{ $isProfileRoute ? 'bg-[color:var(--fam-surface-alt)]' : '' }} @unless($attributes->get('hideNavigation')) {{ $internalScroll ? 'overflow-hidden pb-0 sm:pb-0' : 'pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8' }} @endunless"
-                style="@unless($attributes->get('hideNavigation')) padding-top: var(--app-nav-h, 0px) @endunless"
+                class="{{ $isProfileRoute ? 'bg-[color:var(--fam-surface-alt)]' : '' }} @unless($attributes->get('hideNavigation')) {{ $internalScroll ? 'pb-0 sm:pb-0' : 'pb-[calc(5.25rem+env(safe-area-inset-bottom))] sm:pb-8' }} @endunless"
+                style="@unless($attributes->get('hideNavigation')) padding-top: var(--app-nav-h, 0px) @endunless; {{ $internalScroll ? 'height: calc(100dvh - var(--app-nav-h, 0px)); overflow: hidden;' : '' }}"
             >
                 <!-- Page Heading (must be below fixed top nav) -->
                 @isset($header)
