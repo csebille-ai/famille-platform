@@ -255,9 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const household = households[key];
             const address = household.address;
 
-            // Clear location fields - household_key will be used for display
-            locationInput.value = '';
-            locationLabel.value = '';
+            // Fill location input with household address
+            locationInput.value = address.label || '';
+            locationLabel.value = address.label || '';
             
             // If coords are available, use them
             if (household.coords && household.coords.lat && household.coords.lon) {
