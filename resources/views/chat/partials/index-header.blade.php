@@ -2,7 +2,7 @@
                 <div style="padding-top: calc(env(safe-area-inset-top) + 0.5rem)">
                     <div class="h-14 px-4 sm:px-6 pb-2 flex items-center justify-center gap-3 relative">
                         <a href="{{ url('/') }}" class="absolute left-4 sm:left-6 w-10 h-10 flex items-center justify-center" title="Accueil">
-                            <img src="{{ asset('icon-192.png') }}" alt="Famille" class="w-8 h-8" />
+                            <img src="{{ asset('icon-192.png') }}" alt="Famille" class="h-10 w-10" />
                         </a>
                     <div class="flex-1 flex items-center justify-center gap-2">
                         <div class="text-center">
