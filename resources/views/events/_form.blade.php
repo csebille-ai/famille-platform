@@ -230,75 +230,60 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationLat = document.getElementById('eventLocationLat');
     const locationLon = document.getElementById('eventLocationLon');
     const householdSelect = document.getElementById('eventHouseholdSelect');
-    
-    console.log('Event form JS loaded');
-    console.log('Households:', households);
-    console.log('householdSelect:', householdSelect);
+
+    if (locationInput) {
+        // If user edits manually after an autofill, we keep their value.
+        locationInput.addEventListener('input', () => {
+            locationInput.dataset.householdAutofilled = '0';
+        });
+    }
 
     // Household selection handler
     if (householdSelect) {
         householdSelect.addEventListener('change', (e) => {
             const key = e.target.value;
-            console.log('Household selected:', key);
             
             if (!key || !households[key]) {
-                // Reset fields if "Autre lieu" is selected
-                locationInput.value = '';
-                locationLabel.value = '';
-                locationLat.value = '';
-                locationLon.value = '';
-                locationInput.disabled = false;
-                locationInput.style.opacity = '1';
-                console.log('Reset to manual input');
+                // Back to manual: keep what the user typed, just clear derived fields.
+                if (locationLabel) locationLabel.value = '';
+                if (locationLat) locationLat.value = '';
+                if (locationLon) locationLon.value = '';
                 return;
             }
 
             const household = households[key];
             const address = household.address;
-            console.log('Household address:', address);
 
-            // Fill location input with household address
-            locationInput.value = address.label || '';
-            locationLabel.value = address.label || '';
-            console.log('Filled location input:', locationInput.value);
+            // Fill visible field with full address, but store alias in location_label for display.
+            if (locationInput) {
+                locationInput.value = address.label || '';
+                locationInput.dataset.householdAutofilled = '1';
+            }
+            if (locationLabel) {
+                locationLabel.value = household.label || '';
+            }
             
             // If coords are available, use them
             if (household.coords && household.coords.lat && household.coords.lon) {
-                locationLat.value = household.coords.lat;
-                locationLon.value = household.coords.lon;
-                console.log('Using cached coords:', household.coords);
+                if (locationLat) locationLat.value = household.coords.lat;
+                if (locationLon) locationLon.value = household.coords.lon;
             } else {
                 // Trigger geocoding for this address
-                locationLat.value = '';
-                locationLon.value = '';
+                if (locationLat) locationLat.value = '';
+                if (locationLon) locationLon.value = '';
                 if (address.label) {
-                    console.log('Fetching geocoding for:', address.label);
                     fetch(`/geo/search?q=${encodeURIComponent(address.label)}`)
                         .then(r => r.json())
                         .then(results => {
-                            console.log('Geocoding results:', results);
                             if (results && results.length > 0) {
-                                locationLat.value = results[0].lat;
-                                locationLon.value = results[0].lon;
+                                if (locationLat) locationLat.value = results[0].lat;
+                                if (locationLon) locationLon.value = results[0].lon;
                             }
                         })
                         .catch(err => console.error('Geocoding error:', err));
                 }
             }
-
-            // Disable manual input when household is selected
-            locationInput.disabled = true;
-            locationInput.style.opacity = '0.6';
         });
-
-        // Enable input if "Autre lieu" is already selected on load
-        if (!householdSelect.value) {
-            locationInput.disabled = false;
-            locationInput.style.opacity = '1';
-        } else {
-            locationInput.disabled = true;
-            locationInput.style.opacity = '0.6';
-        }
     }
 });
 </script>

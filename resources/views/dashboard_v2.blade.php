@@ -236,7 +236,17 @@
                                     }
                                 }
 
-                                $meta = trim($dayLabel . ($timeLabel !== '' ? (' · ' . $timeLabel) : '') . ($ev->location ? (' · ' . $ev->location) : ''));
+                                $households = config('households', []);
+                                $household = $ev->household_key && isset($households[$ev->household_key])
+                                    ? $households[$ev->household_key]
+                                    : null;
+                                $displayLocation = $household
+                                    ? (string) ($household['label'] ?? '')
+                                    : (string) ($ev->location_label ?? $ev->location ?? '');
+
+                                $meta = trim($dayLabel
+                                    . ($timeLabel !== '' ? (' · ' . $timeLabel) : '')
+                                    . ($displayLocation !== '' ? (' · ' . $displayLocation) : ''));
                                 $dot = 'bg-[color:var(--fam-primary)]';
                             @endphp
 
