@@ -492,7 +492,7 @@ Route::get('/home', function () {
 
             if ($q) {
                 $upcomingEvents = $q
-                    ->limit(3)
+                    ->limit(12)
                     ->get();
             }
         }
@@ -1677,3 +1677,4 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
