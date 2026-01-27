@@ -4271,7 +4271,9 @@
                     if (isClosed) {
                         // OPEN: Remove hidden, add rotate-180
                         console.log('[Accordion] Opening...');
+                        console.log('[Accordion] About to call renderMemberList, function exists?', typeof renderMemberList);
                         renderMemberList();
+                        console.log('[Accordion] renderMemberList() called');
                         visibilityMemberList?.classList.remove('hidden');
                         visibilityToggleIcon?.classList.add('rotate-180');
                     } else {
