@@ -4269,13 +4269,17 @@
                     console.log('[Accordion] Click - Is closed:', isClosed);
                     
                     if (isClosed) {
-                        // OPEN: Remove hidden, add rotate-180
+                        // OPEN: Show immediately and load members
                         console.log('[Accordion] Opening...');
-                        console.log('[Accordion] About to call renderMemberList, function exists?', typeof renderMemberList);
-                        renderMemberList();
-                        console.log('[Accordion] renderMemberList() called');
                         visibilityMemberList?.classList.remove('hidden');
                         visibilityToggleIcon?.classList.add('rotate-180');
+                        
+                        // Load members (will populate the now-visible list)
+                        console.log('[Accordion] Loading members...');
+                        if (allMembers.length === 0) {
+                            visibilityMemberList.innerHTML = '<div class="px-3 py-4 text-center text-sm text-slate-500">Chargement...</div>';
+                        }
+                        renderMemberList();
                     } else {
                         // CLOSE: Add hidden, remove rotate-180
                         console.log('[Accordion] Closing...');
