@@ -220,9 +220,7 @@
 </div>
 
 @push('scripts')
-<script type="module">
-import { initGeoSearch } from '/resources/js/geo-search.js';
-
+<script>
 // Household data
 const households = @json(config('households', []));
 
@@ -233,14 +231,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const locationLon = document.getElementById('eventLocationLon');
     const householdSelect = document.getElementById('eventHouseholdSelect');
     
-    if (locationInput) {
-        initGeoSearch(locationInput, locationLabel, locationLat, locationLon);
-    }
+    console.log('Event form JS loaded');
+    console.log('Households:', households);
+    console.log('householdSelect:', householdSelect);
 
     // Household selection handler
     if (householdSelect) {
         householdSelect.addEventListener('change', (e) => {
             const key = e.target.value;
+            console.log('Household selected:', key);
             
             if (!key || !households[key]) {
                 // Reset fields if "Autre lieu" is selected
@@ -249,28 +248,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 locationLat.value = '';
                 locationLon.value = '';
                 locationInput.disabled = false;
+                locationInput.style.opacity = '1';
+                console.log('Reset to manual input');
                 return;
             }
 
             const household = households[key];
             const address = household.address;
+            console.log('Household address:', address);
 
             // Fill location input with household address
             locationInput.value = address.label || '';
             locationLabel.value = address.label || '';
+            console.log('Filled location input:', locationInput.value);
             
             // If coords are available, use them
             if (household.coords && household.coords.lat && household.coords.lon) {
                 locationLat.value = household.coords.lat;
                 locationLon.value = household.coords.lon;
+                console.log('Using cached coords:', household.coords);
             } else {
                 // Trigger geocoding for this address
                 locationLat.value = '';
                 locationLon.value = '';
                 if (address.label) {
+                    console.log('Fetching geocoding for:', address.label);
                     fetch(`/geo/search?q=${encodeURIComponent(address.label)}`)
                         .then(r => r.json())
                         .then(results => {
+                            console.log('Geocoding results:', results);
                             if (results && results.length > 0) {
                                 locationLat.value = results[0].lat;
                                 locationLon.value = results[0].lon;
