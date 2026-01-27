@@ -1,6 +1,9 @@
             <div class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-100">
                 <div style="padding-top: calc(env(safe-area-inset-top) + 0.5rem)">
                     <div class="h-14 px-4 sm:px-6 pb-2 flex items-center justify-center gap-3 relative">
+                        <a href="{{ url('/') }}" class="absolute left-4 sm:left-6 w-10 h-10 flex items-center justify-center" title="Accueil">
+                            <img src="{{ asset('images/logo.svg') }}" alt="Famille" class="w-8 h-8" />
+                        </a>
                     <div class="flex-1 flex items-center justify-center gap-2">
                         <div class="text-center">
                             <div class="flex items-center justify-center gap-2">
