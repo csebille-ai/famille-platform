@@ -40,7 +40,13 @@ class EventPolicy
             return true;
         }
 
-        return (int) $event->created_by_user_id === (int) $user->id;
+        // Members can edit any family-visible event.
+        // Private events remain editable only by their creator (or admins).
+        if (($event->visibility ?? 'family') === 'private') {
+            return (int) $event->created_by_user_id === (int) $user->id;
+        }
+
+        return true;
     }
 
     public function delete(User $user, Event $event): bool
