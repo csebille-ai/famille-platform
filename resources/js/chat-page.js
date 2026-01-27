@@ -1148,7 +1148,6 @@
                 attachPickVoice.title = supported ? 'Dicter' : 'Dictée vocale non supportée par ce navigateur';
             }
 
-
             const palette = [
                 { chip: 'bg-indigo-50 text-indigo-700 border-indigo-200', avatar: 'bg-indigo-600 text-white' },
                 { chip: 'bg-emerald-50 text-emerald-700 border-emerald-200', avatar: 'bg-emerald-600 text-white' },
@@ -4063,9 +4062,7 @@
             let selectedUserIds = new Set();
             let allMembers = [];
             
-            function openVisibilitySheet() {
-                console.log('openVisibilitySheet called', { visibilitySheet, visibilityPanel, isAdmin });
-                if (!visibilitySheet || !visibilityPanel) {
+            function openVisibilitySheet() {                if (!visibilitySheet || !visibilityPanel) {
                     console.log('Missing elements, aborting');
                     return;
                 }
@@ -4151,44 +4148,32 @@
             }
             
             function renderMemberList() {
-                console.log('[Accordion] renderMemberList() ENTRY');
-                console.log('[Accordion] Check vars - visibilityMemberList:', !!visibilityMemberList, ', recipientsUrl:', recipientsUrl, ', allMembers.length:', allMembers?.length);
-                
-                if (!visibilityMemberList || !recipientsUrl) {
-                    console.log('[Accordion] BLOCKED - missing visibilityMemberList or recipientsUrl');
-                    return;
+                                                if (!visibilityMemberList || !recipientsUrl) {
+                                        return;
                 }
                 
                 if (allMembers.length === 0) {
-                    console.log('[Accordion] Fetching members from:', recipientsUrl);
-                    fetch(recipientsUrl, { credentials: 'same-origin' })
+                                        fetch(recipientsUrl, { credentials: 'same-origin' })
                         .then(r => {
-                            console.log('[Accordion] Got response:', r.status);
-                            return r.json();
+                                                        return r.json();
                         })
                         .then(data => {
-                            console.log('[Accordion] Got data:', data);
-                            allMembers = (data.users || []).filter(m => m.id !== currentUserId);
-                            console.log('[Accordion] Filtered to', allMembers.length, 'members');
-                            renderMemberListHTML();
+                                                        allMembers = (data.users || []).filter(m => m.id !== currentUserId);
+                                                        renderMemberListHTML();
                         })
                         .catch(err => {
-                            console.error('[Accordion] Fetch failed:', err);
-                            visibilityMemberList.innerHTML = '<div class="px-3 py-4 text-center text-sm text-red-500">Erreur</div>';
+                                                        visibilityMemberList.innerHTML = '<div class="px-3 py-4 text-center text-sm text-red-500">Erreur</div>';
                         });
                 } else {
-                    console.log('[Accordion] Using cached:', allMembers.length, 'members');
-                    renderMemberListHTML();
+                                        renderMemberListHTML();
                 }
             }
             
             function renderMemberListHTML() {
                 if (!visibilityMemberList) {
-                    console.log('[Accordion] Cannot render HTML - missing element');
-                    return;
+                                        return;
                 }
-                console.log('[Accordion] Rendering HTML for', allMembers.length, 'members');
-                visibilityMemberList.innerHTML = '';
+                                visibilityMemberList.innerHTML = '';
                 
                 allMembers.forEach(member => {
                     const isSelected = selectedUserIds.has(member.id);
@@ -4278,37 +4263,24 @@
             }
             
             if (visibilityToggleList) {
-                console.log('[Accordion] Attaching click handler...');
-                visibilityToggleList.addEventListener('click', () => {
+                                visibilityToggleList.addEventListener('click', () => {
                     const isClosed = visibilityMemberList?.classList.contains('hidden');
-                    console.log('[Accordion] Click - Is closed:', isClosed);
-                    
-                    if (isClosed) {
+                                        if (isClosed) {
                         // OPEN: Show immediately and load members
-                        console.log('[Accordion] Opening...');
-                        visibilityMemberList?.classList.remove('hidden');
+                                                visibilityMemberList?.classList.remove('hidden');
                         visibilityToggleIcon?.classList.add('rotate-180');
                         
-                        // Load members (will populate the now-visible list)
-                        console.log('[Accordion] Loading members...');
-                        if (allMembers.length === 0) {
-                            visibilityMemberList.innerHTML = '<div class="px-3 py-4 text-center text-sm text-slate-500">Chargement...</div>';
-                        }
-                        renderMemberList();
+                        // Load members (will populate the now-visible list)                        renderMemberList();
                     } else {
                         // CLOSE: Add hidden, remove rotate-180
-                        console.log('[Accordion] Closing...');
-                        visibilityMemberList?.classList.add('hidden');
+                                                visibilityMemberList?.classList.add('hidden');
                         visibilityToggleIcon?.classList.remove('rotate-180');
                     }
                     
                     // Debug: Verify final state
                     const stillHidden = visibilityMemberList?.classList.contains('hidden');
-                    console.log('[Accordion] After toggle - Hidden:', stillHidden, 'Classes:', visibilityMemberList?.className);
-                });
-            } else {
-                console.log('Toggle list button NOT found!');
-            }
+                                    });
+            } else {            }
 
             if (searchBtn && searchBar && searchInput) {
                 searchBtn.addEventListener('click', () => {
