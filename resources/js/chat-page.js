@@ -4259,18 +4259,27 @@
             }
             
             if (visibilityToggleList) {
-                console.log('Toggle list button found, attaching click handler');
+                console.log('[Accordion] Attaching click handler...');
                 visibilityToggleList.addEventListener('click', () => {
-                    console.log('Toggle clicked! visibilityMemberList:', visibilityMemberList);
                     const isClosed = visibilityMemberList?.classList.contains('hidden');
-                    console.log('Is closed:', isClosed);
+                    console.log('[Accordion] Click - Is closed:', isClosed);
+                    
                     if (isClosed) {
-                        console.log('Loading member list...');
+                        // OPEN: Remove hidden, add rotate-180
+                        console.log('[Accordion] Opening...');
                         renderMemberList();
+                        visibilityMemberList?.classList.remove('hidden');
+                        visibilityToggleIcon?.classList.add('rotate-180');
+                    } else {
+                        // CLOSE: Add hidden, remove rotate-180
+                        console.log('[Accordion] Closing...');
+                        visibilityMemberList?.classList.add('hidden');
+                        visibilityToggleIcon?.classList.remove('rotate-180');
                     }
-                    visibilityMemberList?.classList.toggle('hidden');
-                    visibilityToggleIcon?.classList.toggle('rotate-180');
-                    console.log('Toggled. New classes:', visibilityMemberList?.className);
+                    
+                    // Debug: Verify final state
+                    const stillHidden = visibilityMemberList?.classList.contains('hidden');
+                    console.log('[Accordion] After toggle - Hidden:', stillHidden, 'Classes:', visibilityMemberList?.className);
                 });
             } else {
                 console.log('Toggle list button NOT found!');
