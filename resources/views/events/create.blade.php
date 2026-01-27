@@ -3,7 +3,6 @@
         <div class="flex items-center justify-between gap-3">
             <div class="min-w-0">
                 <div class="text-base font-semibold text-[color:var(--fam-text)]">Ajouter un événement</div>
-                <div class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)]">Partage avec la famille, ou garde-le privé.</div>
             </div>
             <a href="{{ route('events.index') }}" class="shrink-0 inline-flex items-center h-10 px-3 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]">Retour</a>
         </div>

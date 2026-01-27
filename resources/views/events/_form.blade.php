@@ -49,7 +49,6 @@
 
 <div class="space-y-3">
     <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4 space-y-3">
-        <div class="text-sm font-semibold text-[color:var(--fam-text)]">L’essentiel</div>
 
         <div>
             <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Titre</label>
@@ -112,51 +111,15 @@
                 @error('date')<div class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
             </div>
             <div>
-                <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Heure</label>
+                <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Heure <span class="font-normal">(facultatif)</span></label>
                 <input type="time" name="time" value="{{ $v('time') }}" class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" />
-                <div class="mt-1 text-[0.7rem] text-[color:var(--fam-muted)]">Laisse vide si “toute la journée”.</div>
             </div>
         </div>
 
-        <div class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--fam-border-soft)] bg-[color:var(--fam-surface-alt)] px-3 py-2">
-            <div>
-                <div class="text-sm font-semibold text-[color:var(--fam-text)]">Toute la journée</div>
-                <div class="text-[0.7rem] text-[color:var(--fam-muted)]">Heure ignorée.</div>
-            </div>
-            <label class="inline-flex items-center gap-2">
-                <input type="hidden" name="all_day" value="0" />
-                <input type="checkbox" name="all_day" value="1" {{ $bool('all_day') ? 'checked' : '' }} class="h-5 w-5 rounded border-[color:var(--fam-border-soft)] text-[color:var(--fam-primary)] focus:ring-[color:var(--fam-primary)]/25" />
-            </label>
-        </div>
-
-        <div class="flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 py-2">
-            <div>
-                <div class="text-sm font-semibold text-[color:var(--fam-text)]">Ajouter une fin</div>
-                <div class="text-[0.7rem] text-[color:var(--fam-muted)]">Optionnel (heure/date de fin).</div>
-            </div>
-            <label class="inline-flex items-center gap-2">
-                <input type="hidden" name="add_end" value="0" />
-                <input type="checkbox" name="add_end" value="1" {{ $bool('add_end') ? 'checked' : '' }} class="h-5 w-5 rounded border-[color:var(--fam-border-soft)] text-[color:var(--fam-primary)] focus:ring-[color:var(--fam-primary)]/25" />
-            </label>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-            <div>
-                <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Fin (date)</label>
-                <input type="date" name="end_date" value="{{ $v('end_date') }}" class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" />
-            </div>
-            <div>
-                <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Fin (heure)</label>
-                <input type="time" name="end_time" value="{{ $v('end_time') }}" class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" />
-            </div>
-        </div>
-
-        @error('end_date')<div class="text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
-        @error('end_time')<div class="text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
+        <input type="hidden" name="all_day" value="0" />
     </div>
 
     <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4 space-y-3">
-        <div class="text-sm font-semibold text-[color:var(--fam-text)]">Détails (optionnels)</div>
 
         <div>
             <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Lieu</label>
