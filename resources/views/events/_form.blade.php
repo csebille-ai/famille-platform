@@ -137,7 +137,17 @@
 
         <div>
             <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Lieu</label>
-            <input name="location" value="{{ $v('location') }}" placeholder="Adresse, salle, ville…" class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" />
+            <input 
+                id="eventLocationInput" 
+                name="location" 
+                value="{{ $v('location') }}" 
+                placeholder="Adresse, salle, ville…" 
+                class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" 
+                autocomplete="off"
+            />
+            <input type="hidden" id="eventLocationLabel" name="location_label" value="{{ $v('location_label') }}" />
+            <input type="hidden" id="eventLocationLat" name="location_lat" value="{{ $v('location_lat') }}" />
+            <input type="hidden" id="eventLocationLon" name="location_lon" value="{{ $v('location_lon') }}" />
             @error('location')<div class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
         </div>
 
@@ -187,3 +197,20 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script type="module">
+import { initGeoSearch } from '/resources/js/geo-search.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const locationInput = document.getElementById('eventLocationInput');
+    const locationLabel = document.getElementById('eventLocationLabel');
+    const locationLat = document.getElementById('eventLocationLat');
+    const locationLon = document.getElementById('eventLocationLon');
+    
+    if (locationInput) {
+        initGeoSearch(locationInput, locationLabel, locationLat, locationLon);
+    }
+});
+</script>
+@endpush

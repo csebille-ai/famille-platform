@@ -177,7 +177,19 @@
             @if($event->location)
                 <div>
                     <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Lieu</div>
-                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $event->location }}</div>
+                    <div class="mt-1 flex items-start gap-2">
+                        <div class="flex-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $event->location_label ?? $event->location }}</div>
+                        @php
+                            $hasCoords = $event->location_lat && $event->location_lon;
+                            $mapsUrl = $hasCoords 
+                                ? 'https://www.google.com/maps/dir/?api=1&destination=' . $event->location_lat . ',' . $event->location_lon
+                                : 'https://www.google.com/maps/search/?api=1&query=' . urlencode($event->location);
+                        @endphp
+                        <a href="{{ $mapsUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 h-9 px-3 rounded-2xl bg-[color:var(--fam-primary)] text-white text-xs font-extrabold hover:bg-[color:var(--fam-primary-hover)] active:scale-[0.98] transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M200,224H150.54A266.56,266.56,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25a88,88,0,0,0-176,0c0,31.4,14.51,64.68,42,96.25A266.56,266.56,0,0,0,105.46,224H56a8,8,0,0,0,0,16H200a8,8,0,0,0,0-16ZM56,104a72,72,0,0,1,144,0c0,57.23-55.47,105-72,118C111.47,209,56,161.23,56,104Zm112,0a40,40,0,1,0-40,40A40,40,0,0,0,168,104Zm-64,0a24,24,0,1,1,24,24A24,24,0,0,1,104,104Z"></path></svg>
+                            Itinéraire
+                        </a>
+                    </div>
                 </div>
             @endif
 

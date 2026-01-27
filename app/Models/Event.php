@@ -14,6 +14,9 @@ class Event extends Model
         'title',
         'description',
         'location',
+        'location_label',
+        'location_lat',
+        'location_lon',
         'start_at',
         'end_at',
         'all_day',
@@ -38,6 +41,8 @@ class Event extends Model
         'reminder_minutes' => 'integer',
         'reminder_at' => 'datetime',
         'reminded_at' => 'datetime',
+        'location_lat' => 'float',
+        'location_lon' => 'float',
     ];
 
     public function createdBy()
