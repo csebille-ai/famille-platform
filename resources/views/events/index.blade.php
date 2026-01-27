@@ -77,10 +77,7 @@
         <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille (abonnement)</div>
-                    <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">
-                        Abonnement iCal (ICS/webcal) : tous les événements dans ton agenda.
-                    </div>
+                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour iPhone</div>
                 </div>
                 <div class="shrink-0">
                     @if($hasFamilyCalendar)
@@ -112,7 +109,7 @@
                     <div class="absolute inset-x-0 bottom-0 flex justify-center">
                         <div class="w-full max-w-[560px] rounded-t-3xl bg-white border border-[color:var(--fam-border-soft)] shadow-[0_-18px_55px_rgba(15,23,42,0.18)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
                             <div class="mx-auto h-1 w-9 rounded-full bg-black/10"></div>
-                            <div class="mt-3 text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille (abonnement)</div>
+                            <div class="mt-3 text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour iPhone</div>
                             <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">Apple Calendar s’ouvre via webcal. Google/Outlook peuvent utiliser le lien https.</div>
                             <div class="mt-3 grid gap-2">
                                 <a href="{{ $calendarWebcalUrl }}" class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]">
@@ -175,10 +172,7 @@
         <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
             <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Google Calendar (sync)</div>
-                    <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">
-                        Crée un agenda Google dédié et synchronise automatiquement les événements.
-                    </div>
+                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour Androïd</div>
                 </div>
                 <div class="shrink-0">
                     @if($googleSyncEnabled)
