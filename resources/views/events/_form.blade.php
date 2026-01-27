@@ -136,6 +136,23 @@
     <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4 space-y-3">
 
         <div>
+            <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Foyer (rapide)</label>
+            <select 
+                id="eventHouseholdSelect" 
+                name="household_key" 
+                class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25"
+            >
+                <option value="">— Autre lieu (saisir manuellement)</option>
+                @foreach(config('households', []) as $key => $household)
+                    <option value="{{ $key }}" {{ $v('household_key') === $key ? 'selected' : '' }}>
+                        {{ $household['icon'] ?? '🏠' }} {{ $household['label'] }}
+                    </option>
+                @endforeach
+            </select>
+            <div class="mt-1 text-[0.7rem] text-[color:var(--fam-muted)]">Sélectionne un foyer pour pré-remplir l'adresse automatiquement</div>
+        </div>
+
+        <div>
             <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Lieu</label>
             <input 
                 id="eventLocationInput" 
@@ -202,14 +219,74 @@
 <script type="module">
 import { initGeoSearch } from '/resources/js/geo-search.js';
 
+// Household data
+const households = @json(config('households', []));
+
 document.addEventListener('DOMContentLoaded', () => {
     const locationInput = document.getElementById('eventLocationInput');
     const locationLabel = document.getElementById('eventLocationLabel');
     const locationLat = document.getElementById('eventLocationLat');
     const locationLon = document.getElementById('eventLocationLon');
+    const householdSelect = document.getElementById('eventHouseholdSelect');
     
     if (locationInput) {
         initGeoSearch(locationInput, locationLabel, locationLat, locationLon);
+    }
+
+    // Household selection handler
+    if (householdSelect) {
+        householdSelect.addEventListener('change', (e) => {
+            const key = e.target.value;
+            
+            if (!key || !households[key]) {
+                // Reset fields if "Autre lieu" is selected
+                locationInput.value = '';
+                locationLabel.value = '';
+                locationLat.value = '';
+                locationLon.value = '';
+                locationInput.disabled = false;
+                return;
+            }
+
+            const household = households[key];
+            const address = household.address;
+
+            // Pre-fill address fields
+            locationInput.value = address.label || '';
+            locationLabel.value = address.label || '';
+            
+            // If coords are available, use them
+            if (household.coords && household.coords.lat && household.coords.lon) {
+                locationLat.value = household.coords.lat;
+                locationLon.value = household.coords.lon;
+            } else {
+                // Trigger geocoding for this address
+                if (address.label) {
+                    fetch(`/geo/search?q=${encodeURIComponent(address.label)}`)
+                        .then(r => r.json())
+                        .then(results => {
+                            if (results && results.length > 0) {
+                                locationLat.value = results[0].lat;
+                                locationLon.value = results[0].lon;
+                            }
+                        })
+                        .catch(err => console.error('Geocoding error:', err));
+                }
+            }
+
+            // Disable manual input when household is selected
+            locationInput.disabled = true;
+            locationInput.style.opacity = '0.6';
+        });
+
+        // Enable input if "Autre lieu" is already selected on load
+        if (!householdSelect.value) {
+            locationInput.disabled = false;
+            locationInput.style.opacity = '1';
+        } else {
+            locationInput.disabled = true;
+            locationInput.style.opacity = '0.6';
+        }
     }
 });
 </script>

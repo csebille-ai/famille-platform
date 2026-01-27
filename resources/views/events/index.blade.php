@@ -222,6 +222,14 @@
                         @php
                             $cat = $badgeForCategory($e->category);
                             $isPrivate = ($e->visibility ?? 'family') === 'private';
+                            
+                            $households = config('households', []);
+                            $household = $e->household_key && isset($households[$e->household_key]) 
+                                ? $households[$e->household_key] 
+                                : null;
+                            $displayLocation = $household 
+                                ? ($household['icon'] ?? '🏠') . ' ' . $household['label']
+                                : ($e->location_label ?? $e->location);
                         @endphp
                         <a href="{{ route('events.show', $e) }}" class="block">
                             <div class="rounded-2xl bg-white border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:shadow-sm transition active:scale-[0.995]">
@@ -236,6 +244,9 @@
                                             <div class="min-w-0">
                                                 <div class="text-sm font-semibold text-[color:var(--fam-text)] truncate">{{ $e->title }}</div>
                                                 <div class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)] truncate">{{ $fmtWhen($e) }}</div>
+                                                @if($displayLocation)
+                                                    <div class="mt-0.5 text-xs text-[color:var(--fam-muted)] truncate">📍 {{ $displayLocation }}</div>
+                                                @endif
                                             </div>
 
                                             <div class="shrink-0 flex items-center gap-2">

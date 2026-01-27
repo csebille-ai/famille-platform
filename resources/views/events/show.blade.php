@@ -174,11 +174,21 @@
                 @endif
             </div>
 
-            @if($event->location)
+            @if($event->location || $event->household_key)
                 <div>
                     <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Lieu</div>
                     <div class="mt-1 flex items-start gap-2">
-                        <div class="flex-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $event->location_label ?? $event->location }}</div>
+                        @php
+                            $households = config('households', []);
+                            $household = $event->household_key && isset($households[$event->household_key]) 
+                                ? $households[$event->household_key] 
+                                : null;
+                            
+                            $displayLocation = $household 
+                                ? ($household['icon'] ?? '🏠') . ' ' . $household['label']
+                                : ($event->location_label ?? $event->location);
+                        @endphp
+                        <div class="flex-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $displayLocation }}</div>
                         @php
                             $hasCoords = $event->location_lat && $event->location_lon;
                             $mapsUrl = $hasCoords 

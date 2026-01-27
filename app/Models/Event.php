@@ -17,6 +17,7 @@ class Event extends Model
         'location_label',
         'location_lat',
         'location_lon',
+        'household_key',
         'start_at',
         'end_at',
         'all_day',

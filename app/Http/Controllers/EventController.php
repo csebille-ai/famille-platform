@@ -187,6 +187,7 @@ class EventController extends Controller
         $event->location_label = ($data['location_label'] ?? null) !== null ? (string) $data['location_label'] : null;
         $event->location_lat = ($data['location_lat'] ?? null) !== null ? (float) $data['location_lat'] : null;
         $event->location_lon = ($data['location_lon'] ?? null) !== null ? (float) $data['location_lon'] : null;
+        $event->household_key = ($data['household_key'] ?? null) !== null ? (string) $data['household_key'] : null;
         $event->category = ($data['category'] ?? null) !== null ? (string) $data['category'] : null;
         $event->visibility = (string) ($data['visibility'] ?? 'family');
         $event->is_important = (bool) ($data['is_important'] ?? false);
