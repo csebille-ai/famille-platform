@@ -4151,6 +4151,8 @@
             }
             
             function renderMemberList() {
+                try {
+                    console.log('[Accordion] renderMemberList() CALLED');
                 if (!visibilityMemberList || !recipientsUrl) return;
                 
                 if (allMembers.length === 0) {
@@ -4164,6 +4166,9 @@
                         .catch(() => {});
                 } else {
                     renderMemberListHTML();
+                }
+                } catch (err) {
+                    console.error('[Accordion] CRASH:', err);
                 }
             }
             
