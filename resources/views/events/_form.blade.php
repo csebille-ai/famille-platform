@@ -116,7 +116,21 @@
             </div>
         </div>
 
+        <div class="grid grid-cols-2 gap-2">
+            <div>
+                <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Fin <span class="font-normal">(date de fin)</span></label>
+                <input type="date" name="end_date" value="{{ $v('end_date') }}" class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" />
+                @error('end_date')<div class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
+            </div>
+            <div>
+                <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Heure <span class="font-normal">(facultatif)</span></label>
+                <input type="time" name="end_time" value="{{ $v('end_time') }}" class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" />
+                @error('end_time')<div class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
+            </div>
+        </div>
+
         <input type="hidden" name="all_day" value="0" />
+        <input type="hidden" name="add_end" value="0" />
     </div>
 
     <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4 space-y-3">
