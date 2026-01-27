@@ -4151,24 +4151,34 @@
             }
             
             function renderMemberList() {
-                try {
-                    console.log('[Accordion] renderMemberList() CALLED');
-                if (!visibilityMemberList || !recipientsUrl) return;
+                console.log('[Accordion] renderMemberList() ENTRY');
+                console.log('[Accordion] Check vars - visibilityMemberList:', !!visibilityMemberList, ', recipientsUrl:', recipientsUrl, ', allMembers.length:', allMembers?.length);
+                
+                if (!visibilityMemberList || !recipientsUrl) {
+                    console.log('[Accordion] BLOCKED - missing visibilityMemberList or recipientsUrl');
+                    return;
+                }
                 
                 if (allMembers.length === 0) {
-                    // Fetch members
+                    console.log('[Accordion] Fetching members from:', recipientsUrl);
                     fetch(recipientsUrl, { credentials: 'same-origin' })
-                        .then(r => r.json())
+                        .then(r => {
+                            console.log('[Accordion] Got response:', r.status);
+                            return r.json();
+                        })
                         .then(data => {
-                            allMembers = (data || []).filter(m => m.id !== currentUserId);
+                            console.log('[Accordion] Got data:', data);
+                            allMembers = (data.users || []).filter(m => m.id !== currentUserId);
+                            console.log('[Accordion] Filtered to', allMembers.length, 'members');
                             renderMemberListHTML();
                         })
-                        .catch(() => {});
+                        .catch(err => {
+                            console.error('[Accordion] Fetch failed:', err);
+                            visibilityMemberList.innerHTML = '<div class="px-3 py-4 text-center text-sm text-red-500">Erreur</div>';
+                        });
                 } else {
+                    console.log('[Accordion] Using cached:', allMembers.length, 'members');
                     renderMemberListHTML();
-                }
-                } catch (err) {
-                    console.error('[Accordion] CRASH:', err);
                 }
             }
             
