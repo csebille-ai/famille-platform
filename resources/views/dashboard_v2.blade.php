@@ -247,7 +247,7 @@
                                 $meta = trim($dayLabel
                                     . ($timeLabel !== '' ? (' · ' . $timeLabel) : '')
                                     . ($displayLocation !== '' ? (' · ' . $displayLocation) : ''));
-                                $dot = 'bg-[color:var(--fam-primary)]';
+                                $dot = $isPrivate ? 'bg-violet-500' : 'bg-[color:var(--fam-primary)]';
                             @endphp
 
                                 <a href="{{ route('events.show', $ev) }}" class="snap-start shrink-0 w-[260px] rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:bg-white hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Ouvrir événement {{ $ev->title }}">

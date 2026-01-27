@@ -39,7 +39,7 @@
                         <span class="inline-flex items-center h-6 px-2 rounded-full bg-amber-50 text-amber-900 text-xs font-extrabold border border-amber-200">Important</span>
                     @endif
                     @if($isPrivate)
-                        <span class="inline-flex items-center h-6 px-2 rounded-full bg-slate-50 text-slate-800 text-xs font-extrabold border border-slate-200">Privé</span>
+                        <span class="inline-flex items-center h-6 px-2 rounded-full bg-violet-100 text-violet-900 text-xs font-extrabold border border-violet-200">Privé</span>
                     @endif
                 </div>
                 <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">{{ $categoryLabel }}</div>

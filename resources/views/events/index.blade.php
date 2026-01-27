@@ -222,6 +222,10 @@
                         @php
                             $cat = $badgeForCategory($e->category);
                             $isPrivate = ($e->visibility ?? 'family') === 'private';
+
+                            $cardClasses = $isPrivate
+                                ? 'bg-violet-50 border-violet-200'
+                                : 'bg-white border-[color:var(--fam-border-soft)]';
                             
                             $households = config('households', []);
                             $household = $e->household_key && isset($households[$e->household_key]) 
@@ -232,7 +236,7 @@
                                 : ($e->location_label ?? $e->location);
                         @endphp
                         <a href="{{ route('events.show', $e) }}" class="block">
-                            <div class="rounded-2xl bg-white border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:shadow-sm transition active:scale-[0.995]">
+                            <div class="rounded-2xl border px-3 py-2.5 hover:shadow-sm transition active:scale-[0.995] {{ $cardClasses }}">
                                 <div class="flex items-start gap-3">
                                     <div class="shrink-0 rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] px-2.5 py-2 text-center">
                                         <div class="text-base font-extrabold text-[color:var(--fam-text)] leading-none">{{ $fmtDay($e->start_at) }}</div>
@@ -260,7 +264,7 @@
                                                 @endif
 
                                                 @if($isPrivate)
-                                                    <span class="inline-flex items-center rounded-full border border-[color:var(--fam-border-soft)] bg-white px-2 py-1 text-[0.7rem] font-extrabold text-[color:var(--fam-muted)]" title="Privé">
+                                                    <span class="inline-flex items-center rounded-full border border-violet-200 bg-violet-100 px-2 py-1 text-[0.7rem] font-extrabold text-violet-800" title="Privé">
                                                         <i class="ph ph-lock" aria-hidden="true"></i>
                                                     </span>
                                                 @endif
