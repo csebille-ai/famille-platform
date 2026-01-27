@@ -51,6 +51,11 @@ class Event extends Model
         return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
+    public function privateSharedWithUsers()
+    {
+        return $this->belongsToMany(User::class, 'event_user');
+    }
+
     public function isPrivate(): bool
     {
         return ($this->visibility ?? 'family') === 'private';
@@ -72,7 +77,12 @@ class Event extends Model
             $q->where('visibility', '=', 'family')
                 ->orWhere(function (Builder $q2) use ($user) {
                     $q2->where('visibility', '=', 'private')
-                        ->where('created_by_user_id', '=', $user->id);
+                        ->where(function (Builder $q3) use ($user) {
+                            $q3->where('created_by_user_id', '=', $user->id)
+                                ->orWhereHas('privateSharedWithUsers', function (Builder $q4) use ($user) {
+                                    $q4->where('users.id', '=', $user->id);
+                                });
+                        });
                 });
         });
     }

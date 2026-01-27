@@ -84,12 +84,40 @@
 
             <div>
                 <label class="text-xs font-semibold text-[color:var(--fam-muted)]">Visibilité</label>
-                <select name="visibility" class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" required>
+                <select id="eventVisibilitySelect" name="visibility" class="mt-1 w-full h-11 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white px-3 text-sm font-semibold text-[color:var(--fam-text)] focus:outline-none focus:ring-2 focus:ring-[color:var(--fam-primary)]/25" required>
                     <option value="family" {{ $selected('visibility','family') }}>Famille</option>
                     <option value="private" {{ $selected('visibility','private') }}>Privé</option>
                 </select>
-                <div class="mt-1 text-[0.7rem] text-[color:var(--fam-muted)]">Privé = visible seulement par toi et les admins.</div>
+                <div class="mt-1 text-[0.7rem] text-[color:var(--fam-muted)]">Privé = visible uniquement par les personnes sélectionnées (et les admins).</div>
+
+                @php
+                    /** @var \Illuminate\Support\Collection<int,\App\Models\User>|array<int,\App\Models\User>|null $users */
+                    $users = $users ?? collect();
+                    if (is_array($users)) $users = collect($users);
+                    $sharedIds = old('shared_user_ids');
+                    if ($sharedIds === null) {
+                        $sharedIds = $sharedUserIds ?? [];
+                    }
+                    $sharedIds = is_array($sharedIds) ? array_map('intval', $sharedIds) : [];
+                @endphp
+                <div id="eventPrivateShareBox" class="mt-2 rounded-2xl border border-[color:var(--fam-border-soft)] bg-[color:var(--fam-surface-alt)] p-3 space-y-2" style="display:none;">
+                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Partager avec</div>
+                    <div class="grid grid-cols-1 gap-1">
+                        @foreach($users as $u)
+                            @if((int) $u->id !== (int) auth()->id())
+                                <label class="inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--fam-text)]">
+                                    <input type="checkbox" name="shared_user_ids[]" value="{{ $u->id }}" {{ in_array((int) $u->id, $sharedIds, true) ? 'checked' : '' }} class="h-5 w-5 rounded border-[color:var(--fam-border-soft)] text-[color:var(--fam-primary)] focus:ring-[color:var(--fam-primary)]/25" />
+                                    <span>{{ $u->name }}</span>
+                                </label>
+                            @endif
+                        @endforeach
+                    </div>
+                    <div class="text-[0.7rem] text-[color:var(--fam-muted)]">Si tu ne coches personne, l’événement privé ne sera visible que par toi (et les admins).</div>
+                </div>
+
                 @error('visibility')<div class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
+                @error('shared_user_ids')<div class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
+                @error('shared_user_ids.*')<div class="mt-1 text-xs font-semibold text-rose-600">{{ $message }}</div>@enderror
             </div>
         </div>
 
@@ -225,11 +253,22 @@
 const households = @json(config('households', []));
 
 document.addEventListener('DOMContentLoaded', () => {
+    const visibilitySelect = document.getElementById('eventVisibilitySelect');
+    const privateShareBox = document.getElementById('eventPrivateShareBox');
     const locationInput = document.getElementById('eventLocationInput');
     const locationLabel = document.getElementById('eventLocationLabel');
     const locationLat = document.getElementById('eventLocationLat');
     const locationLon = document.getElementById('eventLocationLon');
     const householdSelect = document.getElementById('eventHouseholdSelect');
+
+    const refreshPrivateShareVisibility = () => {
+        if (!visibilitySelect || !privateShareBox) return;
+        privateShareBox.style.display = (visibilitySelect.value === 'private') ? 'block' : 'none';
+    };
+    if (visibilitySelect) {
+        visibilitySelect.addEventListener('change', refreshPrivateShareVisibility);
+        refreshPrivateShareVisibility();
+    }
 
     if (locationInput) {
         // If user edits manually after an autofill, we keep their value.

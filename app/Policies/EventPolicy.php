@@ -23,7 +23,13 @@ class EventPolicy
         }
 
         if (($event->visibility ?? 'family') === 'private') {
-            return (int) $event->created_by_user_id === (int) $user->id;
+            if ((int) $event->created_by_user_id === (int) $user->id) {
+                return true;
+            }
+
+            return $event->privateSharedWithUsers()
+                ->where('users.id', '=', $user->id)
+                ->exists();
         }
 
         return true;
@@ -43,7 +49,13 @@ class EventPolicy
         // Members can edit any family-visible event.
         // Private events remain editable only by their creator (or admins).
         if (($event->visibility ?? 'family') === 'private') {
-            return (int) $event->created_by_user_id === (int) $user->id;
+            if ((int) $event->created_by_user_id === (int) $user->id) {
+                return true;
+            }
+
+            return $event->privateSharedWithUsers()
+                ->where('users.id', '=', $user->id)
+                ->exists();
         }
 
         return true;

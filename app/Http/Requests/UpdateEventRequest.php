@@ -26,6 +26,9 @@ class UpdateEventRequest extends FormRequest
             'visibility' => ['required', 'in:family,private'],
             'is_important' => ['nullable', 'boolean'],
 
+            'shared_user_ids' => ['nullable', 'array'],
+            'shared_user_ids.*' => ['integer', 'exists:users,id'],
+
             'date' => ['required', 'date'],
             'time' => ['nullable', 'date_format:H:i'],
             'all_day' => ['nullable', 'boolean'],

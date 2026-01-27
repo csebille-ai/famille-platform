@@ -79,7 +79,13 @@ class EventController extends Controller
             'all_day' => false,
         ];
 
-        return view('events.create', ['defaults' => $defaults]);
+        $users = User::query()->orderBy('name')->get(['id', 'name']);
+
+        return view('events.create', [
+            'defaults' => $defaults,
+            'users' => $users,
+            'sharedUserIds' => [],
+        ]);
     }
 
     public function store(StoreEventRequest $request): RedirectResponse
@@ -93,6 +99,15 @@ class EventController extends Controller
         $this->fillEventFromForm($event, $data);
         $event->status = 'active';
         $event->save();
+
+        $sharedIds = [];
+        if (($event->visibility ?? 'family') === 'private') {
+            $sharedIds = is_array($data['shared_user_ids'] ?? null) ? $data['shared_user_ids'] : [];
+            $sharedIds = array_values(array_unique(array_map('intval', $sharedIds)));
+            $sharedIds[] = (int) $request->user()->id;
+            $sharedIds = array_values(array_unique($sharedIds));
+        }
+        $event->privateSharedWithUsers()->sync($sharedIds);
 
         return redirect()->route('events.show', $event)->with('status', 'Événement créé.');
     }
@@ -119,7 +134,14 @@ class EventController extends Controller
     {
         $this->authorize('update', $event);
 
-        return view('events.edit', ['event' => $event]);
+        $users = User::query()->orderBy('name')->get(['id', 'name']);
+        $sharedUserIds = $event->privateSharedWithUsers()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+
+        return view('events.edit', [
+            'event' => $event,
+            'users' => $users,
+            'sharedUserIds' => $sharedUserIds,
+        ]);
     }
 
     public function update(UpdateEventRequest $request, Event $event): RedirectResponse
@@ -135,6 +157,15 @@ class EventController extends Controller
         }
 
         $event->save();
+
+        $sharedIds = [];
+        if (($event->visibility ?? 'family') === 'private') {
+            $sharedIds = is_array($data['shared_user_ids'] ?? null) ? $data['shared_user_ids'] : [];
+            $sharedIds = array_values(array_unique(array_map('intval', $sharedIds)));
+            $sharedIds[] = (int) $event->created_by_user_id;
+            $sharedIds = array_values(array_unique($sharedIds));
+        }
+        $event->privateSharedWithUsers()->sync($sharedIds);
 
         return redirect()->route('events.show', $event)->with('status', 'Événement mis à jour.');
     }
