@@ -255,9 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const household = households[key];
             const address = household.address;
 
-            // Pre-fill address fields
-            locationInput.value = address.label || '';
-            locationLabel.value = address.label || '';
+            // Clear location fields - household_key will be used for display
+            locationInput.value = '';
+            locationLabel.value = '';
             
             // If coords are available, use them
             if (household.coords && household.coords.lat && household.coords.lon) {
@@ -265,6 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 locationLon.value = household.coords.lon;
             } else {
                 // Trigger geocoding for this address
+                locationLat.value = '';
+                locationLon.value = '';
                 if (address.label) {
                     fetch(`/geo/search?q=${encodeURIComponent(address.label)}`)
                         .then(r => r.json())
