@@ -4168,7 +4168,11 @@
             }
             
             function renderMemberListHTML() {
-                if (!visibilityMemberList) return;
+                if (!visibilityMemberList) {
+                    console.log('[Accordion] Cannot render HTML - missing element');
+                    return;
+                }
+                console.log('[Accordion] Rendering HTML for', allMembers.length, 'members');
                 visibilityMemberList.innerHTML = '';
                 
                 allMembers.forEach(member => {
