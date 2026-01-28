@@ -74,101 +74,6 @@
             $googleSyncEnabled = (bool) ($googleSyncEnabled ?? false);
         @endphp
 
-        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour iPhone</div>
-                </div>
-                <div class="shrink-0">
-                    @if($hasFamilyCalendar)
-                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Abonné</span>
-                    @else
-                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non abonné</span>
-                    @endif
-                </div>
-            </div>
-
-            <div class="mt-3 flex items-center gap-2">
-                @if($hasFamilyCalendar)
-                    <button type="button" id="familyCalendarManageBtn" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Gérer</button>
-                    <form method="POST" action="{{ route('calendar.family.unsubscribe') }}">
-                        @csrf
-                        <button type="submit" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm font-extrabold text-rose-800 hover:bg-rose-100">Se désabonner</button>
-                    </form>
-                @else
-                    <form method="POST" action="{{ route('calendar.family.subscribe') }}">
-                        @csrf
-                        <button type="submit" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">S’abonner</button>
-                    </form>
-                @endif
-            </div>
-
-            @if($hasFamilyCalendar)
-                <div id="familyCalendarSheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
-                    <button type="button" id="familyCalendarBackdrop" class="absolute inset-0 bg-black/35"></button>
-                    <div class="absolute inset-x-0 bottom-0 flex justify-center">
-                        <div class="w-full max-w-[560px] rounded-t-3xl bg-white border border-[color:var(--fam-border-soft)] shadow-[0_-18px_55px_rgba(15,23,42,0.18)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
-                            <div class="mx-auto h-1 w-9 rounded-full bg-black/10"></div>
-                            <div class="mt-3 text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour iPhone</div>
-                            <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">Apple Calendar s’ouvre via webcal. Google/Outlook peuvent utiliser le lien https.</div>
-                            <div class="mt-3 grid gap-2">
-                                <a href="{{ $calendarWebcalUrl }}" class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]">
-                                    <span>Ouvrir dans Apple Calendar</span>
-                                    <i class="ph ph-calendar" aria-hidden="true"></i>
-                                </a>
-                                <button type="button" id="familyCalendarCopyBtn" class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]">
-                                    <span>Copier le lien d’abonnement</span>
-                                    <i class="ph ph-copy" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                            <div id="familyCalendarCopyStatus" class="mt-2 text-xs font-semibold text-[color:var(--fam-muted)]"></div>
-                            <button type="button" id="familyCalendarClose" class="mt-3 w-full h-11 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-white/60 active:bg-white/75">Fermer</button>
-                        </div>
-                    </div>
-                </div>
-
-                <script>
-                    (() => {
-                        const btn = document.getElementById('familyCalendarManageBtn');
-                        const sheet = document.getElementById('familyCalendarSheet');
-                        const close = document.getElementById('familyCalendarClose');
-                        const backdrop = document.getElementById('familyCalendarBackdrop');
-                        const copyBtn = document.getElementById('familyCalendarCopyBtn');
-                        const status = document.getElementById('familyCalendarCopyStatus');
-                        const httpsUrl = @json($calendarHttpsUrl);
-                        if (!btn || !sheet) return;
-
-                        const open = () => {
-                            sheet.classList.remove('hidden');
-                            sheet.setAttribute('aria-hidden', 'false');
-                        };
-                        const hide = () => {
-                            sheet.classList.add('hidden');
-                            sheet.setAttribute('aria-hidden', 'true');
-                        };
-
-                        btn.addEventListener('click', open);
-                        if (close) close.addEventListener('click', hide);
-                        if (backdrop) backdrop.addEventListener('click', hide);
-
-                        if (copyBtn) {
-                            copyBtn.addEventListener('click', async () => {
-                                try {
-                                    await navigator.clipboard.writeText(httpsUrl);
-                                    if (status) status.textContent = 'Lien copié.';
-                                } catch (e) {
-                                    try {
-                                        window.prompt('Copier le lien :', httpsUrl);
-                                    } catch (e2) {}
-                                    if (status) status.textContent = 'Copie manuelle.';
-                                }
-                            });
-                        }
-                    })();
-                </script>
-            @endif
-        </div>
-
         <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-3">
             <div class="flex items-center justify-between gap-3">
                 <div class="inline-flex bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] rounded-2xl p-1">
@@ -262,6 +167,101 @@
                     </div>
                 @endif
             </div>
+        </div>
+
+        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour iPhone</div>
+                </div>
+                <div class="shrink-0">
+                    @if($hasFamilyCalendar)
+                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Abonné</span>
+                    @else
+                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non abonné</span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+                @if($hasFamilyCalendar)
+                    <button type="button" id="familyCalendarManageBtn" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Gérer</button>
+                    <form method="POST" action="{{ route('calendar.family.unsubscribe') }}">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm font-extrabold text-rose-800 hover:bg-rose-100">Se désabonner</button>
+                    </form>
+                @else
+                    <form method="POST" action="{{ route('calendar.family.subscribe') }}">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">S’abonner</button>
+                    </form>
+                @endif
+            </div>
+
+            @if($hasFamilyCalendar)
+                <div id="familyCalendarSheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
+                    <button type="button" id="familyCalendarBackdrop" class="absolute inset-0 bg-black/35"></button>
+                    <div class="absolute inset-x-0 bottom-0 flex justify-center">
+                        <div class="w-full max-w-[560px] rounded-t-3xl bg-white border border-[color:var(--fam-border-soft)] shadow-[0_-18px_55px_rgba(15,23,42,0.18)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+                            <div class="mx-auto h-1 w-9 rounded-full bg-black/10"></div>
+                            <div class="mt-3 text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour iPhone</div>
+                            <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">Apple Calendar s’ouvre via webcal. Google/Outlook peuvent utiliser le lien https.</div>
+                            <div class="mt-3 grid gap-2">
+                                <a href="{{ $calendarWebcalUrl }}" class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]">
+                                    <span>Ouvrir dans Apple Calendar</span>
+                                    <i class="ph ph-calendar" aria-hidden="true"></i>
+                                </a>
+                                <button type="button" id="familyCalendarCopyBtn" class="w-full h-14 inline-flex items-center justify-between rounded-2xl border border-[color:var(--fam-border)] bg-white px-4 text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]">
+                                    <span>Copier le lien d’abonnement</span>
+                                    <i class="ph ph-copy" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div id="familyCalendarCopyStatus" class="mt-2 text-xs font-semibold text-[color:var(--fam-muted)]"></div>
+                            <button type="button" id="familyCalendarClose" class="mt-3 w-full h-11 rounded-2xl text-sm font-semibold text-slate-600 hover:bg-white/60 active:bg-white/75">Fermer</button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    (() => {
+                        const btn = document.getElementById('familyCalendarManageBtn');
+                        const sheet = document.getElementById('familyCalendarSheet');
+                        const close = document.getElementById('familyCalendarClose');
+                        const backdrop = document.getElementById('familyCalendarBackdrop');
+                        const copyBtn = document.getElementById('familyCalendarCopyBtn');
+                        const status = document.getElementById('familyCalendarCopyStatus');
+                        const httpsUrl = @json($calendarHttpsUrl);
+                        if (!btn || !sheet) return;
+
+                        const open = () => {
+                            sheet.classList.remove('hidden');
+                            sheet.setAttribute('aria-hidden', 'false');
+                        };
+                        const hide = () => {
+                            sheet.classList.add('hidden');
+                            sheet.setAttribute('aria-hidden', 'true');
+                        };
+
+                        btn.addEventListener('click', open);
+                        if (close) close.addEventListener('click', hide);
+                        if (backdrop) backdrop.addEventListener('click', hide);
+
+                        if (copyBtn) {
+                            copyBtn.addEventListener('click', async () => {
+                                try {
+                                    await navigator.clipboard.writeText(httpsUrl);
+                                    if (status) status.textContent = 'Lien copié.';
+                                } catch (e) {
+                                    try {
+                                        window.prompt('Copier le lien :', httpsUrl);
+                                    } catch (e2) {}
+                                    if (status) status.textContent = 'Copie manuelle.';
+                                }
+                            });
+                        }
+                    })();
+                </script>
+            @endif
         </div>
 
         <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
