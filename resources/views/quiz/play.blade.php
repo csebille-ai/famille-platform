@@ -136,15 +136,17 @@
         });
 
         // Confirm before leaving
+        let isSubmitting = false;
         window.addEventListener('beforeunload', (e) => {
+            if (isSubmitting) return;
             e.preventDefault();
             e.returnValue = '';
         });
 
         // Remove warning on submit
         document.getElementById('quizForm').addEventListener('submit', () => {
+            isSubmitting = true;
             clearInterval(timerInterval);
-            window.removeEventListener('beforeunload', () => {});
         });
 
         // Selected choice styling
