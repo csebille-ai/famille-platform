@@ -141,18 +141,9 @@ class QuizController extends Controller
             'auth_user_id' => $user->id,
         ]);
 
-        // Verify attempt belongs to user
-        if ($attempt->user_id != $user->id) {
-            abort(403, 'This attempt does not belong to you');
-        }
-        
         // If already finished (double-submit), redirect to result
         if ($attempt->status == 'finished') {
             return redirect()->route('quiz.result', ['quiz' => $quiz, 'attempt' => $attempt]);
-        }
-        
-        if ($attempt->status != 'in_progress') {
-            abort(403, 'Invalid attempt status: ' . $attempt->status);
         }
 
         $validated = $request->validate([
