@@ -97,26 +97,13 @@
 
         @if($hasChessActive)
             <section class="dash-fade">
-                <a href="{{ route('games.chess.index') }}" class="block rounded-2xl bg-white px-3 py-3 border border-[color:var(--fam-border)] shadow-sm hover:shadow transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25">
-                    <div class="flex items-start gap-3">
-                        <div class="h-10 w-10 shrink-0 rounded-2xl bg-[color:var(--fam-primary-100)] text-[color:var(--fam-primary)] flex items-center justify-center">
-                            <i class="ph ph-chess-rook text-[20px]" aria-hidden="true"></i>
-                        </div>
-
-                        <div class="min-w-0 flex-1">
-                            <div class="flex items-center gap-2">
-                                <div class="text-sm font-semibold text-[color:var(--fam-text)]">Échecs</div>
-                                @if($hasChessTurn)
-                                    <span class="inline-block h-2 w-2 rounded-full bg-[color:var(--fam-primary-300)]" aria-hidden="true"></span>
-                                @endif
-                            </div>
-                            <div class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)]">
-                                {{ $hasChessTurn ? 'À ton équipe de jouer' : 'Partie en cours' }}
-                            </div>
-                        </div>
-
-                        <div class="text-[color:var(--fam-muted)] mt-1"><i class="ph ph-caret-right" aria-hidden="true"></i></div>
+                <a href="{{ route('games.chess.index') }}" class="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white border border-[color:var(--fam-border-soft)] hover:border-[color:var(--fam-primary)]/40 hover:shadow-sm transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25">
+                    <div class="shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-[color:var(--fam-primary-100)] text-[color:var(--fam-primary)]">
+                        <i class="ph ph-chess-rook text-sm" aria-hidden="true"></i>
                     </div>
+                    <div class="text-sm font-medium text-[color:var(--fam-text)]">{{ $hasChessTurn ? '♟️ À toi de jouer' : 'Échecs • Partie en cours' }}</div>
+                    @if($hasChessTurn)<span class="shrink-0 w-1.5 h-1.5 rounded-full bg-[color:var(--fam-primary)]" aria-hidden="true"></span>@endif
+                    <i class="ph ph-caret-right text-[color:var(--fam-muted)] text-xs" aria-hidden="true"></i>
                 </a>
             </section>
         @endif
