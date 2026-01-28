@@ -143,8 +143,16 @@
             e.returnValue = '';
         });
 
-        // Remove warning on submit
-        document.getElementById('quizForm').addEventListener('submit', () => {
+        // Remove warning on submit and disable button
+        document.getElementById('quizForm').addEventListener('submit', (e) => {
+            const btn = document.getElementById('submitBtn');
+            if (btn.dataset.submitted === 'true') {
+                e.preventDefault();
+                return false;
+            }
+            btn.dataset.submitted = 'true';
+            btn.disabled = true;
+            btn.innerHTML = '<i class="ph ph-spinner ph-spin text-2xl" aria-hidden="true"></i> <span>Envoi en cours...</span>';
             isSubmitting = true;
             clearInterval(timerInterval);
         });

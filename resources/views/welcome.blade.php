@@ -10,7 +10,7 @@
         <meta name="apple-mobile-web-app-title" content="{{ config('app.name', 'Famille') }}">
         <meta name="mobile-web-app-capable" content="yes">
 
-        <title>{{ config('app.name', 'La Famille') }}</title>
+        <title>{{ config('app.name', 'Laravel') }}</title>
 
         <link rel="manifest" href="{{ asset('manifest.webmanifest') }}?v=2">
         <link rel="icon" href="{{ asset('favicon.ico') }}?v=2">

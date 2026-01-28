@@ -126,14 +126,6 @@
                                         </x-dropdown-link>
                                     @endcan
 
-                                    <x-dropdown-link :href="route('profile.edit')">
-                                        {{ __('Profil') }}
-                                    </x-dropdown-link>
-
-                                    <x-dropdown-link :href="route('astro.show')">
-                                        Ma fiche astro
-                                    </x-dropdown-link>
-
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <x-dropdown-link :href="route('logout')"
@@ -231,14 +223,6 @@
                                     {{ __('Admin') }}
                                 </x-dropdown-link>
                             @endcan
-
-                            <x-dropdown-link :href="route('profile.edit')">
-                                {{ __('Profil') }}
-                            </x-dropdown-link>
-
-                            <x-dropdown-link :href="route('astro.show')">
-                                Ma fiche astro
-                            </x-dropdown-link>
 
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf

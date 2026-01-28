@@ -95,24 +95,8 @@
                         @endforeach
                     </div>
 
-                    <div class="mt-1 text-xs text-[color:var(--fam-muted)]">
-                        Max 500 caractères. Besoin d’un point de départ ?
-                        <button type="button" class="font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]" data-tarot-example>Remplir un exemple</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-
-        <div class="fixed inset-x-0 bottom-0 z-40" data-tarot-sticky-bar>
-            <div class="mx-auto max-w-3xl px-6">
-                <div class="mb-[calc(0.75rem+env(safe-area-inset-bottom))] rounded-2xl border border-[color:var(--fam-border-soft)] bg-[color:rgba(255,255,255,0.70)] supports-[backdrop-filter]:bg-[color:rgba(255,255,255,0.55)] supports-[backdrop-filter]:backdrop-blur-xl shadow-[0_12px_28px_rgba(17,24,39,0.10)] p-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="text-xs font-semibold text-[color:var(--fam-muted)]">Action</div>
-                            <div class="mt-0.5 text-sm font-semibold text-[color:var(--fam-text)]" data-tarot-sticky-subtitle>Prêt pour un tirage</div>
-                        </div>
-
-                        <button type="submit" form="tarot-draw-form" class="inline-flex items-center justify-center h-11 px-5 rounded-2xl text-sm font-semibold text-white bg-[color:var(--fam-primary)] hover:bg-[color:var(--fam-primary-hover)] disabled:opacity-60 disabled:cursor-not-allowed" data-tarot-submit>
+                    <div class="mt-4">
+                        <button type="submit" class="w-full inline-flex items-center justify-center h-11 px-5 rounded-2xl text-sm font-semibold text-white bg-[color:var(--fam-primary)] hover:bg-[color:var(--fam-primary-hover)] disabled:opacity-60 disabled:cursor-not-allowed" data-tarot-submit>
                             <span data-tarot-submit-label>Tirer 3 cartes</span>
                             <span class="hidden items-center gap-2" data-tarot-submit-loading>
                                 <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden="true">
@@ -124,7 +108,7 @@
                         </button>
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
 
         <div class="space-y-4" data-tarot-stage>
@@ -155,9 +139,7 @@
                         <div class="min-w-0">
                             <div class="text-sm font-semibold text-[color:var(--fam-text)]">Aucun tirage pour l’instant</div>
                             <div class="mt-1 text-sm text-[color:var(--fam-muted)]">Choisis 3 ou 5 cartes, puis lance un tirage.</div>
-                            <div class="mt-2 text-sm text-[color:var(--fam-muted)]">
-                                Exemple :
-                                <button type="button" class="font-semibold text-[color:var(--fam-primary)] hover:text-[color:var(--fam-primary-hover)]" data-tarot-example>« Comment aborder sereinement la semaine à venir ? »</button>
+
                             </div>
                         </div>
                     </div>
