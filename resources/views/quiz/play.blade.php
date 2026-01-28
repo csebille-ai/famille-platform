@@ -6,7 +6,7 @@
                 <div>
                     <h1 class="text-xl font-bold text-[color:var(--fam-text)]">{{ $quiz->title }}</h1>
                     <div class="mt-1 text-sm text-[color:var(--fam-muted)]">
-                        {{ $quiz->questions_count }} questions • {{ $quiz->questions_count * 10 }} points max
+                        {{ count($questions) }} questions • {{ count($questions) * 10 }} points max
                     </div>
                 </div>
                 <div id="timer" class="text-right">
@@ -74,7 +74,7 @@
                     <i class="ph ph-check-circle text-2xl" aria-hidden="true"></i>
                     <span>Valider mes réponses</span>
                     <span id="answerProgress" class="px-2 py-0.5 rounded-full bg-white/20 text-sm">
-                        0/{{ $quiz->questions_count }}
+                        0/{{ count($questions) }}
                     </span>
                 </button>
             </div>
@@ -94,7 +94,7 @@
 
         // Track answered questions
         let answeredCount = 0;
-        const totalQuestions = {{ $quiz->questions_count }};
+        const totalQuestions = {{ count($questions) }};
         const answeredQuestions = new Set();
 
         function markQuestionAnswered(questionIndex) {
