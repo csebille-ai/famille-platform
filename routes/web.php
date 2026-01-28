@@ -1676,5 +1676,17 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+
+// Quiz routes (under /games)
+Route::middleware(['auth', 'verified'])->prefix('games')->name('quiz.')->group(function () {
+    Route::get('/quiz', [QuizController::class, 'index'])->name('index');
+    Route::get('/quiz/leaderboard', [QuizController::class, 'leaderboard'])->name('leaderboard');
+    Route::get('/quiz/{quiz}', [QuizController::class, 'show'])->name('show');
+    Route::get('/quiz/{quiz}/play', [QuizController::class, 'play'])->name('play');
+    Route::post('/quiz/{quiz}/attempts/{attempt}/submit', [QuizController::class, 'submit'])->name('submit');
+    Route::get('/quiz/{quiz}/attempts/{attempt}/result', [QuizController::class, 'result'])->name('result');
+    Route::get('/quiz/{quiz}/leaderboard', [QuizController::class, 'quizLeaderboard'])->name('quiz-leaderboard');
+});
 require __DIR__.'/auth.php';
 
+ 
