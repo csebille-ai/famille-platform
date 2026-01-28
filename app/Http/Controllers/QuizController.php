@@ -146,6 +146,12 @@ class QuizController extends Controller
             return redirect()->route('quiz.result', ['quiz' => $quiz, 'attempt' => $attempt]);
         }
 
+        // Log received data
+        \Log::info('Quiz submit - received data', [
+            'answers_count' => count($request->input('answers', [])),
+            'first_answer' => $request->input('answers.0'),
+        ]);
+
         $validated = $request->validate([
             'answers' => 'required|array',
             'answers.*.question_id' => 'required|exists:quiz_questions,id',
