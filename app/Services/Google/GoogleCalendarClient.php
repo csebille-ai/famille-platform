@@ -253,6 +253,15 @@ class GoogleCalendarClient
         $url = self::API_BASE . '/calendars/' . rawurlencode($calendarId) . '/events';
         $resp = Http::withToken($token)->timeout(15)->post($url, $payload);
 
+        \Illuminate\Support\Facades\Log::info('GoogleCalendarClient: event creation attempt', [
+            'event_id' => $event->id,
+            'user_id' => $user->id,
+            'calendar_id' => $calendarId,
+            'http_status' => $resp->status(),
+            'payload' => $payload,
+            'response_body' => $resp->body(),
+        ]);
+
         if ($resp->status() === 401) {
             $account->revoked_at = now();
             $account->save();
