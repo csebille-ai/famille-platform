@@ -142,11 +142,11 @@ class QuizController extends Controller
         ]);
 
         // Verify attempt belongs to user and is in progress
-        if ((int) $attempt->user_id !== (int) $user->id) {
-            abort(403, 'This attempt does not belong to you');
+        if ($attempt->user_id != $user->id) {
+            abort(403, 'This attempt does not belong to you (attempt_user=' . $attempt->user_id . ', auth_user=' . $user->id . ')');
         }
         
-        if ($attempt->status !== 'in_progress') {
+        if ($attempt->status != 'in_progress') {
             abort(403, 'This attempt has already been submitted (status: ' . $attempt->status . ')');
         }
 
