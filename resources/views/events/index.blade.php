@@ -169,27 +169,6 @@
             @endif
         </div>
 
-        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour Androïd</div>
-                </div>
-                <div class="shrink-0">
-                    @if($googleSyncEnabled)
-                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Actif</span>
-                    @elseif($googleConnected)
-                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Connecté</span>
-                    @else
-                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non connecté</span>
-                    @endif
-                </div>
-            </div>
-
-            <div class="mt-3 flex items-center gap-2">
-                <a href="{{ route('profile.edit') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Configurer / Gérer</a>
-            </div>
-        </div>
-
         <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-3">
             <div class="flex items-center justify-between gap-3">
                 <div class="inline-flex bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] rounded-2xl p-1">
@@ -282,6 +261,27 @@
                         Rien à afficher pour l’instant.
                     </div>
                 @endif
+            </div>
+        </div>
+
+        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-sm font-extrabold text-[color:var(--fam-text)]">Calendrier Famille pour Androïd</div>
+                </div>
+                <div class="shrink-0">
+                    @if($googleSyncEnabled)
+                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Actif</span>
+                    @elseif($googleConnected)
+                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Connecté</span>
+                    @else
+                        <span class="inline-flex items-center h-8 px-3 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non connecté</span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+                <a href="{{ route('profile.edit') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Configurer / Gérer</a>
             </div>
         </div>
     </div>

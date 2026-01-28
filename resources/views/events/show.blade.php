@@ -69,34 +69,6 @@
             </div>
         </div>
 
-        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Google Agenda</div>
-                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">
-                        Synchronisation automatique dans ton calendrier dédié.
-                    </div>
-                </div>
-                <div class="shrink-0">
-                    @if(!$googleConnected)
-                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non connecté</span>
-                    @elseif($googleSyncEnabled)
-                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Synchro activée</span>
-                    @else
-                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-amber-50 text-amber-900 text-xs font-extrabold border border-amber-200">Synchro désactivée</span>
-                    @endif
-                </div>
-            </div>
-
-            <div class="mt-3 flex items-center gap-2">
-                @if(!$googleConnected)
-                    <a href="{{ route('oauth.google.calendar.start') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Connecter Google Agenda</a>
-                @else
-                    <a href="{{ route('profile.edit') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-white border border-[color:var(--fam-border)] text-[color:var(--fam-text)] text-sm font-extrabold hover:bg-[color:var(--fam-tint)]">Gérer la synchro</a>
-                @endif
-            </div>
-        </div>
-
         @if(!$hasFamilyCalendar && !$googleSyncEnabled)
             <div id="eventAddToCalendarSheet" class="fixed inset-0 z-50 hidden" aria-hidden="true">
                 <button type="button" id="eventAddToCalendarBackdrop" class="absolute inset-0 bg-black/35"></button>
@@ -249,6 +221,34 @@
                     <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Visibilité</div>
                     <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $isPrivate ? 'Privé' : 'Famille' }}</div>
                 </div>
+            </div>
+        </div>
+
+        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Google Agenda</div>
+                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">
+                        Synchronisation automatique dans ton calendrier dédié.
+                    </div>
+                </div>
+                <div class="shrink-0">
+                    @if(!$googleConnected)
+                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-slate-50 text-slate-700 text-xs font-extrabold border border-slate-200">Non connecté</span>
+                    @elseif($googleSyncEnabled)
+                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold border border-emerald-200">Synchro activée</span>
+                    @else
+                        <span class="inline-flex items-center h-7 px-2.5 rounded-full bg-amber-50 text-amber-900 text-xs font-extrabold border border-amber-200">Synchro désactivée</span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="mt-3 flex items-center gap-2">
+                @if(!$googleConnected)
+                    <a href="{{ route('oauth.google.calendar.start') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Connecter Google Agenda</a>
+                @else
+                    <a href="{{ route('profile.edit') }}" class="inline-flex items-center justify-center h-10 px-4 rounded-2xl bg-white border border-[color:var(--fam-border)] text-[color:var(--fam-text)] text-sm font-extrabold hover:bg-[color:var(--fam-tint)]">Gérer la synchro</a>
+                @endif
             </div>
         </div>
 

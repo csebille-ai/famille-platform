@@ -149,12 +149,12 @@
                     </details>
             </div>
 
-            <div class="rounded-2xl border border-[color:var(--fam-border)] bg-white p-5 sm:p-6">
-                @include('profile.partials.google-calendar-form')
-            </div>
-
             <div class="rounded-2xl border border-rose-200 bg-[color:var(--fam-surface-2)] p-5 sm:p-6">
                 @include('profile.partials.delete-user-form')
+            </div>
+
+            <div class="rounded-2xl border border-[color:var(--fam-border)] bg-white p-5 sm:p-6">
+                @include('profile.partials.google-calendar-form')
             </div>
         </div>
     </div>
