@@ -159,6 +159,7 @@ class QuizController extends Controller
                 'answers.*.choice_id' => 'required|exists:quiz_choices,id',
                 'answers.*.response_time_ms' => 'nullable|integer',
             ]);
+            \Log::info('Quiz validation passed');
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Quiz validation failed', [
                 'errors' => $e->errors(),
@@ -167,7 +168,10 @@ class QuizController extends Controller
             throw $e;
         }
 
+        \Log::info('Starting DB transaction');
+        
         DB::transaction(function () use ($attempt, $validated) {
+            \Log::info('Inside transaction');
             $totalScore = 0;
             $correctCount = 0;
 
