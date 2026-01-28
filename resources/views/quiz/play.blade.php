@@ -69,7 +69,6 @@
                     type="submit"
                     class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[color:var(--fam-primary)] text-white font-bold hover:bg-[color:var(--fam-primary-dark)] active:scale-95 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     id="submitBtn"
-                    disabled
                 >
                     <i class="ph ph-check-circle text-2xl" aria-hidden="true"></i>
                     <span>Valider mes réponses</span>
