@@ -1,0 +1,117 @@
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Quiz Templates
+    |--------------------------------------------------------------------------
+    |
+    | Templates for automatic quiz generation from Wikidata.
+    | Each template defines:
+    | - SPARQL query to fetch (subject, correct_answer) pairs
+    | - Question text with placeholders
+    | - Rules for generating distractor answers
+    | - Quality filters
+    |
+    */
+
+    'templates' => [
+
+        'capitals' => [
+            'name' => 'Capitales du monde',
+            'category' => 'Géographie',
+            'difficulty' => 'easy',
+            
+            // Question template with {subject} placeholder
+            'question_template' => 'Quelle est la capitale de {subject} ?',
+            
+            // SPARQL query to fetch countries and their capitals
+            // Returns: ?subjectQid ?subjectLabel ?answerQid ?answerLabel
+            'sparql_query' => <<<'SPARQL'
+SELECT DISTINCT ?subjectQid ?subjectLabel ?answerQid ?answerLabel WHERE {
+  ?subjectQid wdt:P31 wd:Q3624078 .  # sovereign state
+  ?subjectQid wdt:P36 ?answerQid .   # capital
+  
+  # Get French labels
+  ?subjectQid rdfs:label ?subjectLabel . FILTER(LANG(?subjectLabel) = "fr")
+  ?answerQid rdfs:label ?answerLabel . FILTER(LANG(?answerLabel) = "fr")
+  
+  # Quality filters
+  FILTER NOT EXISTS { ?subjectQid wdt:P576 ?dissolved }  # not dissolved
+  FILTER NOT EXISTS { ?subjectQid wdt:P582 ?endTime }    # not ended
+}
+LIMIT 500
+SPARQL,
+            
+            // Distractor generation rules
+            'distractor_query' => <<<'SPARQL'
+SELECT DISTINCT ?qid ?label WHERE {
+  ?qid wdt:P31 wd:Q5119 .  # instance of capital
+  ?qid rdfs:label ?label . FILTER(LANG(?label) = "fr")
+}
+LIMIT 1000
+SPARQL,
+            
+            'distractor_count' => 3,
+            
+            // Quality constraints
+            'filters' => [
+                'require_french_label' => true,
+                'reject_multi_value' => true,
+                'reject_duplicates' => true,
+                'min_label_length' => 2,
+            ],
+            
+            // Generation settings
+            'default_questions_count' => 200,
+            'points_per_question' => 10,
+        ],
+
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Wikidata Query Service Configuration
+    |--------------------------------------------------------------------------
+    */
+
+    'wikidata' => [
+        'endpoint' => 'https://query.wikidata.org/sparql',
+        'user_agent' => 'FamillePlatform/1.0 (https://famille.example.com; contact@example.com)',
+        'timeout' => 30,
+        'retry_attempts' => 3,
+        'retry_delay' => 2, // seconds
+        'backoff_multiplier' => 2,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Quiz Settings
+    |--------------------------------------------------------------------------
+    */
+
+    'default_category' => 'Général',
+    'default_difficulty' => 'medium',
+    'difficulties' => ['easy', 'medium', 'hard'],
+    'categories' => [
+        'Géographie',
+        'Histoire',
+        'Sciences',
+        'Culture',
+        'Sport',
+        'Général',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Leaderboard Configuration
+    |--------------------------------------------------------------------------
+    */
+
+    'leaderboard' => [
+        'top_limit' => 50,
+        'cache_ttl' => 300, // 5 minutes
+    ],
+
+];
