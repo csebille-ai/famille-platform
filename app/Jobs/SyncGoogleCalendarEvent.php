@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\GoogleEventLink;
 use App\Models\User;
 use App\Services\Google\GoogleCalendarClient;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,6 +32,9 @@ class SyncGoogleCalendarEvent implements ShouldQueue
                 'job' => self::class,
                 'event_id' => $this->eventId,
                 'action' => $this->action,
+                'db_default' => (string) config('database.default'),
+                'db_name' => (string) (DB::connection()->getDatabaseName() ?? ''),
+                'queue_db_connection' => (string) (config('queue.connections.database.connection') ?? ''),
             ]);
             return;
         }
