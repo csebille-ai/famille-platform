@@ -31,25 +31,34 @@
     @endphp
 
     <div class="max-w-2xl mx-auto px-4 py-4 space-y-3">
-        <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                    <div class="text-base font-semibold text-[color:var(--fam-text)] break-words">{{ $event->title }}</div>
-                    @if($isImportant)
-                        <span class="inline-flex items-center h-6 px-2 rounded-full bg-amber-50 text-amber-900 text-xs font-extrabold border border-amber-200">Important</span>
-                    @endif
-                    @if($isPrivate)
-                        <span class="inline-flex items-center h-6 px-2 rounded-full bg-violet-100 text-violet-900 text-xs font-extrabold border border-violet-200">Privé</span>
-                    @endif
-                </div>
-                <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">{{ $categoryLabel }}</div>
+        <div class="text-center space-y-2">
+            <h1 class="text-xl font-extrabold text-[color:var(--fam-text)]">{{ $event->title }}</h1>
+            <div class="flex items-center justify-center gap-2 flex-wrap">
+                @if($isImportant)
+                    <span class="inline-flex items-center h-6 px-2.5 rounded-full bg-amber-50 text-amber-900 text-xs font-extrabold border border-amber-200">Important</span>
+                @endif
+                @if($isPrivate)
+                    <span class="inline-flex items-center h-6 px-2.5 rounded-full bg-violet-100 text-violet-900 text-xs font-extrabold border border-violet-200">Privé</span>
+                @else
+                    <span class="inline-flex items-center h-6 px-2.5 rounded-full bg-teal-50 text-teal-900 text-xs font-extrabold border border-teal-200">Famille</span>
+                @endif
+                @if($event->color_tag)
+                    <div class="w-4 h-4 rounded-full" style="background: {{ $event->color_tag }};"></div>
+                @endif
             </div>
-            <div class="shrink-0 flex items-center gap-2">
-                <a href="{{ route('events.index') }}" class="inline-flex items-center h-7 px-3 rounded-xl border border-[color:var(--fam-border-soft)] bg-white text-xs font-semibold text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]">Liste</a>
-                @can('update', $event)
-                    <a href="{{ route('events.edit', $event) }}" class="inline-flex items-center h-7 px-3 rounded-xl bg-[color:var(--fam-primary)] text-white text-xs font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Modifier</a>
-                @endcan
-            </div>
+        </div>
+
+        <div class="flex items-center justify-center gap-2">
+            <a href="{{ route('events.index') }}" class="inline-flex items-center h-7 px-3 rounded-xl border border-[color:var(--fam-border)] bg-white text-xs font-semibold text-[color:var(--fam-text)] hover:bg-[color:var(--fam-tint)]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256" class="mr-1.5"><path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path></svg>
+                Liste
+            </a>
+            @can('update', $event)
+                <a href="{{ route('events.edit', $event) }}" class="inline-flex items-center h-7 px-3 rounded-xl bg-[color:var(--fam-primary)] text-white text-xs font-extrabold hover:bg-[color:var(--fam-primary-hover)]">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256" class="mr-1.5"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM51.31,160l90.35-90.35,16.68,16.69L68,176.68ZM48,179.31,76.69,208H48Zm48,25.38L79.31,188l90.35-90.35,16.68,16.69ZM192,103.31,152.69,64,171.31,45.37,210.63,84.68Z"></path></svg>
+                    Modifier
+                </a>
+            @endcan
         </div>
 
         @if(!$hasFamilyCalendar && !$googleSyncEnabled)
@@ -99,40 +108,35 @@
             </script>
         @endif
 
-        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4 space-y-3">
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Date</div>
-                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">
-                        @if($event->all_day)
-                            @if($startAt)
-                                {{ $startAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y') }}
-                            @else
-                                —
-                            @endif
-                            <span class="text-[color:var(--fam-muted)]">(journée entière)</span>
+        <div class="rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm p-4 space-y-4">
+            <div>
+                <div class="text-base font-extrabold text-[color:var(--fam-text)] mb-2">📅 Date</div>
+                <div class="text-base font-semibold text-[color:var(--fam-text)]">
+                    @if($event->all_day)
+                        @if($startAt)
+                            {{ $startAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y') }}
                         @else
-                            @if($startAt)
-                                {{ $startAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y \à H:i') }}
-                            @else
-                                —
-                            @endif
-                            @if($endAt)
-                                <span class="text-[color:var(--fam-muted)]">→</span>
-                                {{ $endAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y \à H:i') }}
-                            @endif
+                            —
                         @endif
-                    </div>
+                        <span class="text-sm text-[color:var(--fam-muted)]">(journée entière)</span>
+                    @else
+                        @if($startAt)
+                            {{ $startAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y \à H:i') }}
+                        @else
+                            —
+                        @endif
+                        @if($endAt)
+                            <span class="text-[color:var(--fam-muted)]">→</span>
+                            {{ $endAt->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y \à H:i') }}
+                        @endif
+                    @endif
                 </div>
-                @if($event->color_tag)
-                    <div class="shrink-0 w-4 h-4 rounded-full" style="background: {{ $event->color_tag }};"></div>
-                @endif
             </div>
 
             @if($event->location || $event->household_key)
                 <div>
-                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Lieu</div>
-                    <div class="mt-1 flex items-start gap-2">
+                    <div class="text-base font-extrabold text-[color:var(--fam-text)] mb-2">📍 Lieu</div>
+                    <div class="flex items-start gap-2">
                         @php
                             $households = config('households', []);
                             $household = $event->household_key && isset($households[$event->household_key]) 
@@ -156,8 +160,8 @@
                                 ? 'https://www.google.com/maps/dir/?api=1&destination=' . $lat . ',' . $lon
                                 : 'https://www.google.com/maps/search/?api=1&query=' . urlencode($household ? ($household['address']['label'] ?? '') : $event->location);
                         @endphp
-                        <div class="flex-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $displayLocation }}</div>
-                        <a href="{{ $mapsUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 h-7 px-3 rounded-xl bg-[color:var(--fam-primary)] text-white text-xs font-extrabold hover:bg-[color:var(--fam-primary-hover)] active:scale-[0.98] transition-all">
+                        <div class="flex-1 text-base font-semibold text-[color:var(--fam-text)]">{{ $displayLocation }}</div>
+                        <a href="{{ $mapsUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 h-7 px-3 rounded-xl bg-[color:var(--fam-primary)] text-white text-xs font-extrabold hover:bg-[color:var(--fam-primary-hover)]">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M200,224H150.54A266.56,266.56,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25a88,88,0,0,0-176,0c0,31.4,14.51,64.68,42,96.25A266.56,266.56,0,0,0,105.46,224H56a8,8,0,0,0,0,16H200a8,8,0,0,0,0-16ZM56,104a72,72,0,0,1,144,0c0,57.23-55.47,105-72,118C111.47,209,56,161.23,56,104Zm112,0a40,40,0,1,0-40,40A40,40,0,0,0,168,104Zm-64,0a24,24,0,1,1,24,24A24,24,0,0,1,104,104Z"></path></svg>
                             Itinéraire
                         </a>
@@ -166,34 +170,29 @@
             @endif
 
             @if($event->description)
-                <div>
-                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Description</div>
-                    <div class="mt-1 text-sm text-[color:var(--fam-text)] whitespace-pre-line">{{ $event->description }}</div>
+                <div class="pt-2 border-t border-[color:var(--fam-border-soft)]">
+                    <div class="text-sm font-bold text-[color:var(--fam-text)] mb-1">Description</div>
+                    <div class="text-sm text-[color:var(--fam-text)] whitespace-pre-line">{{ $event->description }}</div>
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="pt-2 border-t border-[color:var(--fam-border-soft)] grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                 <div>
-                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Créé par</div>
-                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">
-                        {{ optional($event->createdBy)->name ?? '—' }}
-                    </div>
+                    <div class="text-[color:var(--fam-muted)] mb-0.5">Créé par</div>
+                    <div class="font-semibold text-[color:var(--fam-text)]">{{ optional($event->createdBy)->name ?? '—' }}</div>
                 </div>
                 <div>
-                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Statut</div>
-                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $statusLabel }}</div>
+                    <div class="text-[color:var(--fam-muted)] mb-0.5">Statut</div>
+                    <div class="font-semibold text-[color:var(--fam-text)]">{{ $statusLabel }}</div>
                 </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Rappel</div>
-                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">
+                    <div class="text-[color:var(--fam-muted)] mb-0.5">Rappel</div>
+                    <div class="font-semibold text-[color:var(--fam-text)]">
                         @if(!$event->notify)
                             Désactivé
                         @else
                             @if($event->reminder_at)
-                                {{ $event->reminder_at->timezone($tz)->locale(app()->getLocale())->translatedFormat('D j M Y \à H:i') }}
+                                {{ $event->reminder_at->timezone($tz)->locale(app()->getLocale())->translatedFormat('j/m \à H:i') }}
                             @else
                                 Activé
                             @endif
@@ -201,8 +200,8 @@
                     </div>
                 </div>
                 <div>
-                    <div class="text-xs font-extrabold text-[color:var(--fam-muted)] uppercase tracking-wide">Visibilité</div>
-                    <div class="mt-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $isPrivate ? 'Privé' : 'Famille' }}</div>
+                    <div class="text-[color:var(--fam-muted)] mb-0.5">Visibilité</div>
+                    <div class="font-semibold text-[color:var(--fam-text)]">{{ $isPrivate ? 'Privé' : 'Famille' }}</div>
                 </div>
             </div>
         </div>
