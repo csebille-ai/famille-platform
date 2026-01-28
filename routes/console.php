@@ -25,7 +25,7 @@ Schedule::command('events:send-reminders')
 
 // Queue worker (shared hosting friendly).
 // Required for Google Calendar auto-sync (and any queued jobs).
-Schedule::command('queue:work --once --tries=1')
+Schedule::command('queue:work --stop-when-empty --max-time=55 --sleep=1 --tries=1')
     ->everyMinute()
     ->withoutOverlapping(1)
     ->appendOutputTo(storage_path('logs/queue-work.log'));
