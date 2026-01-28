@@ -119,40 +119,33 @@
                                 ? ($household['icon'] ?? '🏠') . ' ' . $household['label']
                                 : ($e->location_label ?? $e->location);
                         @endphp
-                        <a href="{{ route('events.show', $e) }}" class="block">
-                            <div class="rounded-2xl border px-3 py-2.5 hover:shadow-sm transition active:scale-[0.995] {{ $cardClasses }}">
-                                <div class="flex items-start gap-3">
-                                    <div class="shrink-0 rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] px-2.5 py-2 text-center">
-                                        <div class="text-base font-extrabold text-[color:var(--fam-text)] leading-none">{{ $fmtDay($e->start_at) }}</div>
-                                        <div class="mt-0.5 text-[0.65rem] font-extrabold text-[color:var(--fam-muted)] leading-none tracking-wide">{{ $fmtMonth($e->start_at) }}</div>
+                        <a href="{{ route('events.show', $e) }}" class="block group">
+                            <div class="rounded-xl border px-2.5 py-2 hover:shadow-md hover:border-[color:var(--fam-primary)]/30 transition-all duration-200 {{ $cardClasses }}">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="shrink-0 flex items-center justify-center w-11 h-11 rounded-lg {{ $cat['bg'] }} {{ $cat['text'] }} border {{ $cat['border'] }}">
+                                        <i class="ph {{ $cat['icon'] }} text-lg" aria-hidden="true"></i>
                                     </div>
 
                                     <div class="min-w-0 flex-1">
-                                        <div class="flex items-start justify-between gap-2">
-                                            <div class="min-w-0">
-                                                <div class="text-sm font-semibold text-[color:var(--fam-text)] truncate">{{ $e->title }}</div>
-                                                <div class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)] truncate">{{ $fmtWhen($e) }}</div>
-                                                @if($displayLocation)
-                                                    <div class="mt-0.5 text-xs text-[color:var(--fam-muted)] truncate">📍 {{ $displayLocation }}</div>
-                                                @endif
-                                            </div>
-
-                                            <div class="shrink-0 flex items-center gap-2">
-                                                <span class="inline-flex items-center gap-1 rounded-full {{ $cat['bg'] }} {{ $cat['text'] }} border {{ $cat['border'] }} px-2 py-1 text-[0.7rem] font-extrabold">
-                                                    <i class="ph {{ $cat['icon'] }}" aria-hidden="true"></i>
-                                                    <span>{{ $cat['label'] }}</span>
-                                                </span>
-
-                                                @if($e->is_important)
-                                                    <span class="inline-flex items-center rounded-full bg-[color:var(--fam-tint)] px-2 py-1 text-[0.7rem] font-extrabold text-[color:var(--fam-primary-hover)] border border-[color:rgba(14,165,160,0.18)]">Important</span>
-                                                @endif
-
-                                                @if($isPrivate)
-                                                    <span class="inline-flex items-center rounded-full border border-violet-200 bg-violet-100 px-2 py-1 text-[0.7rem] font-extrabold text-violet-800" title="Privé">
-                                                        <i class="ph ph-lock" aria-hidden="true"></i>
-                                                    </span>
-                                                @endif
-                                            </div>
+                                        <div class="flex items-center gap-2 mb-0.5">
+                                            <div class="text-sm font-bold text-[color:var(--fam-text)] truncate group-hover:text-[color:var(--fam-primary)]">{{ $e->title }}</div>
+                                            @if($e->is_important)
+                                                <span class="shrink-0 inline-flex items-center h-4 px-1.5 rounded bg-amber-100 text-amber-900 text-[0.6rem] font-extrabold border border-amber-200">!</span>
+                                            @endif
+                                            @if($isPrivate)
+                                                <i class="shrink-0 ph ph-lock text-violet-600 text-xs" aria-hidden="true"></i>
+                                            @endif
+                                        </div>
+                                        <div class="flex items-center gap-2 text-xs text-[color:var(--fam-muted)]">
+                                            <span class="font-semibold">{{ $fmtDay($e->start_at) }} {{ $fmtMonth($e->start_at) }}</span>
+                                            @if($fmtWhen($e))
+                                                <span>•</span>
+                                                <span>{{ $fmtWhen($e) }}</span>
+                                            @endif
+                                            @if($displayLocation)
+                                                <span>•</span>
+                                                <span class="truncate">{{ $displayLocation }}</span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
