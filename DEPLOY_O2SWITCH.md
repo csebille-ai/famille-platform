@@ -205,7 +205,16 @@ L’import des actus locales est planifié via le scheduler Laravel (voir `route
 
 - `news:import-rss` tourne toutes les 15 minutes.
 
+Le scheduler est aussi requis pour exécuter les **jobs en file d’attente** (queue), notamment :
+
+- synchro **Google Agenda** (auto + resync),
+- calculs asynchrones (ex: profil astro),
+- tâches ponctuelles/programmées.
+
 Sur o2switch, **rien ne se lance tout seul** si tu ne crées pas un cron.
+
+Depuis ce repo, `routes/console.php` déclenche aussi `queue:work --once` chaque minute.
+Donc un cron `schedule:run` suffit pour faire tourner la queue en mutualisé.
 
 ### 6.1 Tester en SSH (manuel)
 
@@ -217,6 +226,12 @@ php artisan news:import-rss
 
 # Vérifie les tâches planifiées
 php artisan schedule:list
+
+# Vérifie qu’il y a bien des jobs en attente / consommés
+php artisan queue:work --once
+
+# Inspecte d'éventuels logs dédiés
+tail -n 200 storage/logs/queue-work.log
 ```
 
 Si ton serveur utilise un binaire PHP spécifique : remplace `php` par `php82` / `php83`.

@@ -23,3 +23,10 @@ Schedule::command('events:send-reminders')
     ->withoutOverlapping(5)
     ->appendOutputTo(storage_path('logs/events-send-reminders.log'));
 
+// Queue worker (shared hosting friendly).
+// Required for Google Calendar auto-sync (and any queued jobs).
+Schedule::command('queue:work --once --tries=1')
+    ->everyMinute()
+    ->withoutOverlapping(1)
+    ->appendOutputTo(storage_path('logs/queue-work.log'));
+
