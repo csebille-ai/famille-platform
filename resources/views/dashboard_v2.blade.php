@@ -252,7 +252,7 @@
 
                                 <a href="{{ route('events.show', $ev) }}" class="snap-start shrink-0 w-[260px] rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:bg-white hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Ouvrir événement {{ $ev->title }}">
                                     <div class="flex items-start gap-3">
-                                        <div class="mt-2 h-2.5 w-2.5 rounded-full {{ $dot }}"></div>
+                                        <div class="shrink-0 mt-2 h-3 w-3 rounded-full {{ $dot }} ring-2 ring-white/90 border border-black/5"></div>
 
                                         <div class="min-w-0 flex-1">
                                             <div class="flex items-center gap-2 flex-wrap">
