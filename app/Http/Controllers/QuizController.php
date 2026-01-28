@@ -107,10 +107,11 @@ class QuizController extends Controller
             'started_at' => now(),
         ]);
 
-        // Load questions with choices (randomize order)
+        // Load questions with choices (randomize order, limit to 20)
         $questions = $quiz->questions()
             ->with('choices')
             ->inRandomOrder()
+            ->limit(20)
             ->get();
 
         // Randomize choices for each question
