@@ -261,35 +261,29 @@
                                 $meta = trim($dayLabel
                                     . ($timeLabel !== '' ? (' · ' . $timeLabel) : '')
                                     . ($displayLocation !== '' ? (' · ' . $displayLocation) : ''));
-                                $dot = $isPrivate ? 'bg-violet-500' : 'bg-[color:var(--fam-primary)]';
                             @endphp
 
-                                <a href="{{ route('events.show', $ev) }}" class="snap-start shrink-0 w-[260px] rounded-2xl bg-[color:var(--fam-surface-alt)] border border-[color:var(--fam-border-soft)] px-3 py-2.5 hover:bg-white hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--fam-primary)]/25" aria-label="Ouvrir événement {{ $ev->title }}">
-                                    <div class="flex items-start gap-3">
-                                        <div class="shrink-0 mt-2 h-3 w-3 rounded-full {{ $dot }} ring-2 ring-white/90 border border-black/5"></div>
-
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex items-start gap-2">
-                                                <div class="text-sm font-semibold text-[color:var(--fam-text)] leading-snug break-words flex-1">{{ $ev->title }}</div>
-                                                <span class="inline-flex items-center gap-1 rounded-full {{ $cat['bg'] }} {{ $cat['text'] }} border {{ $cat['border'] }} px-1.5 py-0.5 text-[0.65rem] font-extrabold">
-                                                    <i class="ph {{ $cat['icon'] }}" aria-hidden="true"></i>
-                                                    <span>{{ $cat['label'] }}</span>
-                                                </span>
+                                <a href="{{ route('events.show', $ev) }}" class="snap-start shrink-0 w-[240px] group">
+                                    <div class="rounded-xl border border-[color:var(--fam-border-soft)] bg-white px-2.5 py-2 hover:shadow-md hover:border-[color:var(--fam-primary)]/30 transition-all duration-200">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg {{ $cat['bg'] }} {{ $cat['text'] }} border {{ $cat['border'] }}">
+                                                <i class="ph {{ $cat['icon'] }} text-base" aria-hidden="true"></i>
                                             </div>
-                                            @if($isImportant || $isPrivate)
-                                                <div class="mt-1 flex items-center gap-1.5">
+
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-1.5 mb-0.5">
+                                                    <div class="text-sm font-bold text-[color:var(--fam-text)] truncate group-hover:text-[color:var(--fam-primary)]">{{ $ev->title }}</div>
                                                     @if($isImportant)
-                                                        <span class="inline-flex items-center h-5 px-2 rounded-full bg-amber-50 text-amber-900 text-[0.7rem] font-extrabold border border-amber-200">Important</span>
+                                                        <span class="shrink-0 inline-flex items-center h-4 px-1.5 rounded bg-amber-100 text-amber-900 text-[0.6rem] font-extrabold border border-amber-200">!</span>
                                                     @endif
                                                     @if($isPrivate)
-                                                        <span class="inline-flex items-center h-5 px-2 rounded-full bg-slate-50 text-slate-800 text-[0.7rem] font-extrabold border border-slate-200">Privé</span>
+                                                        <i class="shrink-0 ph ph-lock text-violet-600 text-xs" aria-hidden="true"></i>
                                                     @endif
                                                 </div>
-                                            @endif
-
-                                            @if($meta !== '')
-                                                <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">{{ $meta }}</div>
-                                            @endif
+                                                @if($meta !== '')
+                                                    <div class="text-xs text-[color:var(--fam-muted)] truncate">{{ $meta }}</div>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </a>
