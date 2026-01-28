@@ -41,12 +41,12 @@
             if (!$dt) return '—';
             try {
                 $dt = $dt->locale(app()->getLocale());
-                if ($e->all_day) return $dt->translatedFormat('EEE d MMM') . ' • Toute la journée';
+                if ($e->all_day) return 'Toute la journée';
                 $t = $dt->format('H:i');
                 if ($t === '00:00') {
-                    return $dt->translatedFormat('EEE d MMM');
+                    return '—';
                 }
-                return $dt->translatedFormat('EEE d MMM') . ' • ' . $t;
+                return $t;
             } catch (Throwable) {
                 return '—';
             }
