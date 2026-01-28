@@ -34,7 +34,7 @@
             try { return $dt?->translatedFormat('d'); } catch (Throwable) { return ''; }
         };
         $fmtMonth = function ($dt): string {
-            try { return $dt?->translatedFormat('MMM'); } catch (Throwable) { return ''; }
+            try { return $dt?->translatedFormat('M'); } catch (Throwable) { return ''; }
         };
         $fmtWhen = function ($e): string {
             $dt = $e->start_at;
