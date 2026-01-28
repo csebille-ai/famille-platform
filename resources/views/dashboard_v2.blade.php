@@ -251,7 +251,7 @@
                             @endphp
 
                                 <a href="{{ route('events.show', $ev) }}" class="snap-start shrink-0 w-[240px] group">
-                                    <div class="rounded-xl border border-[color:var(--fam-border-soft)] bg-white px-2.5 py-2 hover:shadow-md hover:border-[color:var(--fam-primary)]/30 transition-all duration-200">
+                                    <div class="rounded-xl border border-[color:var(--fam-border-soft)] bg-[color:var(--fam-surface-alt)] px-2.5 py-2 hover:bg-white hover:shadow-sm transition-all duration-200">
                                         <div class="flex items-center gap-2.5">
                                             <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg {{ $cat['bg'] }} {{ $cat['text'] }} border {{ $cat['border'] }}">
                                                 <i class="ph {{ $cat['icon'] }} text-base" aria-hidden="true"></i>
