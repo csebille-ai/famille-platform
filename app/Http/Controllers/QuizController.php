@@ -131,9 +131,23 @@ class QuizController extends Controller
      */
     public function submit(Request $request, Quiz $quiz, QuizAttempt $attempt)
     {
+        $user = auth()->user();
+        
+        // Debug logging
+        \Log::info('Quiz submit attempt', [
+            'attempt_id' => $attempt->id,
+            'attempt_user_id' => $attempt->user_id,
+            'attempt_status' => $attempt->status,
+            'auth_user_id' => $user->id,
+        ]);
+
         // Verify attempt belongs to user and is in progress
-        if ($attempt->user_id !== auth()->id() || $attempt->status !== 'in_progress') {
-            abort(403, 'Invalid attempt');
+        if ($attempt->user_id !== $user->id) {
+            abort(403, 'This attempt does not belong to you');
+        }
+        
+        if ($attempt->status !== 'in_progress') {
+            abort(403, 'This attempt has already been submitted (status: ' . $attempt->status . ')');
         }
 
         $validated = $request->validate([
