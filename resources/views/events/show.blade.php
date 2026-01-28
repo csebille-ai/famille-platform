@@ -45,26 +45,9 @@
                 <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">{{ $categoryLabel }}</div>
             </div>
             <div class="shrink-0 flex items-center gap-2">
-                <a href="{{ route('events.index') }}" class="inline-flex items-center h-10 px-3 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-semibold text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]">Liste</a>
-                @if(!$hasFamilyCalendar && !$googleSyncEnabled)
-                    <button
-                        type="button"
-                        id="eventAddToCalendarBtn"
-                        class="inline-flex items-center h-10 px-3 rounded-2xl border border-[color:var(--fam-border-soft)] bg-white text-sm font-extrabold text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]"
-                    >
-                        Ajouter à mon agenda
-                    </button>
-                @else
-                    <div class="hidden sm:block text-xs font-semibold text-[color:var(--fam-muted)]">
-                        @if($hasFamilyCalendar)
-                            Déjà inclus via Calendrier Famille
-                        @elseif($googleSyncEnabled)
-                            Synchronisé via Google
-                        @endif
-                    </div>
-                @endif
+                <a href="{{ route('events.index') }}" class="inline-flex items-center h-7 px-3 rounded-xl border border-[color:var(--fam-border-soft)] bg-white text-xs font-semibold text-[color:var(--fam-text)] hover:bg-[color:rgba(14,165,160,0.10)]">Liste</a>
                 @can('update', $event)
-                    <a href="{{ route('events.edit', $event) }}" class="inline-flex items-center h-10 px-3 rounded-2xl bg-[color:var(--fam-primary)] text-white text-sm font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Modifier</a>
+                    <a href="{{ route('events.edit', $event) }}" class="inline-flex items-center h-7 px-3 rounded-xl bg-[color:var(--fam-primary)] text-white text-xs font-extrabold hover:bg-[color:var(--fam-primary-hover)]">Modifier</a>
                 @endcan
             </div>
         </div>
@@ -142,7 +125,7 @@
                     </div>
                 </div>
                 @if($event->color_tag)
-                    <div class="shrink-0 w-10 h-10 rounded-2xl border border-[color:var(--fam-border-soft)]" style="background: {{ $event->color_tag }};"></div>
+                    <div class="shrink-0 w-4 h-4 rounded-full" style="background: {{ $event->color_tag }};"></div>
                 @endif
             </div>
 
@@ -174,8 +157,8 @@
                                 : 'https://www.google.com/maps/search/?api=1&query=' . urlencode($household ? ($household['address']['label'] ?? '') : $event->location);
                         @endphp
                         <div class="flex-1 text-sm font-semibold text-[color:var(--fam-text)]">{{ $displayLocation }}</div>
-                        <a href="{{ $mapsUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 h-9 px-3 rounded-2xl bg-[color:var(--fam-primary)] text-white text-xs font-extrabold hover:bg-[color:var(--fam-primary-hover)] active:scale-[0.98] transition-all">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M200,224H150.54A266.56,266.56,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25a88,88,0,0,0-176,0c0,31.4,14.51,64.68,42,96.25A266.56,266.56,0,0,0,105.46,224H56a8,8,0,0,0,0,16H200a8,8,0,0,0,0-16ZM56,104a72,72,0,0,1,144,0c0,57.23-55.47,105-72,118C111.47,209,56,161.23,56,104Zm112,0a40,40,0,1,0-40,40A40,40,0,0,0,168,104Zm-64,0a24,24,0,1,1,24,24A24,24,0,0,1,104,104Z"></path></svg>
+                        <a href="{{ $mapsUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 h-7 px-3 rounded-xl bg-[color:var(--fam-primary)] text-white text-xs font-extrabold hover:bg-[color:var(--fam-primary-hover)] active:scale-[0.98] transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256"><path d="M200,224H150.54A266.56,266.56,0,0,0,174,200.25c27.45-31.57,42-64.85,42-96.25a88,88,0,0,0-176,0c0,31.4,14.51,64.68,42,96.25A266.56,266.56,0,0,0,105.46,224H56a8,8,0,0,0,0,16H200a8,8,0,0,0,0-16ZM56,104a72,72,0,0,1,144,0c0,57.23-55.47,105-72,118C111.47,209,56,161.23,56,104Zm112,0a40,40,0,1,0-40,40A40,40,0,0,0,168,104Zm-64,0a24,24,0,1,1,24,24A24,24,0,0,1,104,104Z"></path></svg>
                             Itinéraire
                         </a>
                     </div>
@@ -248,7 +231,7 @@
             <form method="POST" action="{{ route('events.destroy', $event) }}" onsubmit="return confirm('Supprimer cet événement ?');">
                 @csrf
                 @method('DELETE')
-                <button type="submit" class="w-full inline-flex items-center justify-center h-11 px-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm font-extrabold text-rose-800 hover:bg-rose-100">Supprimer</button>
+                <button type="submit" class="w-full inline-flex items-center justify-center h-9 px-4 rounded-xl border border-rose-200 bg-rose-50 text-xs font-extrabold text-rose-800 hover:bg-rose-100">Supprimer</button>
             </form>
         @endcan
     </div>
