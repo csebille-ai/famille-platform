@@ -1,5 +1,18 @@
 <x-app-layout pageBgClass="fam-page-bg">
     @php
+        $badgeForCategory = function (?string $cat): array {
+            $cat = strtolower(trim((string) $cat));
+            return match ($cat) {
+                'family' => ['label' => 'Famille', 'icon' => 'ph-users', 'bg' => 'bg-teal-50', 'text' => 'text-teal-800', 'border' => 'border-teal-200'],
+                'personal' => ['label' => 'Perso', 'icon' => 'ph-user', 'bg' => 'bg-violet-50', 'text' => 'text-violet-800', 'border' => 'border-violet-200'],
+                'school' => ['label' => 'École', 'icon' => 'ph-graduation-cap', 'bg' => 'bg-blue-50', 'text' => 'text-blue-800', 'border' => 'border-blue-200'],
+                'travel' => ['label' => 'Voyage', 'icon' => 'ph-airplane', 'bg' => 'bg-sky-50', 'text' => 'text-sky-800', 'border' => 'border-sky-200'],
+                'medical' => ['label' => 'Médical', 'icon' => 'ph-first-aid', 'bg' => 'bg-rose-50', 'text' => 'text-rose-800', 'border' => 'border-rose-200'],
+                'admin' => ['label' => 'Admin', 'icon' => 'ph-shield', 'bg' => 'bg-slate-50', 'text' => 'text-slate-800', 'border' => 'border-slate-200'],
+                default => ['label' => 'Autre', 'icon' => 'ph-star', 'bg' => 'bg-amber-50', 'text' => 'text-amber-800', 'border' => 'border-amber-200'],
+            };
+        };
+
         $fmtDuration = function (?int $seconds): string {
             $s = (int) ($seconds ?? 0);
             if ($s <= 0) return '';
@@ -220,6 +233,7 @@
 
                                 $isPrivate = ($ev->visibility ?? 'family') === 'private';
                                 $isImportant = (bool) ($ev->is_important ?? false);
+                                $cat = $badgeForCategory($ev->category);
 
                                 $dayLabel = '';
                                 if ($start) {
@@ -255,15 +269,23 @@
                                         <div class="shrink-0 mt-2 h-3 w-3 rounded-full {{ $dot }} ring-2 ring-white/90 border border-black/5"></div>
 
                                         <div class="min-w-0 flex-1">
-                                            <div class="flex items-center gap-2 flex-wrap">
-                                                <div class="text-sm font-semibold text-[color:var(--fam-text)] leading-snug break-words">{{ $ev->title }}</div>
-                                                @if($isImportant)
-                                                    <span class="inline-flex items-center h-5 px-2 rounded-full bg-amber-50 text-amber-900 text-[0.7rem] font-extrabold border border-amber-200">Important</span>
-                                                @endif
-                                                @if($isPrivate)
-                                                    <span class="inline-flex items-center h-5 px-2 rounded-full bg-slate-50 text-slate-800 text-[0.7rem] font-extrabold border border-slate-200">Privé</span>
-                                                @endif
+                                            <div class="flex items-start gap-2">
+                                                <div class="text-sm font-semibold text-[color:var(--fam-text)] leading-snug break-words flex-1">{{ $ev->title }}</div>
+                                                <span class="inline-flex items-center gap-1 rounded-full {{ $cat['bg'] }} {{ $cat['text'] }} border {{ $cat['border'] }} px-1.5 py-0.5 text-[0.65rem] font-extrabold">
+                                                    <i class="ph {{ $cat['icon'] }}" aria-hidden="true"></i>
+                                                    <span>{{ $cat['label'] }}</span>
+                                                </span>
                                             </div>
+                                            @if($isImportant || $isPrivate)
+                                                <div class="mt-1 flex items-center gap-1.5">
+                                                    @if($isImportant)
+                                                        <span class="inline-flex items-center h-5 px-2 rounded-full bg-amber-50 text-amber-900 text-[0.7rem] font-extrabold border border-amber-200">Important</span>
+                                                    @endif
+                                                    @if($isPrivate)
+                                                        <span class="inline-flex items-center h-5 px-2 rounded-full bg-slate-50 text-slate-800 text-[0.7rem] font-extrabold border border-slate-200">Privé</span>
+                                                    @endif
+                                                </div>
+                                            @endif
 
                                             @if($meta !== '')
                                                 <div class="mt-1 text-xs font-semibold text-[color:var(--fam-muted)]">{{ $meta }}</div>

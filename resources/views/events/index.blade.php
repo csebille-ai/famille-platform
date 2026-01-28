@@ -20,13 +20,13 @@
         $badgeForCategory = function (?string $cat): array {
             $cat = strtolower(trim((string) $cat));
             return match ($cat) {
-                'family' => ['label' => 'Famille', 'icon' => 'ph-users'],
-                'personal' => ['label' => 'Perso', 'icon' => 'ph-user'],
-                'school' => ['label' => 'École', 'icon' => 'ph-graduation-cap'],
-                'travel' => ['label' => 'Voyage', 'icon' => 'ph-airplane'],
-                'medical' => ['label' => 'Médical', 'icon' => 'ph-first-aid'],
-                'admin' => ['label' => 'Admin', 'icon' => 'ph-shield'],
-                default => ['label' => 'Autre', 'icon' => 'ph-star'],
+                'family' => ['label' => 'Famille', 'icon' => 'ph-users', 'bg' => 'bg-teal-50', 'text' => 'text-teal-800', 'border' => 'border-teal-200'],
+                'personal' => ['label' => 'Perso', 'icon' => 'ph-user', 'bg' => 'bg-violet-50', 'text' => 'text-violet-800', 'border' => 'border-violet-200'],
+                'school' => ['label' => 'École', 'icon' => 'ph-graduation-cap', 'bg' => 'bg-blue-50', 'text' => 'text-blue-800', 'border' => 'border-blue-200'],
+                'travel' => ['label' => 'Voyage', 'icon' => 'ph-airplane', 'bg' => 'bg-sky-50', 'text' => 'text-sky-800', 'border' => 'border-sky-200'],
+                'medical' => ['label' => 'Médical', 'icon' => 'ph-first-aid', 'bg' => 'bg-rose-50', 'text' => 'text-rose-800', 'border' => 'border-rose-200'],
+                'admin' => ['label' => 'Admin', 'icon' => 'ph-shield', 'bg' => 'bg-slate-50', 'text' => 'text-slate-800', 'border' => 'border-slate-200'],
+                default => ['label' => 'Autre', 'icon' => 'ph-star', 'bg' => 'bg-amber-50', 'text' => 'text-amber-800', 'border' => 'border-amber-200'],
             };
         };
 
@@ -138,7 +138,7 @@
                                             </div>
 
                                             <div class="shrink-0 flex items-center gap-2">
-                                                <span class="inline-flex items-center gap-1 rounded-full border border-[color:var(--fam-border-soft)] bg-white px-2 py-1 text-[0.7rem] font-extrabold text-[color:var(--fam-muted)]">
+                                                <span class="inline-flex items-center gap-1 rounded-full {{ $cat['bg'] }} {{ $cat['text'] }} border {{ $cat['border'] }} px-2 py-1 text-[0.7rem] font-extrabold">
                                                     <i class="ph {{ $cat['icon'] }}" aria-hidden="true"></i>
                                                     <span>{{ $cat['label'] }}</span>
                                                 </span>
