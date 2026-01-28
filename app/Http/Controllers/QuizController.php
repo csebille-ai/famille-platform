@@ -152,12 +152,20 @@ class QuizController extends Controller
             'first_answer' => $request->input('answers.0'),
         ]);
 
-        $validated = $request->validate([
-            'answers' => 'required|array',
-            'answers.*.question_id' => 'required|exists:quiz_questions,id',
-            'answers.*.choice_id' => 'required|exists:quiz_choices,id',
-            'answers.*.response_time_ms' => 'nullable|integer',
-        ]);
+        try {
+            $validated = $request->validate([
+                'answers' => 'required|array',
+                'answers.*.question_id' => 'required|exists:quiz_questions,id',
+                'answers.*.choice_id' => 'required|exists:quiz_choices,id',
+                'answers.*.response_time_ms' => 'nullable|integer',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Quiz validation failed', [
+                'errors' => $e->errors(),
+                'attempt_id' => $attempt->id,
+            ]);
+            throw $e;
+        }
 
         DB::transaction(function () use ($attempt, $validated) {
             $totalScore = 0;
