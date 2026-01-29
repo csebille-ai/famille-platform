@@ -99,6 +99,8 @@ class QuizController extends Controller
     {
         $user = auth()->user();
 
+        $questionsPerAttempt = min(20, (int) $quiz->questions_count);
+
         // Create new attempt
         $attempt = QuizAttempt::create([
             'quiz_id' => $quiz->id,
@@ -109,9 +111,10 @@ class QuizController extends Controller
 
         // Load questions with choices (randomize order, limit to 20)
         $questions = $quiz->questions()
+            ->reorder()
             ->with('choices')
             ->inRandomOrder()
-            ->limit(20)
+            ->limit($questionsPerAttempt)
             ->get();
 
         // Randomize choices for each question
