@@ -45,7 +45,8 @@ class SlidingPuzzle extends Model
 
         if ($type === 'media') {
             if ($id === '' || !ctype_digit($id)) return null;
-            return route('media.photos.show', ['node' => (int) $id]);
+            // Use the raw image endpoint so it can be embedded in <img>.
+            return route('images.view', ['node' => (int) $id]);
         }
 
         if ($type === 'avatar') {

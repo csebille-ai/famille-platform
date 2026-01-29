@@ -5,6 +5,7 @@ use App\Http\Controllers\CloudNodeController;
 use App\Http\Controllers\AstroProfileController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\OpsDashboardController;
+use App\Http\Controllers\Admin\SlidingPuzzleController as AdminSlidingPuzzleController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ConversationsController;
@@ -1667,6 +1668,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/overview', [OpsDashboardController::class, 'overview'])->name('admin.overview');
         Route::get('/activity', [OpsDashboardController::class, 'activity'])->name('admin.activity');
         Route::get('/errors', [OpsDashboardController::class, 'errors'])->name('admin.errors');
+
+        Route::get('/sliding-puzzles', [AdminSlidingPuzzleController::class, 'index'])->name('admin.sliding-puzzles.index');
+        Route::get('/sliding-puzzles/create', [AdminSlidingPuzzleController::class, 'create'])->name('admin.sliding-puzzles.create');
+        Route::post('/sliding-puzzles', [AdminSlidingPuzzleController::class, 'store'])->name('admin.sliding-puzzles.store');
+        Route::get('/sliding-puzzles/{puzzle}/edit', [AdminSlidingPuzzleController::class, 'edit'])->name('admin.sliding-puzzles.edit');
+        Route::patch('/sliding-puzzles/{puzzle}', [AdminSlidingPuzzleController::class, 'update'])->name('admin.sliding-puzzles.update');
+        Route::delete('/sliding-puzzles/{puzzle}', [AdminSlidingPuzzleController::class, 'destroy'])->name('admin.sliding-puzzles.destroy');
 
         Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
