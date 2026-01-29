@@ -34,11 +34,15 @@ class PlaylistController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'spotify_playlist_url' => ['nullable', 'string', 'max:500'],
             'is_shared' => ['nullable', 'boolean'],
         ]);
 
+        $spotifyId = Playlist::extractSpotifyPlaylistId($validated['spotify_playlist_url'] ?? null);
+
         $playlist = Playlist::create([
             'name' => $validated['name'],
+            'spotify_playlist_id' => $spotifyId,
             'is_shared' => (bool) ($validated['is_shared'] ?? true),
             'created_by' => Auth::id(),
         ]);
@@ -75,11 +79,15 @@ class PlaylistController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'spotify_playlist_url' => ['nullable', 'string', 'max:500'],
             'is_shared' => ['nullable', 'boolean'],
         ]);
 
+        $spotifyId = Playlist::extractSpotifyPlaylistId($validated['spotify_playlist_url'] ?? null);
+
         $playlist->update([
             'name' => $validated['name'],
+            'spotify_playlist_id' => $spotifyId,
             'is_shared' => (bool) ($validated['is_shared'] ?? false),
         ]);
 

@@ -52,6 +52,17 @@
                             </div>
                         </div>
 
+                        <div class="rounded-2xl border border-gray-200 p-5">
+                            <div class="text-sm font-semibold text-gray-900">Playlist Spotify (optionnel)</div>
+                            <div class="mt-1 text-xs text-gray-500">Colle l'URL d'une playlist Spotify pour l'intégrer directement.</div>
+
+                            <div class="mt-4">
+                                <x-input-label for="spotify_playlist_url" :value="__('URL ou ID Spotify')" />
+                                <x-text-input id="spotify_playlist_url" name="spotify_playlist_url" type="text" class="mt-1 block w-full" :value="old('spotify_playlist_url')" placeholder="https://open.spotify.com/playlist/..." />
+                                <x-input-error class="mt-2" :messages="$errors->get('spotify_playlist_url')" />
+                            </div>
+                        </div>
+
                         <div class="flex items-center justify-end gap-3">
                             <a href="{{ route('playlists.index') }}" class="text-sm text-gray-700 hover:underline">Annuler</a>
                             <x-primary-button>
