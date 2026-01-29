@@ -115,23 +115,7 @@
             }
         }
 
-        // Add response time tracking
-        const questionTimestamps = {};
-        document.querySelectorAll('input[type="radio"]').forEach(input => {
-            const questionIndex = input.name.match(/\d+/)[0];
-            if (!questionTimestamps[questionIndex]) {
-                questionTimestamps[questionIndex] = Date.now();
-            }
-            
-            input.addEventListener('change', function() {
-                const responseTime = Date.now() - questionTimestamps[questionIndex];
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = `answers[${questionIndex}][response_time_ms]`;
-                hiddenInput.value = responseTime;
-                this.parentElement.appendChild(hiddenInput);
-            });
-        });
+        // Response time tracking disabled to keep payload flat and avoid extra fields per question
 
         // Confirm before leaving
         let isSubmitting = false;
@@ -166,11 +150,20 @@
                         'Accept': 'application/json'
                     }
                 });
-                
-                const data = await response.json();
-                
-                if (data.success && data.redirect_url) {
+
+                // 204 + header to dodge mod_security
+                const redirectHeader = response.headers.get('X-Redirect-Url');
+                if (response.status === 204 && redirectHeader) {
+                    window.location.href = redirectHeader;
+                    return;
+                }
+
+                // Fallback to JSON parsing if not empty
+                const data = response.status !== 204 ? await response.json() : null;
+                if (data && data.success && data.redirect_url) {
                     window.location.href = data.redirect_url;
+                } else if (redirectHeader) {
+                    window.location.href = redirectHeader;
                 } else {
                     alert('Erreur lors de la soumission');
                     btn.disabled = false;

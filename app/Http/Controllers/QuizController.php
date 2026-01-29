@@ -227,12 +227,12 @@ class QuizController extends Controller
 
         \Log::info('Transaction committed, redirecting to result');
         
-        // Return JSON to avoid mod_security blocking HTML responses on POST
+        // Return 204 with redirect header to minimize WAF interference
         if ($request->expectsJson() || $request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'redirect_url' => route('quiz.result', ['quiz' => $quiz, 'attempt' => $attempt])
-            ]);
+            return response()
+                ->noContent()
+                ->header('X-Redirect-Url', route('quiz.result', ['quiz' => $quiz, 'attempt' => $attempt]))
+                ->header('Cache-Control', 'no-store');
         }
         
         // Fallback: directly show result
