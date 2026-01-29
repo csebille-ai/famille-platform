@@ -17,7 +17,7 @@
         </div>
 
         <!-- Quiz Form -->
-        <form id="quizForm" method="POST" action="{{ route('quiz.submit', ['quiz' => $quiz, 'attempt' => $attempt]) }}">
+        <form id="quizForm" method="POST" action="{{ route('quiz.submit', ['quiz' => $quiz, 'attempt' => $attempt]) }}" onsubmit="return false;">
             @csrf
             
             <div class="space-y-4">
@@ -65,7 +65,7 @@
             <!-- Submit Button -->
             <div class="mt-6 sticky bottom-4 flex justify-center">
                 <button
-                    type="submit"
+                    type="button"
                     class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[color:var(--fam-primary)] text-white font-bold hover:bg-[color:var(--fam-primary-dark)] active:scale-95 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     id="submitBtn"
                 >
@@ -127,24 +127,24 @@
             e.returnValue = '';
         });
 
-        // Submit via AJAX to avoid mod_security blocking
-        document.getElementById('quizForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
+        async function submitQuiz() {
+            const form = document.getElementById('quizForm');
             const btn = document.getElementById('submitBtn');
+
             if (btn.dataset.submitted === 'true') {
-                return false;
+                return;
             }
+
             btn.dataset.submitted = 'true';
             btn.disabled = true;
             btn.innerHTML = '<i class="ph ph-spinner ph-spin text-2xl" aria-hidden="true"></i> <span>Envoi en cours...</span>';
             isSubmitting = true;
             clearInterval(timerInterval);
-            
-            const formData = new FormData(e.target);
-            
+
+            const formData = new FormData(form);
+
             try {
-                const response = await fetch(e.target.action, {
+                const response = await fetch(form.action, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -153,13 +153,6 @@
                     }
                 });
 
-                    // If mod_security blocks the POST response (403) but Laravel already saved,
-                    // jumping to the result page (GET) still works.
-                    if (response.status === 403) {
-                        window.location.href = resultUrl;
-                        return;
-                    }
-
                 // 204 + header to dodge mod_security
                 const redirectHeader = response.headers.get('X-Redirect-Url');
                 if (response.status === 204 && redirectHeader) {
@@ -167,25 +160,43 @@
                     return;
                 }
 
-                    if (!response.ok) {
-                        window.location.href = resultUrl;
-                        return;
-                    }
+                // WAF frequently blocks the POST response but the DB write is done.
+                if (response.status === 403) {
+                    window.location.href = `${resultUrl}?r=${Date.now()}`;
+                    return;
+                }
 
-                // Fallback to JSON parsing if not empty
-                const data = response.status !== 204 ? await response.json() : null;
-                if (data && data.success && data.redirect_url) {
+                if (!response.ok) {
+                    window.location.href = `${resultUrl}?r=${Date.now()}`;
+                    return;
+                }
+
+                // Try JSON if present
+                let data = null;
+                try {
+                    data = await response.json();
+                } catch (e) {
+                    // ignore
+                }
+
+                if (data && data.redirect_url) {
                     window.location.href = data.redirect_url;
                 } else if (redirectHeader) {
                     window.location.href = redirectHeader;
                 } else {
-                        window.location.href = resultUrl;
+                    window.location.href = `${resultUrl}?r=${Date.now()}`;
                 }
             } catch (error) {
                 console.error('Error:', error);
-                    // Network/WAF oddities: try result page anyway
-                    window.location.href = resultUrl;
+                window.location.href = `${resultUrl}?r=${Date.now()}`;
             }
+        }
+
+        // Force JS-only submit to avoid full-page navigation to the WAF 403 HTML.
+        document.getElementById('submitBtn').addEventListener('click', submitQuiz);
+        document.getElementById('quizForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitQuiz();
         });
 
         // Selected choice styling
