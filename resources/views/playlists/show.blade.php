@@ -42,14 +42,6 @@
 
     <div class="py-12">
         <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @if (session('status'))
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        {{ session('status') }}
-                    </div>
-                </div>
-            @endif
-
             @if ($errors->any())
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-red-600">
@@ -65,10 +57,6 @@
             @if ($playlist->spotify_playlist_id)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
-                        <div class="text-xs text-gray-500">Spotify</div>
-                        <div class="mt-1 text-lg font-semibold text-gray-900">Écouter la {{ str_starts_with($playlist->spotify_playlist_id, 'album:') ? 'album' : 'playlist' }}</div>
-                        <div class="mt-1 text-sm text-gray-600">Connecte-toi à Spotify pour écouter en entier, sinon tu auras les previews 30s.</div>
-
                         <div class="mt-4">
                             <iframe
                                 style="border-radius:12px"
@@ -79,12 +67,6 @@
                                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                                 loading="lazy"
                             ></iframe>
-                        </div>
-
-                        <div class="mt-3 text-xs text-gray-500">
-                            <a href="{{ $playlist->getSpotifyOpenUrl() }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">
-                                Ouvrir dans Spotify →
-                            </a>
                         </div>
                     </div>
                 </div>
