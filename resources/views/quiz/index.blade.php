@@ -89,7 +89,9 @@
                         $diffColors = $difficultyColors[$quiz->difficulty] ?? $difficultyColors['medium'];
                         
                         $userBestScore = $userBestScores[$quiz->id] ?? null;
-                        $maxScore = $quiz->questions_count * 10; // assuming 10 points per question
+                        $questionsPerAttempt = min(20, (int) $quiz->questions_count);
+                        $pointsPerQuestion = (int) config('quiz.templates.'.$quiz->template_key.'.points_per_question', 10);
+                        $maxScore = $questionsPerAttempt * $pointsPerQuestion;
                     @endphp
 
                     <a href="{{ route('quiz.show', $quiz) }}" class="group block rounded-2xl bg-white border border-[color:var(--fam-border)] hover:border-[color:var(--fam-primary)]/40 hover:shadow-md transition-all duration-200 overflow-hidden">
