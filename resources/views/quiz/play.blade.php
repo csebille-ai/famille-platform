@@ -17,7 +17,7 @@
         </div>
 
         <!-- Quiz Form -->
-        <form id="quizForm" method="POST" action="{{ route('quiz.submit', ['quiz' => $quiz, 'attempt' => $attempt]) }}">
+        <form id="quizForm" method="POST" action="{{ route('quiz.submit.alt', ['quiz' => $quiz, 'attempt' => $attempt]) }}">
             @csrf
             
             <div class="space-y-4">
