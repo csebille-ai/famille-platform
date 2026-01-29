@@ -132,6 +132,11 @@
             const form = document.getElementById('quizForm');
             const btn = document.getElementById('submitBtn');
 
+            // Enforce required radio inputs before sending.
+            if (typeof form.reportValidity === 'function' && !form.reportValidity()) {
+                return;
+            }
+
             if (btn.dataset.submitted === 'true') {
                 return;
             }

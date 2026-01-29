@@ -4,8 +4,11 @@
         <div class="mb-6 rounded-2xl bg-white border border-[color:var(--fam-border)] shadow-sm overflow-hidden">
             <div class="px-6 py-8 text-center">
                 @php
-                    $maxScore = $quiz->questions_count * 10;
-                    $percentage = $maxScore > 0 ? round(($attempt->score / $maxScore) * 100) : 0;
+                    $attemptQuestionsCount = $attempt->answers->count();
+                    $maxScore = $attempt->answers->sum(function ($a) {
+                        return $a->question ? (int) $a->question->points : 0;
+                    });
+                    $percentage = $maxScore > 0 ? round(((int) $attempt->score / $maxScore) * 100) : 0;
                     $correctCount = $attempt->answers->where('is_correct', true)->count();
                 @endphp
 
@@ -35,7 +38,7 @@
                 </div>
 
                 <div class="mt-2 text-lg text-[color:var(--fam-muted)]">
-                    {{ $correctCount }} / {{ $quiz->questions_count }} réponses correctes ({{ $percentage }}%)
+                    {{ $correctCount }} / {{ $attemptQuestionsCount }} réponses correctes ({{ $percentage }}%)
                 </div>
 
                 <!-- Stats -->
