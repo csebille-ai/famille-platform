@@ -101,6 +101,28 @@ class QuizController extends Controller
 
         $questionsPerAttempt = min(20, (int) $quiz->questions_count);
 
+        // Avoid repeating questions the user saw recently on this quiz.
+        // (Based on finished attempts: we know the exact question_ids via stored answers.)
+        $avoidLastAttempts = (int) config('quiz.avoid_repeat_last_attempts', 5);
+        $recentQuestionIds = collect();
+        if ($avoidLastAttempts > 0) {
+            $recentAttemptIds = QuizAttempt::query()
+                ->where('quiz_id', $quiz->id)
+                ->where('user_id', $user->id)
+                ->where('status', 'finished')
+                ->orderByDesc('finished_at')
+                ->limit($avoidLastAttempts)
+                ->pluck('id');
+
+            if ($recentAttemptIds->isNotEmpty()) {
+                $recentQuestionIds = QuizAttemptAnswer::query()
+                    ->whereIn('attempt_id', $recentAttemptIds)
+                    ->pluck('question_id')
+                    ->unique()
+                    ->values();
+            }
+        }
+
         // Create new attempt
         $attempt = QuizAttempt::create([
             'quiz_id' => $quiz->id,
@@ -109,13 +131,35 @@ class QuizController extends Controller
             'started_at' => now(),
         ]);
 
-        // Load questions with choices (randomize order, limit to 20)
-        $questions = $quiz->questions()
+        // Load questions with choices (randomize order, limit to N)
+        $questionsQuery = $quiz->questions()
             ->reorder()
             ->with('choices')
-            ->inRandomOrder()
+            ->inRandomOrder();
+
+        if ($recentQuestionIds->isNotEmpty()) {
+            $questionsQuery->whereNotIn('id', $recentQuestionIds);
+        }
+
+        $questions = $questionsQuery
             ->limit($questionsPerAttempt)
             ->get();
+
+        // Fallback: if we excluded too much, fill remaining slots from the full pool.
+        if ($questions->count() < $questionsPerAttempt) {
+            $missing = $questionsPerAttempt - $questions->count();
+            $alreadySelectedIds = $questions->pluck('id');
+
+            $fill = $quiz->questions()
+                ->reorder()
+                ->with('choices')
+                ->whereNotIn('id', $alreadySelectedIds)
+                ->inRandomOrder()
+                ->limit($missing)
+                ->get();
+
+            $questions = $questions->concat($fill)->values();
+        }
 
         // Randomize choices for each question
         $questions->each(function ($question) {

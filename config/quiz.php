@@ -13,6 +13,10 @@ return [
     | - Question text with placeholders
     | - Rules for generating distractor answers
     | - Quality filters
+        // How many finished attempts (per user & quiz) we use to avoid repeating questions.
+        // Set to 0 to disable.
+        'avoid_repeat_last_attempts' => (int) env('QUIZ_AVOID_REPEAT_LAST_ATTEMPTS', 5),
+
     |
     */
 
