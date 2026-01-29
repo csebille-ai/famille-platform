@@ -48,8 +48,8 @@
                         <img src="{{ $imageUrl }}" alt="Image du puzzle" class="w-full h-auto block" loading="lazy" />
                     </div>
                 @else
-                    <div class="mt-2 rounded-2xl border border-[color:var(--fam-border)] bg-slate-50 p-3 text-xs font-semibold text-[color:var(--fam-muted)]">
-                        Pas d’image configurée pour ce puzzle (mode chiffres).
+                    <div class="mt-2 rounded-2xl border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-600">
+                        <i class="ph ph-warning mr-1"></i> Aucune image configurée.
                     </div>
                 @endif
 

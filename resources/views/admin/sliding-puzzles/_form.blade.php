@@ -52,8 +52,6 @@
                 <span class="font-semibold">external</span> = URL (ou <span class="font-mono">/images/…</span>)
                 <span class="text-slate-400">•</span>
                 <span class="font-semibold">avatar</span> = <span class="font-mono">user:123</span>
-                <span class="text-slate-400">•</span>
-                vide = tuiles chiffrées
             </div>
         </div>
 

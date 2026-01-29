@@ -6,7 +6,9 @@
                     <div class="text-sm font-semibold text-[color:var(--fam-text)]">Taquin</div>
                     <div class="mt-0.5 text-xs font-semibold text-[color:var(--fam-muted)]">Glisse les tuiles pour reconstituer l’image</div>
                 </div>
-            </div>
+                @can('manage-users')
+                    <a href="{{ route('admin.sliding-puzzles.index') }}" class="text-xs font-semibold rounded-xl px-3 py-2 bg-[color:var(--fam-primary-100)] text-[color:var(--fam-primary)] hover:bg-[color:var(--fam-primary-100)]/75 shrink-0">Admin</a>
+                @endcan            </div>
         </div>
 
         @if($puzzles->isEmpty())
