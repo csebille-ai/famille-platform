@@ -145,10 +145,11 @@
                 }
 
                 function isSolved(n) {
-                    for (let i = 0; i < n * n - 1; i++) {
+                    const total = n * n;
+                    for (let i = 0; i < total - 1; i++) {
                         if (board[i] !== i + 1) return false;
                     }
-                    return board[n * n - 1] === 0;
+                    return board[total - 1] === 0;
                 }
 
                 function render(n) {
@@ -186,9 +187,11 @@
                                 board[idx] = 0;
                                 moves++;
                                 movesEl.textContent = String(moves);
+
+                                const won = isSolved(n);
                                 render(n);
 
-                                if (isSolved(n)) {
+                                if (won) {
                                     onWin();
                                 }
                             });
