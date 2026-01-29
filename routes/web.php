@@ -1177,6 +1177,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/games/chess', [GamesChessController::class, 'index'])->name('games.chess.index');
     Route::get('/games/chess/{game}', [GamesChessController::class, 'show'])->name('games.chess.show');
 
+    // Sliding puzzles (taquin)
+    Route::get('/games/sliding-puzzles', [\App\Http\Controllers\Games\SlidingPuzzleController::class, 'index'])->name('games.sliding-puzzles.index');
+    Route::get('/games/sliding-puzzles/{puzzle}', [\App\Http\Controllers\Games\SlidingPuzzleController::class, 'show'])->name('games.sliding-puzzles.show');
+    Route::post('/games/sliding-puzzles/{puzzle}/start', [\App\Http\Controllers\Games\SlidingPuzzleController::class, 'start'])->name('games.sliding-puzzles.start');
+    Route::post('/games/sliding-attempts/{attempt}/finish', [\App\Http\Controllers\Games\SlidingPuzzleController::class, 'finish'])->name('games.sliding-attempts.finish');
+    Route::get('/games/sliding-puzzles/{puzzle}/attempts/{attempt}', [\App\Http\Controllers\Games\SlidingPuzzleController::class, 'result'])->name('games.sliding-puzzles.attempt');
+    Route::get('/games/sliding-puzzles/{puzzle}/leaderboard', [\App\Http\Controllers\Games\SlidingPuzzleController::class, 'leaderboard'])->name('games.sliding-puzzles.leaderboard');
+
     Route::get('/games/chess/{game}/state', [GamesChessController::class, 'state'])->name('games.chess.state');
     Route::post('/games/chess/{game}/join', [GamesChessController::class, 'join'])->name('games.chess.join');
     Route::post('/games/chess/{game}/move', [GamesChessController::class, 'move'])->name('games.chess.move');
@@ -1690,3 +1698,5 @@ Route::middleware(['auth', 'verified'])->prefix('games')->name('quiz.')->group(f
 require __DIR__.'/auth.php';
 
  
+
+
