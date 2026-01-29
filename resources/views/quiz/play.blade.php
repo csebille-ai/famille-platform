@@ -68,6 +68,7 @@
                     type="button"
                     class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-[color:var(--fam-primary)] text-white font-bold hover:bg-[color:var(--fam-primary-dark)] active:scale-95 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     id="submitBtn"
+                    onclick="submitQuiz()"
                 >
                     <i class="ph ph-check-circle text-2xl" aria-hidden="true"></i>
                     <span>Valider mes réponses</span>
@@ -191,6 +192,9 @@
                 window.location.href = `${resultUrl}?r=${Date.now()}`;
             }
         }
+
+        // Expose for inline onclick fallback
+        window.submitQuiz = submitQuiz;
 
         // Force JS-only submit to avoid full-page navigation to the WAF 403 HTML.
         document.getElementById('submitBtn').addEventListener('click', submitQuiz);
