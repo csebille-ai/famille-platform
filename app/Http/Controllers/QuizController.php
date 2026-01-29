@@ -175,10 +175,14 @@ class QuizController extends Controller
             $totalScore = 0;
             $correctCount = 0;
 
-            foreach ($validated['answers'] as $answer) {
+            \Log::info('Processing answers', ['count' => count($validated['answers'])]);
+
+            foreach ($validated['answers'] as $index => $answer) {
                 $questionId = $answer['question_id'];
                 $choiceId = $answer['choice_id'];
                 $responseTime = $answer['response_time_ms'] ?? null;
+
+                \Log::info('Processing answer', ['index' => $index, 'question_id' => $questionId, 'choice_id' => $choiceId]);
 
                 // Verify choice belongs to question
                 $choice = \App\Models\QuizChoice::where('id', $choiceId)
@@ -186,6 +190,7 @@ class QuizController extends Controller
                     ->first();
 
                 if (!$choice) {
+                    \Log::warning('Choice not found or mismatch', ['choice_id' => $choiceId, 'question_id' => $questionId]);
                     continue;
                 }
 
@@ -207,6 +212,8 @@ class QuizController extends Controller
                     $correctCount++;
                 }
             }
+
+            \Log::info('Finished processing answers', ['total_score' => $totalScore, 'correct_count' => $correctCount]);
 
             // Update attempt
             $attempt->update([
