@@ -47,13 +47,12 @@
                                     <label class="quiz-choice-label flex items-start gap-3 p-4 rounded-xl border-2 border-[color:var(--fam-border-soft)] hover:border-[color:var(--fam-primary)]/40 hover:bg-[color:var(--fam-surface-alt)] cursor-pointer transition-all duration-200">
                                         <input
                                             type="radio"
-                                            name="answers[{{ $index }}][choice_id]"
+                                            name="answers[{{ $question->id }}]"
                                             value="{{ $choice->id }}"
                                             required
                                             class="mt-1 w-4 h-4 text-[color:var(--fam-primary)] focus:ring-[color:var(--fam-primary)]/25"
                                             onchange="markQuestionAnswered({{ $index }})"
                                         />
-                                        <input type="hidden" name="answers[{{ $index }}][question_id]" value="{{ $question->id }}">
                                         <span class="flex-1 text-[color:var(--fam-text)]">{{ $choice->choice_text }}</span>
                                     </label>
                                 @endforeach

@@ -155,9 +155,7 @@ class QuizController extends Controller
         try {
             $validated = $request->validate([
                 'answers' => 'required|array',
-                'answers.*.question_id' => 'required|exists:quiz_questions,id',
-                'answers.*.choice_id' => 'required|exists:quiz_choices,id',
-                'answers.*.response_time_ms' => 'nullable|integer',
+                'answers.*' => 'required|exists:quiz_choices,id',
             ]);
             \Log::info('Quiz validation passed');
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -177,12 +175,8 @@ class QuizController extends Controller
 
             \Log::info('Processing answers', ['count' => count($validated['answers'])]);
 
-            foreach ($validated['answers'] as $index => $answer) {
-                $questionId = $answer['question_id'];
-                $choiceId = $answer['choice_id'];
-                $responseTime = $answer['response_time_ms'] ?? null;
-
-                \Log::info('Processing answer', ['index' => $index, 'question_id' => $questionId, 'choice_id' => $choiceId]);
+            foreach ($validated['answers'] as $questionId => $choiceId) {
+                \Log::info('Processing answer', ['question_id' => $questionId, 'choice_id' => $choiceId]);
 
                 // Verify choice belongs to question
                 $choice = \App\Models\QuizChoice::where('id', $choiceId)
@@ -202,7 +196,7 @@ class QuizController extends Controller
                     'question_id' => $questionId,
                     'choice_id' => $choiceId,
                     'is_correct' => $isCorrect,
-                    'response_time_ms' => $responseTime,
+                    'response_time_ms' => null,
                 ]);
 
                 // Calculate score
