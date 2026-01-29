@@ -54,17 +54,20 @@
                         </div>
 
                         <div class="rounded-2xl border border-gray-200 p-5">
-                            <div class="text-sm font-semibold text-gray-900">Playlist Spotify (optionnel)</div>
-                            <div class="mt-1 text-xs text-gray-500">Colle l'URL d'une playlist Spotify pour l'intégrer directement.</div>
+                            <div class="text-sm font-semibold text-gray-900">Spotify (optionnel)</div>
+                            <div class="mt-1 text-xs text-gray-500">Colle l'URL d'une playlist ou d'un album Spotify pour l'intégrer directement.</div>
 
                             <div class="mt-4">
-                                <x-input-label for="spotify_playlist_url" :value="__('URL ou ID Spotify')" />
+                                <x-input-label for="spotify_playlist_url" :value="__('URL Spotify (playlist ou album)')" />
                                 @php
-                                    $spotifyUrl = $playlist->spotify_playlist_id
-                                        ? 'https://open.spotify.com/playlist/' . $playlist->spotify_playlist_id
-                                        : '';
+                                    $spotifyUrl = '';
+                                    if ($playlist->spotify_playlist_id && preg_match('/^(playlist|album):([a-zA-Z0-9]{22})$/', $playlist->spotify_playlist_id, $m)) {
+                                        $spotifyUrl = "https://open.spotify.com/{$m[1]}/{$m[2]}";
+                                    } elseif ($playlist->spotify_playlist_id) {
+                                        $spotifyUrl = 'https://open.spotify.com/playlist/' . $playlist->spotify_playlist_id;
+                                    }
                                 @endphp
-                                <x-text-input id="spotify_playlist_url" name="spotify_playlist_url" type="text" class="mt-1 block w-full" :value="old('spotify_playlist_url', $spotifyUrl)" placeholder="https://open.spotify.com/playlist/..." />
+                                <x-text-input id="spotify_playlist_url" name="spotify_playlist_url" type="text" class="mt-1 block w-full" :value="old('spotify_playlist_url', $spotifyUrl)" placeholder="https://open.spotify.com/playlist/... ou /album/..." />
                                 <x-input-error class="mt-2" :messages="$errors->get('spotify_playlist_url')" />
                             </div>
                         </div>

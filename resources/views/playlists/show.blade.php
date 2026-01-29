@@ -65,14 +65,14 @@
             @if ($playlist->spotify_playlist_id)
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900">
-                        <div class="text-xs text-gray-500">Playlist Spotify</div>
-                        <div class="mt-1 text-lg font-semibold text-gray-900">Écouter la playlist complète</div>
+                        <div class="text-xs text-gray-500">Spotify</div>
+                        <div class="mt-1 text-lg font-semibold text-gray-900">Écouter la {{ str_starts_with($playlist->spotify_playlist_id, 'album:') ? 'album' : 'playlist' }}</div>
                         <div class="mt-1 text-sm text-gray-600">Connecte-toi à Spotify pour écouter en entier, sinon tu auras les previews 30s.</div>
 
                         <div class="mt-4">
                             <iframe
                                 style="border-radius:12px"
-                                src="https://open.spotify.com/embed/playlist/{{ $playlist->spotify_playlist_id }}?utm_source=generator&theme=0"
+                                src="{{ $playlist->getSpotifyEmbedUrl() }}"
                                 width="100%"
                                 height="352"
                                 frameborder="0"
@@ -82,7 +82,7 @@
                         </div>
 
                         <div class="mt-3 text-xs text-gray-500">
-                            <a href="https://open.spotify.com/playlist/{{ $playlist->spotify_playlist_id }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">
+                            <a href="{{ $playlist->getSpotifyOpenUrl() }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">
                                 Ouvrir dans Spotify →
                             </a>
                         </div>
