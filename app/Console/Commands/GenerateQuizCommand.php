@@ -376,7 +376,9 @@ class GenerateQuizCommand extends Command
         }
 
         // Wikidata sometimes returns the entity id as a fallback label (e.g. "Q12345").
-        if (preg_match('/^[QP]\d+$/', $label) === 1) {
+        // Also handle cases where it comes with punctuation/quotes.
+        $labelStripped = trim($label, " \t\n\r\0\x0B\"'“”‘’«»()[]{}<>.,;:!?–—");
+        if (preg_match('/^[QP]\\d+$/', $labelStripped) === 1) {
             return false;
         }
 

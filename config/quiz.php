@@ -244,7 +244,7 @@ SPARQL,
 
                         // Returns: ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel
                         'sparql_query' => <<<'SPARQL'
-SELECT DISTINCT ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel WHERE {
+SELECT DISTINCT ?subjectQid ?subjectLabel ?answerQid ?answerLabel WHERE {
     ?subjectQid wdt:P31/wdt:P279* wd:Q7366 .   # song
     ?subjectQid wdt:P175 ?answerQid .          # performer
 
@@ -252,7 +252,9 @@ SELECT DISTINCT ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel WHERE {
     VALUES ?t { wd:Q5 wd:Q215380 }
     ?answerQid wdt:P31 ?t .
 
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr". }
+    # Real French labels only (avoid fallback IDs)
+    ?subjectQid rdfs:label ?subjectLabel . FILTER(LANG(?subjectLabel) = "fr")
+    ?answerQid rdfs:label ?answerLabel . FILTER(LANG(?answerLabel) = "fr")
 }
 LIMIT 700
 SPARQL,
@@ -303,7 +305,7 @@ SPARQL,
 
                         // Returns: ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel
                         'sparql_query' => <<<'SPARQL'
-SELECT DISTINCT ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel WHERE {
+SELECT DISTINCT ?subjectQid ?subjectLabel ?answerQid ?answerLabel WHERE {
     ?subjectQid wdt:P31/wdt:P279* wd:Q482994 . # album
     ?subjectQid wdt:P175 ?answerQid .          # performer
 
@@ -311,7 +313,9 @@ SELECT DISTINCT ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel WHERE {
     VALUES ?t { wd:Q5 wd:Q215380 }
     ?answerQid wdt:P31 ?t .
 
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr". }
+    # Real French labels only (avoid fallback IDs)
+    ?subjectQid rdfs:label ?subjectLabel . FILTER(LANG(?subjectLabel) = "fr")
+    ?answerQid rdfs:label ?answerLabel . FILTER(LANG(?answerLabel) = "fr")
 }
 LIMIT 700
 SPARQL,
