@@ -111,7 +111,7 @@ class QuizController extends Controller
         $questions = $quiz->questions()
             ->with('choices')
             ->inRandomOrder()
-            ->limit(20)
+            ->limit(3)
             ->get();
 
         // Randomize choices for each question
