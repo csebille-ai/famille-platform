@@ -117,9 +117,9 @@ class GenerateQuizCommand extends Command
         
         foreach ($results['results']['bindings'] as $row) {
             $subjectQid = $this->extractQid($row['subjectQid']['value'] ?? '');
-            $subjectLabel = $row['subjectLabel']['value'] ?? '';
+            $subjectLabel = $row['subjectLabel']['value'] ?? ($row['subjectQidLabel']['value'] ?? '');
             $answerQid = $this->extractQid($row['answerQid']['value'] ?? '');
-            $answerLabel = $row['answerLabel']['value'] ?? '';
+            $answerLabel = $row['answerLabel']['value'] ?? ($row['answerQidLabel']['value'] ?? '');
             $imageUrl = $row['imageUrl']['value'] ?? null;
             
             if ($subjectQid && $subjectLabel && $answerQid && $answerLabel) {
@@ -174,7 +174,7 @@ class GenerateQuizCommand extends Command
     {
         $endpoint = $this->config['wikidata']['endpoint'];
         $userAgent = $this->config['wikidata']['user_agent'];
-        $timeout = $this->config['wikidata']['timeout'];
+        $timeout = (int) ($this->template['wikidata_timeout'] ?? $this->config['wikidata']['timeout']);
         $maxAttempts = $this->config['wikidata']['retry_attempts'];
         $retryDelay = $this->config['wikidata']['retry_delay'];
         $backoffMultiplier = $this->config['wikidata']['backoff_multiplier'];
@@ -186,18 +186,29 @@ class GenerateQuizCommand extends Command
             $attempt++;
             
             try {
-                $response = Http::withHeaders([
+                $response = Http::withOptions([
+                    'version' => 1.1,
+                ])->withHeaders([
                     'User-Agent' => $userAgent,
                     'Accept' => 'application/sparql-results+json',
                 ])
                 ->timeout($timeout)
-                ->get($endpoint, [
+                ->asForm()
+                ->post($endpoint, [
                     'query' => $query,
                     'format' => 'json',
                 ]);
                 
                 if ($response->successful()) {
                     return $response->json();
+                }
+
+                // Retry on transient server errors
+                if ($response->status() >= 500 && $attempt < $maxAttempts) {
+                    $this->warn("HTTP {$response->status()} from Wikidata. Waiting {$delay}s before retry {$attempt}/{$maxAttempts}...");
+                    sleep($delay);
+                    $delay *= $backoffMultiplier;
+                    continue;
                 }
                 
                 // Handle 429 Too Many Requests

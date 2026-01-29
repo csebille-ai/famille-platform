@@ -180,38 +180,32 @@ SPARQL,
 
                         'question_template' => 'Qui est l\'auteur de « {subject} » ?',
 
+                        // This query can be heavier than simple geography templates.
+                        'wikidata_timeout' => 90,
+
                         // Books (P50 author) + paintings (P170 creator).
                         // Returns: ?subjectQid ?subjectLabel ?answerQid ?answerLabel
                         'sparql_query' => <<<'SPARQL'
-SELECT DISTINCT ?subjectQid ?subjectLabel ?answerQid ?answerLabel WHERE {
+SELECT DISTINCT ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel WHERE {
     {
         # Books
-        ?subjectQid wdt:P31/wdt:P279* wd:Q571 .
+        ?subjectQid wdt:P31 wd:Q571 .
         ?subjectQid wdt:P50 ?answerQid .
-        FILTER NOT EXISTS {
-            ?subjectQid wdt:P50 ?otherAuthor .
-            FILTER(?otherAuthor != ?answerQid)
-        }
     }
     UNION
     {
         # Paintings
-        ?subjectQid wdt:P31/wdt:P279* wd:Q3305213 .
+        ?subjectQid wdt:P31 wd:Q3305213 .
         ?subjectQid wdt:P170 ?answerQid .
-        FILTER NOT EXISTS {
-            ?subjectQid wdt:P170 ?otherCreator .
-            FILTER(?otherCreator != ?answerQid)
-        }
     }
 
     # Author/creator must be a human
     ?answerQid wdt:P31 wd:Q5 .
 
-    # Get French labels
-    ?subjectQid rdfs:label ?subjectLabel . FILTER(LANG(?subjectLabel) = "fr")
-    ?answerQid rdfs:label ?answerLabel . FILTER(LANG(?answerLabel) = "fr")
+    # Labels in French via label service
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr". }
 }
-LIMIT 800
+LIMIT 600
 SPARQL,
 
                         // Distractor pool: humans who are authors/writers/painters
