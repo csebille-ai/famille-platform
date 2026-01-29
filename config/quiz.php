@@ -173,6 +173,71 @@ SPARQL,
                         'points_per_question' => 10,
                 ],
 
+                'works_authors' => [
+                        'name' => 'Œuvres et auteurs',
+                        'category' => 'Culture',
+                        'difficulty' => 'medium',
+
+                        'question_template' => 'Qui est l\'auteur de « {subject} » ?',
+
+                        // Books (P50 author) + paintings (P170 creator).
+                        // Returns: ?subjectQid ?subjectLabel ?answerQid ?answerLabel
+                        'sparql_query' => <<<'SPARQL'
+SELECT DISTINCT ?subjectQid ?subjectLabel ?answerQid ?answerLabel WHERE {
+    {
+        # Books
+        ?subjectQid wdt:P31/wdt:P279* wd:Q571 .
+        ?subjectQid wdt:P50 ?answerQid .
+        FILTER NOT EXISTS {
+            ?subjectQid wdt:P50 ?otherAuthor .
+            FILTER(?otherAuthor != ?answerQid)
+        }
+    }
+    UNION
+    {
+        # Paintings
+        ?subjectQid wdt:P31/wdt:P279* wd:Q3305213 .
+        ?subjectQid wdt:P170 ?answerQid .
+        FILTER NOT EXISTS {
+            ?subjectQid wdt:P170 ?otherCreator .
+            FILTER(?otherCreator != ?answerQid)
+        }
+    }
+
+    # Author/creator must be a human
+    ?answerQid wdt:P31 wd:Q5 .
+
+    # Get French labels
+    ?subjectQid rdfs:label ?subjectLabel . FILTER(LANG(?subjectLabel) = "fr")
+    ?answerQid rdfs:label ?answerLabel . FILTER(LANG(?answerLabel) = "fr")
+}
+LIMIT 800
+SPARQL,
+
+                        // Distractor pool: humans who are authors/writers/painters
+                        'distractor_query' => <<<'SPARQL'
+SELECT DISTINCT ?qid ?label WHERE {
+    ?qid wdt:P31 wd:Q5 .
+    ?qid wdt:P106 ?occupation .
+    VALUES ?occupation { wd:Q36180 wd:Q482980 wd:Q1028181 } # writer, author, painter
+    ?qid rdfs:label ?label . FILTER(LANG(?label) = "fr")
+}
+LIMIT 1500
+SPARQL,
+
+                        'distractor_count' => 3,
+
+                        'filters' => [
+                                'require_french_label' => true,
+                                'reject_multi_value' => true,
+                                'reject_duplicates' => true,
+                                'min_label_length' => 2,
+                        ],
+
+                        'default_questions_count' => 200,
+                        'points_per_question' => 10,
+                ],
+
     ],
 
     /*
