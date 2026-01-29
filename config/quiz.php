@@ -232,6 +232,125 @@ SPARQL,
                         'points_per_question' => 10,
                 ],
 
+                'music_tracks_artists' => [
+                        'name' => 'Chansons et artistes',
+                        'category' => 'Culture',
+                        'difficulty' => 'medium',
+
+                        'question_template' => 'Qui interprète « {subject} » ?',
+
+                        // Music queries can be heavy; keep stable on shared hosting.
+                        'wikidata_timeout' => 60,
+
+                        // Returns: ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel
+                        'sparql_query' => <<<'SPARQL'
+SELECT DISTINCT ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel WHERE {
+    ?subjectQid wdt:P31/wdt:P279* wd:Q7366 .   # song
+    ?subjectQid wdt:P175 ?answerQid .          # performer
+
+    # Performer is human or musical group
+    VALUES ?t { wd:Q5 wd:Q215380 }
+    ?answerQid wdt:P31 ?t .
+
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr". }
+}
+LIMIT 700
+SPARQL,
+
+                        // Distractors: humans in music occupations + musical groups
+                        'distractor_query' => <<<'SPARQL'
+SELECT DISTINCT ?qid ?label WHERE {
+    {
+        ?qid wdt:P31 wd:Q5 .
+        ?qid wdt:P106 ?occupation .
+        VALUES ?occupation {
+            wd:Q177220    # singer
+            wd:Q639669    # musician
+            wd:Q2252262   # rapper
+            wd:Q753110    # songwriter
+        }
+        ?qid rdfs:label ?label . FILTER(LANG(?label) = "fr")
+    }
+    UNION
+    {
+        ?qid wdt:P31 wd:Q215380 .  # musical group
+        ?qid rdfs:label ?label . FILTER(LANG(?label) = "fr")
+    }
+}
+LIMIT 2000
+SPARQL,
+
+                        'distractor_count' => 3,
+                        'filters' => [
+                                'require_french_label' => true,
+                                'reject_multi_value' => true,
+                                'reject_duplicates' => true,
+                                'min_label_length' => 2,
+                        ],
+
+                        'default_questions_count' => 200,
+                        'points_per_question' => 10,
+                ],
+
+                'music_albums_artists' => [
+                        'name' => 'Albums et artistes',
+                        'category' => 'Culture',
+                        'difficulty' => 'medium',
+
+                        'question_template' => 'Qui est l\'artiste de l\'album « {subject} » ?',
+
+                        'wikidata_timeout' => 60,
+
+                        // Returns: ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel
+                        'sparql_query' => <<<'SPARQL'
+SELECT DISTINCT ?subjectQid ?subjectQidLabel ?answerQid ?answerQidLabel WHERE {
+    ?subjectQid wdt:P31/wdt:P279* wd:Q482994 . # album
+    ?subjectQid wdt:P175 ?answerQid .          # performer
+
+    # Performer is human or musical group
+    VALUES ?t { wd:Q5 wd:Q215380 }
+    ?answerQid wdt:P31 ?t .
+
+    SERVICE wikibase:label { bd:serviceParam wikibase:language "fr". }
+}
+LIMIT 700
+SPARQL,
+
+                        // Distractors: reuse same pool
+                        'distractor_query' => <<<'SPARQL'
+SELECT DISTINCT ?qid ?label WHERE {
+    {
+        ?qid wdt:P31 wd:Q5 .
+        ?qid wdt:P106 ?occupation .
+        VALUES ?occupation {
+            wd:Q177220    # singer
+            wd:Q639669    # musician
+            wd:Q2252262   # rapper
+            wd:Q753110    # songwriter
+        }
+        ?qid rdfs:label ?label . FILTER(LANG(?label) = "fr")
+    }
+    UNION
+    {
+        ?qid wdt:P31 wd:Q215380 .  # musical group
+        ?qid rdfs:label ?label . FILTER(LANG(?label) = "fr")
+    }
+}
+LIMIT 2000
+SPARQL,
+
+                        'distractor_count' => 3,
+                        'filters' => [
+                                'require_french_label' => true,
+                                'reject_multi_value' => true,
+                                'reject_duplicates' => true,
+                                'min_label_length' => 2,
+                        ],
+
+                        'default_questions_count' => 200,
+                        'points_per_question' => 10,
+                ],
+
     ],
 
     /*
