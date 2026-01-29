@@ -17,7 +17,7 @@
         </div>
 
         <!-- Quiz Form -->
-        <form id="quizForm" method="POST" action="{{ url('/games/quiz/'.$quiz->id.'/attempts/'.$attempt->id.'/s') }}">
+        <form id="quizForm" method="POST" action="{{ route('quiz.submit', ['quiz' => $quiz, 'attempt' => $attempt]) }}">
             @csrf
             
             <div class="space-y-4">
@@ -81,6 +81,8 @@
 
     @push('scripts')
     <script>
+            const resultUrl = @json(route('quiz.result', ['quiz' => $quiz, 'attempt' => $attempt]));
+
         // Timer
         let startTime = Date.now();
         let timerInterval = setInterval(() => {
@@ -151,12 +153,24 @@
                     }
                 });
 
+                    // If mod_security blocks the POST response (403) but Laravel already saved,
+                    // jumping to the result page (GET) still works.
+                    if (response.status === 403) {
+                        window.location.href = resultUrl;
+                        return;
+                    }
+
                 // 204 + header to dodge mod_security
                 const redirectHeader = response.headers.get('X-Redirect-Url');
                 if (response.status === 204 && redirectHeader) {
                     window.location.href = redirectHeader;
                     return;
                 }
+
+                    if (!response.ok) {
+                        window.location.href = resultUrl;
+                        return;
+                    }
 
                 // Fallback to JSON parsing if not empty
                 const data = response.status !== 204 ? await response.json() : null;
@@ -165,15 +179,12 @@
                 } else if (redirectHeader) {
                     window.location.href = redirectHeader;
                 } else {
-                    alert('Erreur lors de la soumission');
-                    btn.disabled = false;
-                    btn.dataset.submitted = 'false';
+                        window.location.href = resultUrl;
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Erreur réseau');
-                btn.disabled = false;
-                btn.dataset.submitted = 'false';
+                    // Network/WAF oddities: try result page anyway
+                    window.location.href = resultUrl;
             }
         });
 
