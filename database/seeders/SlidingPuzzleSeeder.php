@@ -19,16 +19,5 @@ class SlidingPuzzleSeeder extends Seeder
                 'is_active' => true,
             ]
         );
-
-        SlidingPuzzle::query()->firstOrCreate(
-            ['title' => 'Taquin — Mode chiffres (4×4)'],
-            [
-                'description' => '4×4 — sans image (mode chiffres)',
-                'image_source_type' => 'external',
-                'image_source_id' => null,
-                'grid_size' => 4,
-                'is_active' => true,
-            ]
-        );
     }
 }
