@@ -120,6 +120,7 @@ class GenerateQuizCommand extends Command
             $subjectLabel = $row['subjectLabel']['value'] ?? '';
             $answerQid = $this->extractQid($row['answerQid']['value'] ?? '');
             $answerLabel = $row['answerLabel']['value'] ?? '';
+            $imageUrl = $row['imageUrl']['value'] ?? null;
             
             if ($subjectQid && $subjectLabel && $answerQid && $answerLabel) {
                 $candidates[] = [
@@ -127,6 +128,7 @@ class GenerateQuizCommand extends Command
                     'subject_label' => $subjectLabel,
                     'answer_qid' => $answerQid,
                     'answer_label' => $answerLabel,
+                    'image_url' => $imageUrl,
                 ];
             }
         }
@@ -138,10 +140,15 @@ class GenerateQuizCommand extends Command
     {
         $filters = $this->template['filters'] ?? [];
         $minLength = $filters['min_label_length'] ?? 2;
+        $requireImage = (bool) ($filters['require_image'] ?? false);
         $seen = [];
         $filtered = [];
         
         foreach ($candidates as $candidate) {
+            if ($requireImage && empty($candidate['image_url'])) {
+                continue;
+            }
+
             // Check label length
             if (!$this->isValidLabel($candidate['subject_label'], $minLength)) {
                 continue;
@@ -271,6 +278,7 @@ class GenerateQuizCommand extends Command
                 $questionId = DB::table('quiz_questions')->insertGetId([
                     'quiz_id' => $quizId,
                     'question_text' => $questionText,
+                    'image_url' => $candidate['image_url'] ?? null,
                     'points' => $points,
                     'order' => $order,
                     'subject_qid' => $candidate['subject_qid'],

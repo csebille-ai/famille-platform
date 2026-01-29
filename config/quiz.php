@@ -120,6 +120,59 @@ SPARQL,
                         'points_per_question' => 10,
                 ],
 
+                'country_flags' => [
+                        'name' => 'Drapeaux du monde',
+                        'category' => 'Géographie',
+                        'difficulty' => 'easy',
+
+                        // No subject placeholder needed here; the flag image is shown.
+                        'question_template' => 'À quel pays appartient ce drapeau ?',
+
+                        // Returns: ?subjectQid ?subjectLabel ?answerQid ?answerLabel ?imageUrl
+                        'sparql_query' => <<<'SPARQL'
+SELECT DISTINCT ?subjectQid ?subjectLabel ?answerQid ?answerLabel ?imageUrl WHERE {
+    ?subjectQid wdt:P31 wd:Q3624078 .  # sovereign state
+    ?subjectQid wdt:P41 ?imageUrl .    # flag image (commons file path)
+
+    # Get French labels
+    ?subjectQid rdfs:label ?subjectLabel . FILTER(LANG(?subjectLabel) = "fr")
+
+    # For this template, the correct answer is the country itself
+    BIND(?subjectQid AS ?answerQid)
+    BIND(?subjectLabel AS ?answerLabel)
+
+    # Quality filters
+    FILTER NOT EXISTS { ?subjectQid wdt:P576 ?dissolved }
+    FILTER NOT EXISTS { ?subjectQid wdt:P582 ?endTime }
+}
+LIMIT 700
+SPARQL,
+
+                        // Distractor pool: countries (sovereign states)
+                        'distractor_query' => <<<'SPARQL'
+SELECT DISTINCT ?qid ?label WHERE {
+    ?qid wdt:P31 wd:Q3624078 .
+    ?qid rdfs:label ?label . FILTER(LANG(?label) = "fr")
+    FILTER NOT EXISTS { ?qid wdt:P576 ?dissolved }
+    FILTER NOT EXISTS { ?qid wdt:P582 ?endTime }
+}
+LIMIT 1200
+SPARQL,
+
+                        'distractor_count' => 3,
+
+                        'filters' => [
+                                'require_french_label' => true,
+                                'reject_multi_value' => true,
+                                'reject_duplicates' => true,
+                                'require_image' => true,
+                                'min_label_length' => 2,
+                        ],
+
+                        'default_questions_count' => 200,
+                        'points_per_question' => 10,
+                ],
+
     ],
 
     /*

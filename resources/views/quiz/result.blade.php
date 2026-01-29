@@ -115,6 +115,18 @@
                             @endif
                         </div>
 
+                        @if($question && !empty($question->image_url))
+                            <div class="ml-11 mb-4">
+                                <img
+                                    src="{{ $question->image_url }}"
+                                    alt="Drapeau"
+                                    class="max-h-24 sm:max-h-32 w-auto rounded-lg border border-[color:var(--fam-border-soft)] bg-white"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer"
+                                />
+                            </div>
+                        @endif
+
                         <!-- Choices -->
                         <div class="ml-11 space-y-2">
                             @foreach($allChoices as $choice)

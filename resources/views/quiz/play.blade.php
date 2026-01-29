@@ -40,6 +40,20 @@
                             </div>
                         </div>
 
+                        @if(!empty($question->image_url))
+                            <div class="px-6 py-4 border-b border-[color:var(--fam-border-soft)] bg-white">
+                                <div class="flex justify-center">
+                                    <img
+                                        src="{{ $question->image_url }}"
+                                        alt="Drapeau"
+                                        class="max-h-28 sm:max-h-36 w-auto rounded-lg border border-[color:var(--fam-border-soft)] bg-white"
+                                        loading="lazy"
+                                        referrerpolicy="no-referrer"
+                                    />
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Choices -->
                         <div class="p-4">
                             <div class="space-y-2">
