@@ -1,9 +1,16 @@
 <x-app-layout pageBgClass="fam-page-bg">
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold text-[color:var(--fam-text)]">
-                Quiz
-            </h2>
+            <div class="flex items-center gap-3 min-w-0">
+                <h2 class="text-xl font-semibold text-[color:var(--fam-text)]">
+                    Quiz
+                </h2>
+                <span class="hidden sm:inline-flex items-center gap-1.5 text-xs text-[color:var(--fam-muted)]">
+                    <i class="ph ph-globe text-sm" aria-hidden="true"></i>
+                    Source: Wikidata
+                </span>
+            </div>
+
             <a href="{{ route('quiz.leaderboard') }}" class="fam-link-subtle inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-semibold hover:bg-[color:var(--fam-primary-100)] active:bg-[color:var(--fam-primary-200)]">
                 <i class="ph ph-trophy text-base" aria-hidden="true"></i>
                 Classement global
@@ -94,62 +101,54 @@
                         $maxScore = $questionsPerAttempt * $pointsPerQuestion;
                     @endphp
 
-                    <a href="{{ route('quiz.show', $quiz) }}" class="group block rounded-2xl bg-white border border-[color:var(--fam-border)] hover:border-[color:var(--fam-primary)]/40 hover:shadow-md transition-all duration-200 overflow-hidden">
-                        <!-- Header -->
-                        <div class="px-4 py-3 border-b border-[color:var(--fam-border-soft)]">
-                            <div class="flex items-start gap-3">
-                                <div class="shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-[color:var(--fam-primary-100)] text-[color:var(--fam-primary)]">
-                                    <i class="ph ph-brain text-2xl" aria-hidden="true"></i>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="font-bold text-[color:var(--fam-text)] group-hover:text-[color:var(--fam-primary)] transition-colors truncate">
-                                        {{ $quiz->title }}
-                                    </h3>
-                                    <div class="mt-1 flex items-center gap-2 text-xs text-[color:var(--fam-muted)]">
-                                        <span>{{ $quiz->category }}</span>
-                                        <span>•</span>
-                                        <span>{{ $quiz->questions_count }} questions</span>
+                    <a href="{{ route('quiz.show', $quiz) }}" class="group block rounded-xl bg-white border border-[color:var(--fam-border)] hover:border-[color:var(--fam-primary)]/40 hover:shadow-md transition-all duration-200">
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="flex items-start gap-3 min-w-0">
+                                    <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-xl bg-[color:var(--fam-primary-100)] text-[color:var(--fam-primary)]">
+                                        <i class="ph ph-brain text-xl" aria-hidden="true"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="flex items-start gap-3">
+                                            <h3 class="font-bold text-[color:var(--fam-text)] group-hover:text-[color:var(--fam-primary)] transition-colors truncate">
+                                                {{ $quiz->title }}
+                                            </h3>
+                                        </div>
+                                        <div class="mt-0.5 flex items-center gap-2 text-xs text-[color:var(--fam-muted)]">
+                                            <span>{{ $quiz->category }}</span>
+                                            <span>•</span>
+                                            <span>{{ $quiz->questions_count }} questions</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Body -->
-                        <div class="px-4 py-3">
-                            <div class="flex items-center justify-between gap-3">
-                                <!-- Difficulty badge -->
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg {{ $diffColors['bg'] }} {{ $diffColors['text'] }} border {{ $diffColors['border'] }} text-xs font-semibold">
-                                    @if($quiz->difficulty === 'easy')
-                                        <i class="ph ph-circle text-xs" aria-hidden="true"></i>
-                                        Facile
-                                    @elseif($quiz->difficulty === 'medium')
-                                        <i class="ph ph-circles-three text-xs" aria-hidden="true"></i>
-                                        Moyen
-                                    @else
-                                        <i class="ph ph-fire text-xs" aria-hidden="true"></i>
-                                        Difficile
-                                    @endif
-                                </span>
+                                <div class="shrink-0 text-right">
+                                    <!-- Difficulty badge (small, top-right) -->
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md {{ $diffColors['bg'] }} {{ $diffColors['text'] }} border {{ $diffColors['border'] }} text-[11px] font-semibold">
+                                        @if($quiz->difficulty === 'easy')
+                                            <i class="ph ph-circle text-[10px]" aria-hidden="true"></i>
+                                            Facile
+                                        @elseif($quiz->difficulty === 'medium')
+                                            <i class="ph ph-circles-three text-[10px]" aria-hidden="true"></i>
+                                            Moyen
+                                        @else
+                                            <i class="ph ph-fire text-[10px]" aria-hidden="true"></i>
+                                            Difficile
+                                        @endif
+                                    </span>
 
-                                <!-- User best score -->
-                                @if($userBestScore)
-                                    <div class="text-right">
-                                        <div class="text-xs text-[color:var(--fam-muted)]">Ton meilleur</div>
+                                    <!-- User best score under difficulty -->
+                                    @if($userBestScore)
+                                        <div class="mt-1.5 text-[11px] text-[color:var(--fam-muted)]">Ton meilleur</div>
                                         <div class="text-sm font-bold text-[color:var(--fam-primary)]">
                                             {{ $userBestScore }} / {{ $maxScore }}
                                         </div>
-                                    </div>
-                                @else
-                                    <div class="text-xs text-[color:var(--fam-muted)] italic">
-                                        Pas encore joué
-                                    </div>
-                                @endif
-                            </div>
-
-                            <!-- Source -->
-                            <div class="mt-3 pt-3 border-t border-[color:var(--fam-border-soft)] flex items-center gap-1.5 text-xs text-[color:var(--fam-muted)]">
-                                <i class="ph ph-globe text-sm" aria-hidden="true"></i>
-                                Source: {{ $quiz->source }}
+                                    @else
+                                        <div class="mt-1.5 text-xs text-[color:var(--fam-muted)] italic">
+                                            Pas encore joué
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </a>
