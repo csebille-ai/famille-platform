@@ -232,7 +232,9 @@ class QuizController extends Controller
         });
 
         \Log::info('Transaction committed, redirecting to result');
-        return redirect()->route('quiz.result', ['quiz' => $quiz, 'attempt' => $attempt]);
+        
+        // Directly show result instead of redirect to avoid WAF blocking POST responses
+        return $this->result($request, $quiz, $attempt);
     }
 
     /**
