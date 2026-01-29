@@ -234,7 +234,7 @@ class QuizController extends Controller
         \Log::info('Transaction committed, redirecting to result');
         
         // Directly show result instead of redirect to avoid WAF blocking POST responses
-        return $this->result($request, $quiz, $attempt);
+        return $this->result($quiz, $attempt);
     }
 
     /**
