@@ -1329,5 +1329,7 @@
                 </script>
             @endcan
         </div>
+
+        @stack('scripts')
     </body>
 </html>
