@@ -25,7 +25,9 @@
         <!-- User Position (if not in top 50) -->
         @if($userBest && $userRank && $userRank > 50)
             @php
-                $maxScore = $quiz->questions_count * 10;
+                $questionsPerAttempt = min(20, (int) $quiz->questions_count);
+                $pointsPerQuestion = (int) config('quiz.templates.' . $quiz->template_key . '.points_per_question', 10);
+                $maxScore = $questionsPerAttempt * $pointsPerQuestion;
                 $percentage = $maxScore > 0 ? round(($userBest->best_score / $maxScore) * 100) : 0;
             @endphp
             <div class="mb-6 rounded-2xl bg-gradient-to-r from-[color:var(--fam-primary-100)] to-[color:var(--fam-primary-50)] border border-[color:var(--fam-primary)]/30 shadow-sm overflow-hidden">
@@ -69,7 +71,9 @@
                     @foreach($leaderboard as $index => $entry)
                         @php
                             $isCurrentUser = auth()->check() && $entry->user_id === auth()->id();
-                            $maxScore = $quiz->questions_count * 10;
+                            $questionsPerAttempt = min(20, (int) $quiz->questions_count);
+                            $pointsPerQuestion = (int) config('quiz.templates.' . $quiz->template_key . '.points_per_question', 10);
+                            $maxScore = $questionsPerAttempt * $pointsPerQuestion;
                             $percentage = $maxScore > 0 ? round(($entry->best_score / $maxScore) * 100) : 0;
                         @endphp
 
