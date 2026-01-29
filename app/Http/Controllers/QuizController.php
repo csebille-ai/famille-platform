@@ -216,17 +216,22 @@ class QuizController extends Controller
             \Log::info('Finished processing answers', ['total_score' => $totalScore, 'correct_count' => $correctCount]);
 
             // Update attempt
+            \Log::info('Updating attempt');
             $attempt->update([
                 'status' => 'finished',
                 'finished_at' => now(),
                 'duration_seconds' => $attempt->started_at->diffInSeconds(now()),
                 'score' => $totalScore,
             ]);
+            \Log::info('Attempt updated');
 
             // Update best scores (Option A)
+            \Log::info('Updating best scores');
             $this->updateBestScores($attempt, $totalScore);
+            \Log::info('Best scores updated');
         });
 
+        \Log::info('Transaction committed, redirecting to result');
         return redirect()->route('quiz.result', ['quiz' => $quiz, 'attempt' => $attempt]);
     }
 
