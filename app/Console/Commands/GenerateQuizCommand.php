@@ -370,6 +370,16 @@ class GenerateQuizCommand extends Command
     private function isValidLabel(string $label, int $minLength = 2): bool
     {
         $label = trim($label);
-        return strlen($label) >= $minLength && !str_contains($label, '�');
+
+        if (strlen($label) < $minLength || str_contains($label, '�')) {
+            return false;
+        }
+
+        // Wikidata sometimes returns the entity id as a fallback label (e.g. "Q12345").
+        if (preg_match('/^[QP]\d+$/', $label) === 1) {
+            return false;
+        }
+
+        return true;
     }
 }
