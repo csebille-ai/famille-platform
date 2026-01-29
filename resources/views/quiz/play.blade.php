@@ -142,11 +142,12 @@
             e.returnValue = '';
         });
 
-        // Remove warning on submit and disable button
-        document.getElementById('quizForm').addEventListener('submit', (e) => {
+        // Submit via AJAX to avoid mod_security blocking
+        document.getElementById('quizForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
             const btn = document.getElementById('submitBtn');
             if (btn.dataset.submitted === 'true') {
-                e.preventDefault();
                 return false;
             }
             btn.dataset.submitted = 'true';
@@ -154,6 +155,34 @@
             btn.innerHTML = '<i class="ph ph-spinner ph-spin text-2xl" aria-hidden="true"></i> <span>Envoi en cours...</span>';
             isSubmitting = true;
             clearInterval(timerInterval);
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch(e.target.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert('Erreur lors de la soumission');
+                    btn.disabled = false;
+                    btn.dataset.submitted = 'false';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Erreur réseau');
+                btn.disabled = false;
+                btn.dataset.submitted = 'false';
+            }
         });
 
         // Selected choice styling

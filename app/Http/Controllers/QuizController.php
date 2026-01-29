@@ -233,7 +233,15 @@ class QuizController extends Controller
 
         \Log::info('Transaction committed, redirecting to result');
         
-        // Directly show result instead of redirect to avoid WAF blocking POST responses
+        // Return JSON to avoid mod_security blocking HTML responses on POST
+        if ($request->expectsJson() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'redirect_url' => route('quiz.result', ['quiz' => $quiz, 'attempt' => $attempt])
+            ]);
+        }
+        
+        // Fallback: directly show result
         return $this->result($quiz, $attempt);
     }
 
