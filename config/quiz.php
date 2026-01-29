@@ -2,6 +2,10 @@
 
 return [
 
+    // How many finished attempts (per user & quiz) we use to avoid repeating questions.
+    // Set to 0 to disable.
+    'avoid_repeat_last_attempts' => (int) env('QUIZ_AVOID_REPEAT_LAST_ATTEMPTS', 5),
+
     /*
     |--------------------------------------------------------------------------
     | Quiz Templates
@@ -13,10 +17,6 @@ return [
     | - Question text with placeholders
     | - Rules for generating distractor answers
     | - Quality filters
-        // How many finished attempts (per user & quiz) we use to avoid repeating questions.
-        // Set to 0 to disable.
-        'avoid_repeat_last_attempts' => (int) env('QUIZ_AVOID_REPEAT_LAST_ATTEMPTS', 5),
-
     |
     */
 
@@ -71,6 +71,54 @@ SPARQL,
             'default_questions_count' => 200,
             'points_per_question' => 10,
         ],
+
+                'country_currency' => [
+                        'name' => 'Monnaies du monde',
+                        'category' => 'Géographie',
+                        'difficulty' => 'easy',
+
+                        // Question template with {subject} placeholder
+                        'question_template' => 'Quelle est la monnaie de {subject} ?',
+
+                        // SPARQL query to fetch countries and their currencies
+                        // Returns: ?subjectQid ?subjectLabel ?answerQid ?answerLabel
+                        'sparql_query' => <<<'SPARQL'
+SELECT DISTINCT ?subjectQid ?subjectLabel ?answerQid ?answerLabel WHERE {
+    ?subjectQid wdt:P31 wd:Q3624078 .  # sovereign state
+    ?subjectQid wdt:P38 ?answerQid .   # currency
+
+    # Get French labels
+    ?subjectQid rdfs:label ?subjectLabel . FILTER(LANG(?subjectLabel) = "fr")
+    ?answerQid rdfs:label ?answerLabel . FILTER(LANG(?answerLabel) = "fr")
+
+    # Quality filters
+    FILTER NOT EXISTS { ?subjectQid wdt:P576 ?dissolved }  # not dissolved
+    FILTER NOT EXISTS { ?subjectQid wdt:P582 ?endTime }    # not ended
+}
+LIMIT 500
+SPARQL,
+
+                        // Distractor pool: currencies
+                        'distractor_query' => <<<'SPARQL'
+SELECT DISTINCT ?qid ?label WHERE {
+    ?qid wdt:P31 wd:Q8142 .  # instance of currency
+    ?qid rdfs:label ?label . FILTER(LANG(?label) = "fr")
+}
+LIMIT 1500
+SPARQL,
+
+                        'distractor_count' => 3,
+
+                        'filters' => [
+                                'require_french_label' => true,
+                                'reject_multi_value' => true,
+                                'reject_duplicates' => true,
+                                'min_label_length' => 2,
+                        ],
+
+                        'default_questions_count' => 200,
+                        'points_per_question' => 10,
+                ],
 
     ],
 
