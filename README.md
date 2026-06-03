@@ -1,85 +1,163 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Famille Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Private family platform built with Laravel 12.
 
-## About Laravel
+## Quick Pitch (Recruiter View)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This project is a production-oriented family intranet with real product constraints:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- authenticated private space
+- real-time chat and reactions
+- media library and uploads (local + Cloudflare R2)
+- events and calendar sync (Google Calendar)
+- tarot + TTS + astro profile features
+- games module (chess, sliding puzzle)
+- push notifications and scheduled background jobs
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+It is designed to run on shared hosting (o2switch) with pragmatic tradeoffs for queue, scheduler, and realtime.
 
-## Learning Laravel
+## Tech Stack
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- Backend: Laravel 12, PHP 8.2+
+- Frontend: Blade, Vite, Tailwind, Alpine.js
+- Data: MySQL (Eloquent)
+- Realtime: Reverb / Echo / Pusher-compatible flow
+- Storage: local disk + Cloudflare R2 (S3 compatible)
+- Notifications: Web Push (VAPID)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Core Features
 
-## Laravel Sponsors
+- Family dashboard and activity feed
+- Chat threads, reactions, attachment upload
+- Family cloud (images, videos, docs)
+- Event management + reminders
+- Google Calendar OAuth sync
+- Daily/local news import (RSS)
+- Tarot draw API and TTS endpoint
+- Astro profile integration via external astro-engine
+- Mini-games hub (chess, sliding puzzles)
+- Admin and ops views
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Project Structure
 
-### Premium Partners
+- `app/` business logic, controllers, models, services
+- `routes/web.php` web routes + APIs used by frontend
+- `routes/console.php` scheduled jobs
+- `resources/views/` Blade templates
+- `public/` static assets and built assets entrypoint
+- `astro-engine/` companion service used for astro calculations
+- `docker/` local/dev infra files
+- `tests/` test suite
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Local Setup
 
-## Contributing
+### Prerequisites
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- PHP 8.2+
+- Composer
+- Node.js + npm
+- MySQL (or compatible)
 
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-
-## Web Push (notifications)
-
-This project can send a push notification to all subscribed devices when a photo is uploaded.
-
-### Requirements
-
-- HTTPS in production
-- A service worker (`public/service-worker.js`) registered in the browser
-- iOS: push requires an installed Home Screen app (iOS 16.4+)
-
-### Configuration
-
-Add these to `.env`:
-
-```dotenv
-WEBPUSH_SUBJECT=${APP_URL}
-WEBPUSH_PUBLIC_KEY=...
-WEBPUSH_PRIVATE_KEY=...
-```
-
-Generate VAPID keys (example):
+### Install
 
 ```bash
-php -r "require 'vendor/autoload.php'; \$k=Minishlink\\WebPush\\VAPID::createVapidKeys(); echo 'WEBPUSH_PUBLIC_KEY=' . \$k['publicKey'] . PHP_EOL; echo 'WEBPUSH_PRIVATE_KEY=' . \$k['privateKey'] . PHP_EOL;"
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
 ```
+
+### Run in dev
+
+Option A (all-in-one):
+
+```bash
+composer run dev
+```
+
+Option B (separate terminals):
+
+```bash
+php artisan serve
+npm run dev
+php artisan queue:listen --tries=1
+```
+
+## Environment Notes
+
+Use `.env.o2switch.example` as production template.
+
+Important groups:
+
+- app: `APP_ENV`, `APP_URL`, `APP_DEBUG`
+- database: `DB_*`
+- uploads/storage: `R2_*`, `UPLOAD_*`
+- realtime: `BROADCAST_CONNECTION`, `REVERB_*`, `PUSHER_*`
+- astro service: `ASTRO_ENGINE_URL`, `ASTRO_ENGINE_VERIFY_SSL`
+- web push: `WEBPUSH_SUBJECT`, `WEBPUSH_PUBLIC_KEY`, `WEBPUSH_PRIVATE_KEY`
+
+## Scheduler and Queue (Production Critical)
+
+The app depends on scheduled commands for:
+
+- RSS import
+- reminder jobs
+- queue worker execution
+- scheduler heartbeat
+
+Shared hosting cron (example):
+
+```bash
+* * * * * cd ~/apps/famille-platform && php artisan schedule:run >> /dev/null 2>&1
+```
+
+See command definitions in `routes/console.php`.
+
+## Realtime on Shared Hosting
+
+Running a persistent websocket process is usually hard on shared hosting.
+
+Production options:
+
+- degrade to non-realtime behavior
+- use external realtime provider (Pusher/Ably)
+- host realtime service on a VPS
+
+## Build and Deploy
+
+Main deployment reference:
+
+- `DEPLOY_O2SWITCH.md`
+
+This file includes:
+
+- first deploy steps
+- update workflow
+- composer fallback with local `composer.phar`
+- permissions and cache commands
+- cron setup and diagnostics
+
+## Cost and External Services
+
+Monitoring and budget guide:
+
+- `EXTERNAL_COSTS.md`
+
+Includes Cloudflare, OpenAI, mail providers, and alerting checklist.
+
+## Testing
+
+```bash
+php artisan test
+```
+
+## Security Notes
+
+- never commit secrets from `.env`
+- keep production keys only on server/cpanel env
+- validate upload limits and quota paths before enabling large media uploads
+
+## Repository
+
+- GitHub: https://github.com/csebille-ai/famille-platform
