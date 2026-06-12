@@ -128,7 +128,7 @@ Production options:
 
 Main deployment reference:
 
-- `DEPLOY_O2SWITCH.md`
+- `docs/ops/DEPLOY_O2SWITCH.md`
 
 This file includes:
 
@@ -142,9 +142,13 @@ This file includes:
 
 Monitoring and budget guide:
 
-- `EXTERNAL_COSTS.md`
+- `docs/ops/EXTERNAL_COSTS.md`
 
 Includes Cloudflare, OpenAI, mail providers, and alerting checklist.
+
+## Additional Ops Docs
+
+- `docs/ops/FOCUS_COMPOSER.md`
 
 ## Testing
 

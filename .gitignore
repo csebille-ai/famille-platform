@@ -44,3 +44,7 @@ Homestead.json
 Homestead.yaml
 
 # Local-only assets
+
+# Astro engine local logs
+astro-engine/astro-engine.log
+astro-engine/.astro-engine.log
